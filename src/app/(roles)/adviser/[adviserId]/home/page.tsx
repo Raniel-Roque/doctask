@@ -1,11 +1,11 @@
 import { Navbar } from "../navbar";
 
-interface AdminIdPageProps {
-    params: Promise<{ adminId: string }>
+interface AdviserIdPageProps {
+    params: Promise<{ adviserId: string }>
 };
 
-const AdminIdPage = async ({ params }: AdminIdPageProps) => {
-    const { adminId } = await params;
+const AdviserIdPage = async ({ params }: AdviserIdPageProps) => {
+    const { adviserId } = await params;
 
     return ( 
         <div className="min-h-screen flex flex-col">
@@ -13,10 +13,10 @@ const AdminIdPage = async ({ params }: AdminIdPageProps) => {
                 <Navbar />
             </div>
             <div className="mt-16">
-                Admin ID: {adminId}, Home Page
+                Adviser ID: {adviserId}, Home Page
             </div>
         </div>
     );
 }
  
-export default AdminIdPage;
+export default AdviserIdPage;

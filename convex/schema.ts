@@ -8,13 +8,8 @@ export default defineSchema({
     middle_name: v.optional(v.string()),
     last_name: v.string(),
     email: v.string(),
-    role: v.union(
-      v.literal("admin"),
-      v.literal("adviser"),
-      v.literal("student")
-    ),
-    subrole: v.optional(
-      v.union(v.literal("manager"), v.literal("member"))
-    ),
+    email_verified: v.boolean(), 
+    role: v.int64(), // 0 = student, 1 = adviser, 2 = admin
+    subrole: v.optional(v.int64()), // 0 = member, 1 = manager
   }).index("by_clerk_id", ["clerk_id"])
 });
