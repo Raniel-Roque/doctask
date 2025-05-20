@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation"; 
+import { usePathname, useRouter } from "next/navigation";
+import { useClerk } from "@clerk/clerk-react";
 
 interface NavbarProps {
   adminId: string;
@@ -10,8 +11,19 @@ interface NavbarProps {
 
 export const Navbar = ({ adminId }: NavbarProps) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signOut } = useClerk();
 
   const isActive = (path: string) => pathname === path;
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      router.replace("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   return (
     <header className="bg-white shadow-md">
@@ -75,17 +87,17 @@ export const Navbar = ({ adminId }: NavbarProps) => {
             </Link>
           </li>
 
-          {/* Logout Link */}
+          {/* Logout Button */}
           <li className="ml-auto">
-            <Link
-              href="/logout"
-              className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200`}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 hover:text-gray-300 transition-colors duration-200"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
               </svg>
               Logout
-            </Link>
+            </button>
           </li>
         </ul>
       </nav>

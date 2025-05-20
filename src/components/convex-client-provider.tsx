@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
@@ -9,6 +9,13 @@ import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+// Role constants for better type safety
+const ROLES = {
+  STUDENT: BigInt(0),
+  ADVISER: BigInt(1),
+  ADMIN: BigInt(2),
+} as const;
 
 // Redirect authenticated users based on role
 function RedirectHandler() {
@@ -27,11 +34,12 @@ function RedirectHandler() {
     const { role, _id } = convexUser;
     let expectedPath = "";
 
-    if (role === BigInt(2)) expectedPath = `/admin/${_id}/home`;
-    else if (role === BigInt(1)) expectedPath = `/adviser/${_id}/home`;
-    else if (role === BigInt(0)) expectedPath = `/student/${_id}/home`;
+    if (role === ROLES.ADMIN) expectedPath = `/admin/${_id}/home`;
+    else if (role === ROLES.ADVISER) expectedPath = `/adviser/${_id}/home`;
+    else if (role === ROLES.STUDENT) expectedPath = `/student/${_id}/home`;
 
-    if (pathname !== expectedPath) {
+    // Redirect to home if on root path or role root path
+    if (pathname === "/" || pathname === `/${role === ROLES.ADMIN ? 'admin' : role === ROLES.ADVISER ? 'adviser' : 'student'}/${_id}`) {
       router.replace(expectedPath);
     }
   }, [isLoaded, isSignedIn, user, convexUser, router, pathname]);
@@ -42,12 +50,14 @@ function RedirectHandler() {
 function UnauthRedirect() {
   const router = useRouter();
   const pathname = usePathname();
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
-    if (pathname !== "/login") {
+    // Redirect to login if not signed in and not on login page
+    if (isLoaded && !isSignedIn && pathname !== "/login") {
       router.replace("/login");
     }
-  }, [router, pathname]);
+  }, [isLoaded, isSignedIn, pathname, router]);
 
   return null;
 }
@@ -57,23 +67,56 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const pathname = usePathname();
+  const [error, setError] = useState<string | null>(null);
 
   const convexUser = useQuery(api.documents.getUserByClerkId, {
     clerkId: user?.id ?? "",
   });
 
-  // Determine expected path based on role
-  let expectedPath = "";
-  if (convexUser) {
+  // Validate role is within expected range
+  const isValidRole = (role: bigint) => {
+    return Object.values(ROLES).includes(role);
+  };
+
+  // Sanitize and validate path segments
+  const sanitizePath = (path: string) => {
+    // Remove any potential path traversal attempts
+    return path.replace(/\.\./g, '').replace(/\/+/g, '/');
+  };
+
+  // Check if the current path matches the user's role base path
+  const isAuthorizedPath = () => {
+    if (!convexUser) return false;
+    
     const { role, _id } = convexUser;
-    if (role === BigInt(2)) expectedPath = `/admin/${_id}/home`;
-    else if (role === BigInt(1)) expectedPath = `/adviser/${_id}/home`;
-    else if (role === BigInt(0)) expectedPath = `/student/${_id}/home`;
+    
+    // Validate role
+    if (!isValidRole(role)) {
+      setError("Invalid user role");
+      return false;
+    }
+
+    // Sanitize path
+    const sanitizedPath = sanitizePath(pathname);
+    
+    const basePath = role === ROLES.ADMIN ? 'admin' : role === ROLES.ADVISER ? 'adviser' : 'student';
+    const pathPattern = new RegExp(`^/${basePath}/${_id}/`);
+    
+    return pathPattern.test(sanitizedPath);
+  };
+
+  // Render children when loaded, signed in, user and convexUser are available, AND on an authorized path
+  if (isLoaded && isSignedIn && user && convexUser && isAuthorizedPath()) {
+    return <>{children}</>;
   }
 
-  // Render children only when loaded, signed in, user and convexUser are available, AND on the expected path
-  if (isLoaded && isSignedIn && user && convexUser && pathname === expectedPath) {
-    return <>{children}</>;
+  // Show error message if there's an authorization error
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="text-red-500 text-lg font-semibold">{error}</div>
+      </div>
+    );
   }
 
   return null;
@@ -83,13 +126,6 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 function AuthCheck({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
-  const { isLoaded, isSignedIn } = useAuth();
-
-  useEffect(() => {
-    if (isLoaded && !isSignedIn && !isLoginPage) {
-      window.location.href = "/login";
-    }
-  }, [isLoaded, isSignedIn, isLoginPage]);
 
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
