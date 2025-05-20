@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { ReactNode, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient, useQuery } from "convex/react";
@@ -10,74 +10,117 @@ import { api } from "../../convex/_generated/api";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-// This component handles the redirect based on user role
+// Redirect authenticated users based on role
 function RedirectHandler() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const router = useRouter();
-  const [hasRedirected, setHasRedirected] = useState(false);
+  const pathname = usePathname();
 
   const convexUser = useQuery(api.documents.getUserByClerkId, {
     clerkId: user?.id ?? "",
   });
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !user || !convexUser || hasRedirected) return;
+    if (!isLoaded || !isSignedIn || !user || !convexUser) return;
 
-    const { role, _id } = convexUser; // Get the user's role, and ID from Convex
-    let redirectTo = "";
+    const { role, _id } = convexUser;
+    let expectedPath = "";
 
-    // Route the user based on their role and subrole
-    // 0 = student, 1 = adviser, 2 = admin
+    if (role === BigInt(2)) expectedPath = `/admin/${_id}/home`;
+    else if (role === BigInt(1)) expectedPath = `/adviser/${_id}/home`;
+    else if (role === BigInt(0)) expectedPath = `/student/${_id}/home`;
 
-    if (role === BigInt(2)) {
-      redirectTo = `/admin/${_id}/home`;
-    } else if (role === BigInt(1)) {
-      redirectTo = `/adviser/${_id}/home`;
-    } else if (role === BigInt(0)) {
-      redirectTo = `/student/${_id}/home`;
+    if (pathname !== expectedPath) {
+      router.replace(expectedPath);
     }
-
-    if (redirectTo) {
-      setHasRedirected(true);
-      router.replace(redirectTo); // Redirect to the correct page
-    }
-  }, [isLoaded, isSignedIn, user, convexUser, hasRedirected, router]);
+  }, [isLoaded, isSignedIn, user, convexUser, router, pathname]);
 
   return null;
 }
 
-// If the user is unauthenticated, we'll redirect them to /login
 function UnauthRedirect() {
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    router.replace("/login"); // Redirect to /login if unauthenticated
-  }, [router]);
+    if (pathname !== "/login") {
+      router.replace("/login");
+    }
+  }, [router, pathname]);
 
   return null;
 }
 
+// New component to gate content rendering
+function AuthStatusGate({ children }: { children: ReactNode }) {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const pathname = usePathname();
+
+  const convexUser = useQuery(api.documents.getUserByClerkId, {
+    clerkId: user?.id ?? "",
+  });
+
+  // Determine expected path based on role
+  let expectedPath = "";
+  if (convexUser) {
+    const { role, _id } = convexUser;
+    if (role === BigInt(2)) expectedPath = `/admin/${_id}/home`;
+    else if (role === BigInt(1)) expectedPath = `/adviser/${_id}/home`;
+    else if (role === BigInt(0)) expectedPath = `/student/${_id}/home`;
+  }
+
+  // Render children only when loaded, signed in, user and convexUser are available, AND on the expected path
+  if (isLoaded && isSignedIn && user && convexUser && pathname === expectedPath) {
+    return <>{children}</>;
+  }
+
+  return null;
+}
+
+// Auth check component that will be used inside ClerkProvider
+function AuthCheck({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isLoginPage = pathname === "/login";
+  const { isLoaded, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn && !isLoginPage) {
+      window.location.href = "/login";
+    }
+  }, [isLoaded, isSignedIn, isLoginPage]);
+
+  return (
+    <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+      <Authenticated>
+        <RedirectHandler />
+        <AuthStatusGate>{children}</AuthStatusGate>
+      </Authenticated>
+
+      <Unauthenticated>
+        <UnauthRedirect />
+        {isLoginPage && children}
+      </Unauthenticated>
+
+      <AuthLoading>
+        {isLoginPage ? (
+          children
+        ) : (
+          <div className="flex items-center justify-center min-h-screen bg-white text-lg font-semibold">
+            Loading authentication...
+          </div>
+        )}
+      </AuthLoading>
+    </ConvexProviderWithClerk>
+  );
+}
+
+// Main Provider with Auth Gate
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}>
-      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-        <Authenticated>
-          <RedirectHandler /> {/* Handles redirect after sign-in */}
-          {children}
-        </Authenticated>
-
-        <Unauthenticated>
-          <UnauthRedirect /> {/* Redirects unauthenticated users to /login */}
-          {children}
-        </Unauthenticated>
-
-        <AuthLoading>
-          <div className="flex items-center justify-center min-h-screen">
-            Loading authentication...
-          </div>
-        </AuthLoading>
-      </ConvexProviderWithClerk>
+      <AuthCheck>{children}</AuthCheck>
     </ClerkProvider>
   );
 }
