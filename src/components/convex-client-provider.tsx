@@ -12,10 +12,12 @@ const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 // Role constants for better type safety
 const ROLES = {
-  STUDENT: BigInt(0),
-  ADVISER: BigInt(1),
-  ADMIN: BigInt(2),
+  STUDENT: 0,
+  ADVISER: 1,
+  ADMIN: 2,
 } as const;
+
+type Role = typeof ROLES[keyof typeof ROLES];
 
 // Redirect authenticated users based on role
 function RedirectHandler() {
@@ -74,8 +76,8 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
   });
 
   // Validate role is within expected range
-  const isValidRole = (role: bigint) => {
-    return Object.values(ROLES).includes(role);
+  const isValidRole = (role: number): role is Role => {
+    return role === ROLES.STUDENT || role === ROLES.ADVISER || role === ROLES.ADMIN;
   };
 
   // Sanitize and validate path segments
