@@ -70,6 +70,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const [notification, setNotification] = useState<Notification | null>(null);
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [networkError, setNetworkError] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     first_name: "",
     middle_name: "",
@@ -96,6 +98,20 @@ const UsersPage = ({ params }: UsersPageProps) => {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  // Add useEffect for page leave warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isSubmitting) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isSubmitting]);
 
   const refreshAdvisers = async () => {
     const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -267,8 +283,13 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
 
     setIsSubmitting(true);
+    setNetworkError(null);
+    
     try {
-      // Create user in Clerk via server API
+      // Create user in Clerk via server API with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch("/api/clerk/create-user", {
         method: "POST",
         headers: {
@@ -279,9 +300,15 @@ const UsersPage = ({ params }: UsersPageProps) => {
           firstName: addFormData.first_name,
           lastName: addFormData.last_name,
         }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
+        if (response.status === 0) {
+          throw new Error("Network error - please check your internet connection");
+        }
         throw new Error("Failed to create user in Clerk");
       }
 
@@ -312,10 +339,46 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
     } catch (error) {
       console.error("Error adding user:", error);
-      setValidationError("Failed to add adviser. Please try again.");
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          setNetworkError("Request timed out. Please try again.");
+        } else if (error.message.includes('Network error')) {
+          setNetworkError("Network error - please check your internet connection");
+        } else {
+          setValidationError("Failed to add adviser. Please try again.");
+        }
+      } else {
+        setValidationError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCancelAdd = () => {
+    if (isSubmitting) {
+      setShowCancelConfirm(true);
+    } else {
+      setIsAddingUser(false);
+      setAddFormData({
+        first_name: "",
+        middle_name: "",
+        last_name: "",
+        email: "",
+      });
+    }
+  };
+
+  const handleConfirmCancel = () => {
+    setIsAddingUser(false);
+    setShowCancelConfirm(false);
+    setIsSubmitting(false);
+    setAddFormData({
+      first_name: "",
+      middle_name: "",
+      last_name: "",
+      email: "",
+    });
   };
 
   const filteredAndSortedAdvisers = filterAndSortAdvisers(
@@ -705,13 +768,23 @@ const UsersPage = ({ params }: UsersPageProps) => {
                 Add New Adviser
               </h2>
               <button 
-                onClick={() => setIsAddingUser(false)} 
+                onClick={handleCancelAdd}
                 className="text-gray-500 hover:text-gray-700 transition-colors"
                 disabled={isSubmitting}
               >
                 <FaTimes size={24} />
               </button>
             </div>
+            {networkError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 text-red-700">
+                  <div className="text-red-700">
+                    <FaExclamationTriangle />
+                  </div>
+                  <span>{networkError}</span>
+                </div>
+              </div>
+            )}
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -771,7 +844,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
               <div id="clerk-captcha" className="w-full" />
               <div className="flex justify-end gap-4 mt-8">
                 <button
-                  onClick={() => setIsAddingUser(false)}
+                  onClick={handleCancelAdd}
                   className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300"
                   disabled={isSubmitting}
                 >
@@ -799,6 +872,37 @@ const UsersPage = ({ params }: UsersPageProps) => {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="text-yellow-500">
+                <FaExclamationTriangle />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800">Cancel Adding Adviser?</h2>
+            </div>
+            <p className="mb-8 text-gray-600">
+              The adviser is currently being added. Are you sure you want to cancel? This may leave the process in an incomplete state.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300"
+              >
+                Continue Adding
+              </button>
+              <button
+                onClick={handleConfirmCancel}
+                className="px-6 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors border-2 border-red-500"
+              >
+                Cancel Anyway
+              </button>
             </div>
           </div>
         </div>
