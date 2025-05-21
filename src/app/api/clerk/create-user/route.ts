@@ -23,10 +23,22 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ clerkId: user.id, password });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating user:", error);
+    
+    // Check for Clerk's duplicate email error
+    if (error.errors?.[0]?.message?.includes("email address exists") || 
+        error.errors?.[0]?.message?.includes("email_address_exists") ||
+        error.errors?.[0]?.message?.includes("email already exists")) {
+      return NextResponse.json(
+        { error: "This email is already registered in the system. Please use a different email address." },
+        { status: 400 }
+      );
+    }
+
+    // Return a more specific error message for other cases
     return NextResponse.json(
-      { error: "Failed to create user" },
+      { error: error.errors?.[0]?.message || "Failed to create user" },
       { status: 500 }
     );
   }
