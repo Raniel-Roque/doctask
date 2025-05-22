@@ -14,6 +14,7 @@ import { ValidationError } from "./components/ValidationError";
 import { Notification } from "./components/Notification";
 import { Adviser, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirection } from "./components/types";
 import { CancelConfirmation } from "./components/CancelConfirmation";
+import { ResetPasswordConfirmation } from "./components/ResetPasswordConfirmation";
 
 interface Notification {
   type: 'success' | 'error' | 'info';
@@ -40,7 +41,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [networkError, setNetworkError] = useState<string | null>(null);
+  const [editNetworkError, setEditNetworkError] = useState<string | null>(null);
+  const [deleteNetworkError, setDeleteNetworkError] = useState<string | null>(null);
+  const [addNetworkError, setAddNetworkError] = useState<string | null>(null);
+  const [resetPasswordNetworkError, setResetPasswordNetworkError] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     first_name: "",
     middle_name: "",
@@ -53,6 +57,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
     last_name: "",
     email: "",
   });
+  const [resetPasswordUser, setResetPasswordUser] = useState<Adviser | null>(null);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const updateUser = useMutation(api.documents.updateUser);
   const deleteUserMutation = useMutation(api.documents.deleteUser);
@@ -129,7 +135,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
 
     setIsSubmitting(true);
-    setNetworkError(null);
+    setEditNetworkError(null);
 
     try {
       // If email is changed, update in Clerk first
@@ -189,11 +195,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
       console.error("Error updating user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          setNetworkError("Request timed out. Please try again.");
+          setEditNetworkError("Request timed out. Please try again.");
         } else if (error.message.includes('Network error')) {
-          setNetworkError("Network error - please check your internet connection");
+          setEditNetworkError("Network error - please check your internet connection");
         } else {
-          setValidationError(error.message || "Failed to update adviser. Please try again.");
+          setValidationError(error.message);
         }
       } else {
         setValidationError("An unexpected error occurred. Please try again.");
@@ -207,7 +213,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     if (!deleteUser) return;
 
     setIsDeleting(true);
-    setNetworkError(null);
+    setDeleteNetworkError(null);
 
     try {
       // First delete from Clerk with timeout
@@ -251,9 +257,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
       console.error("Error deleting user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          setNetworkError("Request timed out. Please try again.");
+          setDeleteNetworkError("Request timed out. Please try again.");
         } else if (error.message.includes('Network error')) {
-          setNetworkError("Network error - please check your internet connection");
+          setDeleteNetworkError("Network error - please check your internet connection");
         } else {
           setNotification({
             type: 'error',
@@ -287,7 +293,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
 
     setIsSubmitting(true);
-    setNetworkError(null);
+    setAddNetworkError(null);
 
     try {
       // Create user in Clerk via server API with timeout
@@ -350,9 +356,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
       console.error("Error adding user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          setNetworkError("Request timed out. Please try again.");
+          setAddNetworkError("Request timed out. Please try again.");
         } else if (error.message.includes('Network error')) {
-          setNetworkError("Network error - please check your internet connection");
+          setAddNetworkError("Network error - please check your internet connection");
         } else {
           setValidationError(error.message || "Failed to add adviser. Please try again.");
         }
@@ -375,6 +381,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         last_name: "",
         email: "",
       });
+      setAddNetworkError(null);
     }
   };
 
@@ -388,6 +395,80 @@ const UsersPage = ({ params }: UsersPageProps) => {
       last_name: "",
       email: "",
     });
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser) return;
+
+    setIsResettingPassword(true);
+    setResetPasswordNetworkError(null);
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch("/api/clerk/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clerkId: resetPasswordUser.clerk_id,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to reset password");
+      }
+
+      const data = await response.json();
+      
+      // Update user in Convex with new Clerk ID
+      await updateUser({
+        userId: resetPasswordUser._id,
+        first_name: resetPasswordUser.first_name,
+        middle_name: resetPasswordUser.middle_name,
+        last_name: resetPasswordUser.last_name,
+        email: resetPasswordUser.email,
+        adminId: adminId as Id<"users">,
+        clerk_id: data.newClerkId,
+      });
+
+      // Reset password user state and close dialog
+      setResetPasswordUser(null);
+      setIsResettingPassword(false);
+      
+      // Refresh advisers list
+      await refreshAdvisers();
+      
+      // Show success message in banner
+      setNotification({
+        type: "success",
+        message: "Password has been reset successfully. The user will receive an email with their new password.",
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          setResetPasswordNetworkError("Request timed out. Please try again.");
+        } else {
+          setNotification({
+            type: "error",
+            message: error.message,
+          });
+        }
+      } else {
+        setNotification({
+          type: "error",
+          message: "An unexpected error occurred",
+        });
+      }
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   return (
@@ -418,6 +499,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onEdit={handleEdit}
           onDelete={setDeleteUser}
           onAdd={() => setIsAddingUser(true)}
+          onResetPassword={setResetPasswordUser}
         />
       </div>
 
@@ -425,7 +507,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         user={editingUser}
         formData={editFormData}
         isSubmitting={isSubmitting}
-        networkError={networkError}
+        networkError={editNetworkError}
         onClose={() => {
           setEditingUser(null);
           setEditFormData({
@@ -434,6 +516,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
             last_name: "",
             email: "",
           });
+          setEditNetworkError(null);
         }}
         onSubmit={handleEditSubmit}
         onFormDataChange={setEditFormData}
@@ -442,10 +525,13 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
       <DeleteConfirmation
         user={deleteUser}
-        onCancel={() => setDeleteUser(null)}
+        onCancel={() => {
+          setDeleteUser(null);
+          setDeleteNetworkError(null);
+        }}
         onConfirm={handleDeleteSubmit}
         isSubmitting={isDeleting}
-        networkError={networkError}
+        networkError={deleteNetworkError}
       />
 
       <ValidationError
@@ -457,7 +543,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       <AddForm
         isOpen={isAddingUser}
         isSubmitting={isSubmitting}
-        networkError={networkError}
+        networkError={addNetworkError}
         formData={addFormData}
         onClose={handleCancelAdd}
         onSubmit={handleAddSubmit}
@@ -470,6 +556,17 @@ const UsersPage = ({ params }: UsersPageProps) => {
         onContinue={() => setShowCancelConfirm(false)}
         onCancel={handleConfirmCancel}
         className="z-[55]"
+      />
+
+      <ResetPasswordConfirmation
+        user={resetPasswordUser}
+        onCancel={() => {
+          setResetPasswordUser(null);
+          setResetPasswordNetworkError(null);
+        }}
+        onConfirm={handleResetPassword}
+        isSubmitting={isResettingPassword}
+        networkError={resetPasswordNetworkError}
       />
     </div>
   );

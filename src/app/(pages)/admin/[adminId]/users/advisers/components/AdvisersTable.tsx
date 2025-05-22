@@ -1,5 +1,6 @@
 import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { Adviser, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
+import { ResetPasswordConfirmation } from "./ResetPasswordConfirmation";
 
 interface AdvisersTableProps {
   advisers: Adviser[];
@@ -15,6 +16,7 @@ interface AdvisersTableProps {
   onEdit: (adviser: Adviser) => void;
   onDelete: (adviser: Adviser) => void;
   onAdd: () => void;
+  onResetPassword: (adviser: Adviser) => void;
 }
 
 export const AdvisersTable = ({
@@ -31,6 +33,7 @@ export const AdvisersTable = ({
   onEdit,
   onDelete,
   onAdd,
+  onResetPassword,
 }: AdvisersTableProps) => {
   const getSortIcon = (field: SortField) => {
     if (field !== sortField) return <FaSort />;
@@ -204,7 +207,7 @@ export const AdvisersTable = ({
                     <button 
                       className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-full relative group"
                       title="Reset Password"
-                      onClick={() => alert("Password reset functionality is not available yet.")}
+                      onClick={() => onResetPassword(adviser)}
                     >
                       <FaKey />
                       <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity">

@@ -17,7 +17,15 @@ function generatePassword(firstName: string, lastName: string): string {
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
   
-  return `${firstInitial}${formattedLastName}${hours}${minutes}`;
+  // Generate base password
+  let password = `${firstInitial}${formattedLastName}${hours}${minutes}`;
+  
+  // If less than 8 characters, add random numbers until it's at least 8
+  while (password.length < 8) {
+    password += Math.floor(Math.random() * 10);
+  }
+  
+  return password;
 }
 
 export async function POST(request: Request) {
