@@ -38,6 +38,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const [notification, setNotification] = useState<Notification | null>(null);
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<EditFormData>({
@@ -148,11 +149,41 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const handleDeleteSubmit = async () => {
     if (!deleteUser) return;
 
+    setIsDeleting(true);
+    setNetworkError(null);
+
     try {
+      // First delete from Clerk with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      const clerkResponse = await fetch("/api/clerk/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clerkId: deleteUser.clerk_id,
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!clerkResponse.ok) {
+        if (clerkResponse.status === 0) {
+          throw new Error("Network error - please check your internet connection");
+        }
+        const errorData = await clerkResponse.json();
+        throw new Error(errorData.error || "Failed to delete user from Clerk");
+      }
+
+      // Then delete from Convex
       await deleteUserMutation({
         userId: deleteUser._id,
         adminId: adminId as Id<"users">,
       });
+
       setDeleteUser(null);
       await refreshAdvisers();
       setNotification({
@@ -161,10 +192,25 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
     } catch (error) {
       console.error("Error deleting user:", error);
-      setNotification({
-        type: 'error',
-        message: 'Failed to delete adviser. Please try again.'
-      });
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          setNetworkError("Request timed out. Please try again.");
+        } else if (error.message.includes('Network error')) {
+          setNetworkError("Network error - please check your internet connection");
+        } else {
+          setNotification({
+            type: 'error',
+            message: error.message || 'Failed to delete adviser. Please try again.'
+          });
+        }
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'An unexpected error occurred. Please try again.'
+        });
+      }
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -338,6 +384,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
         user={deleteUser}
         onCancel={() => setDeleteUser(null)}
         onConfirm={handleDeleteSubmit}
+        isSubmitting={isDeleting}
+        networkError={networkError}
       />
 
       <ValidationError
