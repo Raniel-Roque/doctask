@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 
+interface ClerkError {
+  errors?: Array<{
+    message?: string;
+  }>;
+}
+
 function generatePassword(firstName: string, lastName: string): string {
   const firstInitial = firstName.charAt(0).toUpperCase();
   const formattedLastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
@@ -23,13 +29,15 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ clerkId: user.id, password });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating user:", error);
     
+    const clerkError = error as ClerkError;
+    
     // Check for Clerk's duplicate email error
-    if (error.errors?.[0]?.message?.includes("email address exists") || 
-        error.errors?.[0]?.message?.includes("email_address_exists") ||
-        error.errors?.[0]?.message?.includes("email already exists")) {
+    if (clerkError.errors?.[0]?.message?.includes("email address exists") || 
+        clerkError.errors?.[0]?.message?.includes("email_address_exists") ||
+        clerkError.errors?.[0]?.message?.includes("email already exists")) {
       return NextResponse.json(
         { error: "This email is already registered in the system. Please use a different email address." },
         { status: 400 }
@@ -38,7 +46,7 @@ export async function POST(request: Request) {
 
     // Return a more specific error message for other cases
     return NextResponse.json(
-      { error: error.errors?.[0]?.message || "Failed to create user" },
+      { error: clerkError.errors?.[0]?.message || "Failed to create user" },
       { status: 500 }
     );
   }
