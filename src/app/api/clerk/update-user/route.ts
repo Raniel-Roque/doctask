@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       }
 
       const emailResponse = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'DocTask <noreply@doctask.com>',
+        from: 'DocTask <onboarding@resend.dev>',
         to: email,
         subject: 'Welcome to DocTask - Your Account Details',
         html: `

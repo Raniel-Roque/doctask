@@ -25,6 +25,25 @@ interface UsersPageProps {
   params: Promise<{ adminId: string }>;
 }
 
+interface LogDetails {
+  userId?: string;
+  userIds?: string[];
+  count?: number;
+  email?: string;
+  oldEmail?: string;
+  newEmail?: string;
+  firstName?: string;
+  lastName?: string;
+  error?: string;
+  changes?: {
+    firstName: boolean;
+    lastName: boolean;
+    email: boolean;
+  };
+  formData?: AddFormData;
+  user?: Adviser;
+}
+
 const UsersPage = ({ params }: UsersPageProps) => {
   const { adminId } = use(params);
   const [advisers, setAdvisers] = useState<Adviser[]>([]);
@@ -125,11 +144,19 @@ const UsersPage = ({ params }: UsersPageProps) => {
     });
   };
 
+  const logUserAction = (action: string, details: LogDetails) => {
+    console.log(`[User Action] ${action}:`, {
+      adminId,
+      ...details
+    });
+  };
+
   const handleEditSubmit = async () => {
     if (!editingUser) return;
 
     const error = validateEditForm(editFormData);
     if (error) {
+      logUserAction('Edit Validation Failed', { error, user: editingUser });
       setValidationError(error);
       return;
     }
@@ -138,6 +165,17 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setEditNetworkError(null);
 
     try {
+      logUserAction('Edit Started', { 
+        userId: editingUser._id,
+        oldEmail: editingUser.email,
+        newEmail: editFormData.email,
+        changes: {
+          firstName: editFormData.first_name !== editingUser.first_name,
+          lastName: editFormData.last_name !== editingUser.last_name,
+          email: editFormData.email !== editingUser.email
+        }
+      });
+
       // If email is changed, update in Clerk first
       if (editFormData.email !== editingUser.email) {
         const controller = new AbortController();
@@ -185,6 +223,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
         });
       }
 
+      logUserAction('Edit Success', { 
+        userId: editingUser._id,
+        newEmail: editFormData.email
+      });
+
       setEditingUser(null);
       await refreshAdvisers();
       setNotification({
@@ -192,6 +235,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
         message: 'Adviser information updated successfully'
       });
     } catch (error) {
+      logUserAction('Edit Failed', { 
+        userId: editingUser._id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       console.error("Error updating user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -216,6 +263,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setDeleteNetworkError(null);
 
     try {
+      logUserAction('Delete Started', { 
+        userId: deleteUser._id,
+        email: deleteUser.email
+      });
+
       // First delete from Clerk with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -247,6 +299,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
         adminId: adminId as Id<"users">,
       });
 
+      logUserAction('Delete Success', { 
+        userId: deleteUser._id,
+        email: deleteUser.email
+      });
+
       setDeleteUser(null);
       await refreshAdvisers();
       setNotification({
@@ -254,6 +311,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
         message: 'Adviser deleted successfully'
       });
     } catch (error) {
+      logUserAction('Delete Failed', { 
+        userId: deleteUser._id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       console.error("Error deleting user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -288,6 +349,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const handleAddSubmit = async () => {
     const error = validateAddForm(addFormData);
     if (error) {
+      logUserAction('Add Validation Failed', { error, formData: addFormData });
       setValidationError(error);
       return;
     }
@@ -296,6 +358,12 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setAddNetworkError(null);
 
     try {
+      logUserAction('Add Started', { 
+        email: addFormData.email,
+        firstName: addFormData.first_name,
+        lastName: addFormData.last_name
+      });
+
       // Create user in Clerk via server API with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -340,6 +408,12 @@ const UsersPage = ({ params }: UsersPageProps) => {
         adminId: adminId as Id<"users">,
       });
 
+      logUserAction('Add Success', { 
+        email: addFormData.email,
+        firstName: addFormData.first_name,
+        lastName: addFormData.last_name
+      });
+
       setIsAddingUser(false);
       setAddFormData({
         first_name: "",
@@ -353,6 +427,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
         message: 'Adviser added successfully'
       });
     } catch (error) {
+      logUserAction('Add Failed', { 
+        formData: addFormData,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       console.error("Error adding user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -404,6 +482,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setResetPasswordNetworkError(null);
 
     try {
+      logUserAction('Password Reset Started', { 
+        userId: resetPasswordUser._id,
+        email: resetPasswordUser.email
+      });
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -445,12 +528,20 @@ const UsersPage = ({ params }: UsersPageProps) => {
       // Refresh advisers list
       await refreshAdvisers();
       
-      // Show success message in banner
+      logUserAction('Password Reset Success', { 
+        userId: resetPasswordUser._id,
+        email: resetPasswordUser.email
+      });
+
       setNotification({
         type: "success",
         message: "Password has been reset successfully. The user will receive an email with their new password.",
       });
     } catch (error) {
+      logUserAction('Password Reset Failed', { 
+        userId: resetPasswordUser._id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       if (error instanceof Error) {
         if (error.name === "AbortError") {
           setResetPasswordNetworkError("Request timed out. Please try again.");

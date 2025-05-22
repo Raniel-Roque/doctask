@@ -1,16 +1,15 @@
 import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { Adviser, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
-import { ResetPasswordConfirmation } from "./ResetPasswordConfirmation";
 
 interface AdvisersTableProps {
   advisers: Adviser[];
   searchTerm: string;
-  statusFilter: string;
+  statusFilter: typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS];
   sortField: SortField;
   sortDirection: SortDirection;
   currentPage: number;
-  onSearchChange: (term: string) => void;
-  onStatusFilterChange: (filter: string) => void;
+  onSearchChange: (value: string) => void;
+  onStatusFilterChange: (value: typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]) => void;
   onSort: (field: SortField) => void;
   onPageChange: (page: number) => void;
   onEdit: (adviser: Adviser) => void;
@@ -105,7 +104,7 @@ export const AdvisersTable = ({
         <select 
           className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={statusFilter}
-          onChange={(e) => onStatusFilterChange(e.target.value)}
+          onChange={(e) => onStatusFilterChange(e.target.value as typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS])}
         >
           <option value={TABLE_CONSTANTS.STATUS_FILTERS.ALL}>All Status</option>
           <option value={TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED}>Verified</option>
@@ -115,7 +114,7 @@ export const AdvisersTable = ({
           onClick={onAdd}
           className="px-4 py-2 bg-[#B54A4A] text-white rounded-lg hover:bg-[#9a3d3d] flex items-center gap-2"
         >
-          <FaPlus /> Add
+          <FaPlus /> Add Adviser
         </button>
       </div>
       <div className="overflow-x-auto">

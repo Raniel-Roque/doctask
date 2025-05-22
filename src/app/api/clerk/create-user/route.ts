@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     // Send welcome email using Resend
     await resend.emails.send({
-      from: 'DocTask <onboarding@resend.dev>', //SHARED TEMP DOMAIN
+      from: 'DocTask <onboarding@resend.dev>',
       to: email,
       subject: 'Welcome to DocTask - Your Account Details',
       html: `
