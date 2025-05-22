@@ -40,6 +40,7 @@ export const updateUser = mutation({
     email: v.string(),
     adminId: v.id("users"),
     clerk_id: v.optional(v.string()),
+    isPasswordReset: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -74,7 +75,7 @@ export const updateUser = mutation({
     // Log the action
     await ctx.db.insert("adminLogs", {
       admin_id: args.adminId,
-      action: "edit_user",
+      action: args.isPasswordReset ? "reset_password" : "edit_user",
       target_user_id: args.userId,
       details: JSON.stringify({
         previous: {
@@ -86,7 +87,6 @@ export const updateUser = mutation({
         },
         new: updates,
       }),
-      timestamp: Date.now(),
     });
 
     return { success: true };
@@ -115,7 +115,6 @@ export const deleteUser = mutation({
           email: user.email,
         },
       }),
-      timestamp: Date.now(),
     });
 
     await ctx.db.delete(args.userId);
@@ -176,7 +175,6 @@ export const createUser = mutation({
             role: args.role,
           },
         }),
-        timestamp: Date.now(),
       });
 
       return { success: true, userId };

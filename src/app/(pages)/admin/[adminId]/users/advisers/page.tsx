@@ -482,13 +482,13 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setResetPasswordNetworkError(null);
 
     try {
-      logUserAction('Password Reset Started', { 
+      logUserAction("reset_password_started", { 
         userId: resetPasswordUser._id,
         email: resetPasswordUser.email
       });
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       const response = await fetch("/api/clerk/reset-password", {
         method: "POST",
@@ -503,12 +503,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
       clearTimeout(timeoutId);
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || "Failed to reset password");
       }
-
-      const data = await response.json();
       
       // Update user in Convex with new Clerk ID
       await updateUser({
@@ -519,6 +518,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         email: resetPasswordUser.email,
         adminId: adminId as Id<"users">,
         clerk_id: data.newClerkId,
+        isPasswordReset: true,
       });
 
       // Reset password user state and close dialog
@@ -528,7 +528,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       // Refresh advisers list
       await refreshAdvisers();
       
-      logUserAction('Password Reset Success', { 
+      logUserAction("reset_password_success", { 
         userId: resetPasswordUser._id,
         email: resetPasswordUser.email
       });
@@ -538,7 +538,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         message: "Password has been reset successfully. The user will receive an email with their new password.",
       });
     } catch (error) {
-      logUserAction('Password Reset Failed', { 
+      logUserAction("reset_password_failed", { 
         userId: resetPasswordUser._id,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
