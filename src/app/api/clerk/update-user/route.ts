@@ -22,18 +22,23 @@ function generatePassword(firstName: string, lastName: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { email, firstName, lastName } = await request.json();
+    const { clerkId, email, firstName, lastName } = await request.json();
     const password = generatePassword(firstName, lastName);
 
     const client = await clerkClient();
-    const user = await client.users.createUser({
+    
+    // Delete old user from Clerk
+    await client.users.deleteUser(clerkId);
+
+    // Create new user in Clerk
+    const newUser = await client.users.createUser({
       emailAddress: [email],
       password,
     });
 
     // Send welcome email using Resend
     await resend.emails.send({
-      from: 'DocTask <onboarding@resend.dev>', //SHARED TEMP DOMAIN
+      from: 'DocTask <onboarding@resend.dev>',
       to: email,
       subject: 'Welcome to DocTask - Your Account Details',
       html: `
@@ -66,9 +71,12 @@ export async function POST(request: Request) {
       `,
     });
 
-    return NextResponse.json({ clerkId: user.id });
+    return NextResponse.json({ 
+      success: true,
+      newClerkId: newUser.id 
+    });
   } catch (error: unknown) {
-    console.error("Error creating user:", error);
+    console.error("Error updating user:", error);
     
     const clerkError = error as ClerkError;
     
@@ -84,8 +92,8 @@ export async function POST(request: Request) {
 
     // Return a more specific error message for other cases
     return NextResponse.json(
-      { error: clerkError.errors?.[0]?.message || "Failed to create user" },
+      { error: clerkError.errors?.[0]?.message || "Failed to update user" },
       { status: 500 }
     );
   }
-}
+} 

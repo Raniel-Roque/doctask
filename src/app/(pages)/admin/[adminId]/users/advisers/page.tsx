@@ -128,12 +128,57 @@ const UsersPage = ({ params }: UsersPageProps) => {
       return;
     }
 
+    setIsSubmitting(true);
+    setNetworkError(null);
+
     try {
-      await updateUser({
-        userId: editingUser._id,
-        adminId: adminId as Id<"users">,
-        ...editFormData,
-      });
+      // If email is changed, update in Clerk first
+      if (editFormData.email !== editingUser.email) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+        const response = await fetch("/api/clerk/update-user", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            clerkId: editingUser.clerk_id,
+            email: editFormData.email,
+            firstName: editFormData.first_name,
+            lastName: editFormData.last_name,
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          if (response.status === 0) {
+            throw new Error("Network error - please check your internet connection");
+          }
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to update user email");
+        }
+
+        const { newClerkId } = await response.json();
+
+        // Update in Convex with new Clerk ID
+        await updateUser({
+          userId: editingUser._id,
+          adminId: adminId as Id<"users">,
+          clerk_id: newClerkId,
+          ...editFormData,
+        });
+      } else {
+        // If email not changed, just update other fields
+        await updateUser({
+          userId: editingUser._id,
+          adminId: adminId as Id<"users">,
+          ...editFormData,
+        });
+      }
+
       setEditingUser(null);
       await refreshAdvisers();
       setNotification({
@@ -142,7 +187,19 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
     } catch (error) {
       console.error("Error updating user:", error);
-      setValidationError("Failed to update user. Please try again.");
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          setNetworkError("Request timed out. Please try again.");
+        } else if (error.message.includes('Network error')) {
+          setNetworkError("Network error - please check your internet connection");
+        } else {
+          setValidationError(error.message || "Failed to update adviser. Please try again.");
+        }
+      } else {
+        setValidationError("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -367,6 +424,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
       <EditForm
         user={editingUser}
         formData={editFormData}
+        isSubmitting={isSubmitting}
+        networkError={networkError}
         onClose={() => {
           setEditingUser(null);
           setEditFormData({
@@ -378,6 +437,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         }}
         onSubmit={handleEditSubmit}
         onFormDataChange={setEditFormData}
+        className="z-[50]"
       />
 
       <DeleteConfirmation

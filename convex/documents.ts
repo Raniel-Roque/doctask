@@ -39,6 +39,7 @@ export const updateUser = mutation({
     last_name: v.string(),
     email: v.string(),
     adminId: v.id("users"),
+    clerk_id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -50,6 +51,7 @@ export const updateUser = mutation({
       email: string;
       middle_name?: string;
       email_verified?: boolean;
+      clerk_id?: string;
     } = {
       first_name: args.first_name,
       last_name: args.last_name,
@@ -60,8 +62,10 @@ export const updateUser = mutation({
       updates.middle_name = args.middle_name;
     }
 
-    // If email is changed, set email_verified to false
-    if (args.email !== user.email) {
+    if (args.clerk_id !== undefined) {
+      updates.clerk_id = args.clerk_id;
+      updates.email_verified = false;
+    } else if (args.email !== user.email) {
       updates.email_verified = false;
     }
 
@@ -78,6 +82,7 @@ export const updateUser = mutation({
           middle_name: user.middle_name,
           last_name: user.last_name,
           email: user.email,
+          clerk_id: user.clerk_id,
         },
         new: updates,
       }),
