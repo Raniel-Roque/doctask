@@ -1,5 +1,7 @@
+import React from "react";
 import { FaPlus, FaTimes, FaExclamationTriangle } from "react-icons/fa";
 import { AddFormData } from "./types";
+import { sanitizeInput, validateUserForm } from "../../utils/validation";
 
 // =========================================
 // Types
@@ -30,13 +32,18 @@ export const AddForm = ({
   className = "",
   isStudent = false,
 }: AddFormProps) => {
-  if (!isOpen) return null;
+  // =========================================
+  // State
+  // =========================================
+  const [validationErrors, setValidationErrors] = React.useState<{ [key: string]: string }>({});
 
   // =========================================
   // Event Handlers
   // =========================================
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    const sanitizedValue = sanitizeInput(value);
+    
     if (name === 'subrole') {
       onFormDataChange({
         ...formData,
@@ -45,10 +52,34 @@ export const AddForm = ({
     } else {
       onFormDataChange({
         ...formData,
-        [name]: value,
+        [name]: sanitizedValue,
+      });
+    }
+
+    // Clear validation error for this field when user types
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
       });
     }
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    const errors = validateUserForm(formData);
+    if (errors) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    onSubmit();
+  };
+
+  if (!isOpen) return null;
 
   // =========================================
   // Render
@@ -71,7 +102,7 @@ export const AddForm = ({
           </button>
         </div>
 
-        {/* Error Message */}
+        {/* Error Messages */}
         {networkError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
@@ -84,7 +115,7 @@ export const AddForm = ({
         )}
 
         {/* Form */}
-        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -97,10 +128,15 @@ export const AddForm = ({
               value={formData.first_name}
               onChange={handleChange}
               placeholder="Enter first name"
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              className={`w-full px-4 py-2 rounded-lg border-2 ${
+                validationErrors.first_name ? 'border-red-500' : 'border-gray-300'
+              } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
               required
               disabled={isSubmitting}
             />
+            {validationErrors.first_name && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.first_name}</p>
+            )}
           </div>
 
           {/* Middle Name */}
@@ -115,9 +151,14 @@ export const AddForm = ({
               value={formData.middle_name}
               onChange={handleChange}
               placeholder="Enter middle name (optional)"
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              className={`w-full px-4 py-2 rounded-lg border-2 ${
+                validationErrors.middle_name ? 'border-red-500' : 'border-gray-300'
+              } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
               disabled={isSubmitting}
             />
+            {validationErrors.middle_name && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.middle_name}</p>
+            )}
           </div>
 
           {/* Last Name */}
@@ -132,10 +173,15 @@ export const AddForm = ({
               value={formData.last_name}
               onChange={handleChange}
               placeholder="Enter last name"
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              className={`w-full px-4 py-2 rounded-lg border-2 ${
+                validationErrors.last_name ? 'border-red-500' : 'border-gray-300'
+              } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
               required
               disabled={isSubmitting}
             />
+            {validationErrors.last_name && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.last_name}</p>
+            )}
           </div>
 
           {/* Email */}
@@ -150,10 +196,15 @@ export const AddForm = ({
               value={formData.email}
               onChange={handleChange}
               placeholder="Enter email address"
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              className={`w-full px-4 py-2 rounded-lg border-2 ${
+                validationErrors.email ? 'border-red-500' : 'border-gray-300'
+              } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
               required
               disabled={isSubmitting}
             />
+            {validationErrors.email && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+            )}
           </div>
 
           {/* Role Selection (for students only) */}

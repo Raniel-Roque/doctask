@@ -135,7 +135,7 @@ export const UserTable = ({
   // Render
   // =========================================
   return (
-    <div className="px-6 mt-4">
+    <div className="mt-4">
       {/* Search and Filters */}
       <div className="mb-4 flex gap-4">
         <div className="flex-1 relative">
@@ -275,19 +275,12 @@ export const UserTable = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="flex justify-center gap-2">
-                    <button
+                    <button 
                       onClick={() => onEdit(user)}
                       className="p-2 text-blue-600 hover:text-blue-800"
-                      title="Edit"
+                      title="Edit User"
                     >
                       <FaEdit />
-                    </button>
-                    <button
-                      onClick={() => onDelete(user)}
-                      className="p-2 text-red-600 hover:text-red-800"
-                      title="Delete"
-                    >
-                      <FaTrash />
                     </button>
                     <button
                       onClick={() => onResetPassword(user)}
@@ -295,6 +288,13 @@ export const UserTable = ({
                       title="Reset Password"
                     >
                       <FaKey />
+                    </button>
+                    <button 
+                      onClick={() => onDelete(user)}
+                      className="p-2 text-red-600 hover:text-red-800"
+                      title="Delete User"
+                    >
+                      <FaTrash />
                     </button>
                   </div>
                 </td>
@@ -308,30 +308,30 @@ export const UserTable = ({
       <div className="mt-4 flex items-center justify-between">
         <div className="text-sm text-gray-700">
           Showing {startEntry} to {endEntry} of {totalEntries} entries
-        </div>
+          </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
             className={`px-3 py-1 rounded ${
-              currentPage === 1
+                currentPage === 1
                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 : 'bg-[#B54A4A] text-white hover:bg-[#9a3d3d]'
-            }`}
-          >
-            <FaChevronLeft />
-          </button>
-          <button
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
+              }`}
+            >
+              <FaChevronLeft />
+            </button>
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
             className={`px-3 py-1 rounded ${
-              currentPage === totalPages
+                currentPage === totalPages
                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 : 'bg-[#B54A4A] text-white hover:bg-[#9a3d3d]'
-            }`}
-          >
-            <FaChevronRight />
-          </button>
+              }`}
+            >
+              <FaChevronRight />
+            </button>
         </div>
       </div>
     </div>

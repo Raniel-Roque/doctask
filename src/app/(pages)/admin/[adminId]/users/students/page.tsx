@@ -550,9 +550,12 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar adminId={adminId} />
+        <Navbar adminId={adminId} />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Students</h1>
+        <div className="mb-6">
+            <h1 className="text-3xl font-bold">Students Table</h1>
+            <p className="text-muted-foreground">View, add, update, and manage all registered students.</p>
+        </div>
         
         {/* User Table */}
         <UserTable
@@ -601,38 +604,38 @@ const UsersPage = ({ params }: UsersPageProps) => {
         />
 
         {/* Edit Form */}
-        <EditForm
-          user={editingUser}
-          formData={editFormData}
-          isSubmitting={isSubmitting}
-          networkError={editNetworkError}
-          onClose={() => {
+      <EditForm
+        user={editingUser}
+        formData={editFormData}
+        isSubmitting={isSubmitting}
+        networkError={editNetworkError}
+        onClose={() => {
             if (isSubmitting) {
               setShowCancelConfirm(true);
             } else {
-              setEditingUser(null);
-              setEditFormData({
-                first_name: "",
-                middle_name: "",
-                last_name: "",
-                email: "",
-                subrole: 0,
-              });
+          setEditingUser(null);
+          setEditFormData({
+            first_name: "",
+            middle_name: "",
+            last_name: "",
+            email: "",
+            subrole: 0,
+          });
             }
-          }}
-          onSubmit={handleEditSubmit}
-          onFormDataChange={setEditFormData}
-          isStudent={true}
-        />
+        }}
+        onSubmit={handleEditSubmit}
+        onFormDataChange={setEditFormData}
+        isStudent={true}
+      />
 
         {/* Delete Confirmation */}
-        <DeleteConfirmation
-          user={deleteUser}
+      <DeleteConfirmation
+        user={deleteUser}
           onCancel={() => setDeleteUser(null)}
-          onConfirm={handleDeleteSubmit}
-          isSubmitting={isDeleting}
-          networkError={deleteNetworkError}
-        />
+        onConfirm={handleDeleteSubmit}
+        isSubmitting={isDeleting}
+        networkError={deleteNetworkError}
+      />
 
         {/* Reset Password Confirmation */}
         <ResetPasswordConfirmation
@@ -644,9 +647,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
         />
 
         {/* Validation Error */}
-        <ValidationError
-          error={validationError}
-          onClose={() => setValidationError(null)}
+      <ValidationError
+        error={validationError}
+        onClose={() => setValidationError(null)}
         />
 
         {/* Notification */}
@@ -659,13 +662,13 @@ const UsersPage = ({ params }: UsersPageProps) => {
         <SuccessBanner
           message={successMessage}
           onClose={() => setSuccessMessage(null)}
-        />
+      />
 
         {/* Cancel Confirmation */}
-        <CancelConfirmation
-          isOpen={showCancelConfirm}
-          onContinue={() => setShowCancelConfirm(false)}
-          onCancel={() => {
+      <CancelConfirmation
+        isOpen={showCancelConfirm}
+        onContinue={() => setShowCancelConfirm(false)}
+        onCancel={() => {
             setShowCancelConfirm(false);
             setIsAddingUser(false);
             setEditingUser(null);
@@ -685,7 +688,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
             });
             setIsSubmitting(false);
           }}
-        />
+      />
       </div>
     </div>
   );

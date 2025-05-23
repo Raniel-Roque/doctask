@@ -2,6 +2,9 @@ import { format } from "date-fns";
 import { FaChevronLeft, FaChevronRight, FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { useState } from "react";
 
+// =========================================
+// Types
+// =========================================
 interface Log {
     _id: string;
     name: string;
@@ -18,11 +21,50 @@ interface LogTableProps {
 type SortField = "timestamp" | "action";
 type SortDirection = "asc" | "desc";
 
+// =========================================
+// Constants
+// =========================================
+const LOG_ACTIONS = {
+    ALL: "All Actions",
+    CREATE_USER: "Create User",
+    EDIT_USER: "Edit User",
+    DELETE_USER: "Delete User",
+    RESET_PASSWORD: "Reset Password"
+} as const;
+
+const ACTION_COLORS = {
+    [LOG_ACTIONS.CREATE_USER]: {
+        bg: 'bg-green-100',
+        text: 'text-green-800'
+    },
+    [LOG_ACTIONS.EDIT_USER]: {
+        bg: 'bg-blue-100',
+        text: 'text-blue-800'
+    },
+    [LOG_ACTIONS.DELETE_USER]: {
+        bg: 'bg-red-100',
+        text: 'text-red-800'
+    },
+    [LOG_ACTIONS.RESET_PASSWORD]: {
+        bg: 'bg-yellow-100',
+        text: 'text-yellow-800'
+    },
+    // Default colors for any new actions
+    default: {
+        bg: 'bg-gray-100',
+        text: 'text-gray-800'
+    }
+} as const;
+
+// =========================================
+// Component
+// =========================================
 export const LogTable = ({ logs }: LogTableProps) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortField, setSortField] = useState<SortField>("timestamp");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [currentPage, setCurrentPage] = useState(1);
+    const [actionFilter, setActionFilter] = useState<typeof LOG_ACTIONS[keyof typeof LOG_ACTIONS]>(LOG_ACTIONS.ALL);
 
     const getSortIcon = (field: SortField) => {
         if (field !== sortField) return <FaSort />;
@@ -40,11 +82,15 @@ export const LogTable = ({ logs }: LogTableProps) => {
 
     const filterAndSortLogs = () => {
         const filtered = logs.filter((log) => {
-            return searchTerm === "" ||
+            const matchesSearch = searchTerm === "" ||
                 log.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.affectedUser.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.details.toLowerCase().includes(searchTerm.toLowerCase());
+
+            const matchesAction = actionFilter === LOG_ACTIONS.ALL || log.action === actionFilter;
+
+            return matchesSearch && matchesAction;
         });
 
         filtered.sort((a, b) => {
@@ -64,7 +110,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
     };
 
     const getPaginationInfo = (logs: Log[]) => {
-        const entriesPerPage = 10;
+        const entriesPerPage = 5;
         const totalEntries = logs.length;
         const totalPages = Math.ceil(totalEntries / entriesPerPage);
         const startEntry = (currentPage - 1) * entriesPerPage + 1;
@@ -80,11 +126,16 @@ export const LogTable = ({ logs }: LogTableProps) => {
         };
     };
 
+    const getActionColors = (action: string) => {
+        const colors = ACTION_COLORS[action as keyof typeof ACTION_COLORS] || ACTION_COLORS.default;
+        return `${colors.bg} ${colors.text}`;
+    };
+
     const filteredAndSortedLogs = filterAndSortLogs();
     const { totalEntries, totalPages, startEntry, endEntry, paginatedLogs } = getPaginationInfo(filteredAndSortedLogs);
 
     return (
-        <div className="px-6 mt-4">
+        <div className="mt-4">
             <div className="mb-4 flex gap-4">
                 <div className="flex-1 relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
@@ -98,6 +149,17 @@ export const LogTable = ({ logs }: LogTableProps) => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
+                <select 
+                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={actionFilter}
+                    onChange={(e) => setActionFilter(e.target.value as typeof LOG_ACTIONS[keyof typeof LOG_ACTIONS])}
+                >
+                    {Object.values(LOG_ACTIONS).map((action) => (
+                        <option key={action} value={action}>
+                            {action}
+                        </option>
+                    ))}
+                </select>
             </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border border-gray-200">
@@ -106,14 +168,8 @@ export const LogTable = ({ logs }: LogTableProps) => {
                             <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
                                 Name
                             </th>
-                            <th 
-                                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
-                                onClick={() => handleSort("action")}
-                            >
-                                <div className="flex items-center justify-center">
-                                    Action
-                                    <span className="ml-1">{getSortIcon("action")}</span>
-                                </div>
+                            <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                                Action
                             </th>
                             <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
                                 Affected User
@@ -138,23 +194,15 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     {log.name}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                        log.action === "Delete User" 
-                                            ? 'bg-red-100 text-red-800'
-                                            : log.action === "Edit User"
-                                            ? 'bg-blue-100 text-blue-800'
-                                            : log.action === "Reset Password"
-                                            ? 'bg-yellow-100 text-yellow-800'
-                                            : 'bg-green-100 text-green-800'
-                                    }`}>
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
                                         {log.action}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     {log.affectedUser}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-6 py-4 max-w-md break-words">
                                     {log.details}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
