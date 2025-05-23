@@ -1,6 +1,9 @@
 import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 
+// =========================================
+// Types
+// =========================================
 interface UserTableProps {
   users: User[];
   searchTerm: string;
@@ -21,6 +24,9 @@ interface UserTableProps {
   showRoleColumn?: boolean;
 }
 
+// =========================================
+// Component
+// =========================================
 export const UserTable = ({
   users,
   searchTerm,
@@ -40,6 +46,9 @@ export const UserTable = ({
   onResetPassword,
   showRoleColumn = false,
 }: UserTableProps) => {
+  // =========================================
+  // Helper Functions
+  // =========================================
   const getSortIcon = (field: SortField) => {
     if (field !== sortField) return <FaSort />;
     return sortDirection === "asc" ? <FaSortUp /> : <FaSortDown />;
@@ -56,6 +65,9 @@ export const UserTable = ({
     }
   };
 
+  // =========================================
+  // Data Processing
+  // =========================================
   const filterAndSortUsers = () => {
     const filtered = users.filter((user) => {
       const matchesSearch = searchTerm === "" ||
@@ -113,11 +125,18 @@ export const UserTable = ({
     };
   };
 
+  // =========================================
+  // Data Processing Results
+  // =========================================
   const filteredAndSortedUsers = filterAndSortUsers();
   const { totalEntries, totalPages, startEntry, endEntry, paginatedUsers } = getPaginationInfo(filteredAndSortedUsers);
 
+  // =========================================
+  // Render
+  // =========================================
   return (
     <div className="px-6 mt-4">
+      {/* Search and Filters */}
       <div className="mb-4 flex gap-4">
         <div className="flex-1 relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
@@ -158,6 +177,8 @@ export const UserTable = ({
           <FaPlus /> Add User
         </button>
       </div>
+
+      {/* Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-200">
           <thead>
@@ -250,39 +271,30 @@ export const UserTable = ({
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  {new Date(user._creationTime).toISOString().split('T')[0]}
+                  {new Date(user._creationTime).toLocaleString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center justify-center gap-2">
-                    <button 
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <div className="flex justify-center gap-2">
+                    <button
                       onClick={() => onEdit(user)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-full relative group"
+                      className="p-2 text-blue-600 hover:text-blue-800"
                       title="Edit"
                     >
                       <FaEdit />
-                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                        Edit
-                      </span>
                     </button>
-                    <button 
-                      className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-full relative group"
-                      title="Reset Password"
-                      onClick={() => onResetPassword(user)}
-                    >
-                      <FaKey />
-                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                        Reset Password
-                      </span>
-                    </button>
-                    <button 
+                    <button
                       onClick={() => onDelete(user)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-full relative group"
+                      className="p-2 text-red-600 hover:text-red-800"
                       title="Delete"
                     >
                       <FaTrash />
-                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                        Delete
-                      </span>
+                    </button>
+                    <button
+                      onClick={() => onResetPassword(user)}
+                      className="p-2 text-yellow-600 hover:text-yellow-800"
+                      title="Reset Password"
+                    >
+                      <FaKey />
                     </button>
                   </div>
                 </td>
@@ -290,40 +302,36 @@ export const UserTable = ({
             ))}
           </tbody>
         </table>
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-          <div className="flex items-center">
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}
-              <span className="font-medium">{totalEntries}</span> entries
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`p-2 rounded-md ${
-                currentPage === 1
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <FaChevronLeft />
-            </button>
-            <span className="text-sm text-gray-700">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className={`p-2 rounded-md ${
-                currentPage === totalPages
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <FaChevronRight />
-            </button>
-          </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="text-sm text-gray-700">
+          Showing {startEntry} to {endEntry} of {totalEntries} entries
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-3 py-1 rounded ${
+              currentPage === 1
+                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                : 'bg-[#B54A4A] text-white hover:bg-[#9a3d3d]'
+            }`}
+          >
+            <FaChevronLeft />
+          </button>
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1 rounded ${
+              currentPage === totalPages
+                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                : 'bg-[#B54A4A] text-white hover:bg-[#9a3d3d]'
+            }`}
+          >
+            <FaChevronRight />
+          </button>
         </div>
       </div>
     </div>

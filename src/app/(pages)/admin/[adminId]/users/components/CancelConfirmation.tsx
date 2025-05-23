@@ -1,5 +1,8 @@
 import { FaExclamationTriangle } from "react-icons/fa";
 
+// =========================================
+// Types
+// =========================================
 interface CancelConfirmationProps {
   isOpen: boolean;
   onContinue: () => void;
@@ -7,6 +10,9 @@ interface CancelConfirmationProps {
   className?: string;
 }
 
+// =========================================
+// Component
+// =========================================
 export const CancelConfirmation = ({
   isOpen,
   onContinue,
@@ -15,16 +21,24 @@ export const CancelConfirmation = ({
 }: CancelConfirmationProps) => {
   if (!isOpen) return null;
 
+  // =========================================
+  // Render
+  // =========================================
   return (
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${className}`}>
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <FaExclamationTriangle />
           <h3 className="text-lg font-semibold">Unsaved Changes</h3>
         </div>
+
+        {/* Warning Message */}
         <p className="text-gray-600 mb-6">
           You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
         </p>
+
+        {/* Action Buttons */}
         <div className="flex justify-end gap-4">
           <button
             onClick={onContinue}

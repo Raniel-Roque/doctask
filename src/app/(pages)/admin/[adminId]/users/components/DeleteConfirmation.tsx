@@ -1,6 +1,9 @@
 import { FaExclamationTriangle } from "react-icons/fa";
 import { User } from "./types";
 
+// =========================================
+// Types
+// =========================================
 interface DeleteConfirmationProps {
   user: User | null;
   onCancel: () => void;
@@ -9,6 +12,9 @@ interface DeleteConfirmationProps {
   networkError: string | null;
 }
 
+// =========================================
+// Component
+// =========================================
 export const DeleteConfirmation = ({ 
   user, 
   onCancel, 
@@ -18,13 +24,19 @@ export const DeleteConfirmation = ({
 }: DeleteConfirmationProps) => {
   if (!user) return null;
 
+  // =========================================
+  // Render
+  // =========================================
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+        {/* Header */}
         <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
           <FaExclamationTriangle />
           Confirm Delete
         </h2>
+
+        {/* Error Message */}
         {networkError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
@@ -33,9 +45,13 @@ export const DeleteConfirmation = ({
             </div>
           </div>
         )}
+
+        {/* Confirmation Message */}
         <p className="mb-8 text-gray-600">
           Are you sure you want to delete {user.first_name} {user.last_name}? This action cannot be undone.
         </p>
+
+        {/* Action Buttons */}
         <div className="flex justify-end gap-4">
           <button
             onClick={onCancel}

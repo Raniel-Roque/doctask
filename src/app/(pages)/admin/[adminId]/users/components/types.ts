@@ -1,5 +1,8 @@
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 
+// =========================================
+// User Types
+// =========================================
 export interface User {
   _id: Id<"users">;
   _creationTime: number;
@@ -13,6 +16,9 @@ export interface User {
   subrole?: number;
 }
 
+// =========================================
+// Form Types
+// =========================================
 export interface EditFormData {
   first_name: string;
   middle_name: string;
@@ -29,11 +35,17 @@ export interface AddFormData {
   subrole?: number;
 }
 
+// =========================================
+// Notification Types
+// =========================================
 export interface Notification {
   type: "error";
   message: string;
 }
 
+// =========================================
+// Log Types
+// =========================================
 export interface LogDetails {
   userId?: string;
   email?: string;
@@ -53,6 +65,9 @@ export interface LogDetails {
   user?: User;
 }
 
+// =========================================
+// Table Constants
+// =========================================
 export const TABLE_CONSTANTS = {
   STATUS_FILTERS: {
     ALL: "all",
@@ -69,5 +84,8 @@ export const TABLE_CONSTANTS = {
   ITEMS_PER_PAGE: 10,
 } as const;
 
+// =========================================
+// Table Types
+// =========================================
 export type SortField = "first_name" | "last_name" | "email" | "_creationTime";
 export type SortDirection = "asc" | "desc"; 

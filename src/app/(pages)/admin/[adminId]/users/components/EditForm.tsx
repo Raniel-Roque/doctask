@@ -1,6 +1,9 @@
 import { FaEdit, FaTimes, FaExclamationTriangle } from "react-icons/fa";
 import { User, EditFormData } from "./types";
 
+// =========================================
+// Types
+// =========================================
 interface EditFormProps {
   user: User | null;
   formData: EditFormData;
@@ -13,6 +16,9 @@ interface EditFormProps {
   isStudent?: boolean;
 }
 
+// =========================================
+// Component
+// =========================================
 export const EditForm = ({
   user,
   formData,
@@ -26,6 +32,9 @@ export const EditForm = ({
 }: EditFormProps) => {
   if (!user) return null;
 
+  // =========================================
+  // Event Handlers
+  // =========================================
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === 'subrole') {
@@ -41,9 +50,13 @@ export const EditForm = ({
     }
   };
 
+  // =========================================
+  // Render
+  // =========================================
   return (
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${className}`}>
       <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <FaEdit />
@@ -57,6 +70,8 @@ export const EditForm = ({
             <FaTimes size={24} />
           </button>
         </div>
+
+        {/* Error Message */}
         {networkError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
@@ -67,7 +82,10 @@ export const EditForm = ({
             </div>
           </div>
         )}
+
+        {/* Form */}
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-4">
+          {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               First Name <span className="text-red-500">*</span>
@@ -84,6 +102,8 @@ export const EditForm = ({
               disabled={isSubmitting}
             />
           </div>
+
+          {/* Middle Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Middle Name
@@ -99,6 +119,8 @@ export const EditForm = ({
               disabled={isSubmitting}
             />
           </div>
+
+          {/* Last Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Last Name <span className="text-red-500">*</span>
@@ -115,6 +137,8 @@ export const EditForm = ({
               disabled={isSubmitting}
             />
           </div>
+
+          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email <span className="text-red-500">*</span>
@@ -131,6 +155,8 @@ export const EditForm = ({
               disabled={isSubmitting}
             />
           </div>
+
+          {/* Role Selection (for students only) */}
           {isStudent && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -148,6 +174,8 @@ export const EditForm = ({
               </select>
             </div>
           )}
+
+          {/* Form Actions */}
           <div className="flex justify-end gap-4 mt-8">
             <button
               onClick={onClose}

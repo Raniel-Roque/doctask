@@ -1,6 +1,9 @@
 import { FaExclamationTriangle, FaKey } from "react-icons/fa";
 import { User } from "./types";
 
+// =========================================
+// Types
+// =========================================
 interface ResetPasswordConfirmationProps {
   user: User | null;
   onCancel: () => void;
@@ -9,6 +12,9 @@ interface ResetPasswordConfirmationProps {
   networkError: string | null;
 }
 
+// =========================================
+// Component
+// =========================================
 export const ResetPasswordConfirmation = ({
   user,
   onCancel,
@@ -18,14 +24,19 @@ export const ResetPasswordConfirmation = ({
 }: ResetPasswordConfirmationProps) => {
   if (!user) return null;
 
+  // =========================================
+  // Render
+  // =========================================
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <FaExclamationTriangle />
           <h3 className="text-lg font-semibold">Reset Password Confirmation</h3>
         </div>
 
+        {/* User Information */}
         <div className="mb-6">
           <p className="text-gray-600 mb-2">
             You are about to reset the password for:
@@ -37,6 +48,7 @@ export const ResetPasswordConfirmation = ({
           <p className="text-gray-600">{user.email}</p>
         </div>
 
+        {/* Reset Information */}
         <div className="mb-6">
           <p className="text-gray-600">
             A new temporary password will be generated and sent to the user&apos;s email address. 
@@ -44,12 +56,14 @@ export const ResetPasswordConfirmation = ({
           </p>
         </div>
 
+        {/* Error Message */}
         {networkError && (
           <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
             {networkError}
           </div>
         )}
 
+        {/* Action Buttons */}
         <div className="flex justify-end gap-4">
           <button
             onClick={onCancel}

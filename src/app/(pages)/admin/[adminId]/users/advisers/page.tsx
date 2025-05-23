@@ -17,11 +17,20 @@ import { CancelConfirmation } from "../components/CancelConfirmation";
 import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
 import { SuccessBanner } from "../components/SuccessBanner";
 
+// =========================================
+// Types
+// =========================================
 interface UsersPageProps {
   params: Promise<{ adminId: string }>;
 }
 
+// =========================================
+// Component
+// =========================================
 const UsersPage = ({ params }: UsersPageProps) => {
+  // =========================================
+  // State
+  // =========================================
   const { adminId } = use(params);
   const [advisers, setAdvisers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,10 +66,16 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
+  // =========================================
+  // Mutations
+  // =========================================
   const updateUser = useMutation(api.documents.updateUser);
   const deleteUserMutation = useMutation(api.documents.deleteUser);
   const createUser = useMutation(api.documents.createUser);
 
+  // =========================================
+  // Effects
+  // =========================================
   // Auto-hide notification after 5 seconds
   useEffect(() => {
     if (notification) {
@@ -85,6 +100,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSubmitting]);
 
+  // =========================================
+  // Data Fetching
+  // =========================================
   const refreshAdvisers = async () => {
     const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
     const data = await client.query(api.documents.getAdvisers);
@@ -95,6 +113,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
     refreshAdvisers();
   }, []);
 
+  // =========================================
+  // Event Handlers
+  // =========================================
   const handleSort = (field: SortField) => {
     if (field === sortField) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -104,6 +125,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
   };
 
+  // =========================================
+  // Form Validation
+  // =========================================
   const validateEditForm = (formData: EditFormData): string | null => {
     if (!formData.first_name.trim()) return "First name is required";
     if (!formData.last_name.trim()) return "Last name is required";
@@ -112,6 +136,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
     return null;
   };
 
+  // =========================================
+  // User Actions
+  // =========================================
   const handleEdit = (adviser: User) => {
     setEditingUser(adviser);
     setEditFormData({
@@ -130,6 +157,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
     });
   };
 
+  // =========================================
+  // Form Submissions
+  // =========================================
   const handleEditSubmit = async () => {
     if (!editingUser) return;
 
@@ -198,7 +228,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           subrole: editFormData.subrole,
         });
       } else {
-        // If email not changed, just update other fields
+        // Update in Convex without changing Clerk ID
         await updateUser({
           userId: editingUser._id,
           adminId: adminId as Id<"users">,
@@ -212,29 +242,22 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
       logUserAction('Edit Success', { 
         userId: editingUser._id,
-        newEmail: editFormData.email
+        changes: {
+          firstName: editFormData.first_name !== editingUser.first_name,
+          lastName: editFormData.last_name !== editingUser.last_name,
+          email: editFormData.email !== editingUser.email,
+        }
       });
 
+      setSuccessMessage("User updated successfully");
       setEditingUser(null);
-      await refreshAdvisers();
-      setSuccessMessage("Adviser updated successfully");
+      refreshAdvisers();
     } catch (error) {
       logUserAction('Edit Failed', { 
         userId: editingUser._id,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
-      console.error("Error updating user:", error);
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          setEditNetworkError("Request timed out. Please try again.");
-        } else if (error.message.includes('Network error')) {
-          setEditNetworkError("Network error - please check your internet connection");
-        } else {
-          setValidationError(error.message);
-        }
-      } else {
-        setValidationError("An unexpected error occurred. Please try again.");
-      }
+      setEditNetworkError(error instanceof Error ? error.message : "Failed to update user");
     } finally {
       setIsSubmitting(false);
     }
@@ -405,31 +428,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
   };
 
-  const handleCancelAdd = () => {
-    if (isSubmitting) {
-      setShowCancelConfirm(true);
-    } else {
-      setIsAddingUser(false);
-      setAddFormData({
-        first_name: "",
-        middle_name: "",
-        last_name: "",
-        email: "",
-      });
-    }
-  };
-
-  const handleConfirmCancel = () => {
-    setIsAddingUser(false);
-    setAddFormData({
-      first_name: "",
-      middle_name: "",
-      last_name: "",
-      email: "",
-    });
-    setShowCancelConfirm(false);
-  };
-
   const handleResetPassword = async () => {
     if (!resetPasswordUser) return;
 
@@ -514,22 +512,16 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
   };
 
+  // =========================================
+  // Render
+  // =========================================
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="fixed top-0 left-0 right-0 z-10">
-        <Navbar adminId={adminId} />
+    <div className="min-h-screen bg-gray-50">
+      <Navbar adminId={adminId} />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Advisers</h1>
         
-        <Notification 
-          notification={notification}
-          onClose={() => setNotification(null)}
-        />
-
-        <SuccessBanner message={successMessage} onClose={() => setSuccessMessage(null)} />
-
-        <div className="px-6 mt-6 font-bold text-3xl">
-          Advisers Table
-        </div>
-
+        {/* User Table */}
         <UserTable
           users={advisers}
           searchTerm={searchTerm}
@@ -546,75 +538,113 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onAdd={() => setIsAddingUser(true)}
           onResetPassword={setResetPasswordUser}
         />
+
+        {/* Add Form */}
+        <AddForm
+          isOpen={isAddingUser}
+          isSubmitting={isSubmitting}
+          networkError={addNetworkError}
+          formData={addFormData}
+          onClose={() => {
+            if (isSubmitting) {
+              setShowCancelConfirm(true);
+            } else {
+              setIsAddingUser(false);
+              setAddFormData({
+                first_name: "",
+                middle_name: "",
+                last_name: "",
+                email: "",
+              });
+            }
+          }}
+          onSubmit={handleAddSubmit}
+          onFormDataChange={setAddFormData}
+        />
+
+        {/* Edit Form */}
+        <EditForm
+          user={editingUser}
+          formData={editFormData}
+          isSubmitting={isSubmitting}
+          networkError={editNetworkError}
+          onClose={() => {
+            if (isSubmitting) {
+              setShowCancelConfirm(true);
+            } else {
+              setEditingUser(null);
+              setEditFormData({
+                first_name: "",
+                middle_name: "",
+                last_name: "",
+                email: "",
+              });
+            }
+          }}
+          onSubmit={handleEditSubmit}
+          onFormDataChange={setEditFormData}
+        />
+
+        {/* Delete Confirmation */}
+        <DeleteConfirmation
+          user={deleteUser}
+          onCancel={() => setDeleteUser(null)}
+          onConfirm={handleDeleteSubmit}
+          isSubmitting={isDeleting}
+          networkError={deleteNetworkError}
+        />
+
+        {/* Reset Password Confirmation */}
+        <ResetPasswordConfirmation
+          user={resetPasswordUser}
+          onCancel={() => setResetPasswordUser(null)}
+          onConfirm={handleResetPassword}
+          isSubmitting={isResettingPassword}
+          networkError={resetPasswordNetworkError}
+        />
+
+        {/* Validation Error */}
+        <ValidationError
+          error={validationError}
+          onClose={() => setValidationError(null)}
+        />
+
+        {/* Notification */}
+        <Notification
+          notification={notification}
+          onClose={() => setNotification(null)}
+        />
+
+        {/* Success Banner */}
+        <SuccessBanner
+          message={successMessage}
+          onClose={() => setSuccessMessage(null)}
+        />
+
+        {/* Cancel Confirmation */}
+        <CancelConfirmation
+          isOpen={showCancelConfirm}
+          onContinue={() => setShowCancelConfirm(false)}
+          onCancel={() => {
+            setShowCancelConfirm(false);
+            setIsAddingUser(false);
+            setEditingUser(null);
+            setAddFormData({
+              first_name: "",
+              middle_name: "",
+              last_name: "",
+              email: "",
+            });
+            setEditFormData({
+              first_name: "",
+              middle_name: "",
+              last_name: "",
+              email: "",
+            });
+            setIsSubmitting(false);
+          }}
+        />
       </div>
-
-      <EditForm
-        user={editingUser}
-        formData={editFormData}
-        isSubmitting={isSubmitting}
-        networkError={editNetworkError}
-        onClose={() => {
-          setEditingUser(null);
-          setEditFormData({
-            first_name: "",
-            middle_name: "",
-            last_name: "",
-            email: "",
-          });
-          setEditNetworkError(null);
-        }}
-        onSubmit={handleEditSubmit}
-        onFormDataChange={setEditFormData}
-        className="z-[50]"
-        isStudent={false}
-      />
-
-      <DeleteConfirmation
-        user={deleteUser}
-        onCancel={() => {
-          setDeleteUser(null);
-          setDeleteNetworkError(null);
-        }}
-        onConfirm={handleDeleteSubmit}
-        isSubmitting={isDeleting}
-        networkError={deleteNetworkError}
-      />
-
-      <ValidationError
-        error={validationError}
-        onClose={() => setValidationError(null)}
-        className="z-[60]"
-      />
-
-      <AddForm
-        isOpen={isAddingUser}
-        isSubmitting={isSubmitting}
-        networkError={addNetworkError}
-        formData={addFormData}
-        onClose={handleCancelAdd}
-        onSubmit={handleAddSubmit}
-        onFormDataChange={setAddFormData}
-        className="z-[50]"
-        isStudent={false}
-      />
-
-      <CancelConfirmation
-        isOpen={showCancelConfirm}
-        onContinue={() => setShowCancelConfirm(false)}
-        onCancel={handleConfirmCancel}
-        className="z-[55]"
-      />
-
-      <ResetPasswordConfirmation
-        user={resetPasswordUser}
-        onCancel={() => {
-          setResetPasswordUser(null);
-          setResetPasswordNetworkError(null);
-        }}
-        onConfirm={handleResetPassword}
-        isSubmitting={isResettingPassword}
-        networkError={resetPasswordNetworkError}
-      />
     </div>
   );
 };
