@@ -1,64 +1,94 @@
 import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
-import { Adviser, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
+import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 
-interface AdvisersTableProps {
-  advisers: Adviser[];
+interface UserTableProps {
+  users: User[];
   searchTerm: string;
   statusFilter: typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS];
+  roleFilter?: typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS];
   sortField: SortField;
   sortDirection: SortDirection;
   currentPage: number;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]) => void;
+  onRoleFilterChange?: (value: typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS]) => void;
   onSort: (field: SortField) => void;
   onPageChange: (page: number) => void;
-  onEdit: (adviser: Adviser) => void;
-  onDelete: (adviser: Adviser) => void;
+  onEdit: (user: User) => void;
+  onDelete: (user: User) => void;
   onAdd: () => void;
-  onResetPassword: (adviser: Adviser) => void;
+  onResetPassword: (user: User) => void;
+  showRoleColumn?: boolean;
 }
 
-export const AdvisersTable = ({
-  advisers,
+export const UserTable = ({
+  users,
   searchTerm,
   statusFilter,
+  roleFilter = TABLE_CONSTANTS.ROLE_FILTERS.ALL,
   sortField,
   sortDirection,
   currentPage,
   onSearchChange,
   onStatusFilterChange,
+  onRoleFilterChange,
   onSort,
   onPageChange,
   onEdit,
   onDelete,
   onAdd,
   onResetPassword,
-}: AdvisersTableProps) => {
+  showRoleColumn = false,
+}: UserTableProps) => {
   const getSortIcon = (field: SortField) => {
     if (field !== sortField) return <FaSort />;
     return sortDirection === "asc" ? <FaSortUp /> : <FaSortDown />;
   };
 
-  const filterAndSortAdvisers = () => {
-    const filtered = advisers.filter((adviser) => {
+  const getRoleLabel = (subrole?: number) => {
+    switch (subrole) {
+      case 0:
+        return "Member";
+      case 1:
+        return "Manager";
+      default:
+        return "N/A";
+    }
+  };
+
+  const filterAndSortUsers = () => {
+    const filtered = users.filter((user) => {
       const matchesSearch = searchTerm === "" ||
-        adviser.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        adviser.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        adviser.email.toLowerCase().includes(searchTerm.toLowerCase());
+        user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.ALL ||
-        (statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED && adviser.email_verified) ||
-        (statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.PENDING && !adviser.email_verified);
+        (statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED && user.email_verified) ||
+        (statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED && !user.email_verified);
 
-      return matchesSearch && matchesStatus;
+      const matchesRole = roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.ALL ||
+        (roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER && user.subrole === 1) ||
+        (roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER && user.subrole === 0);
+
+      return matchesSearch && matchesStatus && matchesRole;
     });
 
     filtered.sort((a, b) => {
       let comparison = 0;
-      if (sortField === "_creationTime") {
-        comparison = a[sortField] - b[sortField];
-      } else {
-        comparison = a[sortField].localeCompare(b[sortField]);
+      switch (sortField) {
+        case "_creationTime":
+          comparison = a._creationTime - b._creationTime;
+          break;
+        case "first_name":
+          comparison = a.first_name.localeCompare(b.first_name);
+          break;
+        case "last_name":
+          comparison = a.last_name.localeCompare(b.last_name);
+          break;
+        case "email":
+          comparison = a.email.localeCompare(b.email);
+          break;
       }
       return sortDirection === "asc" ? comparison : -comparison;
     });
@@ -66,25 +96,25 @@ export const AdvisersTable = ({
     return filtered;
   };
 
-  const getPaginationInfo = (advisers: Adviser[]) => {
+  const getPaginationInfo = (users: User[]) => {
     const entriesPerPage = 10;
-    const totalEntries = advisers.length;
+    const totalEntries = users.length;
     const totalPages = Math.ceil(totalEntries / entriesPerPage);
     const startEntry = (currentPage - 1) * entriesPerPage + 1;
     const endEntry = Math.min(startEntry + entriesPerPage - 1, totalEntries);
-    const paginatedAdvisers = advisers.slice(startEntry - 1, endEntry);
+    const paginatedUsers = users.slice(startEntry - 1, endEntry);
 
     return {
       totalEntries,
       totalPages,
       startEntry,
       endEntry,
-      paginatedAdvisers,
+      paginatedUsers,
     };
   };
 
-  const filteredAndSortedAdvisers = filterAndSortAdvisers();
-  const { totalEntries, totalPages, startEntry, endEntry, paginatedAdvisers } = getPaginationInfo(filteredAndSortedAdvisers);
+  const filteredAndSortedUsers = filterAndSortUsers();
+  const { totalEntries, totalPages, startEntry, endEntry, paginatedUsers } = getPaginationInfo(filteredAndSortedUsers);
 
   return (
     <div className="px-6 mt-4">
@@ -108,13 +138,24 @@ export const AdvisersTable = ({
         >
           <option value={TABLE_CONSTANTS.STATUS_FILTERS.ALL}>All Status</option>
           <option value={TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED}>Verified</option>
-          <option value={TABLE_CONSTANTS.STATUS_FILTERS.PENDING}>Pending</option>
+          <option value={TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED}>Unverified</option>
         </select>
+        {showRoleColumn && onRoleFilterChange && (
+          <select 
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={roleFilter}
+            onChange={(e) => onRoleFilterChange(e.target.value as typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS])}
+          >
+            <option value={TABLE_CONSTANTS.ROLE_FILTERS.ALL}>All Roles</option>
+            <option value={TABLE_CONSTANTS.ROLE_FILTERS.MANAGER}>Manager</option>
+            <option value={TABLE_CONSTANTS.ROLE_FILTERS.MEMBER}>Member</option>
+          </select>
+        )}
         <button 
           onClick={onAdd}
           className="px-4 py-2 bg-[#B54A4A] text-white rounded-lg hover:bg-[#9a3d3d] flex items-center gap-2"
         >
-          <FaPlus /> Add Adviser
+          <FaPlus /> Add User
         </button>
       </div>
       <div className="overflow-x-auto">
@@ -149,6 +190,15 @@ export const AdvisersTable = ({
                   <span className="ml-1">{getSortIcon("email")}</span>
                 </div>
               </th>
+              {showRoleColumn && (
+                <th 
+                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider"
+                >
+                  <div className="flex items-center justify-center">
+                    Role
+                  </div>
+                </th>
+              )}
               <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">Status</th>
               <th 
                 className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
@@ -163,22 +213,33 @@ export const AdvisersTable = ({
             </tr>
           </thead>
           <tbody>
-            {paginatedAdvisers.map((adviser: Adviser, index: number) => (
-              <tr key={adviser._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
+            {paginatedUsers.map((user: User, index: number) => (
+              <tr key={user._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {adviser.first_name}
+                  {user.first_name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {adviser.middle_name || <span className="text-gray-400">—</span>}
+                  {user.middle_name || <span className="text-gray-400">—</span>}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {adviser.last_name}
+                  {user.last_name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {adviser.email}
+                  {user.email}
                 </td>
+                {showRoleColumn && (
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      user.subrole === 1 
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {getRoleLabel(user.subrole)}
+                    </span>
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  {adviser.email_verified ? (
+                  {user.email_verified ? (
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                       Verified
                     </span>
@@ -189,12 +250,12 @@ export const AdvisersTable = ({
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  {new Date(adviser._creationTime).toISOString().split('T')[0]}
+                  {new Date(user._creationTime).toISOString().split('T')[0]}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center justify-center gap-2">
                     <button 
-                      onClick={() => onEdit(adviser)}
+                      onClick={() => onEdit(user)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-full relative group"
                       title="Edit"
                     >
@@ -206,7 +267,7 @@ export const AdvisersTable = ({
                     <button 
                       className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-full relative group"
                       title="Reset Password"
-                      onClick={() => onResetPassword(adviser)}
+                      onClick={() => onResetPassword(user)}
                     >
                       <FaKey />
                       <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity">
@@ -214,7 +275,7 @@ export const AdvisersTable = ({
                       </span>
                     </button>
                     <button 
-                      onClick={() => onDelete(adviser)}
+                      onClick={() => onDelete(user)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-full relative group"
                       title="Delete"
                     >

@@ -15,7 +15,7 @@ export default defineSchema({
 
   adminLogs: defineTable({
     admin_id: v.id("users"),
-    action: v.string(), // "edit_user", "delete_user", "reset_password"
+    action: v.string(), // "Edit User", "Delete User", "Reset Password"
     target_user_id: v.id("users"),
     details: v.string(), // JSON stringified details of the action
   }).index("by_admin", ["admin_id"])

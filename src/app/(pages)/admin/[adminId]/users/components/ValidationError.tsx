@@ -1,0 +1,75 @@
+import { FaExclamationTriangle, FaTimes } from "react-icons/fa";
+import { useEffect, useState } from "react";
+
+interface ValidationErrorProps {
+  error: string | null;
+  onClose: () => void;
+  className?: string;
+}
+
+export const ValidationError = ({ error, onClose, className = "" }: ValidationErrorProps) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+
+  useEffect(() => {
+    if (error) {
+      setIsVisible(true);
+      setIsExiting(false);
+    } else {
+      setIsExiting(true);
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 300); // Match this with the transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  if (!isVisible && !error) return null;
+
+  const handleClose = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose();
+    }, 300); // Match this with the transition duration
+  };
+
+  return (
+    <div 
+      className={`
+        fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${className}
+        transition-opacity duration-300 ease-in-out
+        ${isExiting ? 'opacity-0' : 'opacity-100'}
+      `}
+    >
+      <div 
+        className={`
+          bg-white rounded-lg p-6 max-w-md w-full mx-4
+          transform transition-all duration-300 ease-in-out
+          ${isExiting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
+        `}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2 text-red-600">
+            <FaExclamationTriangle />
+            <h3 className="text-lg font-semibold">Validation Error</h3>
+          </div>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <FaTimes />
+          </button>
+        </div>
+        <p className="text-gray-600">{error}</p>
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={handleClose}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}; 

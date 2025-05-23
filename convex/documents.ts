@@ -31,16 +31,28 @@ export const getAdvisers = query({
   },
 });
 
+export const getStudents = query({
+  handler: async (ctx) => {
+    const students = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("role"), 0))
+      .collect();
+    
+    return students;
+  },
+});
+
 export const updateUser = mutation({
   args: {
     userId: v.id("users"),
+    adminId: v.id("users"),
     first_name: v.string(),
-    middle_name: v.optional(v.string()),
     last_name: v.string(),
     email: v.string(),
-    adminId: v.id("users"),
+    middle_name: v.optional(v.string()),
     clerk_id: v.optional(v.string()),
     isPasswordReset: v.optional(v.boolean()),
+    subrole: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -53,6 +65,7 @@ export const updateUser = mutation({
       middle_name?: string;
       email_verified?: boolean;
       clerk_id?: string;
+      subrole?: number;
     } = {
       first_name: args.first_name,
       last_name: args.last_name,
@@ -70,12 +83,16 @@ export const updateUser = mutation({
       updates.email_verified = false;
     }
 
+    if (args.subrole !== undefined) {
+      updates.subrole = args.subrole;
+    }
+
     await ctx.db.patch(args.userId, updates);
 
     // Log the action
     await ctx.db.insert("adminLogs", {
       admin_id: args.adminId,
-      action: args.isPasswordReset ? "reset_password" : "edit_user",
+      action: args.isPasswordReset ? "Reset Password" : "Edit User",
       target_user_id: args.userId,
       details: JSON.stringify({
         previous: {
@@ -105,7 +122,7 @@ export const deleteUser = mutation({
     // Log the action before deleting
     await ctx.db.insert("adminLogs", {
       admin_id: args.adminId,
-      action: "delete_user",
+      action: "Delete User",
       target_user_id: args.userId,
       details: JSON.stringify({
         deleted_user: {
@@ -126,11 +143,12 @@ export const createUser = mutation({
   args: {
     clerk_id: v.string(),
     first_name: v.string(),
-    middle_name: v.optional(v.string()),
     last_name: v.string(),
     email: v.string(),
     role: v.number(),
+    middle_name: v.optional(v.string()),
     adminId: v.id("users"),
+    subrole: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Validate email format
@@ -159,6 +177,7 @@ export const createUser = mutation({
         email: args.email,
         email_verified: false,
         role: args.role,
+        subrole: args.subrole,
       });
 
       // Log the action
@@ -173,6 +192,7 @@ export const createUser = mutation({
             last_name: args.last_name,
             email: args.email,
             role: args.role,
+            subrole: args.subrole,
           },
         }),
       });

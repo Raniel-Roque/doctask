@@ -1,0 +1,73 @@
+import { Id } from "../../../../../../../convex/_generated/dataModel";
+
+export interface User {
+  _id: Id<"users">;
+  _creationTime: number;
+  clerk_id: string;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  email: string;
+  email_verified: boolean;
+  role: number;
+  subrole?: number;
+}
+
+export interface EditFormData {
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  email: string;
+  subrole?: number;
+}
+
+export interface AddFormData {
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  email: string;
+  subrole?: number;
+}
+
+export interface Notification {
+  type: "error";
+  message: string;
+}
+
+export interface LogDetails {
+  userId?: string;
+  email?: string;
+  error?: string;
+  oldEmail?: string;
+  newEmail?: string;
+  firstName?: string;
+  lastName?: string;
+  formData?: AddFormData;
+  details?: string;
+  changes?: {
+    firstName?: boolean;
+    lastName?: boolean;
+    email?: boolean;
+    subrole?: boolean;
+  };
+  user?: User;
+}
+
+export const TABLE_CONSTANTS = {
+  STATUS_FILTERS: {
+    ALL: "all",
+    VERIFIED: "verified",
+    UNVERIFIED: "unverified",
+  },
+  ROLE_FILTERS: {
+    ALL: "all",
+    MANAGER: "manager",
+    MEMBER: "member",
+  },
+  DEFAULT_SORT_FIELD: "first_name" as const,
+  DEFAULT_SORT_DIRECTION: "asc" as const,
+  ITEMS_PER_PAGE: 10,
+} as const;
+
+export type SortField = "first_name" | "last_name" | "email" | "_creationTime";
+export type SortDirection = "asc" | "desc"; 

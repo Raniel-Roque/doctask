@@ -6,56 +6,34 @@ import { ConvexHttpClient } from "convex/browser";
 import { useState, useEffect, use } from "react";
 import { useMutation } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
-import { AdvisersTable } from "./components/AdvisersTable";
-import { AddForm } from "./components/AddForm";
-import { EditForm } from "./components/EditForm";
-import { DeleteConfirmation } from "./components/DeleteConfirmation";
-import { ValidationError } from "./components/ValidationError";
-import { Notification } from "./components/Notification";
-import { Adviser, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirection } from "./components/types";
-import { CancelConfirmation } from "./components/CancelConfirmation";
-import { ResetPasswordConfirmation } from "./components/ResetPasswordConfirmation";
-
-interface Notification {
-  type: 'success' | 'error' | 'info';
-  message: string;
-}
+import { UserTable } from "../components/UserTable";
+import { AddForm } from "../components/AddForm";
+import { EditForm } from "../components/EditForm";
+import { DeleteConfirmation } from "../components/DeleteConfirmation";
+import { ValidationError } from "../components/ValidationError";
+import { Notification } from "../components/Notification";
+import { User, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirection, LogDetails, Notification as NotificationType } from "../components/types";
+import { CancelConfirmation } from "../components/CancelConfirmation";
+import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
+import { SuccessBanner } from "../components/SuccessBanner";
 
 interface UsersPageProps {
   params: Promise<{ adminId: string }>;
 }
 
-interface LogDetails {
-  userId?: string;
-  userIds?: string[];
-  count?: number;
-  email?: string;
-  oldEmail?: string;
-  newEmail?: string;
-  firstName?: string;
-  lastName?: string;
-  error?: string;
-  changes?: {
-    firstName: boolean;
-    lastName: boolean;
-    email: boolean;
-  };
-  formData?: AddFormData;
-  user?: Adviser;
-}
-
 const UsersPage = ({ params }: UsersPageProps) => {
   const { adminId } = use(params);
-  const [advisers, setAdvisers] = useState<Adviser[]>([]);
+  const [advisers, setAdvisers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]>(TABLE_CONSTANTS.STATUS_FILTERS.ALL);
   const [sortField, setSortField] = useState<SortField>(TABLE_CONSTANTS.DEFAULT_SORT_FIELD);
   const [sortDirection, setSortDirection] = useState<SortDirection>(TABLE_CONSTANTS.DEFAULT_SORT_DIRECTION);
   const [currentPage, setCurrentPage] = useState(1);
-  const [editingUser, setEditingUser] = useState<Adviser | null>(null);
-  const [deleteUser, setDeleteUser] = useState<Adviser | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [notification, setNotification] = useState<Notification | null>(null);
+  const [notification, setNotification] = useState<NotificationType | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -76,7 +54,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     last_name: "",
     email: "",
   });
-  const [resetPasswordUser, setResetPasswordUser] = useState<Adviser | null>(null);
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const updateUser = useMutation(api.documents.updateUser);
@@ -134,13 +112,14 @@ const UsersPage = ({ params }: UsersPageProps) => {
     return null;
   };
 
-  const handleEdit = (adviser: Adviser) => {
+  const handleEdit = (adviser: User) => {
     setEditingUser(adviser);
     setEditFormData({
       first_name: adviser.first_name,
       middle_name: adviser.middle_name || "",
       last_name: adviser.last_name,
       email: adviser.email,
+      subrole: adviser.subrole,
     });
   };
 
@@ -172,7 +151,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         changes: {
           firstName: editFormData.first_name !== editingUser.first_name,
           lastName: editFormData.last_name !== editingUser.last_name,
-          email: editFormData.email !== editingUser.email
+          email: editFormData.email !== editingUser.email,
         }
       });
 
@@ -212,14 +191,22 @@ const UsersPage = ({ params }: UsersPageProps) => {
           userId: editingUser._id,
           adminId: adminId as Id<"users">,
           clerk_id: newClerkId,
-          ...editFormData,
+          first_name: editFormData.first_name,
+          middle_name: editFormData.middle_name || undefined,
+          last_name: editFormData.last_name,
+          email: editFormData.email,
+          subrole: editFormData.subrole,
         });
       } else {
         // If email not changed, just update other fields
         await updateUser({
           userId: editingUser._id,
           adminId: adminId as Id<"users">,
-          ...editFormData,
+          first_name: editFormData.first_name,
+          middle_name: editFormData.middle_name || undefined,
+          last_name: editFormData.last_name,
+          email: editFormData.email,
+          subrole: editFormData.subrole,
         });
       }
 
@@ -230,10 +217,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
       setEditingUser(null);
       await refreshAdvisers();
-      setNotification({
-        type: 'success',
-        message: 'Adviser information updated successfully'
-      });
+      setSuccessMessage("Adviser updated successfully");
     } catch (error) {
       logUserAction('Edit Failed', { 
         userId: editingUser._id,
@@ -306,10 +290,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
       setDeleteUser(null);
       await refreshAdvisers();
-      setNotification({
-        type: 'success',
-        message: 'Adviser deleted successfully'
-      });
+      setSuccessMessage("Adviser deleted successfully");
     } catch (error) {
       logUserAction('Delete Failed', { 
         userId: deleteUser._id,
@@ -349,7 +330,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const handleAddSubmit = async () => {
     const error = validateAddForm(addFormData);
     if (error) {
-      logUserAction('Add Validation Failed', { error, formData: addFormData });
       setValidationError(error);
       return;
     }
@@ -358,13 +338,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setAddNetworkError(null);
 
     try {
-      logUserAction('Add Started', { 
-        email: addFormData.email,
-        firstName: addFormData.first_name,
-        lastName: addFormData.last_name
-      });
-
-      // Create user in Clerk via server API with timeout
+      // Create user in Clerk first
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
@@ -383,21 +357,17 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
       clearTimeout(timeoutId);
 
-      const responseData = await response.json();
-
       if (!response.ok) {
         if (response.status === 0) {
           throw new Error("Network error - please check your internet connection");
         }
-        
-        // Use the error message from the server
-        setValidationError(responseData.error || "Failed to create user");
-        return;
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create user in Clerk");
       }
 
-      const { clerkId } = responseData;
+      const { clerkId } = await response.json();
 
-      // Then create user in Convex with the Clerk ID
+      // Create user in Convex
       await createUser({
         clerk_id: clerkId,
         first_name: addFormData.first_name,
@@ -408,12 +378,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
         adminId: adminId as Id<"users">,
       });
 
-      logUserAction('Add Success', { 
-        email: addFormData.email,
-        firstName: addFormData.first_name,
-        lastName: addFormData.last_name
-      });
-
       setIsAddingUser(false);
       setAddFormData({
         first_name: "",
@@ -422,15 +386,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
         email: "",
       });
       await refreshAdvisers();
-      setNotification({
-        type: 'success',
-        message: 'Adviser added successfully'
-      });
+      setSuccessMessage("Adviser added successfully");
     } catch (error) {
-      logUserAction('Add Failed', { 
-        formData: addFormData,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
       console.error("Error adding user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -438,7 +395,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         } else if (error.message.includes('Network error')) {
           setAddNetworkError("Network error - please check your internet connection");
         } else {
-          setValidationError(error.message || "Failed to add adviser. Please try again.");
+          setValidationError(error.message);
         }
       } else {
         setValidationError("An unexpected error occurred. Please try again.");
@@ -459,20 +416,18 @@ const UsersPage = ({ params }: UsersPageProps) => {
         last_name: "",
         email: "",
       });
-      setAddNetworkError(null);
     }
   };
 
   const handleConfirmCancel = () => {
     setIsAddingUser(false);
-    setShowCancelConfirm(false);
-    setIsSubmitting(false);
     setAddFormData({
       first_name: "",
       middle_name: "",
       last_name: "",
       email: "",
     });
+    setShowCancelConfirm(false);
   };
 
   const handleResetPassword = async () => {
@@ -533,10 +488,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         email: resetPasswordUser.email
       });
 
-      setNotification({
-        type: "success",
-        message: "Password has been reset successfully. The user will receive an email with their new password.",
-      });
+      setSuccessMessage("Password reset email sent successfully");
     } catch (error) {
       logUserAction("reset_password_failed", { 
         userId: resetPasswordUser._id,
@@ -572,12 +524,14 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onClose={() => setNotification(null)}
         />
 
+        <SuccessBanner message={successMessage} onClose={() => setSuccessMessage(null)} />
+
         <div className="px-6 mt-6 font-bold text-3xl">
           Advisers Table
         </div>
 
-        <AdvisersTable
-          advisers={advisers}
+        <UserTable
+          users={advisers}
           searchTerm={searchTerm}
           statusFilter={statusFilter}
           sortField={sortField}
@@ -612,6 +566,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         onSubmit={handleEditSubmit}
         onFormDataChange={setEditFormData}
         className="z-[50]"
+        isStudent={false}
       />
 
       <DeleteConfirmation
@@ -640,6 +595,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         onSubmit={handleAddSubmit}
         onFormDataChange={setAddFormData}
         className="z-[50]"
+        isStudent={false}
       />
 
       <CancelConfirmation
