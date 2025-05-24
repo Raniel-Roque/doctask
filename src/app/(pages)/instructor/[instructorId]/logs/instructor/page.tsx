@@ -33,8 +33,8 @@ const InstructorLogsPage = ({ params }: InstructorLogsPageProps) => {
             <Navbar instructorId={instructorId} />
             <div className="container mx-auto px-4 py-8">
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold">System Logs</h1>
-                    <p className="text-muted-foreground">View all system activities and changes</p>
+                    <h1 className="text-3xl font-bold">Capstone Instructor System Logs</h1>
+                    <p className="text-muted-foreground">View all system activities and changes by capstone instructors</p>
                 </div>
 
                 {logs && <LogTable logs={logs} />}
