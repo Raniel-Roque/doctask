@@ -21,7 +21,7 @@ interface LogQueryResult {
     affected_user_email: string;
     action: string;
     details: string;
-    timestamp: number;
+    _creationTime: number;
 }
 
 const LogsPage = ({ params }: LogsPageProps) => {
