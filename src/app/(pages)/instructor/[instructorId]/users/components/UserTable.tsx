@@ -109,7 +109,7 @@ export const UserTable = ({
   };
 
   const getPaginationInfo = (users: User[]) => {
-    const entriesPerPage = 10;
+    const entriesPerPage = 5;
     const totalEntries = users.length;
     const totalPages = Math.ceil(totalEntries / entriesPerPage);
     const startEntry = (currentPage - 1) * entriesPerPage + 1;

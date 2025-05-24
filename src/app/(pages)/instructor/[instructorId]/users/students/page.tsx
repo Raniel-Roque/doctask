@@ -20,18 +20,18 @@ import { SuccessBanner } from "../components/SuccessBanner";
 // =========================================
 // Types
 // =========================================
-interface UsersPageProps {
-  params: Promise<{ adminId: string }>;
+interface UsersStudentsPageProps {
+  params: Promise<{ instructorId: string }>;
 }
 
 // =========================================
 // Component
 // =========================================
-const UsersPage = ({ params }: UsersPageProps) => {
+const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   // State
   // =========================================
-  const { adminId } = use(params);
+  const { instructorId } = use(params);
   const [students, setStudents] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]>(TABLE_CONSTANTS.STATUS_FILTERS.ALL);
@@ -165,7 +165,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
   const logUserAction = (action: string, details: LogDetails) => {
     console.log(`[User Action] ${action}:`, {
-      adminId,
+      instructorId,
       ...details
     });
   };
@@ -231,7 +231,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         // Update in Convex without changing Clerk ID
         await updateUser({
           userId: editingUser._id,
-          adminId: adminId as Id<"users">,
+          instructorId: instructorId as Id<"users">,
           first_name: editFormData.first_name,
           middle_name: editFormData.middle_name || undefined,
           last_name: editFormData.last_name,
@@ -242,7 +242,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         // Update in Convex without changing Clerk ID
         await updateUser({
           userId: editingUser._id,
-          adminId: adminId as Id<"users">,
+          instructorId: instructorId as Id<"users">,
           first_name: editFormData.first_name,
           middle_name: editFormData.middle_name || undefined,
           last_name: editFormData.last_name,
@@ -324,7 +324,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       try {
         await deleteUserMutation({
           userId: deleteUser._id,
-          adminId: adminId as Id<"users">,
+          instructorId: instructorId as Id<"users">,
         });
       } catch (error) {
         // If Convex deletion fails but Clerk was deleted, we need to handle this error state
@@ -427,7 +427,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         email: addFormData.email,
         role: 0, // Always 0 for students
         subrole: addFormData.subrole, // This will be 0 for Member or 1 for Manager from the dropdown
-        adminId: adminId as Id<"users">,
+        instructorId: instructorId as Id<"users">,
       });
 
       setIsAddingUser(false);
@@ -499,7 +499,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         middle_name: resetPasswordUser.middle_name,
         last_name: resetPasswordUser.last_name,
         email: resetPasswordUser.email,
-        adminId: adminId as Id<"users">,
+        instructorId: instructorId as Id<"users">,
         isPasswordReset: true,
       });
 
@@ -530,7 +530,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   return (
     <div className="min-h-screen bg-gray-50">
-        <Navbar adminId={adminId} />
+        <Navbar instructorId={instructorId} />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
             <h1 className="text-3xl font-bold">Students Table</h1>
@@ -674,4 +674,4 @@ const UsersPage = ({ params }: UsersPageProps) => {
   );
 };
 
-export default UsersPage;
+export default UsersStudentsPage;

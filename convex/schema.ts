@@ -20,17 +20,17 @@ export default defineSchema({
     last_name: v.string(),
 
     // User Roles
-    role: v.number(), // 0 = student, 1 = adviser, 2 = admin
+    role: v.number(), // 0 = student, 1 = adviser, 2 = instructor
     subrole: v.optional(v.number()), // 0 = member, 1 = manager
   }).index("by_clerk_id", ["clerk_id"]),
 
   // =========================================
-  // Admin Logs Table
+  // instructor Logs Table
   // =========================================
-  adminLogs: defineTable({
+  instructorLogs: defineTable({
     // Log Identification
-    admin_id: v.id("users"),
-    admin_name: v.string(), // Full name of admin who performed the action
+    instructor_id: v.id("users"),
+    instructor_name: v.string(), // Full name of instructor who performed the action
     
     // Affected User Information (stored directly to prevent data loss on user deletion)
     affected_user_id: v.optional(v.id("users")), // ID of affected user (optional in case user is deleted)
@@ -41,7 +41,7 @@ export default defineSchema({
     action: v.string(), 
     details: v.string(), // JSON stringified details of the action
   })
-  .index("by_admin", ["admin_id"])
+  .index("by_instructor", ["instructor_id"])
   .index("by_action", ["action"])
   .index("by_affected_user", ["affected_user_id"])
 });

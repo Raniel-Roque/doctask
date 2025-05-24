@@ -4,22 +4,22 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 
 import { Navbar } from "../components/navbar";
 
-interface AdminHomePageProps {
-  params: { adminId: string };
+interface InstructorHomePageProps {
+  params: { instructorId: string };
 }
 
-const AdminHomePage = async ({ params }: AdminHomePageProps) => {
-  const { adminId } = await params;
+const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
+  const { instructorId } = await params;
 
-  // Cast adminId to Id<"users">
+  // Cast instructorId to Id<"users">
   const user = await fetchQuery(api.documents.getUserById, {
-    id: adminId as Id<"users">,
+    id: instructorId as Id<"users">,
   });
 
   return (
     <div className="min-h-screen flex flex-col">
       <div className="fixed top-0 left-0 right-0 z-10 h-16 bg-white">
-        <Navbar adminId={adminId} />
+        <Navbar instructorId={instructorId} />
 
         <div className="px-6 mt-6 font-bold text-3xl">
           Welcome Back, {user?.first_name ?? "User"}!
@@ -29,4 +29,4 @@ const AdminHomePage = async ({ params }: AdminHomePageProps) => {
   );
 };
 
-export default AdminHomePage;
+export default InstructorHomePage;

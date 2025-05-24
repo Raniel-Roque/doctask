@@ -14,7 +14,7 @@ const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 const ROLES = {
   STUDENT: 0,
   ADVISER: 1,
-  ADMIN: 2,
+  instructor: 2,
 } as const;
 
 type Role = typeof ROLES[keyof typeof ROLES];
@@ -36,12 +36,12 @@ function RedirectHandler() {
     const { role, _id } = convexUser;
     let expectedPath = "";
 
-    if (role === ROLES.ADMIN) expectedPath = `/admin/${_id}/home`;
+    if (role === ROLES.instructor) expectedPath = `/instructor/${_id}/home`;
     else if (role === ROLES.ADVISER) expectedPath = `/adviser/${_id}/home`;
     else if (role === ROLES.STUDENT) expectedPath = `/student/${_id}/home`;
 
     // Redirect to home if on root path or role root path
-    if (pathname === "/" || pathname === `/${role === ROLES.ADMIN ? 'admin' : role === ROLES.ADVISER ? 'adviser' : 'student'}/${_id}`) {
+    if (pathname === "/" || pathname === `/${role === ROLES.instructor ? 'instructor' : role === ROLES.ADVISER ? 'adviser' : 'student'}/${_id}`) {
       router.replace(expectedPath);
     }
   }, [isLoaded, isSignedIn, user, convexUser, router, pathname]);
@@ -77,7 +77,7 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 
   // Validate role is within expected range
   const isValidRole = (role: number): role is Role => {
-    return role === ROLES.STUDENT || role === ROLES.ADVISER || role === ROLES.ADMIN;
+    return role === ROLES.STUDENT || role === ROLES.ADVISER || role === ROLES.instructor;
   };
 
   // Sanitize and validate path segments
@@ -101,7 +101,7 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
     // Sanitize path
     const sanitizedPath = sanitizePath(pathname);
     
-    const basePath = role === ROLES.ADMIN ? 'admin' : role === ROLES.ADVISER ? 'adviser' : 'student';
+    const basePath = role === ROLES.instructor ? 'instructor' : role === ROLES.ADVISER ? 'adviser' : 'student';
     const pathPattern = new RegExp(`^/${basePath}/${_id}/`);
     
     return pathPattern.test(sanitizedPath);

@@ -141,7 +141,7 @@ export async function POST(request: Request) {
         // Update Convex with the new clerk ID
         await convex.mutation(api.documents.updateUser, {
           userId: convexUser._id,
-          adminId: convexUser._id,
+          instructorId: convexUser._id,
           first_name: firstName,
           last_name: lastName,
           email: email,

@@ -34,7 +34,7 @@ function generatePassword(firstName: string, lastName: string): string {
 export async function POST(request: Request) {
   let clerkUser = null;
   try {
-    const { email, firstName, lastName, role, middle_name, adminId, subrole } = await request.json();
+    const { email, firstName, lastName, role, middle_name, instructorId, subrole } = await request.json();
     const password = generatePassword(firstName, lastName);
 
     const client = await clerkClient();
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         email: email,
         role: role,
         middle_name: middle_name,
-        adminId: adminId,
+        instructorId: instructorId,
         subrole: subrole
       });
     } catch (convexError) {

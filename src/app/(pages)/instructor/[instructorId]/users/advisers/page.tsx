@@ -21,7 +21,7 @@ import { SuccessBanner } from "../components/SuccessBanner";
 // Types
 // =========================================
 interface UsersPageProps {
-  params: Promise<{ adminId: string }>;
+  params: Promise<{ instructorId: string }>;
 }
 
 // =========================================
@@ -31,7 +31,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   // State
   // =========================================
-  const { adminId } = use(params);
+  const { instructorId } = use(params);
   const [advisers, setAdvisers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]>(TABLE_CONSTANTS.STATUS_FILTERS.ALL);
@@ -152,7 +152,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
   const logUserAction = (action: string, details: LogDetails) => {
     console.log(`[User Action] ${action}:`, {
-      adminId,
+      instructorId,
       ...details
     });
   };
@@ -217,7 +217,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         // Update in Convex without changing Clerk ID
         await updateUser({
           userId: editingUser._id,
-          adminId: adminId as Id<"users">,
+          instructorId: instructorId as Id<"users">,
           first_name: editFormData.first_name,
           middle_name: editFormData.middle_name || undefined,
           last_name: editFormData.last_name,
@@ -228,7 +228,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         // Update in Convex without changing Clerk ID
         await updateUser({
           userId: editingUser._id,
-          adminId: adminId as Id<"users">,
+          instructorId: instructorId as Id<"users">,
           first_name: editFormData.first_name,
           middle_name: editFormData.middle_name || undefined,
           last_name: editFormData.last_name,
@@ -300,7 +300,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       // Then delete from Convex
       await deleteUserMutation({
         userId: deleteUser._id,
-        adminId: adminId as Id<"users">,
+        instructorId: instructorId as Id<"users">,
       });
 
       logUserAction('Delete Success', { 
@@ -395,7 +395,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         last_name: addFormData.last_name,
         email: addFormData.email,
         role: 1, // 1 = adviser
-        adminId: adminId as Id<"users">,
+        instructorId: instructorId as Id<"users">,
       });
 
       setIsAddingUser(false);
@@ -466,7 +466,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         middle_name: resetPasswordUser.middle_name,
         last_name: resetPasswordUser.last_name,
         email: resetPasswordUser.email,
-        adminId: adminId as Id<"users">,
+        instructorId: instructorId as Id<"users">,
         isPasswordReset: true,
       });
 
@@ -497,7 +497,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   return (
     <div className="min-h-screen bg-gray-50">
-        <Navbar adminId={adminId} />
+        <Navbar instructorId={instructorId} />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
             <h1 className="text-3xl font-bold">Advisers Table</h1>

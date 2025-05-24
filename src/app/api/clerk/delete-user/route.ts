@@ -13,11 +13,11 @@ interface ClerkError {
 
 export async function POST(request: Request) {
   try {
-    const { clerkId, adminId } = await request.json();
+    const { clerkId, instructorId } = await request.json();
 
-    if (!clerkId || !adminId) {
+    if (!clerkId || !instructorId) {
       return NextResponse.json(
-        { error: "Clerk ID and Admin ID are required" },
+        { error: "Clerk ID and instructor ID are required" },
         { status: 400 }
       );
     }
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     try {
       await convex.mutation(api.documents.deleteUser, {
         userId: convexUser._id,
-        adminId: adminId,
+        instructorId: instructorId,
         details: "Deleted User"
       });
     } catch {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
           email: convexUser.email,
           role: convexUser.role,
           middle_name: convexUser.middle_name,
-          adminId: adminId,
+          instructorId: instructorId,
           subrole: convexUser.subrole
         });
       } catch {

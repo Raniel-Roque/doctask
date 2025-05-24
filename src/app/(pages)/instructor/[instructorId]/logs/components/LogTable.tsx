@@ -7,9 +7,9 @@ import { Id } from "../../../../../../../convex/_generated/dataModel";
 // Types
 // =========================================
 interface Log {
-    _id: Id<"adminLogs">;
-    admin_id: Id<"users">;
-    admin_name: string;
+    _id: Id<"instructorLogs">;
+    instructor_id: Id<"users">;
+    instructor_name: string;
     affected_user_id: Id<"users"> | null;
     affected_user_name: string;
     affected_user_email: string;
@@ -69,16 +69,18 @@ export const LogTable = ({ logs }: LogTableProps) => {
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [currentPage, setCurrentPage] = useState(1);
     const [actionFilter, setActionFilter] = useState<typeof LOG_ACTIONS[keyof typeof LOG_ACTIONS]>(LOG_ACTIONS.ALL);
+    const [startDate, setStartDate] = useState<string>("");
+    const [endDate, setEndDate] = useState<string>("");
     
     type ExpandedColumns = {
-        adminId: boolean;
+        instructorId: boolean;
         affectedUserId: boolean;
         email: boolean;
         details: boolean;
     };
     
     const [expandedColumns, setExpandedColumns] = useState<ExpandedColumns>({
-        adminId: false,
+        instructorId: false,
         affectedUserId: false,
         email: false,
         details: false
@@ -101,7 +103,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
     const filterAndSortLogs = () => {
         const filtered = logs.filter((log) => {
             const matchesSearch = searchTerm === "" ||
-                log.admin_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                log.instructor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.affected_user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.affected_user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -109,7 +111,11 @@ export const LogTable = ({ logs }: LogTableProps) => {
 
             const matchesAction = actionFilter === LOG_ACTIONS.ALL || log.action === actionFilter;
 
-            return matchesSearch && matchesAction;
+            const logDate = new Date(log._creationTime);
+            const matchesDateRange = (!startDate || logDate >= new Date(startDate)) &&
+                                   (!endDate || logDate <= new Date(endDate + 'T23:59:59'));
+
+            return matchesSearch && matchesAction && matchesDateRange;
         });
 
         filtered.sort((a, b) => {
@@ -160,7 +166,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
         return (
             <button
                 onClick={() => setExpandedColumns((prev: ExpandedColumns) => ({ ...prev, [column]: !prev[column] }))}
-                className="w-full text-center"
+                className="w-full text-left"
             >
                 {expandedColumns[column] ? text : `${text.slice(0, maxLength)}...`}
             </button>
@@ -169,7 +175,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
 
     return (
         <div className="mt-4">
-            <div className="mb-4 flex gap-4">
+            <div className="mb-4 flex flex-wrap gap-4">
                 <div className="flex-1 relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
                         <FaSearch />
@@ -179,14 +185,20 @@ export const LogTable = ({ logs }: LogTableProps) => {
                         placeholder="Search logs..."
                         className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1);
+                        }}
                     />
                 </div>
                 <div className="relative">
                     <select 
                         className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
                         value={actionFilter}
-                        onChange={(e) => setActionFilter(e.target.value as typeof LOG_ACTIONS[keyof typeof LOG_ACTIONS])}
+                        onChange={(e) => {
+                            setActionFilter(e.target.value as typeof LOG_ACTIONS[keyof typeof LOG_ACTIONS]);
+                            setCurrentPage(1);
+                        }}
                     >
                         {Object.values(LOG_ACTIONS).map((action) => (
                             <option key={action} value={action}>
@@ -197,6 +209,29 @@ export const LogTable = ({ logs }: LogTableProps) => {
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                         <FaChevronDown color="#6B7280" />
                     </div>
+                </div>
+                <div className="flex gap-2">
+                    <input
+                        type="date"
+                        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={startDate}
+                        onChange={(e) => {
+                            setStartDate(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        max={endDate || undefined}
+                    />
+                    <span className="self-center text-gray-500">to</span>
+                    <input
+                        type="date"
+                        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={endDate}
+                        onChange={(e) => {
+                            setEndDate(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        min={startDate || undefined}
+                    />
                 </div>
             </div>
             <div className="overflow-x-auto">
@@ -214,22 +249,22 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                     </div>
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    Admin ID
+                                    instructor ID
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    Admin Name
+                                    instructor Name
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
                                     Action
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    Affected User ID
+                                    User ID
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    Affected User Name
+                                    User Name
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    Affected User Email
+                                    User Email
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
                                     Details
@@ -239,14 +274,14 @@ export const LogTable = ({ logs }: LogTableProps) => {
                         <tbody>
                             {paginatedLogs.map((log, index) => (
                                 <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        {format(new Date(log._creationTime), "MMM dd, yyyy hh:mm a")}
+                                    <td className="px-6 py-4 whitespace-nowrap text-left">
+                                        {format(new Date(log._creationTime), "MM dd, yyyy hh:mm a")}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
-                                        <CollapsibleText text={log.admin_id} maxLength={8} column="adminId" />
+                                        <CollapsibleText text={log.instructor_id} maxLength={4} column="instructorId" />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left">
-                                        {log.admin_name}
+                                        {log.instructor_name}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
@@ -254,13 +289,13 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
-                                        <CollapsibleText text={log.affected_user_id} maxLength={8} column="affectedUserId" />
+                                        <CollapsibleText text={log.affected_user_id} maxLength={4} column="affectedUserId" />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left">
                                         {log.affected_user_name || '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
-                                        <CollapsibleText text={log.affected_user_email} maxLength={15} column="email" />
+                                        <CollapsibleText text={log.affected_user_email} maxLength={10} column="email" />
                                     </td>
                                     <td className="px-6 py-4 max-w-md break-words text-left cursor-pointer">
                                         <CollapsibleText text={log.details} maxLength={30} column="details" />

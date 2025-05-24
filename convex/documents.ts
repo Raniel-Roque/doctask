@@ -61,7 +61,7 @@ export const getStudents = query({
 export const updateUser = mutation({
   args: {
     userId: v.id("users"),
-    adminId: v.id("users"),
+    instructorId: v.id("users"),
     first_name: v.string(),
     last_name: v.string(),
     email: v.string(),
@@ -74,8 +74,8 @@ export const updateUser = mutation({
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
 
-    const admin = await ctx.db.get(args.adminId);
-    if (!admin) throw new Error("Admin not found");
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("instructor not found");
 
     const updates: {
       first_name: string;
@@ -129,9 +129,9 @@ export const updateUser = mutation({
     }
 
     // Log the action
-    await ctx.db.insert("adminLogs", {
-      admin_id: args.adminId,
-      admin_name: `${admin.first_name} ${admin.last_name}`,
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
       affected_user_id: args.userId,
       affected_user_name: `${user.first_name} ${user.last_name}`,
       affected_user_email: user.email,
@@ -146,20 +146,20 @@ export const updateUser = mutation({
 export const deleteUser = mutation({
   args: {
     userId: v.id("users"),
-    adminId: v.id("users"),
+    instructorId: v.id("users"),
     details: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
 
-    const admin = await ctx.db.get(args.adminId);
-    if (!admin) throw new Error("Admin not found");
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("instructor not found");
 
     // Log the action before deleting
-    await ctx.db.insert("adminLogs", {
-      admin_id: args.adminId,
-      admin_name: `${admin.first_name} ${admin.last_name}`,
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
       affected_user_id: args.userId,
       affected_user_name: `${user.first_name} ${user.last_name}`,
       affected_user_email: user.email,
@@ -180,7 +180,7 @@ export const createUser = mutation({
     email: v.string(),
     role: v.number(),
     middle_name: v.optional(v.string()),
-    adminId: v.id("users"),
+    instructorId: v.id("users"),
     subrole: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -200,8 +200,8 @@ export const createUser = mutation({
       throw new Error("Email already registered");
     }
 
-    const admin = await ctx.db.get(args.adminId);
-    if (!admin) throw new Error("Admin not found");
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("instructor not found");
 
     try {
       // Create the user in Convex with the Clerk ID
@@ -217,9 +217,9 @@ export const createUser = mutation({
       });
 
       // Log the action
-      await ctx.db.insert("adminLogs", {
-        admin_id: args.adminId,
-        admin_name: `${admin.first_name} ${admin.last_name}`,
+      await ctx.db.insert("instructorLogs", {
+        instructor_id: args.instructorId,
+        instructor_name: `${instructor.first_name} ${instructor.last_name}`,
         affected_user_id: userId,
         affected_user_name: `${args.first_name} ${args.last_name}`,
         affected_user_email: args.email,
@@ -240,7 +240,7 @@ export const createUser = mutation({
 // =========================================
 export const getLogs = query({
     handler: async (ctx) => {
-        const logs = await ctx.db.query("adminLogs").collect();
+        const logs = await ctx.db.query("instructorLogs").collect();
         return logs;
     },
 });
