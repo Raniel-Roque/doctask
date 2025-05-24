@@ -30,10 +30,18 @@ export default defineSchema({
   adminLogs: defineTable({
     // Log Identification
     admin_id: v.id("users"),
-    target_user_id: v.id("users"),
+    admin_name: v.string(), // Full name of admin who performed the action
+    
+    // Affected User Information (stored directly to prevent data loss on user deletion)
+    affected_user_id: v.optional(v.id("users")), // ID of affected user (optional in case user is deleted)
+    affected_user_name: v.string(), // Full name of affected user
+    affected_user_email: v.string(), // Email of affected user
     
     // Log Details
     action: v.string(), 
     details: v.string(), // JSON stringified details of the action
-  }).index("by_admin", ["admin_id"])
+  })
+  .index("by_admin", ["admin_id"])
+  .index("by_action", ["action"])
+  .index("by_affected_user", ["affected_user_id"])
 });

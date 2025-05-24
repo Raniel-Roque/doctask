@@ -1,24 +1,28 @@
 import { format } from "date-fns";
-import { FaChevronLeft, FaChevronRight, FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaSearch, FaSort, FaSortUp, FaSortDown, FaChevronDown } from "react-icons/fa";
 import { useState } from "react";
+import { Id } from "../../../../../../../convex/_generated/dataModel";
 
 // =========================================
 // Types
 // =========================================
 interface Log {
-    _id: string;
-    name: string;
+    _id: Id<"adminLogs">;
+    admin_id: Id<"users">;
+    admin_name: string;
+    affected_user_id: Id<"users"> | null;
+    affected_user_name: string;
+    affected_user_email: string;
     action: string;
-    affectedUser: string;
     details: string;
-    timestamp: number;
+    _creationTime: number;
 }
 
 interface LogTableProps {
     logs: Log[];
 }
 
-type SortField = "timestamp" | "action";
+type SortField = "timestamp";
 type SortDirection = "asc" | "desc";
 
 // =========================================
@@ -65,6 +69,20 @@ export const LogTable = ({ logs }: LogTableProps) => {
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [currentPage, setCurrentPage] = useState(1);
     const [actionFilter, setActionFilter] = useState<typeof LOG_ACTIONS[keyof typeof LOG_ACTIONS]>(LOG_ACTIONS.ALL);
+    
+    type ExpandedColumns = {
+        adminId: boolean;
+        affectedUserId: boolean;
+        email: boolean;
+        details: boolean;
+    };
+    
+    const [expandedColumns, setExpandedColumns] = useState<ExpandedColumns>({
+        adminId: false,
+        affectedUserId: false,
+        email: false,
+        details: false
+    });
 
     const getSortIcon = (field: SortField) => {
         if (field !== sortField) return <FaSort />;
@@ -83,9 +101,10 @@ export const LogTable = ({ logs }: LogTableProps) => {
     const filterAndSortLogs = () => {
         const filtered = logs.filter((log) => {
             const matchesSearch = searchTerm === "" ||
-                log.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                log.admin_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.affectedUser.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                log.affected_user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                log.affected_user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.details.toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesAction = actionFilter === LOG_ACTIONS.ALL || log.action === actionFilter;
@@ -97,10 +116,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
             let comparison = 0;
             switch (sortField) {
                 case "timestamp":
-                    comparison = a.timestamp - b.timestamp;
-                    break;
-                case "action":
-                    comparison = a.action.localeCompare(b.action);
+                    comparison = a._creationTime - b._creationTime;
                     break;
             }
             return sortDirection === "asc" ? comparison : -comparison;
@@ -134,6 +150,23 @@ export const LogTable = ({ logs }: LogTableProps) => {
     const filteredAndSortedLogs = filterAndSortLogs();
     const { totalEntries, totalPages, startEntry, endEntry, paginatedLogs } = getPaginationInfo(filteredAndSortedLogs);
 
+    // =========================================
+    // Collapsible Text Component
+    // =========================================
+    const CollapsibleText = ({ text, maxLength = 10, column }: { text: string | null, maxLength?: number, column: keyof ExpandedColumns }) => {
+        if (!text) return <span>-</span>;
+        if (text.length <= maxLength) return <span>{text}</span>;
+
+        return (
+            <button
+                onClick={() => setExpandedColumns((prev: ExpandedColumns) => ({ ...prev, [column]: !prev[column] }))}
+                className="w-full text-center"
+            >
+                {expandedColumns[column] ? text : `${text.slice(0, maxLength)}...`}
+            </button>
+        );
+    };
+
     return (
         <div className="mt-4">
             <div className="mb-4 flex gap-4">
@@ -149,102 +182,127 @@ export const LogTable = ({ logs }: LogTableProps) => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <select 
-                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={actionFilter}
-                    onChange={(e) => setActionFilter(e.target.value as typeof LOG_ACTIONS[keyof typeof LOG_ACTIONS])}
-                >
-                    {Object.values(LOG_ACTIONS).map((action) => (
-                        <option key={action} value={action}>
-                            {action}
-                        </option>
-                    ))}
-                </select>
+                <div className="relative">
+                    <select 
+                        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
+                        value={actionFilter}
+                        onChange={(e) => setActionFilter(e.target.value as typeof LOG_ACTIONS[keyof typeof LOG_ACTIONS])}
+                    >
+                        {Object.values(LOG_ACTIONS).map((action) => (
+                            <option key={action} value={action}>
+                                {action}
+                            </option>
+                        ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <FaChevronDown color="#6B7280" />
+                    </div>
+                </div>
             </div>
             <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-200">
-                    <thead>
-                        <tr className="bg-[#B54A4A]">
-                            <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                Name
-                            </th>
-                            <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                Action
-                            </th>
-                            <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                Affected User
-                            </th>
-                            <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                Details
-                            </th>
-                            <th 
-                                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
-                                onClick={() => handleSort("timestamp")}
-                            >
-                                <div className="flex items-center justify-center">
-                                    Time
-                                    <span className="ml-1">{getSortIcon("timestamp")}</span>
-                                </div>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paginatedLogs.map((log, index) => (
-                            <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    {log.name}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
-                                        {log.action}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    {log.affectedUser}
-                                </td>
-                                <td className="px-6 py-4 max-w-md break-words">
-                                    {log.details}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    {format(new Date(log.timestamp), "MMM dd, yyyy HH:mm:ss")}
-                                </td>
+                <div className="min-w-full">
+                    <table className="w-full bg-white border border-gray-200">
+                        <thead>
+                            <tr className="bg-[#B54A4A]">
+                                <th 
+                                    className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
+                                    onClick={() => handleSort("timestamp")}
+                                >
+                                    <div className="flex items-center justify-center">
+                                        Time
+                                        <span className="ml-1">{getSortIcon("timestamp")}</span>
+                                    </div>
+                                </th>
+                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                                    Admin ID
+                                </th>
+                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                                    Admin Name
+                                </th>
+                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                                    Action
+                                </th>
+                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                                    Affected User ID
+                                </th>
+                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                                    Affected User Name
+                                </th>
+                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                                    Affected User Email
+                                </th>
+                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                                    Details
+                                </th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-                    <div className="flex items-center">
-                        <p className="text-sm text-gray-700">
-                            Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}
-                            <span className="font-medium">{totalEntries}</span> entries
-                        </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <button
-                            onClick={() => setCurrentPage(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className={`p-2 rounded-md ${
-                                currentPage === 1
-                                    ? 'text-gray-400 cursor-not-allowed'
-                                    : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                        >
-                            <FaChevronLeft />
-                        </button>
-                        <span className="text-sm text-gray-700">
-                            Page {currentPage} of {totalPages}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className={`p-2 rounded-md ${
-                                currentPage === totalPages
-                                    ? 'text-gray-400 cursor-not-allowed'
-                                    : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                        >
-                            <FaChevronRight />
-                        </button>
+                        </thead>
+                        <tbody>
+                            {paginatedLogs.map((log, index) => (
+                                <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        {format(new Date(log._creationTime), "MMM dd, yyyy hh:mm a")}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
+                                        <CollapsibleText text={log.admin_id} maxLength={8} column="adminId" />
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-left">
+                                        {log.admin_name}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
+                                            {log.action}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
+                                        <CollapsibleText text={log.affected_user_id} maxLength={8} column="affectedUserId" />
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-left">
+                                        {log.affected_user_name || '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
+                                        <CollapsibleText text={log.affected_user_email} maxLength={15} column="email" />
+                                    </td>
+                                    <td className="px-6 py-4 max-w-md break-words text-left cursor-pointer">
+                                        <CollapsibleText text={log.details} maxLength={30} column="details" />
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+                        <div className="flex items-center">
+                            <p className="text-sm text-gray-700">
+                                Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}
+                                <span className="font-medium">{totalEntries}</span> entries
+                            </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className={`p-2 rounded-md ${
+                                    currentPage === 1
+                                        ? 'text-gray-400 cursor-not-allowed'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                <FaChevronLeft />
+                            </button>
+                            <span className="text-sm text-gray-700">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className={`p-2 rounded-md ${
+                                    currentPage === totalPages
+                                        ? 'text-gray-400 cursor-not-allowed'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                <FaChevronRight />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

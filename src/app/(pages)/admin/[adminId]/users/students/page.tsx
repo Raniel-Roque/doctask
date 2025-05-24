@@ -228,13 +228,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
           throw new Error(errorData.error || "Failed to update user email");
         }
 
-        const { newClerkId } = await response.json();
-
-        // Update in Convex with new Clerk ID
+        // Update in Convex without changing Clerk ID
         await updateUser({
           userId: editingUser._id,
           adminId: adminId as Id<"users">,
-          clerk_id: newClerkId,
           first_name: editFormData.first_name,
           middle_name: editFormData.middle_name || undefined,
           last_name: editFormData.last_name,
@@ -495,7 +492,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         throw new Error(data.error || "Failed to reset password");
       }
       
-      // Update user in Convex with new Clerk ID
+      // Update user in Convex to mark password as reset
       await updateUser({
         userId: resetPasswordUser._id,
         first_name: resetPasswordUser.first_name,
@@ -503,42 +500,25 @@ const UsersPage = ({ params }: UsersPageProps) => {
         last_name: resetPasswordUser.last_name,
         email: resetPasswordUser.email,
         adminId: adminId as Id<"users">,
-        clerk_id: data.newClerkId,
         isPasswordReset: true,
       });
 
       // Reset password user state and close dialog
       setResetPasswordUser(null);
-      setIsResettingPassword(false);
-      
-      // Refresh students list
       await refreshStudents();
-      
-      logUserAction("reset_password_success", { 
-        userId: resetPasswordUser._id,
-        email: resetPasswordUser.email
-      });
-
-      setSuccessMessage("Password reset email sent successfully");
+      setSuccessMessage("Password reset successfully");
     } catch (error) {
-      logUserAction("reset_password_failed", { 
-        userId: resetPasswordUser._id,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      console.error("Error resetting password:", error);
       if (error instanceof Error) {
-        if (error.name === "AbortError") {
+        if (error.name === 'AbortError') {
           setResetPasswordNetworkError("Request timed out. Please try again.");
+        } else if (error.message.includes('Network error')) {
+          setResetPasswordNetworkError("Network error - please check your internet connection");
         } else {
-          setNotification({
-            type: "error",
-            message: error.message,
-          });
+          setResetPasswordNetworkError(error.message);
         }
       } else {
-        setNotification({
-          type: "error",
-          message: "An unexpected error occurred",
-        });
+        setResetPasswordNetworkError("An unexpected error occurred. Please try again.");
       }
     } finally {
       setIsResettingPassword(false);

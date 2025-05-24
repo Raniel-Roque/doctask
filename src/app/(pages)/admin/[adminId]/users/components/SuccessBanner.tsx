@@ -1,5 +1,5 @@
 import { FaCheckCircle, FaTimes } from "react-icons/fa";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 // =========================================
 // Types
@@ -20,12 +20,29 @@ export const SuccessBanner = ({ message, onClose }: SuccessBannerProps) => {
   const [isExiting, setIsExiting] = useState(false);
 
   // =========================================
+  // Event Handlers
+  // =========================================
+  const handleClose = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose();
+    }, 300); 
+  }, [onClose]);
+
+  // =========================================
   // Effects
   // =========================================
   useEffect(() => {
     if (message) {
       setIsVisible(true);
       setIsExiting(false);
+      
+      // Auto dismiss after 3 seconds
+      const timer = setTimeout(() => {
+        handleClose();
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     } else {
       setIsExiting(true);
       const timer = setTimeout(() => {
@@ -33,19 +50,9 @@ export const SuccessBanner = ({ message, onClose }: SuccessBannerProps) => {
       }, 300); 
       return () => clearTimeout(timer);
     }
-  }, [message]);
+  }, [message, handleClose]);
 
   if (!isVisible && !message) return null;
-
-  // =========================================
-  // Event Handlers
-  // =========================================
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onClose();
-    }, 300); 
-  };
 
   // =========================================
   // Render

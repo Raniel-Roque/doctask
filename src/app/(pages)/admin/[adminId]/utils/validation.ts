@@ -18,7 +18,7 @@ export const VALIDATION_RULES = {
   lastName: {
     maxLength: 50,
     pattern: /^[a-zA-Z\s-']+$/,
-    message: "Last name can only contain letters, spaces, hyphens, and apostrophes",
+    message: "Last name must be less than 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
     required: true
   },
   // Email

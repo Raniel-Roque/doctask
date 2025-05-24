@@ -74,6 +74,9 @@ export const updateUser = mutation({
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
 
+    const admin = await ctx.db.get(args.adminId);
+    if (!admin) throw new Error("Admin not found");
+
     const updates: {
       first_name: string;
       last_name: string;
@@ -105,21 +108,35 @@ export const updateUser = mutation({
 
     await ctx.db.patch(args.userId, updates);
 
+    // Create human-readable details for edited fields
+    const changes = [];
+    if (args.first_name !== user.first_name) {
+      changes.push(`First name: ${user.first_name} → ${args.first_name}`);
+    }
+    if (args.middle_name !== user.middle_name) {
+      changes.push(`Middle name: ${user.middle_name || 'none'} → ${args.middle_name || 'none'}`);
+    }
+    if (args.last_name !== user.last_name) {
+      changes.push(`Last name: ${user.last_name} → ${args.last_name}`);
+    }
+    if (args.email !== user.email) {
+      changes.push(`Email: ${user.email} → ${args.email}`);
+    }
+    if (args.subrole !== user.subrole) {
+      const oldRole = user.subrole === 0 ? 'Member' : user.subrole === 1 ? 'Manager' : 'None';
+      const newRole = args.subrole === 0 ? 'Member' : args.subrole === 1 ? 'Manager' : 'None';
+      changes.push(`Role: ${oldRole} → ${newRole}`);
+    }
+
     // Log the action
     await ctx.db.insert("adminLogs", {
       admin_id: args.adminId,
-            action: args.isPasswordReset ? LOG_ACTIONS.RESET_PASSWORD : LOG_ACTIONS.EDIT_USER,
-      target_user_id: args.userId,
-      details: JSON.stringify({
-        previous: {
-          first_name: user.first_name,
-          middle_name: user.middle_name,
-          last_name: user.last_name,
-          email: user.email,
-          clerk_id: user.clerk_id,
-        },
-        new: updates,
-      }),
+      admin_name: `${admin.first_name} ${admin.last_name}`,
+      affected_user_id: args.userId,
+      affected_user_name: `${user.first_name} ${user.last_name}`,
+      affected_user_email: user.email,
+      action: args.isPasswordReset ? LOG_ACTIONS.RESET_PASSWORD : LOG_ACTIONS.EDIT_USER,
+      details: args.isPasswordReset ? "Password was reset" : changes.join(", "),
     });
 
     return { success: true };
@@ -130,24 +147,24 @@ export const deleteUser = mutation({
   args: {
     userId: v.id("users"),
     adminId: v.id("users"),
+    details: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
 
+    const admin = await ctx.db.get(args.adminId);
+    if (!admin) throw new Error("Admin not found");
+
     // Log the action before deleting
     await ctx.db.insert("adminLogs", {
       admin_id: args.adminId,
-            action: LOG_ACTIONS.DELETE_USER,
-      target_user_id: args.userId,
-      details: JSON.stringify({
-        deleted_user: {
-          first_name: user.first_name,
-          middle_name: user.middle_name,
-          last_name: user.last_name,
-          email: user.email,
-        },
-      }),
+      admin_name: `${admin.first_name} ${admin.last_name}`,
+      affected_user_id: args.userId,
+      affected_user_name: `${user.first_name} ${user.last_name}`,
+      affected_user_email: user.email,
+      action: LOG_ACTIONS.DELETE_USER,
+      details: args.details || "Deleted User", // Use provided details or default
     });
 
     await ctx.db.delete(args.userId);
@@ -183,6 +200,9 @@ export const createUser = mutation({
       throw new Error("Email already registered");
     }
 
+    const admin = await ctx.db.get(args.adminId);
+    if (!admin) throw new Error("Admin not found");
+
     try {
       // Create the user in Convex with the Clerk ID
       const userId = await ctx.db.insert("users", {
@@ -199,18 +219,12 @@ export const createUser = mutation({
       // Log the action
       await ctx.db.insert("adminLogs", {
         admin_id: args.adminId,
-                action: LOG_ACTIONS.CREATE_USER,
-        target_user_id: userId,
-        details: JSON.stringify({
-          created_user: {
-            first_name: args.first_name,
-            middle_name: args.middle_name,
-            last_name: args.last_name,
-            email: args.email,
-            role: args.role,
-            subrole: args.subrole,
-          },
-        }),
+        admin_name: `${admin.first_name} ${admin.last_name}`,
+        affected_user_id: userId,
+        affected_user_name: `${args.first_name} ${args.last_name}`,
+        affected_user_email: args.email,
+        action: LOG_ACTIONS.CREATE_USER,
+        details: "Created User",
       });
 
       return { success: true, userId };
@@ -227,24 +241,6 @@ export const createUser = mutation({
 export const getLogs = query({
     handler: async (ctx) => {
         const logs = await ctx.db.query("adminLogs").collect();
-        
-        // Get user information for each log
-        const logsWithUsers = await Promise.all(
-            logs.map(async (log) => {
-                const admin = await ctx.db.get(log.admin_id);
-                const targetUser = await ctx.db.get(log.target_user_id);
-                
-                return {
-                    _id: log._id,
-                    name: admin ? `${admin.first_name} ${admin.last_name}` : "Unknown Admin",
-                    action: log.action,
-                    affectedUser: targetUser ? `${targetUser.first_name} ${targetUser.last_name}` : "Unknown User",
-                    details: log.details,
-                    timestamp: log._creationTime
-                };
-            })
-        );
-
-        return logsWithUsers;
+        return logs;
     },
 });

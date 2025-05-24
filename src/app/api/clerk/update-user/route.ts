@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { Resend } from 'resend';
-import { User } from "@clerk/nextjs/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../../convex/_generated/api";
 
-// Initialize Resend with proper error handling
-let resend: Resend;
-try {
-  if (!process.env.RESEND_API_KEY) {
-    throw new Error("RESEND_API_KEY is not configured");
-  }
-  resend = new Resend(process.env.RESEND_API_KEY);
-} catch (error) {
-  console.error("Failed to initialize Resend:", error);
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 interface ClerkError {
   errors?: Array<{
@@ -66,9 +59,9 @@ export async function POST(request: Request) {
       emailAddress: [email],
     });
 
-    const emailExists = existingUsers.data.some((user: User) => 
+    const emailExists = existingUsers.data.some((user) => 
       user.id !== clerkId && 
-      user.emailAddresses.some((e: { emailAddress: string }) => e.emailAddress === email)
+      user.emailAddresses.some((e) => e.emailAddress === email)
     );
 
     if (emailExists) {
@@ -87,50 +80,108 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate new password
-    const password = generatePassword(firstName, lastName);
+    // Get the Convex user record
+    const convexUser = await convex.query(api.documents.getUserByClerkId, { clerkId });
+    if (!convexUser) {
+      return NextResponse.json(
+        { error: "User not found in database" },
+        { status: 404 }
+      );
+    }
 
-    // Only after all validations pass, proceed with the update
-    // Delete old user from Clerk
-    await client.users.deleteUser(clerkId);
-
-    // Create new user in Clerk
-    const newUser = await client.users.createUser({
+    // Check if a new user was already created for this email
+    const existingNewUser = await client.users.getUserList({
       emailAddress: [email],
-      password,
     });
 
-    // Send welcome email using Resend with improved error handling
+    let newUser;
+    let newPassword;
+    if (existingNewUser.data.some(user => user.id !== clerkId)) {
+      // A new user was already created but the process didn't complete
+      newUser = existingNewUser.data.find(user => user.id !== clerkId);
+    } else {
+      // Generate a new password
+      newPassword = generatePassword(firstName, lastName);
+
+      // Create new user with the new email
+      newUser = await client.users.createUser({
+        emailAddress: [email],
+        password: newPassword,
+      });
+
+      // Set email as unverified
+      const emailAddress = newUser.emailAddresses[0];
+      await client.emailAddresses.updateEmailAddress(emailAddress.id, {
+        primary: true,
+        verified: false
+      });
+    }
+
+    if (!newUser) {
+      return NextResponse.json(
+        { error: "Failed to create or find new user" },
+        { status: 500 }
+      );
+    }
+
+    // Check if old user still exists before trying to delete
+    try {
+      const oldUser = await client.users.getUser(clerkId);
+      if (oldUser) {
+        await client.users.deleteUser(clerkId);
+      }
+    } catch {
+      // Old user already deleted or not found, continuing...
+    }
+
+    // Check if Convex update is needed
+    try {
+      const currentConvexUser = await convex.query(api.documents.getUserByClerkId, { clerkId: newUser.id });
+      if (!currentConvexUser) {
+        // Update Convex with the new clerk ID
+        await convex.mutation(api.documents.updateUser, {
+          userId: convexUser._id,
+          adminId: convexUser._id,
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          clerk_id: newUser.id,
+          isPasswordReset: true
+        });
+      }
+    } catch {
+      // Continue with email notification even if Convex update fails
+    }
+
+    // Send email update notification using Resend
     try {
       if (!resend) {
         throw new Error("Email service is not properly configured");
       }
 
-      const emailResponse = await resend.emails.send({
+      await resend.emails.send({
         from: 'DocTask <onboarding@resend.dev>',
         to: email,
-        subject: 'Welcome to DocTask - Your Account Details',
+        subject: 'DocTask - Your Email Has Been Updated',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Welcome to DocTask!</h2>
+            <h2 style="color: #333;">Email Update Successful</h2>
             
             <p>Dear ${firstName} ${lastName},</p>
             
-            <p>Your account has been updated. Here are your new login details:</p>
+            <p>Your email address has been successfully changed.</p>
             
             <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <p style="margin: 0;"><strong>Email:</strong> ${email}</p>
-              <p style="margin: 10px 0 0 0;"><strong>Temporary Password:</strong> ${password}</p>
+              <p style="margin: 0;"><strong>New Email:</strong> ${email}</p>
+              ${newPassword ? `<p style="margin: 10px 0 0 0;"><strong>New Password:</strong> ${newPassword}</p>` : ''}
             </div>
             
             <p><strong>Important Next Steps:</strong></p>
             <ol>
-              <li>Log in to your account using the temporary password above</li>
-              <li>Change your password immediately for security</li>
-              <li>Verify your email address</li>
+              <li>Log in to your account using the new email${newPassword ? ' and password above' : ''}</li>
+              ${newPassword ? '<li>Change your password immediately for security</li>' : ''}
+              <li>Verify your new email address</li>
             </ol>
-            
-            <p>If you need any assistance, please contact our support team.</p>
             
             <p style="margin-top: 30px; color: #666;">
               Best regards,<br>
@@ -139,20 +190,13 @@ export async function POST(request: Request) {
           </div>
         `,
       });
-
-      if (!emailResponse || emailResponse.error) {
-        console.error("Failed to send email:", emailResponse?.error);
-        throw new Error("Failed to send welcome email");
-      }
-    } catch (emailError) {
-      console.error("Error sending welcome email:", emailError);
-      // Continue with the user creation even if email fails
-      // But log the error for monitoring
+    } catch {
+      // Continue with the update even if email fails
     }
 
     return NextResponse.json({ 
       success: true,
-      newClerkId: newUser.id 
+      clerkId: newUser.id // Return the new clerkId
     });
   } catch (error: unknown) {
     console.error("Error updating user:", error);

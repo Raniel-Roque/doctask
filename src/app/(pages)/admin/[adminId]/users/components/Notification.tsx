@@ -1,6 +1,6 @@
 import { FaExclamationCircle, FaTimes } from "react-icons/fa";
 import { Notification as NotificationType } from "./types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 // =========================================
 // Types
@@ -21,12 +21,29 @@ export const Notification = ({ notification, onClose }: NotificationProps) => {
   const [isExiting, setIsExiting] = useState(false);
 
   // =========================================
+  // Event Handlers
+  // =========================================
+  const handleClose = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose();
+    }, 300); 
+  }, [onClose]);
+
+  // =========================================
   // Effects
   // =========================================
   useEffect(() => {
     if (notification) {
       setIsVisible(true);
       setIsExiting(false);
+      
+      // Auto dismiss after 3 seconds
+      const timer = setTimeout(() => {
+        handleClose();
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     } else {
       setIsExiting(true);
       const timer = setTimeout(() => {
@@ -34,19 +51,9 @@ export const Notification = ({ notification, onClose }: NotificationProps) => {
       }, 300); 
       return () => clearTimeout(timer);
     }
-  }, [notification]);
+  }, [notification, handleClose]);
 
   if (!isVisible && !notification) return null;
-
-  // =========================================
-  // Event Handlers
-  // =========================================
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onClose();
-    }, 300); 
-  };
 
   // =========================================
   // Render

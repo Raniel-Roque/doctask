@@ -1,4 +1,4 @@
-import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown, FaChevronDown } from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 
 // =========================================
@@ -150,25 +150,35 @@ export const UserTable = ({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-        <select 
-          className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={statusFilter}
-          onChange={(e) => onStatusFilterChange(e.target.value as typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS])}
-        >
-          <option value={TABLE_CONSTANTS.STATUS_FILTERS.ALL}>All Status</option>
-          <option value={TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED}>Verified</option>
-          <option value={TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED}>Unverified</option>
-        </select>
-        {showRoleColumn && onRoleFilterChange && (
+        <div className="relative">
           <select 
-            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={roleFilter}
-            onChange={(e) => onRoleFilterChange(e.target.value as typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS])}
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
+            value={statusFilter}
+            onChange={(e) => onStatusFilterChange(e.target.value as typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS])}
           >
-            <option value={TABLE_CONSTANTS.ROLE_FILTERS.ALL}>All Roles</option>
-            <option value={TABLE_CONSTANTS.ROLE_FILTERS.MANAGER}>Manager</option>
-            <option value={TABLE_CONSTANTS.ROLE_FILTERS.MEMBER}>Member</option>
+            <option value={TABLE_CONSTANTS.STATUS_FILTERS.ALL}>All Status</option>
+            <option value={TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED}>Verified</option>
+            <option value={TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED}>Unverified</option>
           </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <FaChevronDown color="#6B7280" />
+          </div>
+        </div>
+        {showRoleColumn && onRoleFilterChange && (
+          <div className="relative">
+            <select 
+              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
+              value={roleFilter}
+              onChange={(e) => onRoleFilterChange(e.target.value as typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS])}
+            >
+              <option value={TABLE_CONSTANTS.ROLE_FILTERS.ALL}>All Roles</option>
+              <option value={TABLE_CONSTANTS.ROLE_FILTERS.MANAGER}>Manager</option>
+              <option value={TABLE_CONSTANTS.ROLE_FILTERS.MEMBER}>Member</option>
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <FaChevronDown color="#6B7280" />
+            </div>
+          </div>
         )}
         <button 
           onClick={onAdd}
@@ -202,15 +212,6 @@ export const UserTable = ({
                   <span className="ml-1">{getSortIcon("last_name")}</span>
                 </div>
               </th>
-              <th 
-                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
-                onClick={() => onSort("email")}
-              >
-                <div className="flex items-center justify-center">
-                  Email
-                  <span className="ml-1">{getSortIcon("email")}</span>
-                </div>
-              </th>
               {showRoleColumn && (
                 <th 
                   className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider"
@@ -220,13 +221,22 @@ export const UserTable = ({
                   </div>
                 </th>
               )}
+              <th 
+                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
+                onClick={() => onSort("email")}
+              >
+                <div className="flex items-center justify-center">
+                  Email
+                  <span className="ml-1">{getSortIcon("email")}</span>
+                </div>
+              </th>
               <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">Status</th>
               <th 
                 className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("_creationTime")}
               >
                 <div className="flex items-center justify-center">
-                  Creation Time
+                  Created
                   <span className="ml-1">{getSortIcon("_creationTime")}</span>
                 </div>
               </th>
@@ -245,9 +255,6 @@ export const UserTable = ({
                 <td className="px-6 py-4 whitespace-nowrap">
                   {user.last_name}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {user.email}
-                </td>
                 {showRoleColumn && (
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -259,6 +266,9 @@ export const UserTable = ({
                     </span>
                   </td>
                 )}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {user.email}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   {user.email_verified ? (
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -271,7 +281,7 @@ export const UserTable = ({
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  {new Date(user._creationTime).toLocaleString()}
+                  {new Date(user._creationTime).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   <div className="flex justify-center gap-2">
@@ -305,33 +315,39 @@ export const UserTable = ({
       </div>
 
       {/* Pagination */}
-      <div className="mt-4 flex items-center justify-between">
-        <div className="text-sm text-gray-700">
-          Showing {startEntry} to {endEntry} of {totalEntries} entries
-          </div>
-        <div className="flex gap-2">
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            className={`px-3 py-1 rounded ${
-                currentPage === 1
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : 'bg-[#B54A4A] text-white hover:bg-[#9a3d3d]'
-              }`}
-            >
-              <FaChevronLeft />
-            </button>
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            className={`px-3 py-1 rounded ${
-                currentPage === totalPages
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : 'bg-[#B54A4A] text-white hover:bg-[#9a3d3d]'
-              }`}
-            >
-              <FaChevronRight />
-            </button>
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+        <div className="flex items-center">
+          <p className="text-sm text-gray-700">
+            Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}
+            <span className="font-medium">{totalEntries}</span> entries
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <FaChevronLeft />
+          </button>
+          <span className="text-sm text-gray-700">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <FaChevronRight />
+          </button>
         </div>
       </div>
     </div>
