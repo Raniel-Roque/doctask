@@ -1,9 +1,11 @@
 "use client";
 
 import { useSignIn } from "@clerk/clerk-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 interface ClerkError {
@@ -15,11 +17,42 @@ interface ClerkError {
 
 const LoginPage = () => {
   const { isLoaded, signIn, setActive } = useSignIn();
+  const { isSignedIn } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      router.push('/');
+    }
+  }, [isSignedIn, router]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-[#B54A4A] flex items-center justify-center p-4">
+        <div className="text-center text-white">
+          <h1 className="text-2xl font-bold mb-4">Desktop Only</h1>
+          <p className="text-lg">Please access this application from a desktop device for the best experience.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +89,7 @@ const LoginPage = () => {
             alt="DocTask Logo"
             width={180}
             height={180}
-            className="rounded-full mb-8 mx-auto shadow-xl"
+            className="rounded-full mb-8 mx-auto shadow-xl border-4 border-black"
           />
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 tracking-wider">DOCTASK</h1>
           <p className="text-gray-600 text-lg md:text-xl leading-relaxed mx-auto max-w-md font-light">
