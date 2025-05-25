@@ -14,20 +14,19 @@ interface ClerkError {
 }
 
 function generatePassword(firstName: string, lastName: string): string {
-  const firstInitial = firstName.charAt(0).toUpperCase();
-  const formattedLastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
-  const date = new Date();
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  
-  // Generate base password
-  let password = `${firstInitial}${formattedLastName}${hours}${minutes}`;
-  
-  // If less than 8 characters, add random numbers until it's at least 8
-  while (password.length < 8) {
-    password += Math.floor(Math.random() * 10);
-  }
-  
+  const firstInitial = firstName.charAt(0);
+  const timestamp = Date.now().toString();
+  const lastFourTimestamp = timestamp.slice(-4);
+
+  // Calculate the maximum length for the last name part
+  const maxLastNameLength = 12 - 1 - 4; // 1 (first initial) + 4 (timestamp digits) = 5 characters used
+
+  // Take the last name and truncate if necessary
+  const lastNamePart = lastName.slice(0, maxLastNameLength);
+
+  // Combine the parts
+  const password = `${firstInitial}${lastNamePart}${lastFourTimestamp}`;
+
   return password;
 }
 
