@@ -134,25 +134,6 @@ export async function POST(request: Request) {
       // Old user already deleted or not found, continuing...
     }
 
-    // Check if Convex update is needed
-    try {
-      const currentConvexUser = await convex.query(api.documents.getUserByClerkId, { clerkId: newUser.id });
-      if (!currentConvexUser) {
-        // Update Convex with the new clerk ID
-        await convex.mutation(api.documents.updateUser, {
-          userId: convexUser._id,
-          instructorId: convexUser._id,
-          first_name: firstName,
-          last_name: lastName,
-          email: email,
-          clerk_id: newUser.id,
-          isPasswordReset: true
-        });
-      }
-    } catch {
-      // Continue with email notification even if Convex update fails
-    }
-
     // Send email update notification using Resend
     try {
       if (!resend) {

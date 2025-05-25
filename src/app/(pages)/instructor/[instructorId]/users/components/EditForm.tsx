@@ -1,5 +1,5 @@
 import React from "react";
-import { FaEdit, FaTimes, FaExclamationTriangle } from "react-icons/fa";
+import { FaEdit, FaTimes, FaExclamationTriangle, FaChevronDown } from "react-icons/fa";
 import { User, EditFormData } from "./types";
 import { sanitizeInput, validateUserForm } from "../../utils/validation";
 
@@ -213,16 +213,27 @@ export const EditForm = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Role <span className="text-red-500">*</span>
               </label>
-              <select
-                name="subrole"
-                value={formData.subrole}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#B54A4A]"
-                required
-              >
-                <option value={0}>Member</option>
-                <option value={1}>Manager</option>
-              </select>
+              <div className="relative">
+                <select
+                  name="subrole"
+                  value={formData.subrole}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2 rounded-lg border-2 appearance-none bg-white pr-10 ${
+                    validationErrors.subrole ? 'border-red-500' : 'border-gray-300'
+                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
+                  required
+                  disabled={isSubmitting}
+                >
+                  <option value={0}>Member</option>
+                  <option value={1}>Manager</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <FaChevronDown color="#6B7280" />
+                </div>
+              </div>
+              {validationErrors.subrole && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.subrole}</p>
+              )}
             </div>
           )}
 

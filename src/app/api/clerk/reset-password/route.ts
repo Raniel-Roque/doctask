@@ -66,13 +66,9 @@ export async function POST(request: Request) {
 
     // Update Convex to log the password reset
     try {
-      await convex.mutation(api.documents.updateUser, {
+      await convex.mutation(api.documents.resetPassword, {
         userId: user._id,
-        instructorId: user._id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        isPasswordReset: true
+        instructorId: user._id
       });
     } catch {
       // Continue even if Convex update fails

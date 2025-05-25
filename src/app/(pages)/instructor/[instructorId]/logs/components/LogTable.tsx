@@ -107,7 +107,9 @@ export const LogTable = ({ logs }: LogTableProps) => {
                 log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.affected_user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.affected_user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.details.toLowerCase().includes(searchTerm.toLowerCase());
+                log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                log.instructor_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (log.affected_user_id && log.affected_user_id.toLowerCase().includes(searchTerm.toLowerCase()));
 
             const matchesAction = actionFilter === LOG_ACTIONS.ALL || log.action === actionFilter;
 
@@ -301,8 +303,16 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                     <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
                                         <CollapsibleText text={log.affected_user_email} maxLength={10} column="email" />
                                     </td>
-                                    <td className="px-6 py-4 max-w-md break-words text-left cursor-pointer">
-                                        <CollapsibleText text={log.details} maxLength={30} column="details" />
+                                    <td className="px-6 py-4 text-left cursor-pointer whitespace-pre">
+                                        <CollapsibleText 
+                                            text={typeof log.details === 'string' ? log.details : 
+                                                Object.entries(log.details)
+                                                    .map(([key, value]) => `${key}: ${value}`)
+                                                    .join('\n')
+                                            } 
+                                            maxLength={20} 
+                                            column="details" 
+                                        />
                                     </td>
                                 </tr>
                             ))}

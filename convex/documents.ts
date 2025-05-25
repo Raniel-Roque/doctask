@@ -69,6 +69,33 @@ export const getUserByEmail = query({
 // =========================================
 // User Mutations
 // =========================================
+export const resetPassword = mutation({
+  args: {
+    userId: v.id("users"),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+
+    // Log the password reset
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+      affected_user_id: args.userId,
+      affected_user_name: `${user.first_name} ${user.last_name}`,
+      affected_user_email: user.email,
+      action: LOG_ACTIONS.RESET_PASSWORD,
+      details: "Password was reset",
+    });
+
+    return { success: true };
+  },
+});
+
 export const updateUser = mutation({
   args: {
     userId: v.id("users"),
@@ -78,7 +105,6 @@ export const updateUser = mutation({
     email: v.string(),
     middle_name: v.optional(v.string()),
     clerk_id: v.optional(v.string()),
-    isPasswordReset: v.optional(v.boolean()),
     subrole: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -102,8 +128,10 @@ export const updateUser = mutation({
       email: args.email,
     };
 
-    // Handle middle_name update - convert null/undefined to undefined
-    updates.middle_name = args.middle_name || undefined;
+    // Only update middle_name if it has been changed
+    if (args.middle_name !== user.middle_name) {
+      updates.middle_name = args.middle_name || undefined;
+    }
 
     if (args.clerk_id !== undefined) {
       updates.clerk_id = args.clerk_id;
@@ -121,33 +149,39 @@ export const updateUser = mutation({
     // Create human-readable details for edited fields
     const changes = [];
     if (args.first_name !== user.first_name) {
-      changes.push(`First name: ${user.first_name} → ${args.first_name}`);
+      changes.push(`First Name: ${user.first_name} → ${args.first_name}`);
     }
     if (args.middle_name !== user.middle_name) {
-      changes.push(`Middle name: ${user.middle_name || 'none'} → ${args.middle_name || 'none'}`);
+      const oldMiddleName = user.middle_name || 'none';
+      const newMiddleName = args.middle_name || 'none';
+      if (oldMiddleName !== newMiddleName) {
+        changes.push(`Middle Name: ${oldMiddleName} → ${newMiddleName}`);
+      }
     }
     if (args.last_name !== user.last_name) {
-      changes.push(`Last name: ${user.last_name} → ${args.last_name}`);
+      changes.push(`Last Name: ${user.last_name} → ${args.last_name}`);
     }
     if (args.email !== user.email) {
       changes.push(`Email: ${user.email} → ${args.email}`);
     }
-    if (args.subrole !== user.subrole) {
+    if (args.subrole !== undefined && args.subrole !== user.subrole) {
       const oldRole = user.subrole === 0 ? 'Member' : user.subrole === 1 ? 'Manager' : 'None';
       const newRole = args.subrole === 0 ? 'Member' : args.subrole === 1 ? 'Manager' : 'None';
       changes.push(`Role: ${oldRole} → ${newRole}`);
     }
 
-    // Log the action
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: args.userId,
-      affected_user_name: `${user.first_name} ${user.last_name}`,
-      affected_user_email: user.email,
-      action: args.isPasswordReset ? LOG_ACTIONS.RESET_PASSWORD : LOG_ACTIONS.EDIT_USER,
-      details: args.isPasswordReset ? "Password was reset" : changes.join(", "),
-    });
+    // Only log if there are actual changes
+    if (changes.length > 0) {
+      await ctx.db.insert("instructorLogs", {
+        instructor_id: args.instructorId,
+        instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+        affected_user_id: args.userId,
+        affected_user_name: `${user.first_name} ${user.last_name}`,
+        affected_user_email: user.email,
+        action: LOG_ACTIONS.EDIT_USER,
+        details: changes.join("\n"),
+      });
+    }
 
     return { success: true };
   },

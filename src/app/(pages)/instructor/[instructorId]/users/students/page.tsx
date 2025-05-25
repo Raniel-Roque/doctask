@@ -155,7 +155,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setEditingUser(student);
     setEditFormData({
       first_name: student.first_name,
-      middle_name: student.middle_name || "",
+      middle_name: student.middle_name ?? "",
       last_name: student.last_name,
       email: student.email,
       subrole: student.subrole ?? 0,
@@ -227,15 +227,18 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           throw new Error(errorData.error || "Failed to update user email");
         }
 
-        // Update in Convex without changing Clerk ID
+        const data = await response.json();
+        
+        // Update in Convex with all changed fields
         await updateUser({
           userId: editingUser._id,
           instructorId: instructorId as Id<"users">,
           first_name: editFormData.first_name,
-          middle_name: editFormData.middle_name || undefined,
+          middle_name: editFormData.middle_name.trim() || undefined,
           last_name: editFormData.last_name,
           email: editFormData.email,
           subrole: editFormData.subrole,
+          clerk_id: data.clerkId
         });
       } else {
         // Update in Convex without changing Clerk ID
@@ -243,7 +246,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           userId: editingUser._id,
           instructorId: instructorId as Id<"users">,
           first_name: editFormData.first_name,
-          middle_name: editFormData.middle_name || undefined,
+          middle_name: editFormData.middle_name.trim() || undefined,
           last_name: editFormData.last_name,
           email: editFormData.email,
           subrole: editFormData.subrole,
@@ -476,18 +479,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         throw new Error(data.error || "Failed to reset password");
       }
       
-      // Update user in Convex to mark password as reset
-      await updateUser({
-        userId: resetPasswordUser._id,
-        first_name: resetPasswordUser.first_name,
-        middle_name: resetPasswordUser.middle_name,
-        last_name: resetPasswordUser.last_name,
-        email: resetPasswordUser.email,
-        instructorId: instructorId as Id<"users">,
-        isPasswordReset: true,
-      });
-
-      // Reset password user state and close dialog
       setResetPasswordUser(null);
       await refreshStudents();
       setSuccessMessage("Password reset successfully");
