@@ -55,6 +55,17 @@ export const getStudents = query({
   },
 });
 
+export const getUserByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+    return user;
+  },
+});
+
 // =========================================
 // User Mutations
 // =========================================
@@ -81,7 +92,7 @@ export const updateUser = mutation({
       first_name: string;
       last_name: string;
       email: string;
-      middle_name?: string;
+      middle_name?: string | undefined;
       email_verified?: boolean;
       clerk_id?: string;
       subrole?: number;
@@ -91,9 +102,8 @@ export const updateUser = mutation({
       email: args.email,
     };
 
-    if (args.middle_name !== undefined) {
-      updates.middle_name = args.middle_name;
-    }
+    // Handle middle_name update - convert null/undefined to undefined
+    updates.middle_name = args.middle_name || undefined;
 
     if (args.clerk_id !== undefined) {
       updates.clerk_id = args.clerk_id;
@@ -154,7 +164,7 @@ export const deleteUser = mutation({
     if (!user) throw new Error("User not found");
 
     const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("instructor not found");
+    if (!instructor) throw new Error("Instructor not found");
 
     // Log the action before deleting
     await ctx.db.insert("instructorLogs", {
@@ -164,7 +174,7 @@ export const deleteUser = mutation({
       affected_user_name: `${user.first_name} ${user.last_name}`,
       affected_user_email: user.email,
       action: LOG_ACTIONS.DELETE_USER,
-      details: args.details || "Deleted User", // Use provided details or default
+      details: args.details || "Deleted User",
     });
 
     await ctx.db.delete(args.userId);
@@ -190,18 +200,31 @@ export const createUser = mutation({
       throw new Error("Invalid email format");
     }
 
-    // Check if email already exists in Convex
+    // Check if user already exists in Convex
     const existingUser = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("email"), args.email))
       .first();
     
     if (existingUser) {
-      throw new Error("Email already registered");
+      // If user exists but doesn't have a clerk_id, update it
+      if (!existingUser.clerk_id) {
+        await ctx.db.patch(existingUser._id, {
+          clerk_id: args.clerk_id,
+          email_verified: false
+        });
+        return { success: true, userId: existingUser._id };
+      }
+      // If user exists with a different clerk_id, throw error
+      if (existingUser.clerk_id !== args.clerk_id) {
+        throw new Error("Email already registered. Please choose another email.");
+      }
+      // If user exists with same clerk_id, return success
+      return { success: true, userId: existingUser._id };
     }
 
     const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("instructor not found");
+    if (!instructor) throw new Error("Instructor not found");
 
     try {
       // Create the user in Convex with the Clerk ID

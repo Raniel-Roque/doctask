@@ -162,26 +162,28 @@ export async function POST(request: Request) {
       await resend.emails.send({
         from: 'DocTask <onboarding@resend.dev>',
         to: email,
-        subject: 'DocTask - Your Email Has Been Updated',
+        subject: 'Welcome to DocTask - Your Account Details',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Email Update Successful</h2>
+            <h2 style="color: #333;">Welcome to DocTask!</h2>
             
             <p>Dear ${firstName} ${lastName},</p>
             
-            <p>Your email address has been successfully changed.</p>
+            <p>Your account is now registered. Here are your login details:</p>
             
             <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <p style="margin: 0;"><strong>New Email:</strong> ${email}</p>
-              ${newPassword ? `<p style="margin: 10px 0 0 0;"><strong>New Password:</strong> ${newPassword}</p>` : ''}
+              <p style="margin: 0;"><strong>Email:</strong> ${email}</p>
+              ${newPassword ? `<p style="margin: 10px 0 0 0;"><strong>Temporary Password:</strong> ${newPassword}</p>` : ''}
             </div>
             
             <p><strong>Important Next Steps:</strong></p>
             <ol>
-              <li>Log in to your account using the new email${newPassword ? ' and password above' : ''}</li>
-              ${newPassword ? '<li>Change your password immediately for security</li>' : ''}
-              <li>Verify your new email address</li>
+              <li>Log in to your account using the temporary password above</li>
+              <li>Change your password immediately for security</li>
+              <li>Verify your email address</li>
             </ol>
+            
+            <p>If you need any assistance, please contact our support team.</p>
             
             <p style="margin-top: 30px; color: #666;">
               Best regards,<br>

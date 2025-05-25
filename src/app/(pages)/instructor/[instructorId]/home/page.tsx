@@ -12,10 +12,14 @@ interface InstructorHomePageProps {
 const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
   const { instructorId } = await params;
 
-  // Cast instructorId to Id<"users">
+  // Fetch user data
   const user = await fetchQuery(api.documents.getUserById, {
     id: instructorId as Id<"users">,
   });
+
+  // Fetch students and advisers
+  const students = await fetchQuery(api.documents.getStudents);
+  const advisers = await fetchQuery(api.documents.getAdvisers);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -33,7 +37,7 @@ const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <h3 className="text-2xl font-bold mt-1">0</h3>
+                <h3 className="text-2xl font-bold mt-1">{students?.length ?? 0}</h3>
               </div>
               <div className="bg-blue-100 p-3 rounded-full">
                 <GraduationCap className="w-6 h-6 text-blue-600" />
@@ -46,7 +50,7 @@ const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Advisers</p>
-                <h3 className="text-2xl font-bold mt-1">0</h3>
+                <h3 className="text-2xl font-bold mt-1">{advisers?.length ?? 0}</h3>
               </div>
               <div className="bg-purple-100 p-3 rounded-full">
                 <Users className="w-6 h-6 text-purple-600" />

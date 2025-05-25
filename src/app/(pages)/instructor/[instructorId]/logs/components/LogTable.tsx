@@ -112,8 +112,12 @@ export const LogTable = ({ logs }: LogTableProps) => {
             const matchesAction = actionFilter === LOG_ACTIONS.ALL || log.action === actionFilter;
 
             const logDate = new Date(log._creationTime);
-            const matchesDateRange = (!startDate || logDate >= new Date(startDate)) &&
-                                   (!endDate || logDate <= new Date(endDate + 'T23:59:59'));
+            const logDateOnly = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
+            const startDateObj = startDate ? new Date(startDate) : null;
+            const endDateObj = endDate ? new Date(endDate) : null;
+            
+            const matchesDateRange = (!startDateObj || logDateOnly >= startDateObj) &&
+                                   (!endDateObj || logDateOnly <= endDateObj);
 
             return matchesSearch && matchesAction && matchesDateRange;
         });
@@ -275,7 +279,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
                             {paginatedLogs.map((log, index) => (
                                 <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
                                     <td className="px-6 py-4 whitespace-nowrap text-left">
-                                        {format(new Date(log._creationTime), "MM dd, yyyy hh:mm a")}
+                                        {format(new Date(log._creationTime), "MMM dd, yyyy hh:mmaaa")}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
                                         <CollapsibleText text={log.instructor_id} maxLength={4} column="instructorId" />

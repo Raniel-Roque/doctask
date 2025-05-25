@@ -25,51 +25,42 @@ export async function POST(request: Request) {
     // Get the Convex user record first
     const convexUser = await convex.query(api.documents.getUserByClerkId, { clerkId });
     if (!convexUser) {
+      // If user not found in Convex, just try to delete from Clerk
+      try {
+        const client = await clerkClient();
+        await client.users.deleteUser(clerkId);
+        return NextResponse.json({ success: true });
+      } catch {
+        return NextResponse.json(
+          { error: "Failed to delete user from authentication service" },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Delete from Clerk first
+    try {
+      const client = await clerkClient();
+      await client.users.deleteUser(clerkId);
+    } catch {
       return NextResponse.json(
-        { error: "User not found in database" },
-        { status: 404 }
+        { error: "Failed to delete user from authentication service" },
+        { status: 500 }
       );
     }
 
-    // Log the deletion in Convex first
+    // Then delete from Convex
     try {
       await convex.mutation(api.documents.deleteUser, {
         userId: convexUser._id,
         instructorId: instructorId,
         details: "Deleted User"
       });
-    } catch {
-      return NextResponse.json(
-        { error: "Failed to log deletion in database" },
-        { status: 500 }
-      );
-    }
-
-    // Then delete from Clerk
-    try {
-      const client = await clerkClient();
-      await client.users.deleteUser(clerkId);
-    } catch {
-      // If Clerk deletion fails, we should try to restore the Convex record
-      try {
-        await convex.mutation(api.documents.createUser, {
-          clerk_id: clerkId,
-          first_name: convexUser.first_name,
-          last_name: convexUser.last_name,
-          email: convexUser.email,
-          role: convexUser.role,
-          middle_name: convexUser.middle_name,
-          instructorId: instructorId,
-          subrole: convexUser.subrole
-        });
-      } catch {
-        // If restoration fails, at least we have the deletion logged
-      }
-
-      return NextResponse.json(
-        { error: "Failed to delete user from authentication service" },
-        { status: 500 }
-      );
+    } catch (error) {
+      // If Convex deletion fails, we can't restore the Clerk user
+      // Just log the error and return success since the main goal (deleting the user) was achieved
+      console.error("Failed to delete from Convex:", error);
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ success: true });

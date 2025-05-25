@@ -70,7 +70,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // Mutations
   // =========================================
   const updateUser = useMutation(api.documents.updateUser);
-  const deleteUserMutation = useMutation(api.documents.deleteUser);
   const createUser = useMutation(api.documents.createUser);
 
   // =========================================
@@ -261,7 +260,13 @@ const UsersPage = ({ params }: UsersPageProps) => {
   };
 
   const handleDeleteSubmit = async () => {
-    if (!deleteUser) return;
+    if (!deleteUser || !deleteUser.clerk_id) {
+      setNotification({
+        type: 'error',
+        message: 'Cannot delete user: Missing Clerk ID'
+      });
+      return;
+    }
 
     setIsDeleting(true);
     setDeleteNetworkError(null);
@@ -272,7 +277,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         email: deleteUser.email
       });
 
-      // First delete from Clerk with timeout
+      // Delete from Clerk API (which also handles Convex deletion)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
@@ -283,6 +288,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         },
         body: JSON.stringify({
           clerkId: deleteUser.clerk_id,
+          instructorId: instructorId
         }),
         signal: controller.signal
       });
@@ -294,14 +300,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
           throw new Error("Network error - please check your internet connection");
         }
         const errorData = await clerkResponse.json();
-        throw new Error(errorData.error || "Failed to delete user from Clerk");
+        throw new Error(errorData.error || "Failed to delete user");
       }
-
-      // Then delete from Convex
-      await deleteUserMutation({
-        userId: deleteUser._id,
-        instructorId: instructorId as Id<"users">,
-      });
 
       logUserAction('Delete Success', { 
         userId: deleteUser._id,
@@ -371,6 +371,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
           email: addFormData.email,
           firstName: addFormData.first_name,
           lastName: addFormData.last_name,
+          role: 1, // Add role for advisers
+          instructorId: instructorId,
+          middle_name: addFormData.middle_name
         }),
         signal: controller.signal
       });
@@ -385,18 +388,38 @@ const UsersPage = ({ params }: UsersPageProps) => {
         throw new Error(errorData.error || "Failed to create user in Clerk");
       }
 
-      const { clerkId } = await response.json();
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || "Failed to create user");
+      }
 
       // Create user in Convex
-      await createUser({
-        clerk_id: clerkId,
-        first_name: addFormData.first_name,
-        middle_name: addFormData.middle_name || undefined,
-        last_name: addFormData.last_name,
-        email: addFormData.email,
-        role: 1, // 1 = adviser
-        instructorId: instructorId as Id<"users">,
-      });
+      try {
+        await createUser({
+          clerk_id: data.clerkId,
+          first_name: addFormData.first_name,
+          middle_name: addFormData.middle_name || undefined,
+          last_name: addFormData.last_name,
+          email: addFormData.email,
+          role: 1, // 1 = adviser
+          instructorId: instructorId as Id<"users">,
+        });
+      } catch (convexError) {
+        // If Convex creation fails, we should clean up the Clerk user
+        try {
+          await fetch("/api/clerk/delete-user", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ clerkId: data.clerkId }),
+          });
+        } catch (cleanupError) {
+          console.error("Failed to clean up Clerk user:", cleanupError);
+        }
+        throw convexError;
+      }
 
       setIsAddingUser(false);
       setAddFormData({
@@ -408,17 +431,23 @@ const UsersPage = ({ params }: UsersPageProps) => {
       await refreshAdvisers();
       setSuccessMessage("Adviser added successfully");
     } catch (error) {
-      console.error("Error adding user:", error);
+      console.error("Error creating user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           setAddNetworkError("Request timed out. Please try again.");
         } else if (error.message.includes('Network error')) {
           setAddNetworkError("Network error - please check your internet connection");
         } else {
-          setValidationError(error.message);
+          setNotification({
+            type: 'error',
+            message: error.message || 'Failed to create adviser. Please try again.'
+          });
         }
       } else {
-        setValidationError("An unexpected error occurred. Please try again.");
+        setNotification({
+          type: 'error',
+          message: 'An unexpected error occurred. Please try again.'
+        });
       }
     } finally {
       setIsSubmitting(false);

@@ -73,7 +73,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // Mutations
   // =========================================
   const updateUser = useMutation(api.documents.updateUser);
-  const deleteUserMutation = useMutation(api.documents.deleteUser);
   const createUser = useMutation(api.documents.createUser);
 
   // =========================================
@@ -276,7 +275,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   };
 
   const handleDeleteSubmit = async () => {
-    if (!deleteUser) return;
+    if (!deleteUser || !deleteUser.clerk_id) {
+      setNotification({
+        type: 'error',
+        message: 'Cannot delete user: Missing Clerk ID'
+      });
+      return;
+    }
 
     setIsDeleting(true);
     setDeleteNetworkError(null);
@@ -287,57 +292,30 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         email: deleteUser.email
       });
 
-      // First delete from Clerk with timeout
+      // Delete from Clerk API (which also handles Convex deletion)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      let clerkDeleted = false;
-      try {
-        const clerkResponse = await fetch("/api/clerk/delete-user", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            clerkId: deleteUser.clerk_id,
-          }),
-          signal: controller.signal
-        });
+      const clerkResponse = await fetch("/api/clerk/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clerkId: deleteUser.clerk_id,
+          instructorId: instructorId
+        }),
+        signal: controller.signal
+      });
 
-        clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
 
-        if (!clerkResponse.ok) {
-          if (clerkResponse.status === 0) {
-            throw new Error("Network error - please check your internet connection");
-          }
-          const errorData = await clerkResponse.json();
-          throw new Error(errorData.error || "Failed to delete user from Clerk");
+      if (!clerkResponse.ok) {
+        if (clerkResponse.status === 0) {
+          throw new Error("Network error - please check your internet connection");
         }
-
-        clerkDeleted = true;
-      } catch (error) {
-        // If Clerk deletion fails, don't proceed with Convex deletion
-        throw error;
-      }
-
-      // Then delete from Convex
-      try {
-        await deleteUserMutation({
-          userId: deleteUser._id,
-          instructorId: instructorId as Id<"users">,
-        });
-      } catch (error) {
-        // If Convex deletion fails but Clerk was deleted, we need to handle this error state
-        if (clerkDeleted) {
-          logUserAction('Delete Partial Success', { 
-            userId: deleteUser._id,
-            email: deleteUser.email,
-            error: 'Clerk deleted but Convex deletion failed',
-            details: error instanceof Error ? error.message : 'Unknown error'
-          });
-          throw new Error("User was partially deleted. Please contact support to resolve this issue.");
-        }
-        throw error;
+        const errorData = await clerkResponse.json();
+        throw new Error(errorData.error || "Failed to delete user");
       }
 
       logUserAction('Delete Success', { 
@@ -359,8 +337,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           setDeleteNetworkError("Request timed out. Please try again.");
         } else if (error.message.includes('Network error')) {
           setDeleteNetworkError("Network error - please check your internet connection");
-        } else if (error.message.includes('partially deleted')) {
-          setDeleteNetworkError(error.message);
         } else {
           setNotification({
             type: 'error',
@@ -402,6 +378,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           email: addFormData.email,
           firstName: addFormData.first_name,
           lastName: addFormData.last_name,
+          role: 0, // Add role for students
+          instructorId: instructorId,
+          middle_name: addFormData.middle_name,
+          subrole: addFormData.subrole
         }),
         signal: controller.signal
       });
@@ -416,11 +396,15 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         throw new Error(errorData.error || "Failed to create user in Clerk");
       }
 
-      const { clerkId } = await response.json();
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error("Failed to create user");
+      }
 
       // Create user in Convex
       await createUser({
-        clerk_id: clerkId,
+        clerk_id: data.clerkId,
         first_name: addFormData.first_name,
         middle_name: addFormData.middle_name || undefined,
         last_name: addFormData.last_name,
@@ -436,7 +420,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         middle_name: "",
         last_name: "",
         email: "",
-        subrole: 0, // Reset to default Member role
+        subrole: 0,
       });
       await refreshStudents();
       setSuccessMessage("Student added successfully");

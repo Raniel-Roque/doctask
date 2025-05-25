@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import * as Label from "@radix-ui/react-label";
 
 interface ClerkError {
   errors: Array<{
@@ -128,9 +129,9 @@ const LoginPage = () => {
               />
             </div>
             <div className="relative">
-              <label htmlFor="password" className="sr-only">
+              <Label.Root htmlFor="password" className="sr-only">
                 Password
-              </label>
+              </Label.Root>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 z-20">
                 <FaLock color="#9CA3AF" />
               </div>

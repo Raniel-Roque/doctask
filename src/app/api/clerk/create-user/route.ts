@@ -35,21 +35,57 @@ export async function POST(request: Request) {
   let clerkUser = null;
   try {
     const { email, firstName, lastName, role, middle_name, instructorId, subrole } = await request.json();
-    const password = generatePassword(firstName, lastName);
+    
+    // Validate required fields
+    if (!email || !firstName || !lastName || role === undefined || !instructorId) {
+      return NextResponse.json(
+        { error: "All required fields must be provided" },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
 
     const client = await clerkClient();
 
-    // Check if user already exists
-    const existingUsers = await client.users.getUserList({
+    // Check if user already exists in Clerk
+    const existingClerkUsers = await client.users.getUserList({
       emailAddress: [email],
     });
 
-    if (existingUsers.data.length > 0) {
+    if (existingClerkUsers.data.length > 0) {
       return NextResponse.json(
         { error: "This email is already registered in the system. Please use a different email address." },
         { status: 400 }
       );
     }
+
+    // Check if user already exists in Convex
+    try {
+      const existingConvexUser = await convex.query(api.documents.getUserByEmail, { email });
+      if (existingConvexUser) {
+        return NextResponse.json(
+          { error: "This email is already registered in the system. Please use a different email address." },
+          { status: 400 }
+        );
+      }
+    } catch (error) {
+      console.error("Error checking Convex for existing user:", error);
+      return NextResponse.json(
+        { error: "Failed to validate user existence" },
+        { status: 500 }
+      );
+    }
+
+    // If we get here, the email is available in both systems
+    const password = generatePassword(firstName, lastName);
 
     // Create user in Clerk
     clerkUser = await client.users.createUser({
@@ -123,7 +159,10 @@ export async function POST(request: Request) {
       // Continue even if email fails
     }
 
-    return NextResponse.json({ clerkId: clerkUser.id });
+    return NextResponse.json({ 
+      success: true,
+      clerkId: clerkUser.id 
+    });
   } catch (error: unknown) {
     // Cleanup if anything fails
     if (clerkUser) {

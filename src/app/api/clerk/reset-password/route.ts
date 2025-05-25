@@ -90,7 +90,7 @@ export async function POST(request: Request) {
             
             <p>Dear ${user.first_name} ${user.last_name},</p>
             
-            <p>Your password has been reset by an instructoristrator. Here are your new login credentials:</p>
+            <p>Your password has been reset by an instructor. Here are your new login credentials:</p>
             
             <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p style="margin: 0;"><strong>Email:</strong> ${email}</p>
