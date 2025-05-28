@@ -79,7 +79,7 @@ const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
           <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link href={`/instructor/${instructorId}/users/students`} className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-              <Users className="w-5 h-5" />
+              <GraduationCap className="w-5 h-5" />
               Manage Students
             </Link>
             <Link href={`/instructor/${instructorId}/users/advisers`} className="flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors">
