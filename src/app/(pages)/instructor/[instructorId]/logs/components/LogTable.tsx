@@ -114,12 +114,11 @@ export const LogTable = ({ logs }: LogTableProps) => {
             const matchesAction = actionFilter === LOG_ACTIONS.ALL || log.action === actionFilter;
 
             const logDate = new Date(log._creationTime);
-            const logDateOnly = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
-            const startDateObj = startDate ? new Date(startDate) : null;
-            const endDateObj = endDate ? new Date(endDate) : null;
+            const startDateObj = startDate ? new Date(startDate + 'T00:00:00') : null;
+            const endDateObj = endDate ? new Date(endDate + 'T23:59:59') : null;
             
-            const matchesDateRange = (!startDateObj || logDateOnly >= startDateObj) &&
-                                   (!endDateObj || logDateOnly <= endDateObj);
+            const matchesDateRange = (!startDateObj || logDate >= startDateObj) &&
+                                   (!endDateObj || logDate <= endDateObj);
 
             return matchesSearch && matchesAction && matchesDateRange;
         });
@@ -217,27 +216,42 @@ export const LogTable = ({ logs }: LogTableProps) => {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <input
-                        type="date"
-                        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={startDate}
-                        onChange={(e) => {
-                            setStartDate(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        max={endDate || undefined}
-                    />
+                    <div className="relative">
+                        <input
+                            type="date"
+                            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
+                            value={startDate}
+                            onChange={(e) => {
+                                setStartDate(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            max={new Date().toISOString().split('T')[0]}
+                        />
+                        {startDate && (
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                {format(new Date(startDate), "MMM dd, yyyy")}
+                            </div>
+                        )}
+                    </div>
                     <span className="self-center text-gray-500">to</span>
-                    <input
-                        type="date"
-                        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={endDate}
-                        onChange={(e) => {
-                            setEndDate(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        min={startDate || undefined}
-                    />
+                    <div className="relative">
+                        <input
+                            type="date"
+                            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
+                            value={endDate}
+                            onChange={(e) => {
+                                setEndDate(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            min={startDate || undefined}
+                            max={new Date().toISOString().split('T')[0]}
+                        />
+                        {endDate && (
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                {format(new Date(endDate), "MMM dd, yyyy")}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
             <div className="overflow-x-auto">
@@ -250,15 +264,15 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                     onClick={() => handleSort("timestamp")}
                                 >
                                     <div className="flex items-center justify-center">
-                                        Time
+                                        Date & Time
                                         <span className="ml-1">{getSortIcon("timestamp")}</span>
                                     </div>
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    instructor ID
+                                    Instructor ID
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    instructor Name
+                                    Instructor Name
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
                                     Action
