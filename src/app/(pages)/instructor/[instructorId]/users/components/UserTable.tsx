@@ -1,5 +1,6 @@
 import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown, FaChevronDown } from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
+import { useState } from "react";
 
 // =========================================
 // Types
@@ -22,6 +23,7 @@ interface UserTableProps {
   onAdd: () => void;
   onResetPassword: (user: User) => void;
   showRoleColumn?: boolean;
+  showCodeColumn?: boolean;
 }
 
 // =========================================
@@ -45,7 +47,11 @@ export const UserTable = ({
   onAdd,
   onResetPassword,
   showRoleColumn = false,
+  showCodeColumn = false,
 }: UserTableProps) => {
+  const [expandedCode, setExpandedCode] = useState<{ [key: string]: boolean }>({});
+  const [expandedEmail, setExpandedEmail] = useState<{ [key: string]: boolean }>({});
+
   // =========================================
   // Helper Functions
   // =========================================
@@ -130,6 +136,36 @@ export const UserTable = ({
   // =========================================
   const filteredAndSortedUsers = filterAndSortUsers();
   const { totalEntries, totalPages, startEntry, endEntry, paginatedUsers } = getPaginationInfo(filteredAndSortedUsers);
+
+  // =========================================
+  // Collapsible Text Component
+  // =========================================
+  const CollapsibleCode = ({ userId }: { userId: string }) => {
+    const code = `ADV-${userId.slice(-4).toUpperCase()}`;
+    const isExpanded = expandedCode[userId] || false;
+
+    return (
+      <button
+        onClick={() => setExpandedCode(prev => ({ ...prev, [userId]: !prev[userId] }))}
+        className="w-full text-left"
+      >
+        {isExpanded ? code : `${code.slice(0, 4)}...`}
+      </button>
+    );
+  };
+
+  const CollapsibleEmail = ({ email, userId }: { email: string, userId: string }) => {
+    const isExpanded = expandedEmail[userId] || false;
+
+    return (
+      <button
+        onClick={() => setExpandedEmail(prev => ({ ...prev, [userId]: !prev[userId] }))}
+        className="w-full text-left"
+      >
+        {isExpanded ? email : `${email.slice(0, 10)}...`}
+      </button>
+    );
+  };
 
   // =========================================
   // Render
@@ -231,6 +267,9 @@ export const UserTable = ({
                 </div>
               </th>
               <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">Status</th>
+              {showCodeColumn && (
+                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">Code</th>
+              )}
               <th 
                 className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("_creationTime")}
@@ -250,36 +289,33 @@ export const UserTable = ({
                   {user.first_name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {user.middle_name || <span className="text-gray-400">—</span>}
+                  {user.middle_name || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {user.last_name}
                 </td>
                 {showRoleColumn && (
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.subrole === 1 
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {getRoleLabel(user.subrole)}
-                    </span>
+                    {getRoleLabel(user.subrole)}
                   </td>
                 )}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {user.email}
+                  <CollapsibleEmail email={user.email} userId={user._id} />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                  {user.email_verified ? (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Verified
-                    </span>
-                  ) : (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                      Pending
-                    </span>
-                  )}
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    user.email_verified 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {user.email_verified ? 'Verified' : 'Unverified'}
+                  </span>
                 </td>
+                {showCodeColumn && (
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <CollapsibleCode userId={user._id} />
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   {new Date(user._creationTime).toLocaleDateString()}
                 </td>

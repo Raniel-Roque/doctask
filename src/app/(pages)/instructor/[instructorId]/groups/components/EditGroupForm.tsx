@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
-import { FaEdit, FaTimes, FaExclamationTriangle, FaChevronDown, FaSearch, FaSpinner } from "react-icons/fa";
+import React, { useState, useEffect, useRef } from 'react';
+import { FaEdit, FaTimes, FaExclamationTriangle, FaChevronDown, FaSearch, FaSpinner, FaBook, FaUserGraduate, FaUsers, FaStar, FaPlus } from "react-icons/fa";
 
 interface Group {
-  name: string;
-  projectManager: string;
   members: string[];
   adviser: string;
   grade?: string;
+  capstoneTitle?: string;
 }
 
 interface EditGroupFormProps {
@@ -27,15 +26,46 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
   networkError = null
 }) => {
   const [formData, setFormData] = useState({
+    projectManager: '',
     members: [] as string[],
     adviser: '',
-    grade: ''
+    grade: 'No Grade',
+    capstoneTitle: ''
   });
 
   const [memberSearch, setMemberSearch] = useState('');
   const [showMemberSearch, setShowMemberSearch] = useState(false);
+  const [projectManagerSearch, setProjectManagerSearch] = useState('');
+  const [showProjectManagerSearch, setShowProjectManagerSearch] = useState(false);
   const [adviserSearch, setAdviserSearch] = useState('');
   const [showAdviserSearch, setShowAdviserSearch] = useState(false);
+
+  const formRef = useRef<HTMLDivElement>(null);
+  const activeDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      
+      // If clicking inside the active dropdown, don't close
+      if (activeDropdownRef.current?.contains(target)) {
+        return;
+      }
+
+      // If clicking anywhere else in the form or outside, close dropdowns
+      if (formRef.current?.contains(target) || !formRef.current?.contains(target)) {
+        closeAllDropdowns();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   // Placeholder data - replace with actual data later
   const students = [
@@ -67,7 +97,14 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
     { id: '8', name: 'Dr. Anderson' }
   ];
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const grades = [
+    'No Grade',
+    'Failed',
+    'Redefense',
+    'Passed'
+  ];
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -117,24 +154,73 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
 
   const closeAllDropdowns = () => {
     setShowMemberSearch(false);
+    setShowProjectManagerSearch(false);
     setShowAdviserSearch(false);
   };
 
-  const handleMemberClick = () => {
-    closeAllDropdowns();
-    setShowMemberSearch(!showMemberSearch);
+  const handleProjectManagerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (showProjectManagerSearch) {
+      setShowProjectManagerSearch(false);
+    } else {
+      setShowProjectManagerSearch(true);
+      setShowMemberSearch(false);
+      setShowAdviserSearch(false);
+    }
   };
 
-  const handleAdviserClick = () => {
-    closeAllDropdowns();
-    setShowAdviserSearch(!showAdviserSearch);
+  const handleMemberClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (showMemberSearch) {
+      setShowMemberSearch(false);
+    } else {
+      setShowMemberSearch(true);
+      setShowProjectManagerSearch(false);
+      setShowAdviserSearch(false);
+    }
+  };
+
+  const handleAdviserClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (showAdviserSearch) {
+      setShowAdviserSearch(false);
+    } else {
+      setShowAdviserSearch(true);
+      setShowProjectManagerSearch(false);
+      setShowMemberSearch(false);
+    }
+  };
+
+  const handleClearProjectManager = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFormData(prev => ({ ...prev, projectManager: '' }));
+  };
+
+  const handleClearAdviser = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFormData(prev => ({ ...prev, adviser: '' }));
+  };
+
+  const handleProjectManagerSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setProjectManagerSearch(e.target.value);
+  };
+
+  const handleProjectManagerSelect = (student: string) => {
+    setFormData(prev => ({ ...prev, projectManager: student }));
+    setProjectManagerSearch('');
+    setShowProjectManagerSearch(false);
+  };
+
+  const handleClearMembers = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFormData(prev => ({ ...prev, members: [] }));
   };
 
   if (!isOpen || !group) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+      <div ref={formRef} className="bg-white rounded-lg p-8 w-full max-w-3xl shadow-2xl border-2 border-gray-200">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -154,9 +240,7 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
         {networkError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
-              <div className="text-red-700">
-                <FaExclamationTriangle />
-              </div>
+              <FaExclamationTriangle />
               <span>{networkError}</span>
             </div>
           </div>
@@ -164,40 +248,224 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Group Name */}
+          {/* Capstone Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Group Name <span className="text-red-500">*</span>
+              <div className="flex items-center gap-2">
+                <FaBook color="#4B5563" />
+                Capstone Title
+              </div>
             </label>
             <input
               type="text"
-              value={group.name || ""}
-              readOnly
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 bg-gray-50"
+              name="capstoneTitle"
+              value={formData.capstoneTitle}
+              onChange={handleChange}
+              placeholder="Enter Capstone Title (Optional)"
+              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              disabled={isSubmitting}
             />
           </div>
 
-          {/* Project Manager */}
+          {/* Project Manager and Adviser Row */}
+          <div className="flex gap-4">
+            {/* Project Manager */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FaUserGraduate color="#4B5563" />
+                    Project Manager
+                  </div>
+                  {formData.projectManager && (
+                    <button
+                      type="button"
+                      onClick={handleClearProjectManager}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </label>
+              <div className="relative">
+                <div 
+                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex items-center justify-between"
+                  onClick={handleProjectManagerClick}
+                >
+                  {formData.projectManager ? (
+                    <div className="flex items-center justify-between w-full">
+                      <span>{formData.projectManager}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">Select Project Manager (Optional)</span>
+                  )}
+                </div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <FaChevronDown color="#6B7280" />
+                </div>
+                
+                {showProjectManagerSearch && (
+                  <div ref={activeDropdownRef} className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div className="p-2 border-b">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={projectManagerSearch}
+                          onChange={handleProjectManagerSearch}
+                          placeholder="Search project manager..."
+                          className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          autoFocus
+                        />
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
+                          <FaSearch />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {students
+                        .filter(student => 
+                          student.name.toLowerCase().includes(projectManagerSearch.toLowerCase())
+                        )
+                        .map(student => (
+                          <div
+                            key={student.id}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => handleProjectManagerSelect(student.name)}
+                          >
+                            {student.name}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Adviser */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FaUserGraduate color="#4B5563" />
+                    Adviser
+                  </div>
+                  {formData.adviser && (
+                    <button
+                      type="button"
+                      onClick={handleClearAdviser}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </label>
+              <div className="relative">
+                <div 
+                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex items-center justify-between"
+                  onClick={handleAdviserClick}
+                >
+                  {formData.adviser ? (
+                    <div className="flex items-center justify-between w-full">
+                      <span>{formData.adviser}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">Select Adviser (Optional)</span>
+                  )}
+                </div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <FaChevronDown color="#6B7280" />
+                </div>
+                
+                {showAdviserSearch && (
+                  <div ref={activeDropdownRef} className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div className="p-2 border-b">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={adviserSearch}
+                          onChange={handleAdviserSearch}
+                          placeholder="Search adviser..."
+                          className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          autoFocus
+                        />
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
+                          <FaSearch />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {advisers
+                        .filter(adviser => 
+                          adviser.name.toLowerCase().includes(adviserSearch.toLowerCase())
+                        )
+                        .map(adviser => (
+                          <div
+                            key={adviser.id}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => handleAdviserSelect(adviser)}
+                          >
+                            {adviser.name}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Grade */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Project Manager <span className="text-red-500">*</span>
+              <div className="flex items-center gap-2">
+                <FaStar color="#4B5563" />
+                Grade
+              </div>
             </label>
-            <input
-              type="text"
-              value={group.projectManager || ""}
-              readOnly
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 bg-gray-50"
-            />
+            <div className="relative">
+              <select
+                name="grade"
+                value={formData.grade}
+                onChange={handleChange}
+                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none cursor-pointer bg-white"
+                disabled={isSubmitting}
+              >
+                {grades.map((grade) => (
+                  <option key={grade} value={grade}>
+                    {grade}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <FaChevronDown color="#6B7280" />
+              </div>
+            </div>
           </div>
 
           {/* Members */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Members <span className="text-red-500">*</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FaUsers color="#4B5563" />
+                  Members
+                </div>
+                {formData.members.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearMembers}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
             </label>
             <div className="relative">
               <div 
-                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer"
+                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer min-h-[42px]"
                 onClick={handleMemberClick}
               >
                 {formData.members.length > 0 ? (
@@ -222,15 +490,12 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-gray-500">Select members...</span>
+                  <span className="text-gray-500">Select members (Optional)</span>
                 )}
-              </div>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <FaChevronDown color="#6B7280" />
               </div>
               
               {showMemberSearch && (
-                <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+                <div ref={activeDropdownRef} className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
                   <div className="p-2 border-b">
                     <div className="relative">
                       <input
@@ -255,9 +520,12 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
                       .map(student => (
                         <div
                           key={student.id}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                           onClick={() => handleMemberSelect(student)}
                         >
+                          <div className="w-4 h-4 border-2 border-gray-300 rounded flex items-center justify-center">
+                            <FaPlus size={10} color="#4B5563" />
+                          </div>
                           {student.name}
                         </div>
                       ))}
@@ -265,77 +533,6 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Adviser */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Adviser <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <div 
-                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer"
-                onClick={handleAdviserClick}
-              >
-                {formData.adviser || (
-                  <span className="text-gray-500">Select Adviser</span>
-                )}
-              </div>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <FaChevronDown color="#6B7280" />
-              </div>
-              
-              {showAdviserSearch && (
-                <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
-                  <div className="p-2 border-b">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={adviserSearch}
-                        onChange={handleAdviserSearch}
-                        placeholder="Search adviser..."
-                        className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        autoFocus
-                      />
-                      <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
-                        <FaSearch />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {advisers
-                      .filter(adviser => 
-                        adviser.name.toLowerCase().includes(adviserSearch.toLowerCase())
-                      )
-                      .map(adviser => (
-                        <div
-                          key={adviser.id}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => handleAdviserSelect(adviser)}
-                        >
-                          {adviser.name}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Grade */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Grade
-            </label>
-            <input
-              type="text"
-              name="grade"
-              value={formData.grade}
-              onChange={handleChange}
-              placeholder="Enter grade"
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-              disabled={isSubmitting}
-            />
           </div>
 
           {/* Form Actions */}

@@ -11,6 +11,13 @@ interface GroupsTableProps {
 type SortField = "name" | "projectManager" | "adviser" | "grade" | "status"; // Define sortable fields
 type SortDirection = "asc" | "desc";
 
+// Capstone Title filter options
+const CAPSTONE_FILTERS = {
+  ALL: "All Groups",
+  WITH_TITLE: "With Capstone Title",
+  WITHOUT_TITLE: "Without Capstone Title"
+} as const;
+
 // Static list of advisers (replace with fetched data later)
 const staticAdvisers = ["Dr. Smith", "Prof. Johnson", "Dr. Williams", "Prof. Brown"];
 
@@ -25,6 +32,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   const [adviserFilter, setAdviserFilter] = useState<string>(""); // State for adviser filter
   const [showAdviserDropdown, setShowAdviserDropdown] = useState(false);
   const [adviserSearch, setAdviserSearch] = useState("");
+  const [capstoneFilter, setCapstoneFilter] = useState<typeof CAPSTONE_FILTERS[keyof typeof CAPSTONE_FILTERS]>(CAPSTONE_FILTERS.ALL);
+  const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
 
   const toggleExpand = (groupId: string) => {
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
@@ -35,15 +44,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
     return parts.length > 1 ? parts[parts.length - 1] : name;
   };
 
-  // Placeholder for filtering and sorting logic
+  // Update the filtering logic
   const filteredAndSortedGroups = groups.filter(group =>
     group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (group.projectManager?.toLowerCase().includes(searchTerm.toLowerCase())) || // Optional chaining for safety
-    (group.adviser?.toLowerCase().includes(searchTerm.toLowerCase()))
-    // Add status filter logic here if implemented
-    // && (statusFilter === GROUP_STATUS_FILTERS.ALL || group.status === statusFilter)
-    // Add adviser filter logic
-    && (adviserFilter === "" || group.adviser === adviserFilter)
+    (group.projectManager?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (group.adviser?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (adviserFilter === "" || group.adviser === adviserFilter) &&
+    (capstoneFilter === CAPSTONE_FILTERS.ALL ||
+     (capstoneFilter === CAPSTONE_FILTERS.WITH_TITLE && group.capstoneTitle) ||
+     (capstoneFilter === CAPSTONE_FILTERS.WITHOUT_TITLE && !group.capstoneTitle))
   ).sort((a, b) => {
     // Add sorting logic here based on sortField and sortDirection
     let comparison = 0;
@@ -91,7 +100,40 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        {/* Placeholder for Filter/Sort dropdowns if needed */}
+
+        {/* Capstone Title Filter */}
+        <div className="relative">
+          <div 
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10 cursor-pointer min-w-[200px]"
+            onClick={() => setShowCapstoneDropdown(!showCapstoneDropdown)}
+          >
+            {capstoneFilter}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <FaChevronDown color="#6B7280" />
+            </div>
+          </div>
+          
+          {showCapstoneDropdown && (
+            <div className="absolute z-10 w-[300px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+              <div className="max-h-48 overflow-y-auto">
+                {Object.values(CAPSTONE_FILTERS).map((filter) => (
+                  <div
+                    key={filter}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setCapstoneFilter(filter);
+                      setShowCapstoneDropdown(false);
+                    }}
+                  >
+                    {filter}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Adviser Filter */}
         <div className="relative">
           {/* Adviser Sort/Filter Dropdown */}
           <div 
@@ -151,6 +193,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
             </div>
           )}
         </div>
+
         <button className="px-4 py-2 bg-[#B54A4A] text-white rounded-lg hover:bg-[#9a3d3d] flex items-center gap-2" onClick={onAdd}>
           <FaPlus /> Add Group
         </button>
@@ -166,6 +209,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                 <span className="ml-1">{getSortIcon("name")}</span>
               </div>
             </th>
+            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Capstone Title</th>
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Project Manager</th>
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Members</th>
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Adviser</th>
@@ -177,6 +221,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
           {filteredAndSortedGroups.map((group) => (
             <tr key={group._id}>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{group.name}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{group.capstoneTitle || '-'}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{group.projectManager}</td>
               <td className="px-6 py-4 text-sm text-gray-500 align-top">
                 {expandedGroupId === group._id ? (

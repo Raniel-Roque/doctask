@@ -182,7 +182,7 @@ export const AddForm = ({
                 name="middle_name"
                 value={formData.middle_name}
                 onChange={handleChange}
-                placeholder="Enter middle name (optional)"
+                placeholder="Enter Middle Name (Optional)"
                 className={`w-full px-4 py-2 rounded-lg border-2 ${
                   validationErrors.middle_name ? 'border-red-500' : 'border-gray-300'
                 } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}

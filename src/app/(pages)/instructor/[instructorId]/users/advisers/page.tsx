@@ -540,6 +540,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onDelete={setDeleteUser}
           onAdd={() => setIsAddingUser(true)}
           onResetPassword={setResetPasswordUser}
+          showCodeColumn={true}
         />
 
         {/* Add Form */}
