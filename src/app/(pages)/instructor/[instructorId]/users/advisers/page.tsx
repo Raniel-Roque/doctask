@@ -69,8 +69,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   // Mutations
   // =========================================
-  const updateUser = useMutation(api.documents.updateUser);
-  const createUser = useMutation(api.documents.createUser);
+  const updateUser = useMutation(api.mutations.updateUser);
+  const createUser = useMutation(api.mutations.createUser);
 
   // =========================================
   // Effects
@@ -104,7 +104,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   const refreshAdvisers = async () => {
     const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-    const data = await client.query(api.documents.getAdvisers);
+    const data = await client.query(api.fetch.getAdvisers);
     setAdvisers(data || []);
   };
 

@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await convex.query(api.documents.getUserByClerkId, { clerkId });
+    const user = await convex.query(api.fetch.getUserByClerkId, { clerkId });
     
     if (!user) {
       return NextResponse.json(
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     });
 
     try {
-      await convex.mutation(api.documents.resetPassword, {
+      await convex.mutation(api.mutations.resetPassword, {
         userId: user._id,
         instructorId: user._id
       });

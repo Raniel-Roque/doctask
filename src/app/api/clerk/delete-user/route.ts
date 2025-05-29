@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     // Get the Convex user record first
-    const convexUser = await convex.query(api.documents.getUserByClerkId, { clerkId });
+    const convexUser = await convex.query(api.fetch.getUserByClerkId, { clerkId });
     if (!convexUser) {
       // If user not found in Convex, just try to delete from Clerk
       try {
@@ -41,9 +41,9 @@ export async function POST(request: Request) {
     // If user is an adviser, delete their adviser code
     if (convexUser.role === 1) {
       try {
-        const adviserCode = await convex.query(api.documents.getAdviserCode, { adviserId: convexUser._id });
+        const adviserCode = await convex.query(api.fetch.getAdviserCode, { adviserId: convexUser._id });
         if (adviserCode) {
-          await convex.mutation(api.documents.deleteAdviserCode, { adviserId: convexUser._id });
+          await convex.mutation(api.mutations.deleteAdviserCode, { adviserId: convexUser._id });
         }
       } catch (error) {
         console.error("Failed to delete adviser code:", error);
@@ -64,10 +64,9 @@ export async function POST(request: Request) {
 
     // Then delete from Convex
     try {
-      await convex.mutation(api.documents.deleteUser, {
+      await convex.mutation(api.mutations.deleteUser, {
         userId: convexUser._id,
-        instructorId: instructorId,
-        details: "Deleted User"
+        instructorId: instructorId
       });
     } catch (error) {
       // If Convex deletion fails, we can't restore the Clerk user

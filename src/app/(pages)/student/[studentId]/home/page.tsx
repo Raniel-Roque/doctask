@@ -14,7 +14,7 @@ export default function StudentHomePage() {
     // `studentId` is retrieved from the URL
     const studentId = params.studentId as string;
 
-    const convexUser = useQuery(api.documents.getUserByClerkId, {
+    const convexUser = useQuery(api.fetch.getUserByClerkId, {
         clerkId: user?.id ?? "",
     });
 
@@ -22,7 +22,7 @@ export default function StudentHomePage() {
         return <div className="p-4">Loading user data...</div>;
     }
 
-    const isManager = convexUser.subrole === BigInt(1);
+    const isManager = (convexUser.subrole ?? 0) === 1;
 
     return (
         <div className="min-h-screen flex flex-col">

@@ -12,6 +12,7 @@ interface AddGroupFormProps {
   }) => void;
   isSubmitting?: boolean;
   networkError?: string | null;
+  setNetworkError?: React.Dispatch<React.SetStateAction<string | null>>;
   projectManagers: { _id: string; first_name: string; last_name: string; }[];
   members: { _id: string; first_name: string; last_name: string; }[];
   advisers: { _id: string; first_name: string; last_name: string; }[];
@@ -23,6 +24,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   onSubmit,
   isSubmitting = false,
   networkError = null,
+  setNetworkError,
   projectManagers,
   members,
   advisers
@@ -33,6 +35,8 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     adviser: '',
     capstoneTitle: ''
   });
+
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   const [memberSearch, setMemberSearch] = useState('');
   const [showMemberSearch, setShowMemberSearch] = useState(false);
@@ -177,12 +181,85 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    const errors: { [key: string]: string } = {};
+    
+    if (!formData.projectManager) {
+      errors.projectManager = "Please select a Project Manager";
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
     onSubmit({
       projectManager: formData.projectManager,
       members: formData.members,
       adviser: formData.adviser || null,
       capstoneTitle: formData.capstoneTitle,
     });
+  };
+
+  // Function to format error message
+  const formatErrorMessage = (error: string | null): string => {
+    if (!error) return "";
+    
+    // Handle network-specific errors
+    if (error.includes("Network error")) {
+      return "Network error - please check your internet connection";
+    }
+    if (error.includes("timeout") || error.includes("timed out")) {
+      return "Request timed out. Please try again.";
+    }
+    
+    // Handle common Convex error patterns
+    if (error.includes("ArgumentValidationError")) {
+      if (error.includes("projectManagerId")) {
+        return "Please select a valid Project Manager";
+      }
+      if (error.includes("memberIds")) {
+        return "Please select valid group members";
+      }
+      if (error.includes("adviserId")) {
+        return "Please select a valid Adviser";
+      }
+    }
+    
+    // Handle other common error patterns
+    if (error.includes("already exists")) {
+      return "This group already exists";
+    }
+    if (error.includes("not found")) {
+      return "One or more selected users could not be found";
+    }
+    if (error.includes("permission denied")) {
+      return "You don't have permission to create this group";
+    }
+    
+    // Default error message
+    return "An error occurred while creating the group. Please try again.";
+  };
+
+  const handleClose = () => {
+    // Reset form data
+    setFormData({
+      projectManager: '',
+      members: [],
+      adviser: '',
+      capstoneTitle: ''
+    });
+    // Reset search states
+    setMemberSearch('');
+    setProjectManagerSearch('');
+    setAdviserSearch('');
+    closeAllDropdowns();
+    setValidationErrors({});
+    // Clear network error if possible
+    if (typeof setNetworkError === 'function') setNetworkError(null);
+    // Call the original onClose
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -197,7 +274,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
             Add New Group
           </h2>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
             disabled={isSubmitting}
           >
@@ -210,7 +287,21 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
               <FaExclamationTriangle />
-              <span>{networkError}</span>
+              <span>{formatErrorMessage(networkError)}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Validation Errors */}
+        {Object.keys(validationErrors).length > 0 && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2 text-red-700">
+              <FaExclamationTriangle />
+              <div className="flex flex-col gap-1">
+                {Object.entries(validationErrors).map(([field, message]) => (
+                  <span key={field}>{message}</span>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -264,7 +355,10 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                 >
                   {formData.projectManager ? (
                     <div className="flex items-center justify-between w-full">
-                      <span>{formData.projectManager}</span>
+                      {(() => {
+                        const user = projectManagers.find(u => u._id === formData.projectManager);
+                        return user ? `${user.first_name} ${user.last_name}` : formData.projectManager;
+                      })()}
                     </div>
                   ) : (
                     <span className="text-gray-500">Select Project Manager</span>
@@ -337,7 +431,10 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                 >
                   {formData.adviser ? (
                     <div className="flex items-center justify-between w-full">
-                      <span>{formData.adviser}</span>
+                      {(() => {
+                        const user = advisers.find(u => u._id === formData.adviser);
+                        return user ? `${user.first_name} ${user.last_name}` : formData.adviser;
+                      })()}
                     </div>
                   ) : (
                     <span className="text-gray-500">Select Adviser (Optional)</span>
@@ -414,22 +511,22 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                     {formData.members.map((memberId, index) => {
                       const user = members.find(u => u._id === memberId);
                       return (
-                        <span 
-                          key={index}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-                        >
+                      <span 
+                        key={index}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                      >
                           {user ? `${user.first_name} ${user.last_name}` : memberId}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
                               handleMemberRemove(memberId);
-                            }}
-                            className="ml-1 text-blue-600 hover:text-blue-800"
-                          >
-                            ×
-                          </button>
-                        </span>
+                          }}
+                          className="ml-1 text-blue-600 hover:text-blue-800"
+                        >
+                          ×
+                        </button>
+                      </span>
                       );
                     })}
                   </div>
@@ -482,7 +579,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
           {/* Form Actions */}
           <div className="flex justify-end gap-4 mt-8">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
               disabled={isSubmitting}
             >

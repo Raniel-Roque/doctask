@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     // Create user in Convex
     try {
-      await convex.mutation(api.documents.createUser, {
+      await convex.mutation(api.mutations.createUser, {
         clerk_id: clerkUser.id,
         first_name: trimmedFirstName,
         last_name: trimmedLastName,

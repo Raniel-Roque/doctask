@@ -13,7 +13,9 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as documents from "../documents.js";
+import type * as actions from "../actions.js";
+import type * as fetch from "../fetch.js";
+import type * as mutations from "../mutations.js";
 import type * as utils_adviserCode from "../utils/adviserCode.js";
 
 /**
@@ -25,7 +27,9 @@ import type * as utils_adviserCode from "../utils/adviserCode.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  documents: typeof documents;
+  actions: typeof actions;
+  fetch: typeof fetch;
+  mutations: typeof mutations;
   "utils/adviserCode": typeof utils_adviserCode;
 }>;
 export declare const api: FilterApi<

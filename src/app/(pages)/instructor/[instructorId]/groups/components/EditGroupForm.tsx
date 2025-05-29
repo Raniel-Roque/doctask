@@ -15,6 +15,7 @@ interface EditGroupFormProps {
   onSubmit: () => void;
   isSubmitting?: boolean;
   networkError?: string | null;
+  setNetworkError?: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const EditGroupForm: React.FC<EditGroupFormProps> = ({ 
@@ -23,7 +24,8 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
   onClose, 
   onSubmit,
   isSubmitting = false,
-  networkError = null
+  networkError = null,
+  setNetworkError
 }) => {
   const [formData, setFormData] = useState({
     projectManager: '',
@@ -42,6 +44,8 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
 
   const formRef = useRef<HTMLDivElement>(null);
   const activeDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -149,7 +153,49 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    const errors: { [key: string]: string } = {};
+    
+    if (!formData.projectManager) {
+      errors.projectManager = "Please select a Project Manager";
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
     onSubmit();
+  };
+
+  // Function to format error message
+  const formatErrorMessage = (error: string | null): string => {
+    if (!error) return "";
+    
+    // Handle common Convex error patterns
+    if (error.includes("ArgumentValidationError")) {
+      if (error.includes("projectManagerId")) {
+        return "Please select a valid Project Manager";
+      }
+      if (error.includes("memberIds")) {
+        return "Please select valid group members";
+      }
+      if (error.includes("adviserId")) {
+        return "Please select a valid Adviser";
+      }
+    }
+    
+    // Handle other common error patterns
+    if (error.includes("not found")) {
+      return "One or more selected users could not be found";
+    }
+    if (error.includes("permission denied")) {
+      return "You don't have permission to edit this group";
+    }
+    
+    // Default error message
+    return "An error occurred while updating the group. Please try again.";
   };
 
   const closeAllDropdowns = () => {
@@ -216,6 +262,29 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
     setFormData(prev => ({ ...prev, members: [] }));
   };
 
+  const handleClose = () => {
+    // Reset form data to initial group data
+    setFormData({
+      projectManager: '',
+      members: group.members || [],
+      adviser: group.adviser || '',
+      grade: group.grade || 'No Grade',
+      capstoneTitle: group.capstoneTitle || ''
+    });
+    // Reset search states
+    setMemberSearch('');
+    setProjectManagerSearch('');
+    setAdviserSearch('');
+    // Close dropdowns
+    closeAllDropdowns();
+    // Clear errors
+    setValidationErrors({});
+    // If you have a setNetworkError, clear it here as well
+    if (typeof setNetworkError === 'function') setNetworkError(null);
+    // Call the original onClose
+    onClose();
+  };
+
   if (!isOpen || !group) return null;
 
   return (
@@ -228,7 +297,7 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
             Edit Group
           </h2>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
             disabled={isSubmitting}
           >
@@ -241,7 +310,21 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
               <FaExclamationTriangle />
-              <span>{networkError}</span>
+              <span>{formatErrorMessage(networkError)}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Validation Errors */}
+        {Object.keys(validationErrors).length > 0 && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2 text-red-700">
+              <FaExclamationTriangle />
+              <div className="flex flex-col gap-1">
+                {Object.entries(validationErrors).map(([field, message]) => (
+                  <span key={field}>{String(message)}</span>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -538,7 +621,7 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
           {/* Form Actions */}
           <div className="flex justify-end gap-4 mt-8">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
               disabled={isSubmitting}
             >

@@ -55,7 +55,7 @@ export const UserTable = ({
   const [expandedEmail, setExpandedEmail] = useState<{ [key: string]: boolean }>({});
 
   // Fetch adviser codes
-  const adviserCodes = useQuery(api.documents.getAdviserCodes) || {};
+  const adviserCodes = useQuery(api.fetch.getAdviserCodes) || {};
 
   // =========================================
   // Helper Functions

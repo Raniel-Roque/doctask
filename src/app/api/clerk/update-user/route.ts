@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     }
 
     // Get the Convex user record
-    const convexUser = await convex.query(api.documents.getUserByClerkId, { clerkId });
+    const convexUser = await convex.query(api.fetch.getUserByClerkId, { clerkId });
     if (!convexUser) {
       return NextResponse.json(
         { error: "User not found in database" },

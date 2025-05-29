@@ -77,10 +77,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
     return `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`;
   };
 
-  const getLastName = (user: User) => {
-    return user.last_name;
-  };
-
   const getPaginationInfo = (groups: Group[]) => {
     const entriesPerPage = 5;
     const totalEntries = groups.length;
@@ -98,6 +94,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
     };
   };
 
+  // Get unique advisers for filter dropdown
+  const uniqueAdvisers = Array.from(new Set(
+    groups
+      .filter(group => group.adviser)
+      .map(group => getFullName(group.adviser!))
+  )).sort();
+
   // Update the filtering logic
   const filteredAndSortedGroups = groups.filter(group => {
     const groupName = group.name || '';
@@ -107,7 +110,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
       (groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
        adviserName.toLowerCase().includes(searchTerm.toLowerCase()) ||
        (group.capstone_title?.toLowerCase().includes(searchTerm.toLowerCase()) || false)) &&
-      (adviserFilter === "" || (group.adviser && getFullName(group.adviser) === adviserFilter)) &&
+      (adviserFilter === "" || 
+       (adviserFilter === "No Adviser" && !group.adviser) ||
+       (group.adviser && getFullName(group.adviser) === adviserFilter)) &&
       (capstoneFilter === CAPSTONE_FILTERS.ALL ||
        (capstoneFilter === CAPSTONE_FILTERS.WITH_TITLE && group.capstone_title) ||
        (capstoneFilter === CAPSTONE_FILTERS.WITHOUT_TITLE && !group.capstone_title))
@@ -144,13 +149,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
 
   const { totalEntries, totalPages, startEntry, endEntry, paginatedGroups } = getPaginationInfo(filteredAndSortedGroups);
 
-  // Get unique advisers for filter dropdown
-  const uniqueAdvisers = Array.from(new Set(
-    groups
-      .filter(group => group.adviser)
-      .map(group => getFullName(group.adviser!))
-  )).sort();
-
   return (
     <>
       {/* Search and Add Button */}
@@ -172,7 +170,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
         <div className="relative">
           <div 
             className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10 cursor-pointer min-w-[200px]"
-            onClick={() => setShowCapstoneDropdown(!showCapstoneDropdown)}
+            onClick={() => {
+              setShowCapstoneDropdown(!showCapstoneDropdown);
+              setShowAdviserDropdown(false);
+            }}
           >
             {capstoneFilter}
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -202,10 +203,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
 
         {/* Adviser Filter */}
         <div className="relative">
-          {/* Adviser Sort/Filter Dropdown */}
           <div 
             className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10 cursor-pointer min-w-[200px]"
-            onClick={() => setShowAdviserDropdown(!showAdviserDropdown)}
+            onClick={() => {
+              setShowAdviserDropdown(!showAdviserDropdown);
+              setShowCapstoneDropdown(false);
+            }}
           >
             {adviserFilter || "All Advisers"}
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -239,6 +242,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                   }}
                 >
                   All Advisers
+                </div>
+                <div
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setAdviserFilter("No Adviser");
+                    setShowAdviserDropdown(false);
+                  }}
+                >
+                  No Adviser
                 </div>
                 {uniqueAdvisers
                   .filter(adviser => 
@@ -290,10 +302,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
             </th>
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Members</th>
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
-              Adviser
+                Adviser
             </th>
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
-              Grade
+                Grade
             </th>
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Actions</th>
           </tr>
@@ -308,38 +320,45 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {group.projectManager ? getFullName(group.projectManager) : '-'}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-top">
-                {expandedGroupId === group._id ? (
-                  // Expanded view
-                  <div onClick={() => toggleExpand(group._id)} className="cursor-pointer space-y-1">
+              <td className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => toggleExpand(group._id)}
+                      className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                      disabled={!group.members || group.members.length === 0}
+                    >
+                      {group.members && group.members.length > 0 ? (
+                        expandedGroupId === group._id ? (
+                          <div className="h-4 w-4">
+                            <FaChevronDown />
+                          </div>
+                        ) : (
+                          <div className="h-4 w-4">
+                            <FaChevronLeft />
+                          </div>
+                        )
+                      ) : null}
+                    </button>
+                    <span className="ml-2">
+                      {group.members && group.members.length > 0 ? (
+                        `${group.members.length} member${group.members.length === 1 ? '' : 's'}`
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+                {group.members && group.members.length > 0 && expandedGroupId === group._id && (
+                  <div className="mt-2 pl-6">
                     <ul className="list-disc list-inside">
-                      {group.members?.map((member) => (
-                        <li key={member._id}>{getFullName(member)}</li>
+                      {group.members.map((member) => (
+                        <li key={member._id} className="text-sm text-gray-600">
+                          {getFullName(member)}
+                        </li>
                       ))}
                     </ul>
-                    {group.members && group.members.length > 3 && (
-                      <button onClick={() => toggleExpand(group._id)} className="mt-2 text-blue-600 hover:underline text-xs">Show Less</button>
-                    )}
                   </div>
-                ) : (
-                  // Collapsed view
-                  <span onClick={() => toggleExpand(group._id)} className="cursor-pointer">
-                    {group.members && group.members.length > 0 ? (
-                      <>
-                        {group.members
-                          .map(member => getLastName(member))
-                          .sort()
-                          .slice(0, 3)
-                          .join(', ')}
-                        {group.members.length > 3 && '...'}
-                        {group.members.length > 3 && (
-                          <button onClick={() => toggleExpand(group._id)} className="ml-2 text-blue-600 hover:underline text-xs">Show More</button>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-gray-400">No members</span>
-                    )}
-                  </span>
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

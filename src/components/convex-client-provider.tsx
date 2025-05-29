@@ -26,7 +26,7 @@ function RedirectHandler() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const convexUser = useQuery(api.documents.getUserByClerkId, {
+  const convexUser = useQuery(api.fetch.getUserByClerkId, {
     clerkId: user?.id ?? "",
   });
 
@@ -71,7 +71,7 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [error, setError] = useState<string | null>(null);
 
-  const convexUser = useQuery(api.documents.getUserByClerkId, {
+  const convexUser = useQuery(api.fetch.getUserByClerkId, {
     clerkId: user?.id ?? "",
   });
 

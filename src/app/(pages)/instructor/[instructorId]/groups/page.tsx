@@ -51,8 +51,8 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     const [networkError, setNetworkError] = useState<string | null>(null);
 
     // Fetch groups and users data
-    const groups = useQuery(api.documents.getGroups) || [];
-    const users = useQuery(api.documents.getUsers) || [];
+    const groups = useQuery(api.fetch.getGroups) || [];
+    const users = useQuery(api.fetch.getUsers) || [];
 
     // Filter project managers (role 0, subrole 1, not already a project manager)
     const usedManagerIds = new Set(groups.map(g => g.project_manager_id));
@@ -92,7 +92,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     });
 
     // Handlers
-    const createGroupWithMembers = useMutation(api.documents.createGroupWithMembers);
+    const createGroupWithMembers = useMutation(api.mutations.createGroupWithMembers);
 
     const handleAddGroup = async (formData: {
       projectManager: string;
@@ -113,7 +113,26 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         });
         setIsAddingGroup(false);
       } catch (error) {
-        setNetworkError(error instanceof Error ? error.message : 'Failed to add group');
+        // Handle specific error cases
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            setNetworkError("Request timed out. Please try again.");
+          } else if (error.message.includes('Network error')) {
+            setNetworkError("Network error - please check your internet connection");
+          } else if (error.message.includes('already exists')) {
+            setNetworkError("A group with these members already exists");
+          } else if (error.message.includes('not found')) {
+            setNetworkError("One or more selected users could not be found");
+          } else if (error.message.includes('permission denied')) {
+            setNetworkError("You don't have permission to create this group");
+          } else if (error.message.includes('ArgumentValidationError')) {
+            setNetworkError("Please check your input and try again");
+          } else {
+            setNetworkError("Failed to create group. Please try again.");
+          }
+        } else {
+          setNetworkError("An unexpected error occurred. Please try again.");
+        }
       } finally {
         setIsSubmitting(false);
       }
@@ -133,19 +152,20 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
                     groups={processedGroups}
                     onEdit={() => {}}
                     onDelete={() => {}}
-                    onAdd={() => setIsAddingGroup(true)}
+                  onAdd={() => setIsAddingGroup(true)}
                 />
 
                 {/* Add Group Form */}
                 <AddGroupForm
-                    isOpen={isAddingGroup}
-                    onClose={() => setIsAddingGroup(false)}
-                    onSubmit={handleAddGroup}
-                    isSubmitting={isSubmitting}
-                    networkError={networkError}
-                    projectManagers={projectManagers}
-                    members={members}
-                    advisers={advisers}
+                  isOpen={isAddingGroup}
+                  onClose={() => setIsAddingGroup(false)}
+                  onSubmit={handleAddGroup}
+                  isSubmitting={isSubmitting}
+                  networkError={networkError}
+                  setNetworkError={setNetworkError}
+                  projectManagers={projectManagers}
+                  members={members}
+                  advisers={advisers}
                 />
             </div>
         </div>

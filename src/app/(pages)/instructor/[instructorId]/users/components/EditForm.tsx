@@ -16,6 +16,7 @@ interface EditFormProps {
   onFormDataChange: (data: EditFormData) => void;
   className?: string;
   isStudent?: boolean;
+  setNetworkError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 // =========================================
@@ -31,6 +32,7 @@ export const EditForm = ({
   onFormDataChange,
   className = "",
   isStudent = false,
+  setNetworkError,
 }: EditFormProps) => {
   // =========================================
   // State
@@ -108,6 +110,29 @@ export const EditForm = ({
     onSubmit();
   };
 
+  const handleClose = () => {
+    // Reset form data
+    if (user) {
+      onFormDataChange({
+        first_name: user.first_name || '',
+        middle_name: user.middle_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        subrole: user.subrole || 0
+      });
+    }
+    // Reset validation errors
+    setValidationErrors({});
+    // Reset search states
+    setRoleSearch('');
+    // Close dropdowns
+    closeAllDropdowns();
+    // Clear network error if possible
+    if (typeof setNetworkError === 'function') setNetworkError(null);
+    // Call the original onClose
+    onClose();
+  };
+
   if (!user) return null;
 
   // =========================================
@@ -123,7 +148,7 @@ export const EditForm = ({
             Edit User
           </h2>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
             disabled={isSubmitting}
           >
@@ -307,7 +332,7 @@ export const EditForm = ({
           {/* Form Actions */}
           <div className="flex justify-end gap-4 mt-8">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
               disabled={isSubmitting}
             >

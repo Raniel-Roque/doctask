@@ -26,7 +26,7 @@ interface LogQueryResult {
 
 const InstructorLogsPage = ({ params }: InstructorLogsPageProps) => {
     const { instructorId } = use(params);
-    const logs = useQuery(api.documents.getLogs) as LogQueryResult[] | undefined;
+    const logs = useQuery(api.fetch.getLogs) as LogQueryResult[] | undefined;
 
     return ( 
         <div className="min-h-screen bg-gray-50">
