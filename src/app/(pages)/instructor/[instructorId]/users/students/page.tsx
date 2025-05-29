@@ -210,9 +210,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           },
           body: JSON.stringify({
             clerkId: editingUser.clerk_id,
-            email: editFormData.email,
-            firstName: editFormData.first_name,
-            lastName: editFormData.last_name,
+            email: editFormData.email.trim(),
+            firstName: editFormData.first_name.trim(),
+            lastName: editFormData.last_name.trim(),
           }),
           signal: controller.signal
         });
@@ -233,10 +233,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         await updateUser({
           userId: editingUser._id,
           instructorId: instructorId as Id<"users">,
-          first_name: editFormData.first_name,
-          middle_name: editFormData.middle_name.trim() || undefined,
-          last_name: editFormData.last_name,
-          email: editFormData.email,
+          first_name: editFormData.first_name.trim(),
+          middle_name: editFormData.middle_name?.trim() || undefined,
+          last_name: editFormData.last_name.trim(),
+          email: editFormData.email.trim(),
           subrole: editFormData.subrole,
           clerk_id: data.clerkId
         });
@@ -245,10 +245,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         await updateUser({
           userId: editingUser._id,
           instructorId: instructorId as Id<"users">,
-          first_name: editFormData.first_name,
-          middle_name: editFormData.middle_name.trim() || undefined,
-          last_name: editFormData.last_name,
-          email: editFormData.email,
+          first_name: editFormData.first_name.trim(),
+          middle_name: editFormData.middle_name?.trim() || undefined,
+          last_name: editFormData.last_name.trim(),
+          email: editFormData.email.trim(),
           subrole: editFormData.subrole,
         });
       }
@@ -378,12 +378,12 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: addFormData.email,
-          firstName: addFormData.first_name,
-          lastName: addFormData.last_name,
+          email: addFormData.email.trim(),
+          firstName: addFormData.first_name.trim(),
+          lastName: addFormData.last_name.trim(),
           role: 0, // Add role for students
-          instructorId: instructorId,
-          middle_name: addFormData.middle_name,
+          instructorId: instructorId as Id<"users">,
+          middle_name: addFormData.middle_name?.trim() || undefined,
           subrole: addFormData.subrole
         }),
         signal: controller.signal
@@ -407,13 +407,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
       // Create user in Convex
       await createUser({
-        clerk_id: data.clerkId,
-        first_name: addFormData.first_name,
-        middle_name: addFormData.middle_name || undefined,
-        last_name: addFormData.last_name,
-        email: addFormData.email,
+        clerk_id: data.user.id,
+        first_name: addFormData.first_name.trim(),
+        middle_name: addFormData.middle_name?.trim() || undefined,
+        last_name: addFormData.last_name.trim(),
+        email: addFormData.email.trim(),
         role: 0, // Always 0 for students
-        subrole: addFormData.subrole, // This will be 0 for Member or 1 for Manager from the dropdown
+        subrole: addFormData.subrole,
         instructorId: instructorId as Id<"users">,
       });
 

@@ -25,9 +25,38 @@ export default defineSchema({
   }).index("by_clerk_id", ["clerk_id"]),
 
   // =========================================
-  // Adviser Codes Table
+  // Groups Table
   // =========================================
-  adviserCodes: defineTable({
+  groupsTable: defineTable({
+    // Group Information
+    capstone_title: v.optional(v.string()), 
+    grade: v.optional(v.number()),
+
+    // Relationships
+    project_manager_id: v.id("users"), // Reference to user with role 0 and subrole 1
+    member_ids: v.array(v.id("users")), // Array of user IDs with role 0 and subrole 0
+    adviser_id: v.optional(v.id("users")),
+  })
+  .index("by_project_manager", ["project_manager_id"])
+  .index("by_adviser", ["adviser_id"])
+  .index("by_member", ["member_ids"]),
+
+  // =========================================
+  // Students Table (Many-to-Many Relationship)
+  // =========================================
+  studentsTable: defineTable({
+    // Foreign Keys
+    user_id: v.id("users"), // Reference to user table
+    group_id: v.id("groupsTable"), // Reference to group table
+  })
+  .index("by_user", ["user_id"])
+  .index("by_group", ["group_id"])
+  .index("by_user_and_group", ["user_id", "group_id"]),
+
+  // =========================================
+  // Advisers Table
+  // =========================================
+  advisersTable: defineTable({
     // Adviser Identification
     adviser_id: v.id("users"),
     
@@ -35,7 +64,7 @@ export default defineSchema({
     code: v.string(), // Format: XXXX-XXXX-XXXX where X is a capital letter
     
     // Associated Groups
-    group_ids: v.array(v.id("groups")), // Array of group IDs this adviser handles
+    group_ids: v.array(v.id("groupsTable")), // Array of group IDs this adviser handles
   })
   .index("by_adviser", ["adviser_id"])
   .index("by_code", ["code"]),

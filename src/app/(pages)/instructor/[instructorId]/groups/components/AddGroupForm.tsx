@@ -4,9 +4,17 @@ import { FaPlus, FaTimes, FaExclamationTriangle, FaChevronDown, FaSearch, FaSpin
 interface AddGroupFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (data: {
+    projectManager: string;
+    members: string[];
+    adviser: string | null;
+    capstoneTitle: string;
+  }) => void;
   isSubmitting?: boolean;
   networkError?: string | null;
+  projectManagers: { _id: string; first_name: string; last_name: string; }[];
+  members: { _id: string; first_name: string; last_name: string; }[];
+  advisers: { _id: string; first_name: string; last_name: string; }[];
 }
 
 const AddGroupForm: React.FC<AddGroupFormProps> = ({ 
@@ -14,7 +22,10 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   onClose, 
   onSubmit,
   isSubmitting = false,
-  networkError = null
+  networkError = null,
+  projectManagers,
+  members,
+  advisers
 }) => {
   const [formData, setFormData] = useState({
     projectManager: '',
@@ -29,36 +40,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   const [showProjectManagerSearch, setShowProjectManagerSearch] = useState(false);
   const [adviserSearch, setAdviserSearch] = useState('');
   const [showAdviserSearch, setShowAdviserSearch] = useState(false);
-
-  // Placeholder data - replace with actual data later
-  const students = [
-    { id: '1', name: 'John Doe' },
-    { id: '2', name: 'Jane Smith' },
-    { id: '3', name: 'Bob Johnson' },
-    { id: '4', name: 'Alice Williams' },
-    { id: '5', name: 'Michael Brown' },
-    { id: '6', name: 'Sarah Davis' },
-    { id: '7', name: 'David Wilson' },
-    { id: '8', name: 'Emily Taylor' },
-    { id: '9', name: 'James Anderson' },
-    { id: '10', name: 'Lisa Martinez' },
-    { id: '11', name: 'Robert Garcia' },
-    { id: '12', name: 'Jennifer Robinson' },
-    { id: '13', name: 'William Clark' },
-    { id: '14', name: 'Mary Rodriguez' },
-    { id: '15', name: 'Thomas Lewis' }
-  ];
-
-  const advisers = [
-    { id: '1', name: 'Dr. Smith' },
-    { id: '2', name: 'Prof. Johnson' },
-    { id: '3', name: 'Dr. Williams' },
-    { id: '4', name: 'Dr. Brown' },
-    { id: '5', name: 'Prof. Davis' },
-    { id: '6', name: 'Dr. Wilson' },
-    { id: '7', name: 'Prof. Taylor' },
-    { id: '8', name: 'Dr. Anderson' }
-  ];
 
   const formRef = useRef<HTMLDivElement>(null);
   const activeDropdownRef = useRef<HTMLDivElement>(null);
@@ -138,27 +119,27 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     setAdviserSearch(e.target.value);
   };
 
-  const handleProjectManagerSelect = (student: string) => {
-    setFormData(prev => ({ ...prev, projectManager: student }));
+  const handleProjectManagerSelect = (user: { _id: string; first_name: string; last_name: string }) => {
+    setFormData(prev => ({ ...prev, projectManager: user._id }));
     setProjectManagerSearch('');
     setShowProjectManagerSearch(false);
   };
 
-  const handleMemberSelect = (member: { id: string, name: string }) => {
-    if (!formData.members.includes(member.name)) {
+  const handleMemberSelect = (user: { _id: string; first_name: string; last_name: string }) => {
+    if (!formData.members.includes(user._id)) {
       setFormData(prev => ({
         ...prev,
-        members: [...prev.members, member.name]
+        members: [...prev.members, user._id]
       }));
     }
     setMemberSearch('');
     setShowMemberSearch(false);
   };
 
-  const handleAdviserSelect = (adviser: { id: string, name: string }) => {
+  const handleAdviserSelect = (user: { _id: string; first_name: string; last_name: string }) => {
     setFormData(prev => ({
       ...prev,
-      adviser: adviser.name
+      adviser: user._id
     }));
     setAdviserSearch('');
     setShowAdviserSearch(false);
@@ -196,7 +177,12 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit();
+    onSubmit({
+      projectManager: formData.projectManager,
+      members: formData.members,
+      adviser: formData.adviser || null,
+      capstoneTitle: formData.capstoneTitle,
+    });
   };
 
   if (!isOpen) return null;
@@ -306,17 +292,17 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       </div>
                     </div>
                     <div className="max-h-48 overflow-y-auto">
-                      {students
-                        .filter(student => 
-                          student.name.toLowerCase().includes(projectManagerSearch.toLowerCase())
+                      {projectManagers
+                        .filter(user =>
+                          `${user.first_name} ${user.last_name}`.toLowerCase().includes(projectManagerSearch.toLowerCase())
                         )
-                        .map(student => (
+                        .map(user => (
                           <div
-                            key={student.id}
+                            key={user._id}
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleProjectManagerSelect(student.name)}
+                            onClick={() => handleProjectManagerSelect(user)}
                           >
-                            {student.name}
+                            {user.first_name} {user.last_name}
                           </div>
                         ))}
                     </div>
@@ -380,16 +366,16 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                     </div>
                     <div className="max-h-48 overflow-y-auto">
                       {advisers
-                        .filter(adviser => 
-                          adviser.name.toLowerCase().includes(adviserSearch.toLowerCase())
+                        .filter(user =>
+                          `${user.first_name} ${user.last_name}`.toLowerCase().includes(adviserSearch.toLowerCase())
                         )
-                        .map(adviser => (
+                        .map(user => (
                           <div
-                            key={adviser.id}
+                            key={user._id}
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleAdviserSelect(adviser)}
+                            onClick={() => handleAdviserSelect(user)}
                           >
-                            {adviser.name}
+                            {user.first_name} {user.last_name}
                           </div>
                         ))}
                     </div>
@@ -425,24 +411,27 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
               >
                 {formData.members.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {formData.members.map((member, index) => (
-                      <span 
-                        key={index}
-                        className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-                      >
-                        {member}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMemberRemove(member);
-                          }}
-                          className="ml-1 text-blue-600 hover:text-blue-800"
+                    {formData.members.map((memberId, index) => {
+                      const user = members.find(u => u._id === memberId);
+                      return (
+                        <span 
+                          key={index}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
                         >
-                          ×
-                        </button>
-                      </span>
-                    ))}
+                          {user ? `${user.first_name} ${user.last_name}` : memberId}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMemberRemove(memberId);
+                            }}
+                            className="ml-1 text-blue-600 hover:text-blue-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
                   </div>
                 ) : (
                   <span className="text-gray-500">Select members (Optional)</span>
@@ -467,21 +456,21 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                     </div>
                   </div>
                   <div className="max-h-48 overflow-y-auto">
-                    {students
-                      .filter(student => 
-                        student.name.toLowerCase().includes(memberSearch.toLowerCase()) &&
-                        !formData.members.includes(student.name)
+                    {members
+                      .filter(user =>
+                        `${user.first_name} ${user.last_name}`.toLowerCase().includes(memberSearch.toLowerCase()) &&
+                        !formData.members.includes(user._id)
                       )
-                      .map(student => (
+                      .map(user => (
                         <div
-                          key={student.id}
+                          key={user._id}
                           className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-                          onClick={() => handleMemberSelect(student)}
+                          onClick={() => handleMemberSelect(user)}
                         >
                           <div className="w-4 h-4 border-2 border-gray-300 rounded flex items-center justify-center">
                             <FaPlus size={10} color="#4B5563" />
                           </div>
-                          {student.name}
+                          {user.first_name} {user.last_name}
                         </div>
                       ))}
                   </div>

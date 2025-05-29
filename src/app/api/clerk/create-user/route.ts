@@ -19,19 +19,26 @@ export async function POST(request: Request) {
   try {
     const { firstName, lastName, email, role, middle_name, instructorId, subrole } = await request.json();
 
-    if (!firstName || !lastName || !email || !role || !instructorId) {
+    // Trim all string values and convert null to undefined
+    const trimmedFirstName = firstName?.trim() || null;
+    const trimmedLastName = lastName?.trim() || null;
+    const trimmedEmail = email?.trim() || null;
+    const trimmedMiddleName = middle_name?.trim() || null;
+
+    // Validate required fields
+    if (!trimmedFirstName || !trimmedLastName || !trimmedEmail || role === undefined || !instructorId) {
       return NextResponse.json(
-        { error: "All required fields are missing" },
+        { error: "Required fields are missing" },
         { status: 400 }
       );
     }
 
     const client = await clerkClient();
-    const password = generatePassword(firstName, lastName, Date.now());
+    const password = generatePassword(trimmedFirstName, trimmedLastName, Date.now());
 
     // Create user in Clerk with just email and password
     clerkUser = await client.users.createUser({
-      emailAddress: [email],
+      emailAddress: [trimmedEmail],
       password: password,
     });
 
@@ -46,11 +53,11 @@ export async function POST(request: Request) {
     try {
       await convex.mutation(api.documents.createUser, {
         clerk_id: clerkUser.id,
-        first_name: firstName,
-        last_name: lastName,
-        email: email,
+        first_name: trimmedFirstName,
+        last_name: trimmedLastName,
+        email: trimmedEmail,
         role: role,
-        middle_name: middle_name,
+        middle_name: trimmedMiddleName || undefined,
         instructorId: instructorId,
         subrole: subrole
       });
@@ -72,12 +79,12 @@ export async function POST(request: Request) {
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">Welcome to DocTask!</h2>
             
-            <p>Dear ${firstName} ${lastName},</p>
+            <p>Dear ${trimmedFirstName} ${trimmedLastName},</p>
             
             <p>Your account has been created. Here are your login credentials:</p>
             
             <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <p style="margin: 0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 0;"><strong>Email:</strong> ${trimmedEmail}</p>
               <p style="margin: 10px 0 0 0;"><strong>Password:</strong> ${password}</p>
             </div>
             
@@ -106,7 +113,7 @@ export async function POST(request: Request) {
         id: clerkUser.id,
         firstName: clerkUser.firstName,
         lastName: clerkUser.lastName,
-        email: email,
+        email: trimmedEmail,
         role: role
       }
     });

@@ -80,7 +80,7 @@ interface AdviserCode {
 export const getAdviserCodes = query({
   handler: async (ctx) => {
     const codes = await ctx.db
-      .query("adviserCodes")
+      .query("advisersTable")
       .collect();
     
     // Convert array to object with adviser_id as key
@@ -95,7 +95,7 @@ export const getAdviserCode = query({
   args: { adviserId: v.id("users") },
   handler: async (ctx, args) => {
     const code = await ctx.db
-      .query("adviserCodes")
+      .query("advisersTable")
       .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
       .first();
     
@@ -111,7 +111,7 @@ export const getAdviserByCode = query({
     }
 
     const adviserCode = await ctx.db
-      .query("adviserCodes")
+      .query("advisersTable")
       .withIndex("by_code", (q) => q.eq("code", args.code))
       .first();
 
@@ -335,7 +335,7 @@ export const createUser = mutation({
     if (args.role === 1) {
       try {
         const code = await generateUniqueAdviserCode(ctx);
-        await ctx.db.insert("adviserCodes", {
+        await ctx.db.insert("advisersTable", {
           adviser_id: userId,
           code,
           group_ids: [],
@@ -387,7 +387,7 @@ export const createAdviserCode = mutation({
 
     // Check if adviser already has a code
     const existingCode = await ctx.db
-      .query("adviserCodes")
+      .query("advisersTable")
       .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
       .first();
 
@@ -399,7 +399,7 @@ export const createAdviserCode = mutation({
     const code = await generateUniqueAdviserCode(ctx);
 
     // Create adviser code record
-    await ctx.db.insert("adviserCodes", {
+    await ctx.db.insert("advisersTable", {
       adviser_id: args.adviserId,
       code,
       group_ids: [],
@@ -426,13 +426,13 @@ export const createAdviserCode = mutation({
 export const updateAdviserGroups = mutation({
   args: {
     adviserId: v.id("users"),
-    groupIds: v.array(v.id("groups")),
+    groupIds: v.array(v.id("groupsTable")),
     instructorId: v.id("users"),
   },
   handler: async (ctx, args) => {
     // Verify the adviser code exists
     const adviserCode = await ctx.db
-      .query("adviserCodes")
+      .query("advisersTable")
       .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
       .first();
 
@@ -461,7 +461,7 @@ export const updateAdviserGroups = mutation({
     });
 
     return { success: true };
-    },
+  },
 });
 
 export const deleteAdviserCode = mutation({
@@ -471,7 +471,7 @@ export const deleteAdviserCode = mutation({
   handler: async (ctx, args) => {
     // Get the adviser code
     const adviserCode = await ctx.db
-      .query("adviserCodes")
+      .query("advisersTable")
       .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
       .first();
 
@@ -483,5 +483,96 @@ export const deleteAdviserCode = mutation({
     await ctx.db.delete(adviserCode._id);
 
     return { success: true };
+  },
+});
+
+// =========================================
+// Group Queries
+// =========================================
+export const getGroups = query({
+  handler: async (ctx) => {
+    const groups = await ctx.db
+      .query("groupsTable")
+      .collect();
+    
+    return groups;
+  },
+});
+
+export const getUsers = query({
+  handler: async (ctx) => {
+    const users = await ctx.db
+      .query("users")
+      .collect();
+    
+    return users;
+  },
+});
+
+// =========================================
+// Group Creation Mutation
+// =========================================
+export const createGroupWithMembers = mutation({
+  args: {
+    projectManagerId: v.id("users"),
+    memberIds: v.optional(v.array(v.id("users"))),
+    adviserId: v.optional(v.id("users")),
+    capstoneTitle: v.optional(v.string()),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // 1. Create the group
+    const groupId = await ctx.db.insert("groupsTable", {
+      project_manager_id: args.projectManagerId,
+      member_ids: args.memberIds ?? [],
+      adviser_id: args.adviserId,
+      capstone_title: args.capstoneTitle,
+      grade: 0,
+    });
+
+    // 2. Update studentsTable for project manager
+    await ctx.db.insert("studentsTable", {
+      user_id: args.projectManagerId,
+      group_id: groupId,
+    });
+
+    // 3. Update studentsTable for each member
+    if (args.memberIds && args.memberIds.length > 0) {
+      for (const memberId of args.memberIds) {
+        await ctx.db.insert("studentsTable", {
+          user_id: memberId,
+          group_id: groupId,
+        });
+      }
+    }
+
+    // 4. Update advisersTable group_ids if adviser is provided
+    if (args.adviserId) {
+      const adviserCode = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId!))
+        .first();
+      if (adviserCode) {
+        await ctx.db.patch(adviserCode._id, {
+          group_ids: [...adviserCode.group_ids, groupId],
+        });
+      }
+    }
+
+    // 5. Log the group creation
+    const instructor = await ctx.db.get(args.instructorId);
+    if (instructor) {
+      await ctx.db.insert("instructorLogs", {
+        instructor_id: args.instructorId,
+        instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+        affected_user_id: args.projectManagerId,
+        affected_user_name: "Group Creation",
+        affected_user_email: "-",
+        action: "Create Group",
+        details: `Created group with project manager ${args.projectManagerId}`,
+      });
+    }
+
+    return { success: true, groupId };
   },
 });

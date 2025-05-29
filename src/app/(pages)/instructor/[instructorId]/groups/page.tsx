@@ -1,43 +1,123 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-// import { api } from "../../../../../../convex/_generated/api"; // Placeholder import
-// import { ConvexHttpClient } from "convex/browser"; // Placeholder import
-import { useState, use } from "react"; // Placeholder import
-// import { useEffect } from "react"; // Placeholder import
-// import { useMutation } from "convex/react"; // Placeholder import
-// import { Id } from "../../../../../../convex/_generated/dataModel"; // Placeholder import
+import { useState, use } from "react";
+import { Id } from "../../../../../../convex/_generated/dataModel";
+import { api } from "../../../../../../convex/_generated/api";
+import { useQuery, useMutation } from "convex/react";
 
-// Import placeholder components
+// Import components
 import GroupsTable from "./components/GroupsTable";
 import AddGroupForm from "./components/AddGroupForm";
-import EditGroupForm from "./components/EditGroupForm";
-import DeleteGroupConfirmation from "./components/DeleteGroupConfirmation";
 
 interface GroupsPageProps {
     params: Promise<{ instructorId: string }>
 };
 
+// Define proper types based on our schema
+interface User {
+  _id: Id<"users">;
+  _creationTime: number;
+  clerk_id: string;
+  email: string;
+  email_verified: boolean;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  role: number;
+  subrole?: number;
+}
+
+interface Group {
+  _id: Id<"groupsTable">;
+  capstone_title?: string;
+  grade?: number;
+  project_manager_id: Id<"users">;
+  member_ids: Id<"users">[];
+  adviser_id?: Id<"users">;
+  // Additional fields for display
+  projectManager?: User;
+  members?: User[];
+  adviser?: User;
+  name?: string; // Added for display name
+}
+
 const GroupsPage = ({ params }: GroupsPageProps) => {
     const { instructorId } = use(params);
 
-    // Placeholder state (will be managed by actual components later)
+    // State management
     const [isAddingGroup, setIsAddingGroup] = useState(false);
-    const [editingGroup, setEditingGroup] = useState(null);
-    const [deleteGroup, setDeleteGroup] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [networkError, setNetworkError] = useState<string | null>(null);
 
-    // Static group data for demonstration
-    const staticGroups = [
-      {
-        _id: 'static-group-1',
-        name: 'Group A',
-        members: ['User 1', 'User 2', 'User 3'], // Placeholder members
-        projectManager: 'Project Manager Y', // Static Project Manager
-        adviser: 'Dr. Smith', // Static adviser from list
-        status: 'Active', // Placeholder status
-        grade: 'A', // Static Grade
-      },
-    ];
+    // Fetch groups and users data
+    const groups = useQuery(api.documents.getGroups) || [];
+    const users = useQuery(api.documents.getUsers) || [];
+
+    // Filter project managers (role 0, subrole 1, not already a project manager)
+    const usedManagerIds = new Set(groups.map(g => g.project_manager_id));
+    const projectManagers = users.filter(
+      u => u.role === 0 && u.subrole === 1 && !usedManagerIds.has(u._id)
+    );
+
+    // Filter members (role 0, subrole 0, not already in a group)
+    const usedMemberIds = new Set(groups.flatMap(g => g.member_ids));
+    const members = users.filter(
+      u => u.role === 0 && u.subrole === 0 && !usedMemberIds.has(u._id)
+    );
+
+    // Filter advisers (role 1)
+    const advisers = users.filter(u => u.role === 1);
+
+    // Process groups data to include user information
+    const processedGroups: Group[] = groups.map(group => {
+        const projectManager = users.find(user => user._id === group.project_manager_id);
+        const members = group.member_ids
+            .map(memberId => users.find(user => user._id === memberId))
+            .filter((user): user is User => user !== undefined);
+        const adviser = users.find(user => user._id === group.adviser_id);
+
+        // Format group name as "Last Name et al"
+        const name = projectManager ? `${projectManager.last_name} et al` : 'Unknown Group';
+
+        return {
+            ...group,
+            projectManager,
+            members,
+            adviser,
+            grade: group.grade,
+            name,
+            adviser_id: group.adviser_id
+        };
+    });
+
+    // Handlers
+    const createGroupWithMembers = useMutation(api.documents.createGroupWithMembers);
+
+    const handleAddGroup = async (formData: {
+      projectManager: string;
+      members: string[];
+      adviser: string | null;
+      capstoneTitle: string;
+    }) => {
+      try {
+        setIsSubmitting(true);
+        setNetworkError(null);
+        // Call the mutation
+        await createGroupWithMembers({
+          projectManagerId: formData.projectManager as Id<"users">,
+          memberIds: formData.members.map(id => id as Id<"users">),
+          adviserId: formData.adviser ? (formData.adviser as Id<"users">) : undefined,
+          capstoneTitle: formData.capstoneTitle,
+          instructorId: instructorId as Id<"users">,
+        });
+        setIsAddingGroup(false);
+      } catch (error) {
+        setNetworkError(error instanceof Error ? error.message : 'Failed to add group');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -48,37 +128,25 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
                     <p className="text-muted-foreground">View, create, update, and delete groups.</p>
                 </div>
 
-                {/* Groups Table Placeholder */}
+                {/* Groups Table */}
                 <GroupsTable
-                  groups={staticGroups}
-                  onEdit={(group) => setEditingGroup(group)}
-                  onDelete={(group) => setDeleteGroup(group)}
-                  onAdd={() => setIsAddingGroup(true)}
+                    groups={processedGroups}
+                    onEdit={() => {}}
+                    onDelete={() => {}}
+                    onAdd={() => setIsAddingGroup(true)}
                 />
 
-                {/* Add Group Form Placeholder */}
+                {/* Add Group Form */}
                 <AddGroupForm
-                  isOpen={isAddingGroup}
-                  onClose={() => setIsAddingGroup(false)}
-                  onSubmit={() => { /* Placeholder submit */ setIsAddingGroup(false); alert("Add Group Submitted!"); }}
+                    isOpen={isAddingGroup}
+                    onClose={() => setIsAddingGroup(false)}
+                    onSubmit={handleAddGroup}
+                    isSubmitting={isSubmitting}
+                    networkError={networkError}
+                    projectManagers={projectManagers}
+                    members={members}
+                    advisers={advisers}
                 />
-
-                {/* Edit Group Form Placeholder */}
-                <EditGroupForm
-                  group={editingGroup}
-                  isOpen={!!editingGroup}
-                  onClose={() => setEditingGroup(null)}
-                  onSubmit={() => { /* Placeholder submit */ setEditingGroup(null); alert("Edit Group Submitted!"); }}
-                />
-
-                {/* Delete Group Confirmation Placeholder */}
-                <DeleteGroupConfirmation
-                  group={deleteGroup}
-                  isOpen={!!deleteGroup}
-                  onClose={() => setDeleteGroup(null)}
-                  onConfirm={() => { /* Placeholder confirm */ setDeleteGroup(null); alert("Delete Group Confirmed!"); }}
-                />
-
             </div>
         </div>
     );

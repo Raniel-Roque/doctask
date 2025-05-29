@@ -45,7 +45,7 @@ export async function generateUniqueAdviserCode(ctx: { db: DatabaseReader }): Pr
   while (!isUnique) {
     code = generateAdviserCode();
     const existingCode = await ctx.db
-      .query("adviserCodes")
+      .query("advisersTable")
       .withIndex("by_code", (q) => q.eq("code", code))
       .first();
     

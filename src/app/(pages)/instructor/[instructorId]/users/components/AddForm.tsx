@@ -68,7 +68,7 @@ export const AddForm = ({
     } else {
       onFormDataChange({
         ...formData,
-        [name]: sanitizedValue,
+        [name]: sanitizedValue.trim() || null,
       });
     }
 
@@ -159,7 +159,7 @@ export const AddForm = ({
                 name="first_name"
                 value={formData.first_name}
                 onChange={handleChange}
-                placeholder="Enter first name"
+                placeholder="Enter First Name"
                 className={`w-full px-4 py-2 rounded-lg border-2 ${
                   validationErrors.first_name ? 'border-red-500' : 'border-gray-300'
                 } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
@@ -204,7 +204,7 @@ export const AddForm = ({
                 name="last_name"
                 value={formData.last_name}
                 onChange={handleChange}
-                placeholder="Enter last name"
+                placeholder="Enter Last Name"
                 className={`w-full px-4 py-2 rounded-lg border-2 ${
                   validationErrors.last_name ? 'border-red-500' : 'border-gray-300'
                 } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
@@ -229,7 +229,7 @@ export const AddForm = ({
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter email address"
+              placeholder="Enter Email Address"
               className={`w-full px-4 py-2 rounded-lg border-2 ${
                 validationErrors.email ? 'border-red-500' : 'border-gray-300'
               } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}

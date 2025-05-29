@@ -1,14 +1,39 @@
 import React, { useState } from 'react';
 import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa"; // Import icons and pagination icons
+import { Id } from '../../../../../../../convex/_generated/dataModel';
+
+// Define proper types based on our schema
+interface User {
+  _id: Id<"users">;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  role: number;
+  subrole?: number;
+}
+
+interface Group {
+  _id: Id<"groupsTable">;
+  capstone_title?: string;
+  grade?: number;
+  project_manager_id: Id<"users">;
+  member_ids: Id<"users">[];
+  adviser_id?: Id<"users">;
+  // Additional fields for display
+  projectManager?: User;
+  members?: User[];
+  adviser?: User;
+  name?: string;
+}
 
 interface GroupsTableProps {
-  groups: any[]; // Placeholder type
-  onEdit: (group: any) => void; // Placeholder type
-  onDelete: (group: any) => void; // Placeholder type
+  groups: Group[];
+  onEdit: (group: Group) => void;
+  onDelete: (group: Group) => void;
   onAdd: () => void;
 }
 
-type SortField = "name" | "projectManager" | "adviser" | "grade" | "status"; // Define sortable fields
+type SortField = "name" | "projectManager" | "capstoneTitle";
 type SortDirection = "asc" | "desc";
 
 // Capstone Title filter options
@@ -18,11 +43,19 @@ const CAPSTONE_FILTERS = {
   WITHOUT_TITLE: "Without Capstone Title"
 } as const;
 
-// Static list of advisers (replace with fetched data later)
-const staticAdvisers = ["Dr. Smith", "Prof. Johnson", "Dr. Williams", "Prof. Brown"];
-
-// Placeholder for filter options if needed later
-// const GROUP_STATUS_FILTERS = { ALL: "All Statuses", ACTIVE: "Active", INACTIVE: "Inactive" } as const;
+const getGradeDisplay = (grade?: number): { text: string; color: string } => {
+  if (grade === undefined || grade === null) return { text: 'No Grade', color: 'bg-gray-100 text-gray-800' };
+  switch (grade) {
+    case 1:
+      return { text: 'Failed', color: 'bg-red-100 text-red-800' };
+    case 2:
+      return { text: 'Revision', color: 'bg-yellow-100 text-yellow-800' };
+    case 3:
+      return { text: 'Passed', color: 'bg-green-100 text-green-800' };
+    default:
+      return { text: 'No Grade', color: 'bg-gray-100 text-gray-800' };
+  }
+};
 
 const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onAdd }) => {
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
@@ -40,12 +73,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
   };
 
-  const getLastName = (name: string) => {
-    const parts = name.split(' ');
-    return parts.length > 1 ? parts[parts.length - 1] : name;
+  const getFullName = (user: User) => {
+    return `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`;
   };
 
-  const getPaginationInfo = (groups: any[]) => {
+  const getLastName = (user: User) => {
+    return user.last_name;
+  };
+
+  const getPaginationInfo = (groups: Group[]) => {
     const entriesPerPage = 5;
     const totalEntries = groups.length;
     const totalPages = Math.ceil(totalEntries / entriesPerPage);
@@ -63,27 +99,31 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   };
 
   // Update the filtering logic
-  const filteredAndSortedGroups = groups.filter(group =>
-    group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (group.projectManager?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (group.adviser?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (adviserFilter === "" || group.adviser === adviserFilter) &&
-    (capstoneFilter === CAPSTONE_FILTERS.ALL ||
-     (capstoneFilter === CAPSTONE_FILTERS.WITH_TITLE && group.capstoneTitle) ||
-     (capstoneFilter === CAPSTONE_FILTERS.WITHOUT_TITLE && !group.capstoneTitle))
-  ).sort((a, b) => {
-    // Add sorting logic here based on sortField and sortDirection
+  const filteredAndSortedGroups = groups.filter(group => {
+    const groupName = group.name || '';
+    const adviserName = group.adviser ? getFullName(group.adviser) : '';
+    
+    return (
+      (groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       adviserName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       (group.capstone_title?.toLowerCase().includes(searchTerm.toLowerCase()) || false)) &&
+      (adviserFilter === "" || (group.adviser && getFullName(group.adviser) === adviserFilter)) &&
+      (capstoneFilter === CAPSTONE_FILTERS.ALL ||
+       (capstoneFilter === CAPSTONE_FILTERS.WITH_TITLE && group.capstone_title) ||
+       (capstoneFilter === CAPSTONE_FILTERS.WITHOUT_TITLE && !group.capstone_title))
+    );
+  }).sort((a, b) => {
     let comparison = 0;
     if (sortField === "name") {
-      comparison = a.name.localeCompare(b.name);
+      const aName = a.name || '';
+      const bName = b.name || '';
+      comparison = aName.localeCompare(bName);
     } else if (sortField === "projectManager" && a.projectManager && b.projectManager) {
-       comparison = a.projectManager.localeCompare(b.projectManager);
-    } else if (sortField === "adviser" && a.adviser && b.adviser) {
-       comparison = a.adviser.localeCompare(b.adviser);
-    } else if (sortField === "grade" && a.grade && b.grade) {
-       comparison = a.grade.localeCompare(b.grade);
-    } else if (sortField === "status" && a.status && b.status) {
-       comparison = a.status.localeCompare(b.status);
+      comparison = getFullName(a.projectManager).localeCompare(getFullName(b.projectManager));
+    } else if (sortField === "capstoneTitle") {
+      const aTitle = a.capstone_title || '';
+      const bTitle = b.capstone_title || '';
+      comparison = aTitle.localeCompare(bTitle);
     }
     return sortDirection === "asc" ? comparison : -comparison;
   });
@@ -103,6 +143,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   };
 
   const { totalEntries, totalPages, startEntry, endEntry, paginatedGroups } = getPaginationInfo(filteredAndSortedGroups);
+
+  // Get unique advisers for filter dropdown
+  const uniqueAdvisers = Array.from(new Set(
+    groups
+      .filter(group => group.adviser)
+      .map(group => getFullName(group.adviser!))
+  )).sort();
 
   return (
     <>
@@ -193,7 +240,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                 >
                   All Advisers
                 </div>
-                {staticAdvisers
+                {uniqueAdvisers
                   .filter(adviser => 
                     adviser.toLowerCase().includes(adviserSearch.toLowerCase())
                   )
@@ -229,56 +276,85 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                 <span className="ml-1">{getSortIcon("name")}</span>
               </div>
             </th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Capstone Title</th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Project Manager</th>
+            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer" onClick={() => handleSort("capstoneTitle")}>
+              <div className="flex items-center justify-center">
+                Capstone Title
+                <span className="ml-1">{getSortIcon("capstoneTitle")}</span>
+              </div>
+            </th>
+            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer" onClick={() => handleSort("projectManager")}>
+              <div className="flex items-center justify-center">
+                Project Manager
+                <span className="ml-1">{getSortIcon("projectManager")}</span>
+              </div>
+            </th>
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Members</th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Adviser</th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Grade</th>
+            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+              Adviser
+            </th>
+            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+              Grade
+            </th>
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {paginatedGroups.map((group) => (
             <tr key={group._id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{group.name}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{group.capstoneTitle || '-'}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{group.projectManager}</td>
-              <td className="px-6 py-4 text-sm text-gray-500 align-top">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                {group.name || '-'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.capstone_title || '-'}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {group.projectManager ? getFullName(group.projectManager) : '-'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-top">
                 {expandedGroupId === group._id ? (
                   // Expanded view
-                  <div onClick={() => toggleExpand(group._id)} className="cursor-pointer">
-                    <ul>
-                      {group.members.map((member: string, index: number) => (
-                        <li key={index}>{member}</li>
+                  <div onClick={() => toggleExpand(group._id)} className="cursor-pointer space-y-1">
+                    <ul className="list-disc list-inside">
+                      {group.members?.map((member) => (
+                        <li key={member._id}>{getFullName(member)}</li>
                       ))}
                     </ul>
-                    {group.members.length > 3 && ( // Show collapse if more than 3 members
-                        <button onClick={() => toggleExpand(group._id)} className="mt-2 text-blue-600 hover:underline text-xs">Show Less</button>
+                    {group.members && group.members.length > 3 && (
+                      <button onClick={() => toggleExpand(group._id)} className="mt-2 text-blue-600 hover:underline text-xs">Show Less</button>
                     )}
                   </div>
                 ) : (
                   // Collapsed view
-                  <div onClick={() => toggleExpand(group._id)} className="cursor-pointer">
-                    {group.members.length > 0 ? (
+                  <span onClick={() => toggleExpand(group._id)} className="cursor-pointer">
+                    {group.members && group.members.length > 0 ? (
                       <>
                         {group.members
-                          .map((member: string) => getLastName(member)) // Get last names
-                          .sort() // Sort alphabetically
-                          .slice(0, 3) // Take first 3
+                          .map(member => getLastName(member))
+                          .sort()
+                          .slice(0, 3)
                           .join(', ')}
-                        {group.members.length > 3 && '...'} {/* Add ellipsis if more than 3 */}
-                         {group.members.length > 3 && ( // Show expand if more than 3 members
-                            <button onClick={() => toggleExpand(group._id)} className="ml-2 text-blue-600 hover:underline text-xs">Show More</button>
-                         )}
+                        {group.members.length > 3 && '...'}
+                        {group.members.length > 3 && (
+                          <button onClick={() => toggleExpand(group._id)} className="ml-2 text-blue-600 hover:underline text-xs">Show More</button>
+                        )}
                       </>
                     ) : (
-                      "No members"
+                      <span className="text-gray-400">No members</span>
                     )}
-                  </div>
+                  </span>
                 )}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{group.adviser} {/* Static adviser */}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{group.grade}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {group.adviser ? getFullName(group.adviser) : '-'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                {(() => {
+                  const { text, color } = getGradeDisplay(group.grade);
+                  return (
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}>
+                      {text}
+                    </span>
+                  );
+                })()}
+              </td>
               <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                 <div className="flex justify-center gap-2">
                   <button onClick={() => onEdit(group)} className="p-2 text-blue-600 hover:text-blue-800" title="Edit Group">

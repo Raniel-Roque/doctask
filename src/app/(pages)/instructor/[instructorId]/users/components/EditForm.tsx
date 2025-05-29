@@ -68,7 +68,7 @@ export const EditForm = ({
     } else {
       onFormDataChange({
         ...formData,
-        [name]: sanitizedValue,
+        [name]: sanitizedValue.trim() || null,
       });
     }
 
