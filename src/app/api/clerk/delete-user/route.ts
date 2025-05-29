@@ -38,6 +38,19 @@ export async function POST(request: Request) {
       }
     }
 
+    // If user is an adviser, delete their adviser code
+    if (convexUser.role === 1) {
+      try {
+        const adviserCode = await convex.query(api.documents.getAdviserCode, { adviserId: convexUser._id });
+        if (adviserCode) {
+          await convex.mutation(api.documents.deleteAdviserCode, { adviserId: convexUser._id });
+        }
+      } catch (error) {
+        console.error("Failed to delete adviser code:", error);
+        // Continue with user deletion even if code deletion fails
+      }
+    }
+
     // Delete from Clerk first
     try {
       const client = await clerkClient();

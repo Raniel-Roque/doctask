@@ -164,8 +164,8 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
       setShowProjectManagerSearch(false);
     } else {
       setShowProjectManagerSearch(true);
-      setShowMemberSearch(false);
-      setShowAdviserSearch(false);
+    setShowMemberSearch(false);
+    setShowAdviserSearch(false);
     }
   };
 
@@ -175,8 +175,8 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
       setShowMemberSearch(false);
     } else {
       setShowMemberSearch(true);
-      setShowProjectManagerSearch(false);
-      setShowAdviserSearch(false);
+    setShowProjectManagerSearch(false);
+    setShowAdviserSearch(false);
     }
   };
 
@@ -186,8 +186,8 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
       setShowAdviserSearch(false);
     } else {
       setShowAdviserSearch(true);
-      setShowProjectManagerSearch(false);
-      setShowMemberSearch(false);
+    setShowProjectManagerSearch(false);
+    setShowMemberSearch(false);
     }
   };
 
@@ -273,9 +273,9 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FaUserGraduate color="#4B5563" />
-                    Project Manager
+                <div className="flex items-center gap-2">
+                  <FaUserGraduate color="#4B5563" />
+                  Project Manager
                   </div>
                   {formData.projectManager && (
                     <button
@@ -346,9 +346,9 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FaUserGraduate color="#4B5563" />
-                    Adviser
+                <div className="flex items-center gap-2">
+                  <FaUserGraduate color="#4B5563" />
+                  Adviser
                   </div>
                   {formData.adviser && (
                     <button
@@ -448,9 +448,9 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FaUsers color="#4B5563" />
-                  Members
+              <div className="flex items-center gap-2">
+                <FaUsers color="#4B5563" />
+                Members
                 </div>
                 {formData.members.length > 0 && (
                   <button

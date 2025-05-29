@@ -400,7 +400,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       // Create user in Convex
       try {
         await createUser({
-          clerk_id: data.clerkId,
+          clerk_id: data.user.id,
           first_name: addFormData.first_name,
           middle_name: addFormData.middle_name || undefined,
           last_name: addFormData.last_name,
@@ -416,7 +416,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ clerkId: data.clerkId }),
+            body: JSON.stringify({ clerkId: data.user.id }),
           });
         } catch (cleanupError) {
           console.error("Failed to clean up Clerk user:", cleanupError);

@@ -3,6 +3,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { Resend } from 'resend';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import { generatePassword } from "@/utils/passwordGeneration";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -11,23 +12,6 @@ interface ClerkError {
   errors?: Array<{
     message?: string;
   }>;
-}
-
-function generatePassword(firstName: string, lastName: string): string {
-  const firstInitial = firstName.charAt(0);
-  const timestamp = Date.now().toString();
-  const lastFourTimestamp = timestamp.slice(-4);
-
-  // Calculate the maximum length for the last name part
-  const maxLastNameLength = 12 - 1 - 4; // 1 (first initial) + 4 (timestamp digits) = 5 characters used
-
-  // Take the last name and truncate if necessary
-  const lastNamePart = lastName.slice(0, maxLastNameLength);
-
-  // Combine the parts
-  const password = `${firstInitial}${lastNamePart}${lastFourTimestamp}`;
-
-  return password;
 }
 
 export async function POST(request: Request) {
@@ -41,7 +25,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get user details from Convex
     const user = await convex.query(api.documents.getUserByClerkId, { clerkId });
     
     if (!user) {
@@ -54,26 +37,21 @@ export async function POST(request: Request) {
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(clerkId);
     const email = clerkUser.emailAddresses[0].emailAddress;
+    const newPassword = generatePassword(user.first_name, user.last_name, user._creationTime);
 
-    // Generate a new temporary password
-    const newPassword = generatePassword(user.first_name, user.last_name);
-
-    // Update the existing user's password
     await client.users.updateUser(clerkId, {
       password: newPassword,
     });
 
-    // Update Convex to log the password reset
     try {
       await convex.mutation(api.documents.resetPassword, {
         userId: user._id,
         instructorId: user._id
       });
-    } catch {
-      // Continue even if Convex update fails
+    } catch (convexError) {
+      console.error("Failed to log password reset in Convex:", convexError);
     }
 
-    // Send password reset email using Resend
     try {
       await resend.emails.send({
         from: 'DocTask <onboarding@resend.dev>',
@@ -107,16 +85,17 @@ export async function POST(request: Request) {
           </div>
         `,
       });
-    } catch {
-      // Continue even if email fails
+    } catch (emailError) {
+      console.error("Failed to send password reset email:", emailError);
     }
 
     return NextResponse.json({ 
       success: true,
-      clerkId: clerkId
+      clerkId: clerkId,
     });
   } catch (error) {
     const clerkError = error as ClerkError;
+    console.error("Error resetting password in Clerk:", error);
     return NextResponse.json(
       { error: clerkError.errors?.[0]?.message || "Failed to reset password" },
       { status: 500 }

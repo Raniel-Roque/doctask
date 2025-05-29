@@ -1,6 +1,8 @@
 import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown, FaChevronDown } from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 import { useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../../convex/_generated/api";
 
 // =========================================
 // Types
@@ -51,6 +53,9 @@ export const UserTable = ({
 }: UserTableProps) => {
   const [expandedCode, setExpandedCode] = useState<{ [key: string]: boolean }>({});
   const [expandedEmail, setExpandedEmail] = useState<{ [key: string]: boolean }>({});
+
+  // Fetch adviser codes
+  const adviserCodes = useQuery(api.documents.getAdviserCodes) || {};
 
   // =========================================
   // Helper Functions
@@ -141,13 +146,13 @@ export const UserTable = ({
   // Collapsible Text Component
   // =========================================
   const CollapsibleCode = ({ userId }: { userId: string }) => {
-    const code = `ADV-${userId.slice(-4).toUpperCase()}`;
+    const code = adviserCodes[userId]?.code || "Loading...";
     const isExpanded = expandedCode[userId] || false;
 
     return (
       <button
         onClick={() => setExpandedCode(prev => ({ ...prev, [userId]: !prev[userId] }))}
-        className="w-full text-left"
+        className="w-full text-center"
       >
         {isExpanded ? code : `${code.slice(0, 4)}...`}
       </button>
@@ -248,15 +253,6 @@ export const UserTable = ({
                   <span className="ml-1">{getSortIcon("last_name")}</span>
                 </div>
               </th>
-              {showRoleColumn && (
-                <th 
-                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider"
-                >
-                  <div className="flex items-center justify-center">
-                    Role
-                  </div>
-                </th>
-              )}
               <th 
                 className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("email")}
@@ -266,43 +262,34 @@ export const UserTable = ({
                   <span className="ml-1">{getSortIcon("email")}</span>
                 </div>
               </th>
-              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">Status</th>
-              {showCodeColumn && (
-                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">Code</th>
-              )}
-              <th 
-                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
-                onClick={() => onSort("_creationTime")}
-              >
-                <div className="flex items-center justify-center">
-                  Created
-                  <span className="ml-1">{getSortIcon("_creationTime")}</span>
-                </div>
+              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                Status
               </th>
-              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
+              {showCodeColumn && (
+                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                  Code
+                </th>
+              )}
+              {showRoleColumn && (
+                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                  Role
+                </th>
+              )}
+              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
-            {paginatedUsers.map((user: User, index: number) => (
-              <tr key={user._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {user.first_name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {user.middle_name || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {user.last_name}
-                </td>
-                {showRoleColumn && (
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {getRoleLabel(user.subrole)}
-                  </td>
-                )}
-                <td className="px-6 py-4 whitespace-nowrap">
+            {paginatedUsers.map((user) => (
+              <tr key={user._id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 border-b text-center">{user.first_name}</td>
+                <td className="px-6 py-4 border-b text-center">{user.middle_name || "-"}</td>
+                <td className="px-6 py-4 border-b text-center">{user.last_name}</td>
+                <td className="px-6 py-4 border-b text-center">
                   <CollapsibleEmail email={user.email} userId={user._id} />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
+                <td className="px-6 py-4 border-b text-center">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     user.email_verified 
                       ? 'bg-green-100 text-green-800' 
@@ -312,19 +299,21 @@ export const UserTable = ({
                   </span>
                 </td>
                 {showCodeColumn && (
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <td className="px-6 py-4 border-b text-center">
                     <CollapsibleCode userId={user._id} />
                   </td>
                 )}
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  {new Date(user._creationTime).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
+                {showRoleColumn && (
+                  <td className="px-6 py-4 border-b text-center">
+                    {getRoleLabel(user.subrole)}
+                  </td>
+                )}
+                <td className="px-6 py-4 border-b text-center">
                   <div className="flex justify-center gap-2">
                     <button 
                       onClick={() => onEdit(user)}
                       className="p-2 text-blue-600 hover:text-blue-800"
-                      title="Edit User"
+                      title="Edit"
                     >
                       <FaEdit />
                     </button>
@@ -335,10 +324,10 @@ export const UserTable = ({
                     >
                       <FaKey />
                     </button>
-                    <button 
+                    <button
                       onClick={() => onDelete(user)}
                       className="p-2 text-red-600 hover:text-red-800"
-                      title="Delete User"
+                      title="Delete"
                     >
                       <FaTrash />
                     </button>
@@ -351,7 +340,7 @@ export const UserTable = ({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+      <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
         <div className="flex items-center">
           <p className="text-sm text-gray-700">
             Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}

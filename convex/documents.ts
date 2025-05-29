@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { generateUniqueAdviserCode, validateAdviserCode } from "./utils/adviserCode";
 
 // =========================================
 // Constants
@@ -63,6 +64,63 @@ export const getUserByEmail = query({
       .filter((q) => q.eq(q.field("email"), args.email))
       .first();
     return user;
+  },
+});
+
+// =========================================
+// Adviser Code Queries
+// =========================================
+interface AdviserCode {
+  _id: string;
+  adviser_id: string;
+  code: string;
+  group_ids: string[];
+}
+
+export const getAdviserCodes = query({
+  handler: async (ctx) => {
+    const codes = await ctx.db
+      .query("adviserCodes")
+      .collect();
+    
+    // Convert array to object with adviser_id as key
+    return codes.reduce((acc, code) => {
+      acc[code.adviser_id] = code;
+      return acc;
+    }, {} as Record<string, AdviserCode>);
+  },
+});
+
+export const getAdviserCode = query({
+  args: { adviserId: v.id("users") },
+  handler: async (ctx, args) => {
+    const code = await ctx.db
+      .query("adviserCodes")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+    
+    return code;
+  },
+});
+
+export const getAdviserByCode = query({
+  args: { code: v.string() },
+  handler: async (ctx, args) => {
+    if (!validateAdviserCode(args.code)) {
+      throw new Error("Invalid adviser code format");
+    }
+
+    const adviserCode = await ctx.db
+      .query("adviserCodes")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .first();
+
+    if (!adviserCode) {
+      return null;
+    }
+
+    const adviser = await ctx.db.get(adviserCode.adviser_id);
+    return adviser;
   },
 });
 
@@ -234,6 +292,10 @@ export const createUser = mutation({
       throw new Error("Invalid email format");
     }
 
+    // Get instructor first to fail fast if not found
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+
     // Check if user already exists in Convex
     const existingUser = await ctx.db
       .query("users")
@@ -257,38 +319,45 @@ export const createUser = mutation({
       return { success: true, userId: existingUser._id };
     }
 
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
+    // Create new user
+    const userId = await ctx.db.insert("users", {
+      clerk_id: args.clerk_id,
+      email: args.email,
+      email_verified: false,
+      first_name: args.first_name,
+      middle_name: args.middle_name,
+      last_name: args.last_name,
+      role: args.role,
+      subrole: args.subrole,
+    });
 
-    try {
-      // Create the user in Convex with the Clerk ID
-      const userId = await ctx.db.insert("users", {
-        clerk_id: args.clerk_id,
-        first_name: args.first_name,
-        middle_name: args.middle_name,
-        last_name: args.last_name,
-        email: args.email,
-        email_verified: false,
-        role: args.role,
-        subrole: args.subrole,
-      });
-
-      // Log the action
-      await ctx.db.insert("instructorLogs", {
-        instructor_id: args.instructorId,
-        instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-        affected_user_id: userId,
-        affected_user_name: `${args.first_name} ${args.last_name}`,
-        affected_user_email: args.email,
-        action: LOG_ACTIONS.CREATE_USER,
-        details: "Created User",
-      });
-
-      return { success: true, userId };
-    } catch (error) {
-      console.error("Failed to create user:", error);
-      throw new Error("Failed to create user account");
+    // If the user is an adviser, generate a code
+    if (args.role === 1) {
+      try {
+        const code = await generateUniqueAdviserCode(ctx);
+        await ctx.db.insert("adviserCodes", {
+          adviser_id: userId,
+          code,
+          group_ids: [],
+        });
+      } catch (error) {
+        console.error("Failed to generate adviser code:", error);
+        // Don't throw here - we still want the user to be created even if code generation fails
+      }
     }
+
+    // Log the user creation
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+      affected_user_id: userId,
+      affected_user_name: `${args.first_name} ${args.last_name}`,
+      affected_user_email: args.email,
+      action: LOG_ACTIONS.CREATE_USER,
+      details: `Created new ${args.role === 1 ? "adviser" : "student"}`,
+    });
+
+    return { success: true, userId };
   },
 });
 
@@ -300,4 +369,119 @@ export const getLogs = query({
         const logs = await ctx.db.query("instructorLogs").collect();
         return logs;
     },
+});
+
+// =========================================
+// Adviser Code Mutations
+// =========================================
+export const createAdviserCode = mutation({
+  args: {
+    adviserId: v.id("users"),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Verify the user is an adviser
+    const adviser = await ctx.db.get(args.adviserId);
+    if (!adviser) throw new Error("Adviser not found");
+    if (adviser.role !== 1) throw new Error("User is not an adviser");
+
+    // Check if adviser already has a code
+    const existingCode = await ctx.db
+      .query("adviserCodes")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+
+    if (existingCode) {
+      throw new Error("Adviser already has a code");
+    }
+
+    // Generate unique code
+    const code = await generateUniqueAdviserCode(ctx);
+
+    // Create adviser code record
+    await ctx.db.insert("adviserCodes", {
+      adviser_id: args.adviserId,
+      code,
+      group_ids: [],
+    });
+
+    // Log the code creation
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+      affected_user_id: args.adviserId,
+      affected_user_name: `${adviser.first_name} ${adviser.last_name}`,
+      affected_user_email: adviser.email,
+      action: "Create Adviser Code",
+      details: `Generated adviser code: ${code}`,
+    });
+
+    return { success: true, code };
+  },
+});
+
+export const updateAdviserGroups = mutation({
+  args: {
+    adviserId: v.id("users"),
+    groupIds: v.array(v.id("groups")),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Verify the adviser code exists
+    const adviserCode = await ctx.db
+      .query("adviserCodes")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+
+    if (!adviserCode) {
+      throw new Error("Adviser code not found");
+    }
+
+    // Update the groups
+    await ctx.db.patch(adviserCode._id, {
+      group_ids: args.groupIds,
+    });
+
+    // Log the update
+    const adviser = await ctx.db.get(args.adviserId);
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!adviser || !instructor) throw new Error("User not found");
+
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+      affected_user_id: args.adviserId,
+      affected_user_name: `${adviser.first_name} ${adviser.last_name}`,
+      affected_user_email: adviser.email,
+      action: "Update Adviser Groups",
+      details: `Updated groups for adviser code: ${adviserCode.code}`,
+    });
+
+    return { success: true };
+    },
+});
+
+export const deleteAdviserCode = mutation({
+  args: {
+    adviserId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Get the adviser code
+    const adviserCode = await ctx.db
+      .query("adviserCodes")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+
+    if (!adviserCode) {
+      return { success: true }; // No code to delete
+    }
+
+    // Delete the adviser code
+    await ctx.db.delete(adviserCode._id);
+
+    return { success: true };
+  },
 });

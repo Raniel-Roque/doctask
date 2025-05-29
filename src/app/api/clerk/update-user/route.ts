@@ -3,6 +3,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { Resend } from 'resend';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import { generatePassword } from "@/utils/passwordGeneration";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -11,23 +12,6 @@ interface ClerkError {
   errors?: Array<{
     message?: string;
   }>;
-}
-
-function generatePassword(firstName: string, lastName: string): string {
-  const firstInitial = firstName.charAt(0);
-  const timestamp = Date.now().toString();
-  const lastFourTimestamp = timestamp.slice(-4);
-
-  // Calculate the maximum length for the last name part
-  const maxLastNameLength = 12 - 1 - 4; // 1 (first initial) + 4 (timestamp digits) = 5 characters used
-
-  // Take the last name and truncate if necessary
-  const lastNamePart = lastName.slice(0, maxLastNameLength);
-
-  // Combine the parts
-  const password = `${firstInitial}${lastNamePart}${lastFourTimestamp}`;
-
-  return password;
 }
 
 export async function POST(request: Request) {
@@ -99,8 +83,8 @@ export async function POST(request: Request) {
       // A new user was already created but the process didn't complete
       newUser = existingNewUser.data.find(user => user.id !== clerkId);
     } else {
-      // Generate a new password
-      newPassword = generatePassword(firstName, lastName);
+      // Generate a new password using the shared utility
+      newPassword = generatePassword(firstName, lastName, Date.now());
 
       // Create new user with the new email
       newUser = await client.users.createUser({

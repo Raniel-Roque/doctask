@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus } from "react-icons/fa"; // Import icons
+import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa"; // Import icons and pagination icons
 
 interface GroupsTableProps {
   groups: any[]; // Placeholder type
@@ -34,6 +34,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   const [adviserSearch, setAdviserSearch] = useState("");
   const [capstoneFilter, setCapstoneFilter] = useState<typeof CAPSTONE_FILTERS[keyof typeof CAPSTONE_FILTERS]>(CAPSTONE_FILTERS.ALL);
   const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const toggleExpand = (groupId: string) => {
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
@@ -42,6 +43,23 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   const getLastName = (name: string) => {
     const parts = name.split(' ');
     return parts.length > 1 ? parts[parts.length - 1] : name;
+  };
+
+  const getPaginationInfo = (groups: any[]) => {
+    const entriesPerPage = 5;
+    const totalEntries = groups.length;
+    const totalPages = Math.ceil(totalEntries / entriesPerPage);
+    const startEntry = (currentPage - 1) * entriesPerPage + 1;
+    const endEntry = Math.min(startEntry + entriesPerPage - 1, totalEntries);
+    const paginatedGroups = groups.slice(startEntry - 1, endEntry);
+
+    return {
+      totalEntries,
+      totalPages,
+      startEntry,
+      endEntry,
+      paginatedGroups,
+    };
   };
 
   // Update the filtering logic
@@ -83,6 +101,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
       setSortDirection("asc");
     }
   };
+
+  const { totalEntries, totalPages, startEntry, endEntry, paginatedGroups } = getPaginationInfo(filteredAndSortedGroups);
 
   return (
     <>
@@ -218,7 +238,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {filteredAndSortedGroups.map((group) => (
+          {paginatedGroups.map((group) => (
             <tr key={group._id}>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{group.name}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{group.capstoneTitle || '-'}</td>
@@ -273,6 +293,43 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
           ))}
         </tbody>
       </table>
+
+      {/* Pagination */}
+      <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+        <div className="flex items-center">
+          <p className="text-sm text-gray-700">
+            Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}
+            <span className="font-medium">{totalEntries}</span> entries
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <FaChevronLeft />
+          </button>
+          <span className="text-sm text-gray-700">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <FaChevronRight />
+          </button>
+        </div>
+      </div>
     </>
   );
 };

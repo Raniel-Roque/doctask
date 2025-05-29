@@ -3,6 +3,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { Resend } from 'resend';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import { generatePassword } from "@/utils/passwordGeneration";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -13,83 +14,25 @@ interface ClerkError {
   }>;
 }
 
-function generatePassword(firstName: string, lastName: string): string {
-  const firstInitial = firstName.charAt(0);
-  const timestamp = Date.now().toString();
-  const lastFourTimestamp = timestamp.slice(-4);
-
-  // Calculate the maximum length for the last name part
-  const maxLastNameLength = 12 - 1 - 4; // 1 (first initial) + 4 (timestamp digits) = 5 characters used
-
-  // Take the last name and truncate if necessary
-  const lastNamePart = lastName.slice(0, maxLastNameLength);
-
-  // Combine the parts
-  const password = `${firstInitial}${lastNamePart}${lastFourTimestamp}`;
-
-  return password;
-}
-
 export async function POST(request: Request) {
   let clerkUser = null;
   try {
-    const { email, firstName, lastName, role, middle_name, instructorId, subrole } = await request.json();
-    
-    // Validate required fields
-    if (!email || !firstName || !lastName || role === undefined || !instructorId) {
-      return NextResponse.json(
-        { error: "All required fields must be provided" },
-        { status: 400 }
-      );
-    }
+    const { firstName, lastName, email, role, middle_name, instructorId, subrole } = await request.json();
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!firstName || !lastName || !email || !role || !instructorId) {
       return NextResponse.json(
-        { error: "Invalid email format" },
+        { error: "All required fields are missing" },
         { status: 400 }
       );
     }
 
     const client = await clerkClient();
+    const password = generatePassword(firstName, lastName, Date.now());
 
-    // Check if user already exists in Clerk
-    const existingClerkUsers = await client.users.getUserList({
-      emailAddress: [email],
-    });
-
-    if (existingClerkUsers.data.length > 0) {
-      return NextResponse.json(
-        { error: "This email is already registered in the system. Please use a different email address." },
-        { status: 400 }
-      );
-    }
-
-    // Check if user already exists in Convex
-    try {
-      const existingConvexUser = await convex.query(api.documents.getUserByEmail, { email });
-      if (existingConvexUser) {
-        return NextResponse.json(
-          { error: "This email is already registered in the system. Please use a different email address." },
-          { status: 400 }
-        );
-      }
-    } catch (error) {
-      console.error("Error checking Convex for existing user:", error);
-      return NextResponse.json(
-        { error: "Failed to validate user existence" },
-        { status: 500 }
-      );
-    }
-
-    // If we get here, the email is available in both systems
-    const password = generatePassword(firstName, lastName);
-
-    // Create user in Clerk
+    // Create user in Clerk with just email and password
     clerkUser = await client.users.createUser({
       emailAddress: [email],
-      password,
+      password: password,
     });
 
     // Set email as unverified
@@ -99,8 +42,8 @@ export async function POST(request: Request) {
       verified: false
     });
 
+    // Create user in Convex
     try {
-      // Create user in Convex
       await convex.mutation(api.documents.createUser, {
         clerk_id: clerkUser.id,
         first_name: firstName,
@@ -119,33 +62,31 @@ export async function POST(request: Request) {
       throw convexError;
     }
 
-    // Send welcome email using Resend
+    // Send welcome email
     try {
       await resend.emails.send({
         from: 'DocTask <onboarding@resend.dev>',
         to: email,
-        subject: 'Welcome to DocTask - Your Account Details',
+        subject: 'Welcome to DocTask',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">Welcome to DocTask!</h2>
             
             <p>Dear ${firstName} ${lastName},</p>
             
-            <p>Your account is now registered. Here are your login details:</p>
+            <p>Your account has been created. Here are your login credentials:</p>
             
             <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p style="margin: 0;"><strong>Email:</strong> ${email}</p>
-              <p style="margin: 10px 0 0 0;"><strong>Temporary Password:</strong> ${password}</p>
+              <p style="margin: 10px 0 0 0;"><strong>Password:</strong> ${password}</p>
             </div>
             
             <p><strong>Important Next Steps:</strong></p>
             <ol>
-              <li>Log in to your account using the temporary password above</li>
-              <li>Change your password immediately for security</li>
+              <li>Log in to your account using the credentials above</li>
+              <li>Change your password immediately for security purposes</li>
               <li>Verify your email address</li>
             </ol>
-            
-            <p>If you need any assistance, please contact our support team.</p>
             
             <p style="margin-top: 30px; color: #666;">
               Best regards,<br>
@@ -154,15 +95,22 @@ export async function POST(request: Request) {
           </div>
         `,
       });
-    } catch {
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
       // Continue even if email fails
     }
 
     return NextResponse.json({ 
       success: true,
-      clerkId: clerkUser.id 
+      user: {
+        id: clerkUser.id,
+        firstName: clerkUser.firstName,
+        lastName: clerkUser.lastName,
+        email: email,
+        role: role
+      }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     // Cleanup if anything fails
     if (clerkUser) {
       try {
@@ -172,20 +120,9 @@ export async function POST(request: Request) {
         // Ignore cleanup errors
       }
     }
-    
-    const clerkError = error as ClerkError;
-    
-    // Check for Clerk's duplicate email error
-    if (clerkError.errors?.[0]?.message?.includes("email address exists") || 
-        clerkError.errors?.[0]?.message?.includes("email_address_exists") ||
-        clerkError.errors?.[0]?.message?.includes("email already exists")) {
-      return NextResponse.json(
-        { error: "This email is already registered in the system. Please use a different email address." },
-        { status: 400 }
-      );
-    }
 
-    // Return a more specific error message for other cases
+    const clerkError = error as ClerkError;
+    console.error("Error creating user:", error);
     return NextResponse.json(
       { error: clerkError.errors?.[0]?.message || "Failed to create user" },
       { status: 500 }

@@ -25,6 +25,22 @@ export default defineSchema({
   }).index("by_clerk_id", ["clerk_id"]),
 
   // =========================================
+  // Adviser Codes Table
+  // =========================================
+  adviserCodes: defineTable({
+    // Adviser Identification
+    adviser_id: v.id("users"),
+    
+    // Code Information
+    code: v.string(), // Format: XXXX-XXXX-XXXX where X is a capital letter
+    
+    // Associated Groups
+    group_ids: v.array(v.id("groups")), // Array of group IDs this adviser handles
+  })
+  .index("by_adviser", ["adviser_id"])
+  .index("by_code", ["code"]),
+
+  // =========================================
   // instructor Logs Table
   // =========================================
   instructorLogs: defineTable({
