@@ -99,6 +99,10 @@ export const AddForm = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Clear any previous network errors
+    setNetworkError(null);
     
     // Validate form
     const errors = validateUserForm(formData);
@@ -110,24 +114,12 @@ export const AddForm = ({
     onSubmit();
   };
 
-  const handleClose = () => {
-    // Reset form data
-    onFormDataChange({
-      first_name: '',
-      middle_name: '',
-      last_name: '',
-      email: '',
-      subrole: 0
-    });
-    // Reset validation errors
-    setValidationErrors({});
-    // Reset search states
-    setRoleSearch('');
-    // Close dropdowns
-    closeAllDropdowns();
-    // Clear network error if possible
-    if (typeof setNetworkError === 'function') setNetworkError(null);
-    // Call the original onClose
+  const handleClose = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Clear any network errors when closing
+    setNetworkError(null);
+    // Just call onClose and let the parent handle the confirmation
     onClose();
   };
 

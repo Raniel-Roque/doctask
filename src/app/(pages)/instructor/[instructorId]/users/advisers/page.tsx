@@ -13,9 +13,9 @@ import { DeleteConfirmation } from "../components/DeleteConfirmation";
 import { ValidationError } from "../components/ValidationError";
 import { Notification } from "../components/Notification";
 import { User, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirection, LogDetails, Notification as NotificationType } from "../components/types";
-import { CancelConfirmation } from "../components/CancelConfirmation";
 import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
 import { SuccessBanner } from "../components/SuccessBanner";
+import { UnsavedChangesConfirmation } from "../components/UnsavedChangesConfirmation";
 
 // =========================================
 // Types
@@ -46,7 +46,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [editNetworkError, setEditNetworkError] = useState<string | null>(null);
   const [deleteNetworkError, setDeleteNetworkError] = useState<string | null>(null);
   const [addNetworkError, setAddNetworkError] = useState<string | null>(null);
@@ -65,6 +64,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
   });
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
+  const [pendingCloseAction, setPendingCloseAction] = useState<(() => void) | null>(null);
 
   // =========================================
   // Mutations
@@ -548,55 +549,104 @@ const UsersPage = ({ params }: UsersPageProps) => {
           isOpen={isAddingUser}
           isSubmitting={isSubmitting}
           networkError={addNetworkError}
+          setNetworkError={setAddNetworkError}
           formData={addFormData}
           onClose={() => {
             if (isSubmitting) {
-              setShowCancelConfirm(true);
-            } else {
-              setIsAddingUser(false);
-              setAddFormData({
-                first_name: "",
-                middle_name: "",
-                last_name: "",
-                email: "",
-              });
+              // During submission, don't allow closing
+              return;
             }
+            
+            // Check if there are any unsaved changes
+            const hasChanges = Object.values(addFormData).some(value => value !== "" && value !== 0);
+            if (hasChanges) {
+              // Just show the confirmation dialog without closing anything
+              setPendingCloseAction(() => () => {
+                setIsAddingUser(false);
+                setAddFormData({
+                  first_name: "",
+                  middle_name: "",
+                  last_name: "",
+                  email: "",
+                });
+              });
+              setShowUnsavedConfirm(true);
+              return; // Prevent the form from closing
+            }
+            
+            // No changes, safe to close
+            setIsAddingUser(false);
+            setAddFormData({
+              first_name: "",
+              middle_name: "",
+              last_name: "",
+              email: "",
+            });
           }}
           onSubmit={handleAddSubmit}
           onFormDataChange={setAddFormData}
+          isStudent={false}
         />
 
         {/* Edit Form */}
-      <EditForm
-        user={editingUser}
-        formData={editFormData}
-        isSubmitting={isSubmitting}
-        networkError={editNetworkError}
-        onClose={() => {
+        <EditForm
+          user={editingUser}
+          formData={editFormData}
+          isSubmitting={isSubmitting}
+          networkError={editNetworkError}
+          setNetworkError={setEditNetworkError}
+          onClose={() => {
             if (isSubmitting) {
-              setShowCancelConfirm(true);
-            } else {
-          setEditingUser(null);
-          setEditFormData({
-            first_name: "",
-            middle_name: "",
-            last_name: "",
-            email: "",
-          });
+              // During submission, don't allow closing
+              return;
             }
-        }}
-        onSubmit={handleEditSubmit}
-        onFormDataChange={setEditFormData}
-      />
+
+            if (!editingUser) return;
+            
+            // Check if there are any unsaved changes
+            const hasChanges = 
+              editFormData.first_name !== editingUser.first_name ||
+              editFormData.middle_name !== (editingUser.middle_name || "") ||
+              editFormData.last_name !== editingUser.last_name ||
+              editFormData.email !== editingUser.email;
+
+            if (hasChanges) {
+              // Just show the confirmation dialog without closing anything
+              setPendingCloseAction(() => () => {
+                setEditingUser(null);
+                setEditFormData({
+                  first_name: "",
+                  middle_name: "",
+                  last_name: "",
+                  email: "",
+                });
+              });
+              setShowUnsavedConfirm(true);
+              return; // Prevent the form from closing
+            }
+            
+            // No changes, safe to close
+            setEditingUser(null);
+            setEditFormData({
+              first_name: "",
+              middle_name: "",
+              last_name: "",
+              email: "",
+            });
+          }}
+          onSubmit={handleEditSubmit}
+          onFormDataChange={setEditFormData}
+          isStudent={false}
+        />
 
         {/* Delete Confirmation */}
-      <DeleteConfirmation
-        user={deleteUser}
+        <DeleteConfirmation
+          user={deleteUser}
           onCancel={() => setDeleteUser(null)}
-        onConfirm={handleDeleteSubmit}
-        isSubmitting={isDeleting}
-        networkError={deleteNetworkError}
-      />
+          onConfirm={handleDeleteSubmit}
+          isSubmitting={isDeleting}
+          networkError={deleteNetworkError}
+        />
 
         {/* Reset Password Confirmation */}
         <ResetPasswordConfirmation
@@ -608,9 +658,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
         />
 
         {/* Validation Error */}
-      <ValidationError
-        error={validationError}
-        onClose={() => setValidationError(null)}
+        <ValidationError
+          error={validationError}
+          onClose={() => setValidationError(null)}
         />
 
         {/* Notification */}
@@ -623,31 +673,25 @@ const UsersPage = ({ params }: UsersPageProps) => {
         <SuccessBanner
           message={successMessage}
           onClose={() => setSuccessMessage(null)}
-      />
+        />
 
-        {/* Cancel Confirmation */}
-      <CancelConfirmation
-        isOpen={showCancelConfirm}
-        onContinue={() => setShowCancelConfirm(false)}
-        onCancel={() => {
-            setShowCancelConfirm(false);
-            setIsAddingUser(false);
-            setEditingUser(null);
-            setAddFormData({
-              first_name: "",
-              middle_name: "",
-              last_name: "",
-              email: "",
-            });
-            setEditFormData({
-              first_name: "",
-              middle_name: "",
-              last_name: "",
-              email: "",
-            });
-            setIsSubmitting(false);
+        {/* Unsaved Changes Confirmation */}
+        <UnsavedChangesConfirmation
+          isOpen={showUnsavedConfirm}
+          onContinue={() => {
+            // Just close the confirmation dialog and execute the pending action
+            if (pendingCloseAction) {
+              pendingCloseAction();
+            }
+            setShowUnsavedConfirm(false);
+            setPendingCloseAction(null);
           }}
-      />
+          onCancel={() => {
+            // Just close the confirmation dialog, keep the form open
+            setShowUnsavedConfirm(false);
+            setPendingCloseAction(null);
+          }}
+        />
       </div>
     </div>
   );

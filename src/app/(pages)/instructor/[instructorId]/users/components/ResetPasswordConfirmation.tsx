@@ -36,30 +36,31 @@ export const ResetPasswordConfirmation = ({
   // =========================================
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl border-2 border-gray-200">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <FaExclamationTriangle />
-          <h3 className="text-lg font-semibold">Reset Password Confirmation</h3>
+        <div className="flex items-center gap-3 mb-6">
+          <FaExclamationTriangle size={24} color="#EAB308" />
+          <h3 className="text-xl font-semibold text-gray-900">Reset Password Confirmation</h3>
         </div>
 
         {/* User Information */}
-        <div className="mb-6">
-          <p className="text-gray-600 mb-2">
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-gray-600 mb-3 font-medium">
             You are about to reset the password for:
           </p>
-          <p className="font-medium">
-            {user.first_name} {user.middle_name ? `${user.middle_name} ` : ""}
-            {user.last_name}
-          </p>
-          <p className="text-gray-600">{user.email}</p>
+          <div className="space-y-1">
+            <p className="font-semibold text-gray-900">
+              {user.first_name} {user.middle_name ? `${user.middle_name} ` : ""}
+              {user.last_name}
+            </p>
+            <p className="text-gray-600 text-sm">{user.email}</p>
+          </div>
         </div>
 
         {/* Reset Information */}
-        <div className="mb-6">
-          <p className="text-gray-600">
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-gray-700">
             A new temporary password will be generated and sent to the user&apos;s email address. 
-            The user will be required to change their password upon their next login.
           </p>
         </div>
 

@@ -40,6 +40,7 @@ export const EditForm = ({
   const [validationErrors, setValidationErrors] = React.useState<{ [key: string]: string }>({});
   const [roleSearch, setRoleSearch] = useState('');
   const [showRoleSearch, setShowRoleSearch] = useState(false);
+  const [showRoleChangeConfirmation, setShowRoleChangeConfirmation] = useState(false);
 
   const roles = [
     { value: 0, label: 'Member' },
@@ -55,9 +56,15 @@ export const EditForm = ({
     setShowRoleSearch(!showRoleSearch);
   };
 
-  // =========================================
-  // Event Handlers
-  // =========================================
+  const handleRoleSelect = (role: { value: number, label: string }) => {
+    onFormDataChange({
+      ...formData,
+      subrole: role.value
+    });
+    setRoleSearch('');
+    setShowRoleSearch(false);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const sanitizedValue = sanitizeInput(value);
@@ -70,7 +77,7 @@ export const EditForm = ({
     } else {
       onFormDataChange({
         ...formData,
-        [name]: sanitizedValue.trim() || null,
+        [name]: sanitizedValue.trim() || '',
       });
     }
 
@@ -88,17 +95,12 @@ export const EditForm = ({
     setRoleSearch(e.target.value);
   };
 
-  const handleRoleSelect = (role: { value: number, label: string }) => {
-    onFormDataChange({
-      ...formData,
-      subrole: role.value
-    });
-    setRoleSearch('');
-    setShowRoleSearch(false);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Clear any previous network errors
+    setNetworkError(null);
     
     // Validate form
     const errors = validateUserForm(formData);
@@ -107,29 +109,29 @@ export const EditForm = ({
       return;
     }
 
+    // Check if role has been changed
+    if (user && formData.subrole !== user.subrole) {
+      setShowRoleChangeConfirmation(true);
+    } else {
+      onSubmit();
+    }
+  };
+
+  const confirmAndSubmit = () => {
+    setShowRoleChangeConfirmation(false);
     onSubmit();
   };
 
-  const handleClose = () => {
-    // Reset form data
-    if (user) {
-      onFormDataChange({
-        first_name: user.first_name || '',
-        middle_name: user.middle_name || '',
-        last_name: user.last_name || '',
-        email: user.email || '',
-        subrole: user.subrole || 0
-      });
-    }
-    // Reset validation errors
-    setValidationErrors({});
-    // Reset search states
-    setRoleSearch('');
-    // Close dropdowns
-    closeAllDropdowns();
-    // Clear network error if possible
-    if (typeof setNetworkError === 'function') setNetworkError(null);
-    // Call the original onClose
+  const cancelSubmit = () => {
+    setShowRoleChangeConfirmation(false);
+  };
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Clear any network errors when closing
+    setNetworkError(null);
+    // Just call onClose and let the parent handle the confirmation
     onClose();
   };
 
@@ -325,6 +327,36 @@ export const EditForm = ({
                 {validationErrors.subrole && (
                   <p className="mt-1 text-sm text-red-600">{validationErrors.subrole}</p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Role Change Confirmation Dialog */}
+          {showRoleChangeConfirmation && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <FaExclamationTriangle size={20} color="#EAB308" />
+                  <h3 className="text-lg font-semibold text-gray-900">Confirm Role Change</h3>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Changing this user&apos;s role will reset any group affiliations associated with their account. 
+                  This action cannot be undone. Are you sure you want to proceed?
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={cancelSubmit}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmAndSubmit}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Confirm Changes
+                  </button>
+                </div>
               </div>
             </div>
           )}

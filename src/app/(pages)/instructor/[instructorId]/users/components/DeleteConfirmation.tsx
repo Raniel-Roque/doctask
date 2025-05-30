@@ -38,8 +38,8 @@ export const DeleteConfirmation = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
         {/* Header */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <FaExclamationTriangle />
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+          <FaExclamationTriangle size={24} color="#DC2626" />
           Confirm Delete
         </h2>
 
