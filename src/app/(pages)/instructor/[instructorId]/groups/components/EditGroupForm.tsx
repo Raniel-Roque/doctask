@@ -65,7 +65,7 @@ export default function EditGroupForm({
     if (group) {
       const newFormData = {
         projectManager: group.project_manager_id,
-        members: group.member_ids,
+        members: group.member_ids || [],
         adviser: group.adviser_id || null,
         capstoneTitle: group.capstone_title || "",
         grade: group.grade || 0,
@@ -180,6 +180,32 @@ export default function EditGroupForm({
     }));
   };
 
+  // Handle member selection
+  const handleMemberSelect = (member: User) => {
+    if (!formData.members.includes(member._id)) {
+      setFormData(prev => ({
+        ...prev,
+        members: [...prev.members, member._id]
+      }));
+    }
+    setMembersSearch('');
+    setShowMembersSearch(false);
+  };
+
+  // Handle member removal
+  const handleMemberRemove = (memberId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      members: prev.members.filter(id => id !== memberId)
+    }));
+  };
+
+  // Handle clear members
+  const handleClearMembers = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFormData(prev => ({ ...prev, members: [] }));
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,7 +230,10 @@ export default function EditGroupForm({
     }
 
     try {
-      await onSubmit(formData);
+      await onSubmit({
+        ...formData,
+        grade: Number(formData.grade) // Ensure grade is a number
+      });
       setHasUnsavedChanges(false);
       setInitialFormData(formData);
       closeForm();
@@ -221,68 +250,68 @@ export default function EditGroupForm({
     <>
       <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isOpen ? '' : 'hidden'}`}>
         <div className="bg-white rounded-lg p-8 w-full max-w-4xl shadow-2xl border-2 border-gray-200">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <FaEdit />
-            Edit Group
-          </h2>
-          <button 
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <FaEdit />
+              Edit Group
+            </h2>
+            <button 
               onClick={handleClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-            disabled={isSubmitting}
-          >
-            <FaTimes size={24} />
-          </button>
-        </div>
-
-        {/* Error Messages */}
-        {networkError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-2 text-red-700">
-                <div className="text-red-700">
-              <FaExclamationTriangle />
-                </div>
-              <span>{networkError}</span>
-            </div>
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+              disabled={isSubmitting}
+            >
+              <FaTimes size={24} />
+            </button>
           </div>
-        )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Capstone Title */}
-          <div>
+          {/* Error Messages */}
+          {(networkError || Object.keys(validationErrors).length > 0) && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 text-red-700">
+                <FaExclamationTriangle />
+                <div className="flex flex-col gap-1">
+                  {networkError && <span>{networkError}</span>}
+                  {Object.entries(validationErrors).map(([field, message]) => (
+                    <span key={field}>{message}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Capstone Title */}
+            <div>
               <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <FaBook color="#6B7280" />
                 Capstone Title
-            </label>
-            <input
-              type="text"
-              id="capstoneTitle"
-              name="capstoneTitle"
-              value={formData.capstoneTitle}
-              onChange={handleInputChange}
-              placeholder="Enter Capstone Title"
-              className={`w-full px-4 py-2 rounded-lg border-2 ${
-                validationErrors.capstoneTitle ? 'border-red-500' : 'border-gray-300'
-              } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
-              disabled={isSubmitting}
-            />
-              {validationErrors.capstoneTitle && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.capstoneTitle}</p>
-              )}
-          </div>
+              </label>
+              <input
+                type="text"
+                id="capstoneTitle"
+                name="capstoneTitle"
+                value={formData.capstoneTitle}
+                onChange={handleInputChange}
+                placeholder="Enter Capstone Title"
+                className={`w-full px-4 py-2 rounded-lg border-2 ${
+                  validationErrors.capstoneTitle ? 'border-red-500' : 'border-gray-300'
+                } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
+                disabled={isSubmitting}
+              />
+            </div>
 
             {/* Adviser and Grade */}
-          <div className="flex gap-4">
+            <div className="flex gap-4">
               {/* Adviser */}
               <div className="dropdown-container w-[70%]">
                 <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <FaUserTie color="#6B7280" />
                   Adviser
-              </label>
-              <div className="relative">
-                <div 
+                </label>
+                <div className="relative">
+                  <div 
                     className={`w-full px-4 py-2 rounded-lg border-2 ${
                       validationErrors.adviser ? 'border-red-500' : 'border-gray-300'
                     } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer`}
@@ -290,28 +319,29 @@ export default function EditGroupForm({
                   >
                     {formData.adviser 
                       ? advisers.find(a => a._id === formData.adviser)?.first_name + ' ' + 
+                        (advisers.find(a => a._id === formData.adviser)?.middle_name ? advisers.find(a => a._id === formData.adviser)?.middle_name + ' ' : '') +
                         advisers.find(a => a._id === formData.adviser)?.last_name
                       : <span className="text-gray-500">Select Adviser</span>}
-                </div>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <FaChevronDown color="#6B7280" />
-                </div>
-                
+                  </div>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <FaChevronDown color="#6B7280" />
+                  </div>
+                  
                   {showAdviserSearch && (
                     <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
-                    <div className="p-2 border-b">
-                      <div className="relative">
-                        <input
-                          type="text"
+                      <div className="p-2 border-b">
+                        <div className="relative">
+                          <input
+                            type="text"
                             value={adviserSearch}
                             onChange={handleAdviserSearch}
                             placeholder="Search advisers..."
                             className="w-full pl-8 pr-8 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          autoFocus
-                        />
-                        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
-                          <FaSearch />
-                        </div>
+                            autoFocus
+                          />
+                          <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
+                            <FaSearch />
+                          </div>
                           {adviserSearch && (
                             <button
                               onClick={(e) => {
@@ -323,28 +353,30 @@ export default function EditGroupForm({
                               <FaTimes size={12} />
                             </button>
                           )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
+                      <div className="max-h-48 overflow-y-auto">
                         {advisers
                           .filter(filterAdvisers)
                           .map((adviser) => (
                             <div
                               key={adviser._id}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                               onClick={() => {
                                 setFormData(prev => ({ ...prev, adviser: adviser._id }));
                                 setShowAdviserSearch(false);
                               }}
-                          >
+                            >
                               {`${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + ' ' : ''}${adviser.last_name}`}
+                            </div>
+                          ))}
+                        {advisers.filter(filterAdvisers).length === 0 && (
+                          <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
+                            No more advisers available. Please register more users with adviser role.
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
-                  )}
-                  {validationErrors.adviser && (
-                    <p className="mt-1 text-sm text-red-600">{validationErrors.adviser}</p>
                   )}
                 </div>
               </div>
@@ -373,17 +405,25 @@ export default function EditGroupForm({
                     <FaChevronDown color="#6B7280" />
                   </div>
                 </div>
-                {validationErrors.grade && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.grade}</p>
-                )}
               </div>
             </div>
 
             {/* Members */}
             <div className="dropdown-container">
-              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaUsers color="#6B7280" />
-                Members
+              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FaUsers color="#6B7280" />
+                  Members
+                </div>
+                {formData.members.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearMembers}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    Clear All
+                  </button>
+                )}
               </label>
               <div className="relative">
                 <div 
@@ -395,22 +435,21 @@ export default function EditGroupForm({
                   {formData.members.length > 0 ? (
                     formData.members.map(memberId => {
                       const member = members.find(m => m._id === memberId);
-                      return member ? (
+                      return (
                         <div
                           key={memberId}
                           className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2 text-sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setFormData(prev => ({
-                              ...prev,
-                              members: prev.members.filter(id => id !== memberId)
-                            }));
+                            handleMemberRemove(memberId);
                           }}
                         >
-                          {`${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`}
+                          {member
+                            ? `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`
+                            : memberId}
                           <FaTimes color="#2563EB" size={12} />
-                    </div>
-                      ) : null;
+                        </div>
+                      );
                     })
                   ) : (
                     <span className="text-gray-500">Select Members</span>
@@ -450,72 +489,75 @@ export default function EditGroupForm({
                     </div>
                     <div className="max-h-48 overflow-y-auto">
                       {members
-                        .filter(member => 
-                          // Filter out members who are already selected
-                          !formData.members.includes(member._id) &&
-                          // Filter out members who are already in a group
-                          !member.group_id &&
-                          // Apply search filter
-                          filterMembers(member)
-                        )
+                        .filter(member => {
+                          const isSelected = formData.members.includes(member._id);
+                          const isInThisGroup = group && String(member.group_id) === String(group._id);
+                          const isUnassigned = !member.group_id;
+                          return !isSelected && (isUnassigned || isInThisGroup) && filterMembers(member);
+                        })
+                        .sort((a, b) => {
+                          const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
+                          const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+                          return aName.localeCompare(bName);
+                        })
                         .map((member) => (
                           <div
                             key={member._id}
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                members: [...prev.members, member._id]
-                              }));
-                            }}
+                            onClick={() => handleMemberSelect(member)}
                           >
-                            <div className="flex items-center gap-2">
-                              {`${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`}
-                            </div>
+                            {`${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`}
                           </div>
                         ))}
+                        {members.filter(member => {
+                          const isSelected = formData.members.includes(member._id);
+                          const isInThisGroup = group && String(member.group_id) === String(group._id);
+                          const isUnassigned = !member.group_id;
+                          return !isSelected && (isUnassigned || isInThisGroup) && filterMembers(member);
+                        }).length === 0 && (
+                          <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
+                            No more members available. Please register more users with member role.
+                          </div>
+                        )}
                     </div>
                   </div>
                 )}
-                {validationErrors.members && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.members}</p>
-              )}
+              </div>
             </div>
-          </div>
 
-          {/* Form Actions */}
-          <div className="flex justify-end gap-4 mt-8">
-            <button
+            {/* Form Actions */}
+            <div className="flex justify-end gap-4 mt-8">
+              <button
                 onClick={handleClose}
-              className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
-              disabled={isSubmitting}
-            >
-              <FaTimes />
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin">
-                    <FaSpinner />
-                  </div>
-                  Saving...
-                </>
-              ) : (
-                <>
+                className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
+                disabled={isSubmitting}
+              >
+                <FaTimes />
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin">
+                      <FaSpinner />
+                    </div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
                     <FaSave />
-                  Save Changes
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
 
       {/* Notifications */}
       <UnsavedChangesConfirmation

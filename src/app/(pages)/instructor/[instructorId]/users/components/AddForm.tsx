@@ -188,13 +188,16 @@ export const AddForm = ({
         </div>
 
         {/* Error Messages */}
-        {networkError && (
+        {(networkError || Object.keys(validationErrors).length > 0) && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
-              <div className="text-red-700">
-                <FaExclamationTriangle />
+              <FaExclamationTriangle />
+              <div className="flex flex-col gap-1">
+                {networkError && <span>{networkError}</span>}
+                {Object.entries(validationErrors).map(([field, message]) => (
+                  <span key={field}>{message}</span>
+                ))}
               </div>
-              <span>{networkError}</span>
             </div>
           </div>
         )}
@@ -222,9 +225,6 @@ export const AddForm = ({
                 required
                 disabled={isSubmitting}
               />
-              {validationErrors.first_name && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.first_name}</p>
-              )}
             </div>
 
             {/* Middle Name */}
@@ -244,9 +244,6 @@ export const AddForm = ({
                 } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                 disabled={isSubmitting}
               />
-              {validationErrors.middle_name && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.middle_name}</p>
-              )}
             </div>
 
             {/* Last Name */}
@@ -267,9 +264,6 @@ export const AddForm = ({
                 required
                 disabled={isSubmitting}
               />
-              {validationErrors.last_name && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.last_name}</p>
-              )}
             </div>
           </div>
 
@@ -292,9 +286,6 @@ export const AddForm = ({
               required
               disabled={isSubmitting}
             />
-            {validationErrors.email && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
-            )}
           </div>
 
           {/* Role Selection (for students only) */}
@@ -352,9 +343,6 @@ export const AddForm = ({
                         ))}
                     </div>
                   </div>
-                )}
-                {validationErrors.subrole && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.subrole}</p>
                 )}
               </div>
             </div>

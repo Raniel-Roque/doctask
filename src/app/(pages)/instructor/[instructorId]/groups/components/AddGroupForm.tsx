@@ -17,9 +17,9 @@ interface AddGroupFormProps {
   isSubmitting?: boolean;
   networkError?: string | null;
   setNetworkError: React.Dispatch<React.SetStateAction<string | null>>;
-  projectManagers: { _id: string; first_name: string; last_name: string; }[];
-  members: { _id: string; first_name: string; last_name: string; }[];
-  advisers: { _id: string; first_name: string; last_name: string; }[];
+  projectManagers: { _id: string; first_name: string; last_name: string; middle_name?: string; }[];
+  members: { _id: string; first_name: string; last_name: string; middle_name?: string; }[];
+  advisers: { _id: string; first_name: string; last_name: string; middle_name?: string; }[];
 }
 
 const AddGroupForm: React.FC<AddGroupFormProps> = ({ 
@@ -177,13 +177,13 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     }));
   };
 
-  const handleProjectManagerSelect = (user: { _id: string; first_name: string; last_name: string }) => {
+  const handleProjectManagerSelect = (user: { _id: string; first_name: string; last_name: string; middle_name?: string; }) => {
     setFormData(prev => ({ ...prev, projectManager: user._id }));
     setProjectManagerSearch('');
     setShowProjectManagerSearch(false);
   };
 
-  const handleMemberSelect = (user: { _id: string; first_name: string; last_name: string }) => {
+  const handleMemberSelect = (user: { _id: string; first_name: string; last_name: string; middle_name?: string; }) => {
     if (!formData.members.includes(user._id)) {
       setFormData(prev => ({
         ...prev,
@@ -194,7 +194,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     setShowMemberSearch(false);
   };
 
-  const handleAdviserSelect = (user: { _id: string; first_name: string; last_name: string }) => {
+  const handleAdviserSelect = (user: { _id: string; first_name: string; last_name: string; middle_name?: string; }) => {
     setFormData(prev => ({
       ...prev,
       adviser: user._id
@@ -349,25 +349,16 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
         </div>
 
         {/* Error Messages */}
-        {networkError && (
+        {(networkError || Object.keys(validationErrors).length > 0) && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
               <FaExclamationTriangle />
-                <span>{formatErrorMessage(networkError)}</span>
+              <div className="flex flex-col gap-1">
+                {networkError && <span>{formatErrorMessage(networkError)}</span>}
+                {Object.entries(validationErrors).map(([field, message]) => (
+                  <span key={field}>{message}</span>
+                ))}
               </div>
-            </div>
-          )}
-
-          {/* Validation Errors */}
-          {Object.keys(validationErrors).length > 0 && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-2 text-red-700">
-                <FaExclamationTriangle />
-                <div className="flex flex-col gap-1">
-                  {Object.entries(validationErrors).map(([field, message]) => (
-                    <span key={field}>{message}</span>
-                  ))}
-                </div>
             </div>
           </div>
         )}
@@ -388,7 +379,9 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
               value={formData.capstoneTitle}
               onChange={handleChange}
               placeholder="Enter Capstone Title (Optional)"
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              className={`w-full px-4 py-2 rounded-lg border-2 ${
+                validationErrors.capstoneTitle ? 'border-red-500' : 'border-gray-300'
+              } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
               disabled={isSubmitting}
             />
           </div>
@@ -416,14 +409,16 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
               </label>
               <div className="relative">
                 <div 
-                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex items-center justify-between"
+                  className={`w-full px-4 py-2 rounded-lg border-2 ${
+                    validationErrors.projectManager ? 'border-red-500' : 'border-gray-300'
+                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex items-center justify-between`}
                   onClick={handleProjectManagerClick}
                 >
                   {formData.projectManager ? (
                     <div className="flex items-center justify-between w-full">
                         {(() => {
                           const user = projectManagers.find(u => u._id === formData.projectManager);
-                          return user ? `${user.first_name} ${user.last_name}` : formData.projectManager;
+                          return user ? `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}` : formData.projectManager;
                         })()}
                     </div>
                   ) : (
@@ -462,9 +457,16 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                               onClick={() => handleProjectManagerSelect(user)}
                           >
-                              {user.first_name} {user.last_name}
+                              {user.first_name} {user.middle_name ? user.middle_name + ' ' : ''} {user.last_name}
                           </div>
                         ))}
+                        {projectManagers.filter(user =>
+                          `${user.first_name} ${user.last_name}`.toLowerCase().includes(projectManagerSearch.toLowerCase())
+                        ).length === 0 && (
+                          <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
+                            No more project managers available. Please register more users with project manager role.
+                          </div>
+                        )}
                     </div>
                   </div>
                 )}
@@ -492,14 +494,16 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
               </label>
               <div className="relative">
                 <div 
-                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex items-center justify-between"
+                  className={`w-full px-4 py-2 rounded-lg border-2 ${
+                    validationErrors.adviser ? 'border-red-500' : 'border-gray-300'
+                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex items-center justify-between`}
                   onClick={handleAdviserClick}
                 >
                   {formData.adviser ? (
                     <div className="flex items-center justify-between w-full">
                         {(() => {
                           const user = advisers.find(u => u._id === formData.adviser);
-                          return user ? `${user.first_name} ${user.last_name}` : formData.adviser;
+                          return user ? `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}` : formData.adviser;
                         })()}
                     </div>
                   ) : (
@@ -538,9 +542,16 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                               onClick={() => handleAdviserSelect(user)}
                           >
-                              {user.first_name} {user.last_name}
+                              {user.first_name} {user.middle_name ? user.middle_name + ' ' : ''} {user.last_name}
                           </div>
                         ))}
+                        {advisers.filter(user =>
+                          `${user.first_name} ${user.last_name}`.toLowerCase().includes(adviserSearch.toLowerCase())
+                        ).length === 0 && (
+                          <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
+                            No more advisers available. Please register more users with adviser role.
+                          </div>
+                        )}
                     </div>
                   </div>
                 )}
@@ -569,7 +580,9 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
             </label>
             <div className="relative">
               <div 
-                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer min-h-[42px]"
+                className={`w-full px-4 py-2 rounded-lg border-2 ${
+                  validationErrors.members ? 'border-red-500' : 'border-gray-300'
+                } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer min-h-[42px]`}
                 onClick={handleMemberClick}
               >
                 {formData.members.length > 0 ? (
@@ -581,7 +594,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                         key={index}
                         className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
                       >
-                            {user ? `${user.first_name} ${user.last_name}` : memberId}
+                            {user ? `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}` : memberId}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -624,18 +637,28 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           `${user.first_name} ${user.last_name}`.toLowerCase().includes(memberSearch.toLowerCase()) &&
                           !formData.members.includes(user._id)
                         )
+                        .sort((a, b) => {
+                          const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
+                          const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+                          return aName.localeCompare(bName);
+                        })
                         .map(user => (
                           <div
                             key={user._id}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                             onClick={() => handleMemberSelect(user)}
-                        >
-                          <div className="w-4 h-4 border-2 border-gray-300 rounded flex items-center justify-center">
-                            <FaPlus size={10} color="#4B5563" />
+                          >
+                            {user.first_name} {user.middle_name ? user.middle_name + ' ' : ''} {user.last_name}
                           </div>
-                            {user.first_name} {user.last_name}
-                        </div>
-                      ))}
+                        ))}
+                        {members.filter(user =>
+                          `${user.first_name} ${user.last_name}`.toLowerCase().includes(memberSearch.toLowerCase()) &&
+                          !formData.members.includes(user._id)
+                        ).length === 0 && (
+                          <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
+                            No more members available. Please register more users with member role.
+                          </div>
+                        )}
                   </div>
                 </div>
               )}

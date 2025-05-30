@@ -117,6 +117,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
       members: string[];
       adviser: string | null;
       capstoneTitle: string;
+      grade: number;
     }) => {
       if (!isEditingGroup) return;
 
@@ -130,6 +131,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           member_ids: formData.members.map(id => id as Id<"users">),
           adviser_id: formData.adviser ? (formData.adviser as Id<"users">) : undefined,
           capstone_title: formData.capstoneTitle,
+          grade: formData.grade,
           instructorId: instructorId as Id<"users">,
         });
         setIsEditingGroup(null);
@@ -197,7 +199,12 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
                   isSubmitting={isSubmitting}
                   networkError={networkError}
                   setNetworkError={setNetworkError}
-                  members={members}
+                  members={isEditingGroup ? [
+                    ...isEditingGroup.member_ids
+                      .map(id => users.find(u => u._id === id))
+                      .filter((user): user is User => user !== undefined),
+                    ...members
+                  ] : members}
                   advisers={advisers}
                   group={isEditingGroup}
                 />

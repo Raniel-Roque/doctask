@@ -55,42 +55,19 @@ export const updateUser = mutation({
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("instructor not found");
 
-    // Handle role changes and cleanup
-    if (args.role !== undefined && args.role !== user.role) {
-      // If changing from student to non-student
-      if (user.role === 0 && args.role !== 0) {
-        // Remove from studentsTable
-        const studentEntry = await ctx.db
-          .query("studentsTable")
-          .withIndex("by_user", (q) => q.eq("user_id", args.userId))
-          .first();
-        if (studentEntry) {
-          await ctx.db.delete(studentEntry._id);
-        }
-      }
-      // If changing to student
-      else if (args.role === 0 && user.role !== 0) {
-        // Create entry in studentsTable
-        await ctx.db.insert("studentsTable", {
-          user_id: args.userId,
-          group_id: null,
-        });
-      }
-    }
-
     // Handle subrole changes
     if (args.subrole !== undefined && args.subrole !== user.subrole) {
       // If promoting to manager (subrole 0 -> 1)
       if (args.subrole === 1) {
-        // Find and remove user from any existing groups
+        // Find and update user's group_id to null in studentsTable
         const existingMemberships = await ctx.db
           .query("studentsTable")
           .withIndex("by_user", (q) => q.eq("user_id", args.userId))
           .collect();
         
         for (const membership of existingMemberships) {
-          // Remove user from studentsTable
-          await ctx.db.delete(membership._id);
+          // Update studentsTable to set group_id to null
+          await ctx.db.patch(membership._id, { group_id: null });
           
           // Update the group's member_ids if group_id exists
           if (membership.group_id) {
@@ -113,14 +90,14 @@ export const updateUser = mutation({
           .collect();
         
         for (const group of managedGroups) {
-          // Remove all members from studentsTable
+          // Update all members' group_id to null in studentsTable
           const memberships = await ctx.db
             .query("studentsTable")
             .withIndex("by_group", (q) => q.eq("group_id", group._id))
             .collect();
           
           for (const membership of memberships) {
-            await ctx.db.delete(membership._id);
+            await ctx.db.patch(membership._id, { group_id: null });
           }
           
           // Update adviser's group_ids if exists
@@ -229,13 +206,88 @@ export const deleteUser = mutation({
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
 
-    // Delete from studentsTable if exists
-    const studentEntry = await ctx.db
-      .query("studentsTable")
-      .withIndex("by_user", (q) => q.eq("user_id", args.userId))
-      .first();
-    if (studentEntry) {
-      await ctx.db.delete(studentEntry._id);
+    // Student (member)
+    if (user.role === 0 && user.subrole === 0) {
+      // Remove from studentsTable
+      const studentEntry = await ctx.db
+        .query("studentsTable")
+        .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+        .first();
+      if (studentEntry) {
+        // Remove from group member_ids if in a group
+        if (studentEntry.group_id) {
+          const group = await ctx.db.get(studentEntry.group_id);
+          if (group) {
+            await ctx.db.patch(group._id, {
+              member_ids: group.member_ids.filter(id => id !== args.userId)
+            });
+          }
+        }
+        await ctx.db.delete(studentEntry._id);
+      }
+    }
+
+    // Student (project manager)
+    else if (user.role === 0 && user.subrole === 1) {
+      // For each group where user is project_manager_id
+      const managedGroups = await ctx.db
+        .query("groupsTable")
+        .withIndex("by_project_manager", (q) => q.eq("project_manager_id", args.userId))
+        .collect();
+      for (const group of managedGroups) {
+        // For each member, set their studentsTable group_id to null
+        for (const memberId of group.member_ids) {
+          const memberEntry = await ctx.db
+            .query("studentsTable")
+            .withIndex("by_user", (q) => q.eq("user_id", memberId))
+            .first();
+          if (memberEntry) {
+            await ctx.db.patch(memberEntry._id, { group_id: null });
+          }
+        }
+        // Remove group from adviser's group_ids
+        if (group.adviser_id) {
+          const adviserCode = await ctx.db
+            .query("advisersTable")
+            .withIndex("by_adviser", (q) => q.eq("adviser_id", group.adviser_id!))
+            .first();
+          if (adviserCode) {
+            await ctx.db.patch(adviserCode._id, {
+              group_ids: adviserCode.group_ids.filter(id => id !== group._id)
+            });
+          }
+        }
+        // Delete the group
+        await ctx.db.delete(group._id);
+      }
+      // Delete their studentsTable entry if exists
+      const studentEntry = await ctx.db
+        .query("studentsTable")
+        .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+        .first();
+      if (studentEntry) {
+        await ctx.db.delete(studentEntry._id);
+      }
+    }
+
+    // Adviser
+    else if (user.role === 1) {
+      // For each group where user is adviser, set adviser_id to null
+      const advisedGroups = await ctx.db
+        .query("groupsTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
+        .collect();
+      for (const group of advisedGroups) {
+        await ctx.db.patch(group._id, { adviser_id: undefined });
+      }
+      // Delete advisersTable entry
+      const adviserCode = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
+        .first();
+      if (adviserCode) {
+        await ctx.db.delete(adviserCode._id);
+      }
     }
 
     // Log the deletion
@@ -466,8 +518,9 @@ export const createGroup = mutation({
       capstone_title: args.capstone_title,
     });
 
-    // Create student table entries for all members
-    for (const memberId of args.member_ids) {
+    // Create student table entries for project manager and all members
+    const allMembers = [args.project_manager_id, ...args.member_ids];
+    for (const memberId of allMembers) {
       const existingEntry = await ctx.db
         .query("studentsTable")
         .withIndex("by_user", (q) => q.eq("user_id", memberId))
@@ -675,6 +728,7 @@ export const updateGroup = mutation({
     member_ids: v.array(v.id("users")),
     adviser_id: v.optional(v.id("users")),
     capstone_title: v.string(),
+    grade: v.number(),
     instructorId: v.id("users"),
   },
   handler: async (ctx, args) => {
@@ -693,7 +747,7 @@ export const updateGroup = mutation({
     const oldMembers = [group.project_manager_id, ...group.member_ids];
     const newMembers = [args.project_manager_id, ...args.member_ids];
 
-    // Remove old members from studentsTable
+    // Remove old members from studentsTable if they're no longer in the group
     for (const memberId of oldMembers) {
       if (!newMembers.includes(memberId)) {
         const studentEntry = await ctx.db
@@ -706,7 +760,7 @@ export const updateGroup = mutation({
       }
     }
 
-    // Add new members to studentsTable
+    // Add new members to studentsTable if they weren't in the group before
     for (const memberId of newMembers) {
       if (!oldMembers.includes(memberId)) {
         const existingEntry = await ctx.db
@@ -727,9 +781,9 @@ export const updateGroup = mutation({
       }
     }
 
-    // Update adviser's group_ids if changed
+    // Handle adviser changes
     if (group.adviser_id !== args.adviser_id) {
-      // Remove from old adviser
+      // Remove from old adviser's group_ids
       if (group.adviser_id) {
         const oldAdviserCode = await ctx.db
           .query("advisersTable")
@@ -742,7 +796,7 @@ export const updateGroup = mutation({
         }
       }
 
-      // Add to new adviser
+      // Add to new adviser's group_ids
       if (args.adviser_id) {
         const newAdviserCode = await ctx.db
           .query("advisersTable")
@@ -760,8 +814,9 @@ export const updateGroup = mutation({
     await ctx.db.patch(args.groupId, {
       project_manager_id: args.project_manager_id,
       member_ids: args.member_ids,
-      adviser_id: args.adviser_id,
+      adviser_id: args.adviser_id ? args.adviser_id : undefined,
       capstone_title: args.capstone_title,
+      grade: args.grade,
     });
 
     // Log the update

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa"; // Import icons and pagination icons
+import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus, FaChevronLeft, FaChevronRight, FaMinus } from "react-icons/fa"; // Import icons and pagination icons
 import { User, Group } from '../types';
 
 // Capstone Title filter options
@@ -81,11 +81,21 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   const filteredAndSortedGroups = groups.filter(group => {
     const groupName = group.name || '';
     const adviserName = group.adviser ? getFullName(group.adviser) : '';
+    const memberNames = group.members?.map(member => 
+      `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name} ${member.last_name} ${member.first_name}`
+    ).join(' ') || '';
+    
+    const searchTerms = searchTerm.toLowerCase().split(' ').filter(term => term.length > 0);
+    
+    const matchesSearch = searchTerms.length === 0 || searchTerms.every(term =>
+      groupName.toLowerCase().includes(term) ||
+      adviserName.toLowerCase().includes(term) ||
+      memberNames.toLowerCase().includes(term) ||
+      (group.capstone_title?.toLowerCase().includes(term) || false)
+    );
     
     return (
-      (groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       adviserName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       (group.capstone_title?.toLowerCase().includes(searchTerm.toLowerCase()) || false)) &&
+      matchesSearch &&
       (adviserFilter === "" || 
        (adviserFilter === "No Adviser" && !group.adviser) ||
        (group.adviser && getFullName(group.adviser) === adviserFilter)) &&
@@ -306,13 +316,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                     >
                       {group.members && group.members.length > 0 ? (
                         expandedGroupId === group._id ? (
-                          <div className="h-4 w-4">
-                            <FaChevronDown />
-                          </div>
+                          <FaMinus color="#6B7280" />
                         ) : (
-                          <div className="h-4 w-4">
-                            <FaChevronLeft />
-                          </div>
+                          <FaPlus color="#6B7280" />
                         )
                       ) : null}
                     </button>
@@ -328,11 +334,18 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                 {group.members && group.members.length > 0 && expandedGroupId === group._id && (
                   <div className="mt-2 pl-6">
                     <ul className="list-disc list-inside">
-                      {group.members.map((member) => (
-                        <li key={member._id} className="text-sm text-gray-600">
-                          {getFullName(member)}
-                        </li>
-                      ))}
+                      {group.members
+                        ?.slice()
+                        .sort((a, b) => {
+                          const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
+                          const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+                          return aName.localeCompare(bName);
+                        })
+                        .map((member) => (
+                          <li key={member._id} className="text-sm text-gray-600">
+                            {getFullName(member)}
+                          </li>
+                        ))}
                     </ul>
                   </div>
                 )}
