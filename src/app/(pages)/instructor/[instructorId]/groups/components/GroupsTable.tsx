@@ -1,40 +1,6 @@
 import React, { useState } from 'react';
 import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa"; // Import icons and pagination icons
-import { Id } from '../../../../../../../convex/_generated/dataModel';
-
-// Define proper types based on our schema
-interface User {
-  _id: Id<"users">;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
-  role: number;
-  subrole?: number;
-}
-
-interface Group {
-  _id: Id<"groupsTable">;
-  capstone_title?: string;
-  grade?: number;
-  project_manager_id: Id<"users">;
-  member_ids: Id<"users">[];
-  adviser_id?: Id<"users">;
-  // Additional fields for display
-  projectManager?: User;
-  members?: User[];
-  adviser?: User;
-  name?: string;
-}
-
-interface GroupsTableProps {
-  groups: Group[];
-  onEdit: (group: Group) => void;
-  onDelete: (group: Group) => void;
-  onAdd: () => void;
-}
-
-type SortField = "name" | "projectManager" | "capstoneTitle";
-type SortDirection = "asc" | "desc";
+import { User, Group } from '../types';
 
 // Capstone Title filter options
 const CAPSTONE_FILTERS = {
@@ -56,6 +22,16 @@ const getGradeDisplay = (grade?: number): { text: string; color: string } => {
       return { text: 'No Grade', color: 'bg-gray-100 text-gray-800' };
   }
 };
+
+interface GroupsTableProps {
+  groups: Group[];
+  onEdit: (group: Group) => void;
+  onDelete: (group: Group) => void;
+  onAdd: () => void;
+}
+
+type SortField = "name" | "projectManager" | "capstoneTitle";
+type SortDirection = "asc" | "desc";
 
 const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onAdd }) => {
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);

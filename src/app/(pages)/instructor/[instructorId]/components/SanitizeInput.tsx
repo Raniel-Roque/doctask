@@ -1,0 +1,121 @@
+// =========================================
+// Types
+// =========================================
+interface SanitizeInputProps {
+  value: string;
+  options?: {
+    trim?: boolean;
+    removeHtml?: boolean;
+    escapeSpecialChars?: boolean;
+    maxLength?: number;
+    allowedPattern?: RegExp;
+  };
+}
+
+// =========================================
+// Component
+// =========================================
+export const sanitizeInput = (value: string, options: SanitizeInputProps['options'] = {}): string => {
+  const {
+    trim = true,
+    removeHtml = true,
+    escapeSpecialChars = true,
+    maxLength,
+    allowedPattern
+  } = options;
+
+  let sanitizedValue = value;
+
+  // Apply trimming if enabled
+  if (trim) {
+    sanitizedValue = sanitizedValue.trim();
+  }
+
+  // Remove HTML tags if enabled
+  if (removeHtml) {
+    sanitizedValue = sanitizedValue.replace(/[<>]/g, '');
+  }
+
+  // Escape special characters if enabled
+  if (escapeSpecialChars) {
+    sanitizedValue = sanitizedValue
+      .replace(/[&]/g, '&amp;')
+      .replace(/["]/g, '&quot;')
+      .replace(/[']/g, '&#x27;')
+      .replace(/[/]/g, '&#x2F;');
+  }
+
+  // Apply max length if specified
+  if (maxLength && sanitizedValue.length > maxLength) {
+    sanitizedValue = sanitizedValue.slice(0, maxLength);
+  }
+
+  // Apply pattern matching if specified
+  if (allowedPattern && !allowedPattern.test(sanitizedValue)) {
+    sanitizedValue = '';
+  }
+
+  return sanitizedValue;
+};
+
+// =========================================
+// Validation Rules
+// =========================================
+export const VALIDATION_RULES = {
+  // Name fields
+  name: {
+    maxLength: 50,
+    pattern: /^[a-zA-Z\s-']+$/,
+    message: "Can only contain letters, spaces, hyphens, and apostrophes",
+    required: true
+  },
+  // Email
+  email: {
+    maxLength: 100,
+    pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+    message: "Invalid email format",
+    required: true
+  },
+  // General text
+  text: {
+    maxLength: 255,
+    pattern: /^[a-zA-Z0-9\s.,!?-]+$/,
+    message: "Can only contain letters, numbers, and basic punctuation",
+    required: false
+  }
+} as const;
+
+// =========================================
+// Validation Function
+// =========================================
+export const validateInput = (
+  value: string,
+  type: keyof typeof VALIDATION_RULES
+): { isValid: boolean; message?: string } => {
+  const rules = VALIDATION_RULES[type];
+  
+  // Check if required
+  if (rules.required && !value) {
+    return { isValid: false, message: `${type} is required` };
+  }
+
+  // Skip validation if not required and empty
+  if (!rules.required && !value) {
+    return { isValid: true };
+  }
+
+  // Check max length
+  if (value.length > rules.maxLength) {
+    return { 
+      isValid: false, 
+      message: `${type} must be less than ${rules.maxLength} characters` 
+    };
+  }
+
+  // Check pattern
+  if (!rules.pattern.test(value)) {
+    return { isValid: false, message: rules.message };
+  }
+
+  return { isValid: true };
+};

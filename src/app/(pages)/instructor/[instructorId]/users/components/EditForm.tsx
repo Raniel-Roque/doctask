@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { FaEdit, FaTimes, FaExclamationTriangle, FaChevronDown, FaSearch, FaEnvelope, FaSave, FaSpinner, FaUserTag, FaUser } from "react-icons/fa";
 import { User, EditFormData } from "./types";
-import { sanitizeInput, validateUserForm } from "../../utils/validation";
+import { validateUserForm } from "../../utils/validation";
+import { Notification } from "../../components/Notification";
+import { UnsavedChangesConfirmation } from "../../components/UnsavedChangesConfirmation";
+import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../components/SanitizeInput";
 
 // =========================================
 // Types
@@ -22,7 +25,7 @@ interface EditFormProps {
 // =========================================
 // Component
 // =========================================
-export const EditForm = ({
+export default function EditForm({
   user,
   formData,
   isSubmitting,
@@ -33,7 +36,7 @@ export const EditForm = ({
   className = "",
   isStudent = false,
   setNetworkError,
-}: EditFormProps) => {
+}: EditFormProps) {
   // =========================================
   // State
   // =========================================
@@ -41,6 +44,9 @@ export const EditForm = ({
   const [roleSearch, setRoleSearch] = useState('');
   const [showRoleSearch, setShowRoleSearch] = useState(false);
   const [showRoleChangeConfirmation, setShowRoleChangeConfirmation] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
 
   const roles = [
     { value: 0, label: 'Member' },
@@ -67,7 +73,6 @@ export const EditForm = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const sanitizedValue = sanitizeInput(value);
     
     if (name === 'subrole') {
       onFormDataChange({
@@ -75,9 +80,16 @@ export const EditForm = ({
         [name]: parseInt(value),
       });
     } else {
+      const sanitizedValue = sanitizeInput(value, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength: name === 'email' ? VALIDATION_RULES.email.maxLength : VALIDATION_RULES.name.maxLength
+      });
+
       onFormDataChange({
         ...formData,
-        [name]: sanitizedValue.trim() || '',
+        [name]: sanitizedValue
       });
     }
 
@@ -92,7 +104,11 @@ export const EditForm = ({
   };
 
   const handleRoleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRoleSearch(e.target.value);
+    setRoleSearch(sanitizeInput(e.target.value, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -106,6 +122,25 @@ export const EditForm = ({
     const errors = validateUserForm(formData);
     if (errors) {
       setValidationErrors(errors);
+      return;
+    }
+
+    // Additional validation using SanitizeInput
+    const nameValidation = validateInput(formData.first_name, 'name');
+    if (!nameValidation.isValid) {
+      setValidationErrors(prev => ({
+        ...prev,
+        first_name: nameValidation.message || "Invalid first name"
+      }));
+      return;
+    }
+
+    const emailValidation = validateInput(formData.email, 'email');
+    if (!emailValidation.isValid) {
+      setValidationErrors(prev => ({
+        ...prev,
+        email: emailValidation.message || "Invalid email"
+      }));
       return;
     }
 
@@ -141,6 +176,7 @@ export const EditForm = ({
   // Render
   // =========================================
   return (
+    <>
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${className}`}>
       <div className="bg-white rounded-lg p-8 w-full max-w-4xl shadow-2xl border-2 border-gray-200">
         {/* Header */}
@@ -150,7 +186,7 @@ export const EditForm = ({
             Edit User
           </h2>
           <button 
-            onClick={handleClose}
+              onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
             disabled={isSubmitting}
           >
@@ -331,40 +367,40 @@ export const EditForm = ({
             </div>
           )}
 
-          {/* Role Change Confirmation Dialog */}
-          {showRoleChangeConfirmation && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-                <div className="flex items-center gap-3 mb-4">
-                  <FaExclamationTriangle size={20} color="#EAB308" />
-                  <h3 className="text-lg font-semibold text-gray-900">Confirm Role Change</h3>
-                </div>
-                <p className="text-gray-600 mb-6">
-                  Changing this user&apos;s role will reset any group affiliations associated with their account. 
-                  This action cannot be undone. Are you sure you want to proceed?
-                </p>
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={cancelSubmit}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmAndSubmit}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Confirm Changes
-                  </button>
+            {/* Role Change Confirmation Dialog */}
+            {showRoleChangeConfirmation && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <FaExclamationTriangle size={20} color="#EAB308" />
+                    <h3 className="text-lg font-semibold text-gray-900">Confirm Role Change</h3>
+                  </div>
+                  <p className="text-gray-600 mb-6">
+                    Changing this user&apos;s role will reset any group affiliations associated with their account. 
+                    This action cannot be undone. Are you sure you want to proceed?
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={cancelSubmit}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={confirmAndSubmit}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Confirm Changes
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Form Actions */}
           <div className="flex justify-end gap-4 mt-8">
             <button
-              onClick={handleClose}
+                onClick={handleClose}
               className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
               disabled={isSubmitting}
             >
@@ -394,5 +430,26 @@ export const EditForm = ({
         </form>
       </div>
     </div>
+
+      {/* Notifications */}
+      <Notification 
+        message={errorMessage} 
+        onClose={() => setErrorMessage(null)} 
+        type="error"
+      />
+      <Notification 
+        message={successMessage} 
+        onClose={() => setSuccessMessage(null)} 
+        type="success"
+      />
+      <UnsavedChangesConfirmation
+        isOpen={showUnsavedChangesDialog}
+        onContinue={() => {
+          setShowUnsavedChangesDialog(false);
+          onClose();
+        }}
+        onCancel={() => setShowUnsavedChangesDialog(false)}
+      />
+    </>
   );
-}; 
+} 

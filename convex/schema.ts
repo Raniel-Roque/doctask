@@ -47,11 +47,10 @@ export default defineSchema({
   studentsTable: defineTable({
     // Foreign Keys
     user_id: v.id("users"), // Reference to user table
-    group_id: v.id("groupsTable"), // Reference to group table
+    group_id: v.union(v.id("groupsTable"), v.null()), // Reference to group table or null
   })
   .index("by_user", ["user_id"])
-  .index("by_group", ["group_id"])
-  .index("by_user_and_group", ["user_id", "group_id"]),
+  .index("by_group", ["group_id"]),
 
   // =========================================
   // Advisers Table

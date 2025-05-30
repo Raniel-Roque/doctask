@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { FaPlus, FaTimes, FaExclamationTriangle, FaChevronDown, FaSearch, FaEnvelope, FaUserPlus, FaSpinner, FaUserTag, FaUser } from "react-icons/fa";
 import { AddFormData } from "./types";
-import { sanitizeInput, validateUserForm } from "../../utils/validation";
+import { validateUserForm } from "../../utils/validation";
+import { Notification } from "../../components/Notification";
+import { UnsavedChangesConfirmation } from "../../components/UnsavedChangesConfirmation";
+import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../components/SanitizeInput";
 
 // =========================================
 // Types
@@ -40,6 +43,9 @@ export const AddForm = ({
   const [validationErrors, setValidationErrors] = React.useState<{ [key: string]: string }>({});
   const [roleSearch, setRoleSearch] = useState('');
   const [showRoleSearch, setShowRoleSearch] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
 
   const roles = [
     { value: 0, label: 'Member' },
@@ -60,7 +66,6 @@ export const AddForm = ({
   // =========================================
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const sanitizedValue = sanitizeInput(value);
     
     if (name === 'subrole') {
       onFormDataChange({
@@ -68,9 +73,16 @@ export const AddForm = ({
         [name]: parseInt(value),
       });
     } else {
+      const sanitizedValue = sanitizeInput(value, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength: name === 'email' ? VALIDATION_RULES.email.maxLength : VALIDATION_RULES.name.maxLength
+      });
+
       onFormDataChange({
         ...formData,
-        [name]: sanitizedValue.trim() || null,
+        [name]: sanitizedValue
       });
     }
 
@@ -85,7 +97,11 @@ export const AddForm = ({
   };
 
   const handleRoleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRoleSearch(e.target.value);
+    setRoleSearch(sanitizeInput(e.target.value, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true
+    }));
   };
 
   const handleRoleSelect = (role: { value: number, label: string }) => {
@@ -111,6 +127,25 @@ export const AddForm = ({
       return;
     }
 
+    // Additional validation using SanitizeInput
+    const nameValidation = validateInput(formData.first_name, 'name');
+    if (!nameValidation.isValid) {
+      setValidationErrors(prev => ({
+        ...prev,
+        first_name: nameValidation.message || "Invalid first name"
+      }));
+      return;
+    }
+
+    const emailValidation = validateInput(formData.email, 'email');
+    if (!emailValidation.isValid) {
+      setValidationErrors(prev => ({
+        ...prev,
+        email: emailValidation.message || "Invalid email"
+      }));
+      return;
+    }
+
     onSubmit();
   };
 
@@ -123,12 +158,18 @@ export const AddForm = ({
     onClose();
   };
 
+  const closeForm = () => {
+    setNetworkError(null);
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   // =========================================
   // Render
   // =========================================
   return (
+    <>
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${className}`}>
       <div className="bg-white rounded-lg p-8 w-full max-w-4xl shadow-2xl border-2 border-gray-200">
         {/* Header */}
@@ -138,7 +179,7 @@ export const AddForm = ({
             Add New User
           </h2>
           <button 
-            onClick={handleClose}
+              onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
             disabled={isSubmitting}
           >
@@ -322,7 +363,7 @@ export const AddForm = ({
           {/* Form Actions */}
           <div className="flex justify-end gap-4 mt-8">
             <button
-              onClick={handleClose}
+                onClick={handleClose}
               className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
               disabled={isSubmitting}
             >
@@ -352,5 +393,26 @@ export const AddForm = ({
         </form>
       </div>
     </div>
+
+      {/* Notifications */}
+      <Notification 
+        message={errorMessage} 
+        onClose={() => setErrorMessage(null)} 
+        type="error"
+      />
+      <Notification 
+        message={successMessage} 
+        onClose={() => setSuccessMessage(null)} 
+        type="success"
+      />
+      <UnsavedChangesConfirmation
+        isOpen={showUnsavedChangesDialog}
+        onContinue={() => {
+          setShowUnsavedChangesDialog(false);
+          closeForm();
+        }}
+        onCancel={() => setShowUnsavedChangesDialog(false)}
+      />
+    </>
   );
 }; 

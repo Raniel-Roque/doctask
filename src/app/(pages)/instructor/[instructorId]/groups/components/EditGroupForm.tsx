@@ -1,295 +1,226 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { FaEdit, FaTimes, FaExclamationTriangle, FaChevronDown, FaSearch, FaSpinner, FaBook, FaUserGraduate, FaUsers, FaStar, FaPlus } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { FaTimes, FaEdit, FaExclamationTriangle, FaUsers, FaUserTie, FaBook, FaSearch, FaChevronDown, FaSave, FaSpinner } from "react-icons/fa";
+import { Group } from "../types";
+import { UnsavedChangesConfirmation } from "../../components/UnsavedChangesConfirmation";
+import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../components/SanitizeInput";
 
-interface Group {
-  members: string[];
-  adviser: string;
-  grade?: string;
-  capstoneTitle?: string;
+interface User {
+  _id: string;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  group_id?: string;
 }
 
 interface EditGroupFormProps {
-  group: Group;
   isOpen: boolean;
+  isSubmitting: boolean;
+  networkError: string | null;
   onClose: () => void;
-  onSubmit: () => void;
-  isSubmitting?: boolean;
-  networkError?: string | null;
-  setNetworkError?: React.Dispatch<React.SetStateAction<string | null>>;
+  onSubmit: (formData: {
+    projectManager: string;
+    members: string[];
+    adviser: string | null;
+    capstoneTitle: string;
+    grade: number;
+  }) => void;
+  members: User[];
+  advisers: User[];
+  group: Group | null;
+  setNetworkError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-const EditGroupForm: React.FC<EditGroupFormProps> = ({ 
-  group, 
+export default function EditGroupForm({
   isOpen, 
+  isSubmitting,
+  networkError,
   onClose, 
   onSubmit,
-  isSubmitting = false,
-  networkError = null,
-  setNetworkError
-}) => {
+  members,
+  advisers,
+  group,
+  setNetworkError,
+}: EditGroupFormProps) {
+  // State
   const [formData, setFormData] = useState({
-    projectManager: '',
+    projectManager: "",
     members: [] as string[],
-    adviser: '',
-    grade: 'No Grade',
-    capstoneTitle: ''
+    adviser: null as string | null,
+    capstoneTitle: "",
+    grade: 0,
   });
 
-  const [memberSearch, setMemberSearch] = useState('');
-  const [showMemberSearch, setShowMemberSearch] = useState(false);
-  const [projectManagerSearch, setProjectManagerSearch] = useState('');
-  const [showProjectManagerSearch, setShowProjectManagerSearch] = useState(false);
-  const [adviserSearch, setAdviserSearch] = useState('');
+  const [initialFormData, setInitialFormData] = useState(formData);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
+  const [showMembersSearch, setShowMembersSearch] = useState(false);
   const [showAdviserSearch, setShowAdviserSearch] = useState(false);
+  const [membersSearch, setMembersSearch] = useState("");
+  const [adviserSearch, setAdviserSearch] = useState("");
 
-  const formRef = useRef<HTMLDivElement>(null);
-  const activeDropdownRef = useRef<HTMLDivElement>(null);
+  // Update form data when group changes
+  useEffect(() => {
+    if (group) {
+      const newFormData = {
+        projectManager: group.project_manager_id,
+        members: group.member_ids,
+        adviser: group.adviser_id || null,
+        capstoneTitle: group.capstone_title || "",
+        grade: group.grade || 0,
+      };
+      setFormData(newFormData);
+      setInitialFormData(newFormData);
+      setHasUnsavedChanges(false);
+    }
+  }, [group]);
 
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  // Check for unsaved changes
+  useEffect(() => {
+    const hasChanges = JSON.stringify(formData) !== JSON.stringify(initialFormData);
+    setHasUnsavedChanges(hasChanges);
+  }, [formData, initialFormData]);
 
+  // Close all dropdowns
+  const closeAllDropdowns = () => {
+    setShowMembersSearch(false);
+    setShowAdviserSearch(false);
+  };
+
+  // Handle click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      
-      // If clicking inside the active dropdown, don't close
-      if (activeDropdownRef.current?.contains(target)) {
-        return;
-      }
-
-      // If clicking anywhere else in the form or outside, close dropdowns
-      if (formRef.current?.contains(target) || !formRef.current?.contains(target)) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
         closeAllDropdowns();
       }
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
   }, [isOpen]);
 
-  // Placeholder data - replace with actual data later
-  const students = [
-    { id: '1', name: 'John Doe' },
-    { id: '2', name: 'Jane Smith' },
-    { id: '3', name: 'Bob Johnson' },
-    { id: '4', name: 'Alice Williams' },
-    { id: '5', name: 'Michael Brown' },
-    { id: '6', name: 'Sarah Davis' },
-    { id: '7', name: 'David Wilson' },
-    { id: '8', name: 'Emily Taylor' },
-    { id: '9', name: 'James Anderson' },
-    { id: '10', name: 'Lisa Martinez' },
-    { id: '11', name: 'Robert Garcia' },
-    { id: '12', name: 'Jennifer Robinson' },
-    { id: '13', name: 'William Clark' },
-    { id: '14', name: 'Mary Rodriguez' },
-    { id: '15', name: 'Thomas Lewis' }
-  ];
+  // Handle opening dropdowns
+  const handleOpenMembersSearch = () => {
+    setShowAdviserSearch(false);
+    setShowMembersSearch(!showMembersSearch);
+  };
 
-  const advisers = [
-    { id: '1', name: 'Dr. Smith' },
-    { id: '2', name: 'Prof. Johnson' },
-    { id: '3', name: 'Dr. Williams' },
-    { id: '4', name: 'Dr. Brown' },
-    { id: '5', name: 'Prof. Davis' },
-    { id: '6', name: 'Dr. Wilson' },
-    { id: '7', name: 'Prof. Taylor' },
-    { id: '8', name: 'Dr. Anderson' }
-  ];
+  const handleOpenAdviserSearch = () => {
+    setShowMembersSearch(false);
+    setShowAdviserSearch(!showAdviserSearch);
+  };
 
-  const grades = [
-    'No Grade',
-    'Failed',
-    'Redefense',
-    'Passed'
-  ];
+  // Filter functions
+  const filterMembers = (member: User) => {
+    const fullName = `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`.toLowerCase();
+    const lastNameFirst = `${member.last_name} ${member.first_name} ${member.middle_name ? member.middle_name : ''}`.toLowerCase();
+    const searchTerm = membersSearch.toLowerCase();
+    return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm);
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const filterAdvisers = (adviser: User) => {
+    const fullName = `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + ' ' : ''}${adviser.last_name}`.toLowerCase();
+    const lastNameFirst = `${adviser.last_name} ${adviser.first_name} ${adviser.middle_name ? adviser.middle_name : ''}`.toLowerCase();
+    const searchTerm = adviserSearch.toLowerCase();
+    return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm);
+  };
+
+  // Handle close with unsaved changes check
+  const handleClose = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (hasUnsavedChanges) {
+      setShowUnsavedChangesDialog(true);
+    } else {
+      closeForm();
+    }
+  };
+
+  const closeForm = () => {
+    closeAllDropdowns();
+    if (setNetworkError) {
+      setNetworkError(null);
+    }
+    setValidationErrors({});
+    onClose();
+  };
+
+  // Handle input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: sanitizeInput(value, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength: VALIDATION_RULES.text.maxLength
+      })
     }));
   };
 
-  const handleMemberSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMemberSearch(e.target.value);
+  const handleMembersSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMembersSearch(sanitizeInput(e.target.value, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true
+    }));
   };
 
   const handleAdviserSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAdviserSearch(e.target.value);
-  };
-
-  const handleMemberSelect = (member: { id: string, name: string }) => {
-    if (!formData.members.includes(member.name)) {
-      setFormData(prev => ({
-        ...prev,
-        members: [...prev.members, member.name]
-      }));
-    }
-    setMemberSearch('');
-    setShowMemberSearch(false);
-  };
-
-  const handleAdviserSelect = (adviser: { id: string, name: string }) => {
-    setFormData(prev => ({
-      ...prev,
-      adviser: adviser.name
-    }));
-    setAdviserSearch('');
-    setShowAdviserSearch(false);
-  };
-
-  const handleMemberRemove = (memberToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      members: prev.members.filter(member => member !== memberToRemove)
+    setAdviserSearch(sanitizeInput(e.target.value, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required fields
-    const errors: { [key: string]: string } = {};
-    
-    if (!formData.projectManager) {
-      errors.projectManager = "Please select a Project Manager";
-    }
-    
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
-
-    onSubmit();
-  };
-
-  // Function to format error message
-  const formatErrorMessage = (error: string | null): string => {
-    if (!error) return "";
-    
-    // Handle common Convex error patterns
-    if (error.includes("ArgumentValidationError")) {
-      if (error.includes("projectManagerId")) {
-        return "Please select a valid Project Manager";
-      }
-      if (error.includes("memberIds")) {
-        return "Please select valid group members";
-      }
-      if (error.includes("adviserId")) {
-        return "Please select a valid Adviser";
-      }
-    }
-    
-    // Handle other common error patterns
-    if (error.includes("not found")) {
-      return "One or more selected users could not be found";
-    }
-    if (error.includes("permission denied")) {
-      return "You don't have permission to edit this group";
-    }
-    
-    // Default error message
-    return "An error occurred while updating the group. Please try again.";
-  };
-
-  const closeAllDropdowns = () => {
-    setShowMemberSearch(false);
-    setShowProjectManagerSearch(false);
-    setShowAdviserSearch(false);
-  };
-
-  const handleProjectManagerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (showProjectManagerSearch) {
-      setShowProjectManagerSearch(false);
-    } else {
-      setShowProjectManagerSearch(true);
-    setShowMemberSearch(false);
-    setShowAdviserSearch(false);
-    }
-  };
-
-  const handleMemberClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (showMemberSearch) {
-      setShowMemberSearch(false);
-    } else {
-      setShowMemberSearch(true);
-    setShowProjectManagerSearch(false);
-    setShowAdviserSearch(false);
-    }
-  };
-
-  const handleAdviserClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (showAdviserSearch) {
-      setShowAdviserSearch(false);
-    } else {
-      setShowAdviserSearch(true);
-    setShowProjectManagerSearch(false);
-    setShowMemberSearch(false);
-    }
-  };
-
-  const handleClearProjectManager = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setFormData(prev => ({ ...prev, projectManager: '' }));
-  };
-
-  const handleClearAdviser = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setFormData(prev => ({ ...prev, adviser: '' }));
-  };
-
-  const handleProjectManagerSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProjectManagerSearch(e.target.value);
-  };
-
-  const handleProjectManagerSelect = (student: string) => {
-    setFormData(prev => ({ ...prev, projectManager: student }));
-    setProjectManagerSearch('');
-    setShowProjectManagerSearch(false);
-  };
-
-  const handleClearMembers = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setFormData(prev => ({ ...prev, members: [] }));
-  };
-
-  const handleClose = () => {
-    // Reset form data to initial group data
-    setFormData({
-      projectManager: '',
-      members: group.members || [],
-      adviser: group.adviser || '',
-      grade: group.grade || 'No Grade',
-      capstoneTitle: group.capstoneTitle || ''
-    });
-    // Reset search states
-    setMemberSearch('');
-    setProjectManagerSearch('');
-    setAdviserSearch('');
-    // Close dropdowns
+    
     closeAllDropdowns();
-    // Clear errors
+    if (setNetworkError) {
+      setNetworkError(null);
+    }
     setValidationErrors({});
-    // If you have a setNetworkError, clear it here as well
-    if (typeof setNetworkError === 'function') setNetworkError(null);
-    // Call the original onClose
-    onClose();
+
+    // Validate capstone title if provided
+    if (formData.capstoneTitle) {
+      const { isValid, message } = validateInput(formData.capstoneTitle, 'text');
+      if (!isValid) {
+        setValidationErrors(prev => ({
+          ...prev,
+          capstoneTitle: message || "Invalid capstone title"
+        }));
+        return;
+      }
+    }
+
+    try {
+      await onSubmit(formData);
+      setHasUnsavedChanges(false);
+      setInitialFormData(formData);
+      closeForm();
+    } catch (error) {
+      setValidationErrors({
+        general: error instanceof Error ? error.message : "Failed to update group"
+      });
+    }
   };
 
   if (!isOpen || !group) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div ref={formRef} className="bg-white rounded-lg p-8 w-full max-w-3xl shadow-2xl border-2 border-gray-200">
+    <>
+      <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isOpen ? '' : 'hidden'}`}>
+        <div className="bg-white rounded-lg p-8 w-full max-w-4xl shadow-2xl border-2 border-gray-200">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -297,7 +228,7 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
             Edit Group
           </h2>
           <button 
-            onClick={handleClose}
+              onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
             disabled={isSubmitting}
           >
@@ -309,22 +240,10 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
         {networkError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-700">
+                <div className="text-red-700">
               <FaExclamationTriangle />
-              <span>{formatErrorMessage(networkError)}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Validation Errors */}
-        {Object.keys(validationErrors).length > 0 && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-2 text-red-700">
-              <FaExclamationTriangle />
-              <div className="flex flex-col gap-1">
-                {Object.entries(validationErrors).map(([field, message]) => (
-                  <span key={field}>{String(message)}</span>
-                ))}
-              </div>
+                </div>
+              <span>{networkError}</span>
             </div>
           </div>
         )}
@@ -333,287 +252,233 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Capstone Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <div className="flex items-center gap-2">
-                <FaBook color="#4B5563" />
+              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <FaBook color="#6B7280" />
                 Capstone Title
-              </div>
             </label>
             <input
               type="text"
+              id="capstoneTitle"
               name="capstoneTitle"
               value={formData.capstoneTitle}
-              onChange={handleChange}
-              placeholder="Enter Capstone Title (Optional)"
-              className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              onChange={handleInputChange}
+              placeholder="Enter Capstone Title"
+              className={`w-full px-4 py-2 rounded-lg border-2 ${
+                validationErrors.capstoneTitle ? 'border-red-500' : 'border-gray-300'
+              } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
               disabled={isSubmitting}
             />
+              {validationErrors.capstoneTitle && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.capstoneTitle}</p>
+              )}
           </div>
 
-          {/* Project Manager and Adviser Row */}
+            {/* Adviser and Grade */}
           <div className="flex gap-4">
-            {/* Project Manager */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FaUserGraduate color="#4B5563" />
-                  Project Manager
-                  </div>
-                  {formData.projectManager && (
-                    <button
-                      type="button"
-                      onClick={handleClearProjectManager}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-              </label>
-              <div className="relative">
-                <div 
-                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex items-center justify-between"
-                  onClick={handleProjectManagerClick}
-                >
-                  {formData.projectManager ? (
-                    <div className="flex items-center justify-between w-full">
-                      <span>{formData.projectManager}</span>
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">Select Project Manager (Optional)</span>
-                  )}
-                </div>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <FaChevronDown color="#6B7280" />
-                </div>
-                
-                {showProjectManagerSearch && (
-                  <div ref={activeDropdownRef} className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
-                    <div className="p-2 border-b">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={projectManagerSearch}
-                          onChange={handleProjectManagerSearch}
-                          placeholder="Search project manager..."
-                          className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          autoFocus
-                        />
-                        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
-                          <FaSearch />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      {students
-                        .filter(student => 
-                          student.name.toLowerCase().includes(projectManagerSearch.toLowerCase())
-                        )
-                        .map(student => (
-                          <div
-                            key={student.id}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleProjectManagerSelect(student.name)}
-                          >
-                            {student.name}
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Adviser */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FaUserGraduate color="#4B5563" />
+              {/* Adviser */}
+              <div className="dropdown-container w-[70%]">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <FaUserTie color="#6B7280" />
                   Adviser
-                  </div>
-                  {formData.adviser && (
-                    <button
-                      type="button"
-                      onClick={handleClearAdviser}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
               </label>
               <div className="relative">
                 <div 
-                  className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex items-center justify-between"
-                  onClick={handleAdviserClick}
-                >
-                  {formData.adviser ? (
-                    <div className="flex items-center justify-between w-full">
-                      <span>{formData.adviser}</span>
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">Select Adviser (Optional)</span>
-                  )}
+                    className={`w-full px-4 py-2 rounded-lg border-2 ${
+                      validationErrors.adviser ? 'border-red-500' : 'border-gray-300'
+                    } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer`}
+                    onClick={handleOpenAdviserSearch}
+                  >
+                    {formData.adviser 
+                      ? advisers.find(a => a._id === formData.adviser)?.first_name + ' ' + 
+                        advisers.find(a => a._id === formData.adviser)?.last_name
+                      : <span className="text-gray-500">Select Adviser</span>}
                 </div>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                   <FaChevronDown color="#6B7280" />
                 </div>
                 
-                {showAdviserSearch && (
-                  <div ref={activeDropdownRef} className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+                  {showAdviserSearch && (
+                    <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
                     <div className="p-2 border-b">
                       <div className="relative">
                         <input
                           type="text"
-                          value={adviserSearch}
-                          onChange={handleAdviserSearch}
-                          placeholder="Search adviser..."
-                          className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            value={adviserSearch}
+                            onChange={handleAdviserSearch}
+                            placeholder="Search advisers..."
+                            className="w-full pl-8 pr-8 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
                           autoFocus
                         />
                         <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
                           <FaSearch />
                         </div>
+                          {adviserSearch && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAdviserSearch('');
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                              <FaTimes size={12} />
+                            </button>
+                          )}
                       </div>
                     </div>
                     <div className="max-h-48 overflow-y-auto">
-                      {advisers
-                        .filter(adviser => 
-                          adviser.name.toLowerCase().includes(adviserSearch.toLowerCase())
-                        )
-                        .map(adviser => (
-                          <div
-                            key={adviser.id}
+                        {advisers
+                          .filter(filterAdvisers)
+                          .map((adviser) => (
+                            <div
+                              key={adviser._id}
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleAdviserSelect(adviser)}
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, adviser: adviser._id }));
+                                setShowAdviserSearch(false);
+                              }}
                           >
-                            {adviser.name}
+                              {`${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + ' ' : ''}${adviser.last_name}`}
                           </div>
                         ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Grade */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <div className="flex items-center gap-2">
-                <FaStar color="#4B5563" />
-                Grade
-              </div>
-            </label>
-            <div className="relative">
-              <select
-                name="grade"
-                value={formData.grade}
-                onChange={handleChange}
-                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none cursor-pointer bg-white"
-                disabled={isSubmitting}
-              >
-                {grades.map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <FaChevronDown color="#6B7280" />
-              </div>
-            </div>
-          </div>
-
-          {/* Members */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FaUsers color="#4B5563" />
-                Members
+                  )}
+                  {validationErrors.adviser && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.adviser}</p>
+                  )}
                 </div>
-                {formData.members.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearMembers}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
+              </div>
+
+              {/* Grade */}
+              <div className="w-[30%]">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <FaBook color="#6B7280" />
+                  Grade
+                </label>
+                <div className="relative">
+                  <select
+                    value={formData.grade}
+                    onChange={(e) => setFormData(prev => ({ ...prev, grade: Number(e.target.value) }))}
+                    className={`w-full px-4 py-2 rounded-lg border-2 ${
+                      validationErrors.grade ? 'border-red-500' : 'border-gray-300'
+                    } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white`}
+                    disabled={isSubmitting}
                   >
-                    Clear All
-                  </button>
+                    <option value={0}>No Grade</option>
+                    <option value={1}>Failed</option>
+                    <option value={2}>Redefense</option>
+                    <option value={3}>Passed</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <FaChevronDown color="#6B7280" />
+                  </div>
+                </div>
+                {validationErrors.grade && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.grade}</p>
                 )}
               </div>
-            </label>
-            <div className="relative">
-              <div 
-                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer min-h-[42px]"
-                onClick={handleMemberClick}
-              >
-                {formData.members.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.members.map((member, index) => (
-                      <span 
-                        key={index}
-                        className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-                      >
-                        {member}
-                        <button
-                          type="button"
+            </div>
+
+            {/* Members */}
+            <div className="dropdown-container">
+              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <FaUsers color="#6B7280" />
+                Members
+              </label>
+              <div className="relative">
+                <div 
+                  className={`w-full min-h-[42px] px-4 py-2 rounded-lg border-2 ${
+                    validationErrors.members ? 'border-red-500' : 'border-gray-300'
+                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex flex-wrap gap-2`}
+                  onClick={handleOpenMembersSearch}
+                >
+                  {formData.members.length > 0 ? (
+                    formData.members.map(memberId => {
+                      const member = members.find(m => m._id === memberId);
+                      return member ? (
+                        <div
+                          key={memberId}
+                          className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2 text-sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleMemberRemove(member);
+                            setFormData(prev => ({
+                              ...prev,
+                              members: prev.members.filter(id => id !== memberId)
+                            }));
                           }}
-                          className="ml-1 text-blue-600 hover:text-blue-800"
                         >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-gray-500">Select members (Optional)</span>
-                )}
-              </div>
-              
-              {showMemberSearch && (
-                <div ref={activeDropdownRef} className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
-                  <div className="p-2 border-b">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={memberSearch}
-                        onChange={handleMemberSearch}
-                        placeholder="Search members..."
-                        className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        autoFocus
-                      />
-                      <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
-                        <FaSearch />
+                          {`${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`}
+                          <FaTimes color="#2563EB" size={12} />
+                    </div>
+                      ) : null;
+                    })
+                  ) : (
+                    <span className="text-gray-500">Select Members</span>
+                  )}
+                </div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <FaChevronDown color="#6B7280" />
+                </div>
+                
+                {showMembersSearch && (
+                  <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div className="p-2 border-b">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={membersSearch}
+                          onChange={handleMembersSearch}
+                          placeholder="Search members..."
+                          className="w-full pl-8 pr-8 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          autoFocus
+                        />
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
+                          <FaSearch />
+                        </div>
+                        {membersSearch && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMembersSearch('');
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            <FaTimes size={12} />
+                          </button>
+                        )}
                       </div>
                     </div>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {students
-                      .filter(student => 
-                        student.name.toLowerCase().includes(memberSearch.toLowerCase()) &&
-                        !formData.members.includes(student.name)
-                      )
-                      .map(student => (
-                        <div
-                          key={student.id}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-                          onClick={() => handleMemberSelect(student)}
-                        >
-                          <div className="w-4 h-4 border-2 border-gray-300 rounded flex items-center justify-center">
-                            <FaPlus size={10} color="#4B5563" />
+                    <div className="max-h-48 overflow-y-auto">
+                      {members
+                        .filter(member => 
+                          // Filter out members who are already selected
+                          !formData.members.includes(member._id) &&
+                          // Filter out members who are already in a group
+                          !member.group_id &&
+                          // Apply search filter
+                          filterMembers(member)
+                        )
+                        .map((member) => (
+                          <div
+                            key={member._id}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                members: [...prev.members, member._id]
+                              }));
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              {`${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`}
+                            </div>
                           </div>
-                          {student.name}
-                        </div>
-                      ))}
+                        ))}
+                    </div>
                   </div>
-                </div>
+                )}
+                {validationErrors.members && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.members}</p>
               )}
             </div>
           </div>
@@ -621,7 +486,7 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
           {/* Form Actions */}
           <div className="flex justify-end gap-4 mt-8">
             <button
-              onClick={handleClose}
+                onClick={handleClose}
               className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
               disabled={isSubmitting}
             >
@@ -642,7 +507,7 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
                 </>
               ) : (
                 <>
-                  <FaEdit />
+                    <FaSave />
                   Save Changes
                 </>
               )}
@@ -651,7 +516,16 @@ const EditGroupForm: React.FC<EditGroupFormProps> = ({
         </form>
       </div>
     </div>
-  );
-};
 
-export default EditGroupForm; 
+      {/* Notifications */}
+      <UnsavedChangesConfirmation
+        isOpen={showUnsavedChangesDialog}
+        onContinue={() => {
+          setShowUnsavedChangesDialog(false);
+          closeForm();
+        }}
+        onCancel={() => setShowUnsavedChangesDialog(false)}
+      />
+    </>
+  );
+} 

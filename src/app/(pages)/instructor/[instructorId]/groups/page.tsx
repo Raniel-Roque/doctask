@@ -5,48 +5,23 @@ import { useState, use } from "react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
+import { User, Group } from "./types";
 
 // Import components
 import GroupsTable from "./components/GroupsTable";
 import AddGroupForm from "./components/AddGroupForm";
+import EditGroupForm from "./components/EditGroupForm";
 
 interface GroupsPageProps {
     params: Promise<{ instructorId: string }>
 };
-
-// Define proper types based on our schema
-interface User {
-  _id: Id<"users">;
-  _creationTime: number;
-  clerk_id: string;
-  email: string;
-  email_verified: boolean;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
-  role: number;
-  subrole?: number;
-}
-
-interface Group {
-  _id: Id<"groupsTable">;
-  capstone_title?: string;
-  grade?: number;
-  project_manager_id: Id<"users">;
-  member_ids: Id<"users">[];
-  adviser_id?: Id<"users">;
-  // Additional fields for display
-  projectManager?: User;
-  members?: User[];
-  adviser?: User;
-  name?: string; // Added for display name
-}
 
 const GroupsPage = ({ params }: GroupsPageProps) => {
     const { instructorId } = use(params);
 
     // State management
     const [isAddingGroup, setIsAddingGroup] = useState(false);
+    const [isEditingGroup, setIsEditingGroup] = useState<Group | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [networkError, setNetworkError] = useState<string | null>(null);
 
@@ -85,14 +60,13 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
             projectManager,
             members,
             adviser,
-            grade: group.grade,
-            name,
-            adviser_id: group.adviser_id
+            name
         };
     });
 
     // Handlers
-    const createGroupWithMembers = useMutation(api.mutations.createGroupWithMembers);
+    const createGroup = useMutation(api.mutations.createGroup);
+    const updateGroup = useMutation(api.mutations.updateGroup);
 
     const handleAddGroup = async (formData: {
       projectManager: string;
@@ -104,11 +78,11 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         setIsSubmitting(true);
         setNetworkError(null);
         // Call the mutation
-        await createGroupWithMembers({
-          projectManagerId: formData.projectManager as Id<"users">,
-          memberIds: formData.members.map(id => id as Id<"users">),
-          adviserId: formData.adviser ? (formData.adviser as Id<"users">) : undefined,
-          capstoneTitle: formData.capstoneTitle,
+        await createGroup({
+          project_manager_id: formData.projectManager as Id<"users">,
+          member_ids: formData.members.map(id => id as Id<"users">),
+          adviser_id: formData.adviser ? (formData.adviser as Id<"users">) : undefined,
+          capstone_title: formData.capstoneTitle,
           instructorId: instructorId as Id<"users">,
         });
         setIsAddingGroup(false);
@@ -138,6 +112,53 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
       }
     };
 
+    const handleEditGroup = async (formData: {
+      projectManager: string;
+      members: string[];
+      adviser: string | null;
+      capstoneTitle: string;
+    }) => {
+      if (!isEditingGroup) return;
+
+      try {
+        setIsSubmitting(true);
+        setNetworkError(null);
+        // Call the mutation
+        await updateGroup({
+          groupId: isEditingGroup._id,
+          project_manager_id: formData.projectManager as Id<"users">,
+          member_ids: formData.members.map(id => id as Id<"users">),
+          adviser_id: formData.adviser ? (formData.adviser as Id<"users">) : undefined,
+          capstone_title: formData.capstoneTitle,
+          instructorId: instructorId as Id<"users">,
+        });
+        setIsEditingGroup(null);
+      } catch (error) {
+        // Handle specific error cases
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            setNetworkError("Request timed out. Please try again.");
+          } else if (error.message.includes('Network error')) {
+            setNetworkError("Network error - please check your internet connection");
+          } else if (error.message.includes('already exists')) {
+            setNetworkError("A group with these members already exists");
+          } else if (error.message.includes('not found')) {
+            setNetworkError("One or more selected users could not be found");
+          } else if (error.message.includes('permission denied')) {
+            setNetworkError("You don't have permission to update this group");
+          } else if (error.message.includes('ArgumentValidationError')) {
+            setNetworkError("Please check your input and try again");
+          } else {
+            setNetworkError("Failed to update group. Please try again.");
+          }
+        } else {
+          setNetworkError("An unexpected error occurred. Please try again.");
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar instructorId={instructorId} />
@@ -150,7 +171,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
                 {/* Groups Table */}
                 <GroupsTable
                     groups={processedGroups}
-                    onEdit={() => {}}
+                    onEdit={(group) => setIsEditingGroup(group)}
                     onDelete={() => {}}
                   onAdd={() => setIsAddingGroup(true)}
                 />
@@ -166,6 +187,19 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
                   projectManagers={projectManagers}
                   members={members}
                   advisers={advisers}
+                />
+
+                {/* Edit Group Form */}
+                <EditGroupForm
+                  isOpen={!!isEditingGroup}
+                  onClose={() => setIsEditingGroup(null)}
+                  onSubmit={handleEditGroup}
+                  isSubmitting={isSubmitting}
+                  networkError={networkError}
+                  setNetworkError={setNetworkError}
+                  members={members}
+                  advisers={advisers}
+                  group={isEditingGroup}
                 />
             </div>
         </div>

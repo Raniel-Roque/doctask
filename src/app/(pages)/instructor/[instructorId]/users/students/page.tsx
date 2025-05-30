@@ -8,14 +8,14 @@ import { useMutation } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { UserTable } from "../components/UserTable";
 import { AddForm } from "../components/AddForm";
-import { EditForm } from "../components/EditForm";
+import EditForm from "../components/EditForm";
 import { DeleteConfirmation } from "../components/DeleteConfirmation";
 import { ValidationError } from "../components/ValidationError";
-import { Notification } from "../components/Notification";
+import { Notification } from "../../components/Notification";
 import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
 import { User, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirection, Notification as NotificationType, LogDetails } from "../components/types";
-import { SuccessBanner } from "../components/SuccessBanner";
-import { UnsavedChangesConfirmation } from "../components/UnsavedChangesConfirmation";
+import { SuccessBanner } from "../../components/SuccessBanner";
+import { UnsavedChangesConfirmation } from "../../components/UnsavedChangesConfirmation";
 
 // =========================================
 // Types
@@ -183,6 +183,19 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       return;
     }
 
+    // Check if there are any changes
+    const hasChanges = 
+      editFormData.first_name !== editingUser.first_name ||
+      editFormData.middle_name !== (editingUser.middle_name || "") ||
+      editFormData.last_name !== editingUser.last_name ||
+      editFormData.email !== editingUser.email ||
+      editFormData.subrole !== editingUser.subrole;
+
+    if (!hasChanges) {
+      setEditingUser(null);
+      return;
+    }
+
     setIsSubmitting(true);
     setEditNetworkError(null);
 
@@ -264,7 +277,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         }
       });
 
-      // Only show success message and close form if the update was successful
+      // Only show success message if there were changes
       setSuccessMessage("User updated successfully");
       setEditingUser(null);
       await refreshStudents();
@@ -366,6 +379,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       return;
     }
 
+    // Check if there are any values entered
+    const hasValues = Object.values(addFormData).some(value => value !== "" && value !== 0);
+    if (!hasValues) {
+      setIsAddingUser(false);
+      return;
+    }
+
     setIsSubmitting(true);
     setAddNetworkError(null);
 
@@ -419,7 +439,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         instructorId: instructorId as Id<"users">,
       });
 
-      // Only show success message and close form if the creation was successful
+      // Only show success message if there were values
       setSuccessMessage("Student added successfully");
       setIsAddingUser(false);
       setAddFormData({
@@ -508,11 +528,11 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar instructorId={instructorId} />
+        <Navbar instructorId={instructorId} />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Students Table</h1>
-          <p className="text-muted-foreground">View, add, update, and manage all registered students.</p>
+            <h1 className="text-3xl font-bold">Students Table</h1>
+            <p className="text-muted-foreground">View, add, update, and manage all registered students.</p>
         </div>
         
         {/* User Table */}
@@ -554,14 +574,14 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             if (hasChanges) {
               // Just show the confirmation dialog without closing anything
               setPendingCloseAction(() => () => {
-                setIsAddingUser(false);
-                setAddFormData({
-                  first_name: "",
-                  middle_name: "",
-                  last_name: "",
-                  email: "",
-                  subrole: 0,
-                });
+              setIsAddingUser(false);
+              setAddFormData({
+                first_name: "",
+                middle_name: "",
+                last_name: "",
+                email: "",
+                subrole: 0,
+              });
               });
               setShowUnsavedConfirm(true);
               return; // Prevent the form from closing
@@ -583,13 +603,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         />
 
         {/* Edit Form */}
-        <EditForm
-          user={editingUser}
-          formData={editFormData}
-          isSubmitting={isSubmitting}
-          networkError={editNetworkError}
+      <EditForm
+        user={editingUser}
+        formData={editFormData}
+        isSubmitting={isSubmitting}
+        networkError={editNetworkError}
           setNetworkError={setEditNetworkError}
-          onClose={() => {
+        onClose={() => {
             if (isSubmitting) {
               // During submission, don't allow closing
               return;
@@ -608,14 +628,14 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             if (hasChanges) {
               // Just show the confirmation dialog without closing anything
               setPendingCloseAction(() => () => {
-                setEditingUser(null);
-                setEditFormData({
-                  first_name: "",
-                  middle_name: "",
-                  last_name: "",
-                  email: "",
-                  subrole: 0,
-                });
+          setEditingUser(null);
+          setEditFormData({
+            first_name: "",
+            middle_name: "",
+            last_name: "",
+            email: "",
+            subrole: 0,
+          });
               });
               setShowUnsavedConfirm(true);
               return; // Prevent the form from closing
@@ -630,20 +650,20 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
               email: "",
               subrole: 0,
             });
-          }}
-          onSubmit={handleEditSubmit}
-          onFormDataChange={setEditFormData}
-          isStudent={true}
-        />
+        }}
+        onSubmit={handleEditSubmit}
+        onFormDataChange={setEditFormData}
+        isStudent={true}
+      />
 
         {/* Delete Confirmation */}
-        <DeleteConfirmation
-          user={deleteUser}
+      <DeleteConfirmation
+        user={deleteUser}
           onCancel={() => setDeleteUser(null)}
-          onConfirm={handleDeleteSubmit}
-          isSubmitting={isDeleting}
-          networkError={deleteNetworkError}
-        />
+        onConfirm={handleDeleteSubmit}
+        isSubmitting={isDeleting}
+        networkError={deleteNetworkError}
+      />
 
         {/* Reset Password Confirmation */}
         <ResetPasswordConfirmation
@@ -655,14 +675,15 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         />
 
         {/* Validation Error */}
-        <ValidationError
-          error={validationError}
-          onClose={() => setValidationError(null)}
+      <ValidationError
+        error={validationError}
+        onClose={() => setValidationError(null)}
         />
 
         {/* Notification */}
         <Notification
-          notification={notification}
+          message={notification?.message || null}
+          type={notification?.type || 'error'}
           onClose={() => setNotification(null)}
         />
 
@@ -670,25 +691,23 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         <SuccessBanner
           message={successMessage}
           onClose={() => setSuccessMessage(null)}
-        />
+      />
 
         {/* Unsaved Changes Confirmation */}
         <UnsavedChangesConfirmation
           isOpen={showUnsavedConfirm}
           onContinue={() => {
-            // Just close the confirmation dialog and execute the pending action
             if (pendingCloseAction) {
               pendingCloseAction();
             }
             setShowUnsavedConfirm(false);
             setPendingCloseAction(null);
           }}
-          onCancel={() => {
-            // Just close the confirmation dialog, keep the form open
+        onCancel={() => {
             setShowUnsavedConfirm(false);
             setPendingCloseAction(null);
           }}
-        />
+      />
       </div>
     </div>
   );

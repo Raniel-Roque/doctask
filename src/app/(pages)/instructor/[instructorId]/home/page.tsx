@@ -13,13 +13,13 @@ const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
   const { instructorId } = await params;
 
   // Fetch user data
-  const user = await fetchQuery(api.documents.getUserById, {
+  const user = await fetchQuery(api.fetch.getUserById, {
     id: instructorId as Id<"users">,
   });
 
   // Fetch students and advisers
-  const students = await fetchQuery(api.documents.getStudents);
-  const advisers = await fetchQuery(api.documents.getAdvisers);
+  const students = await fetchQuery(api.fetch.getStudents);
+  const advisers = await fetchQuery(api.fetch.getAdvisers);
 
   return (
     <div className="min-h-screen bg-gray-50">
