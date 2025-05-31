@@ -1,18 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { generateUniqueAdviserCode } from "./utils/adviserCode";
-
-const LOG_ACTIONS = {
-    CREATE_USER: "Create User",
-    EDIT_USER: "Edit User",
-    DELETE_USER: "Delete User",
-    RESET_PASSWORD: "Reset Password",
-    REMOVE_MEMBER: "Remove Member",
-    ADD_MEMBER: "Add Member",
-    CREATE_GROUP: "Create Group",
-    DELETE_GROUP: "Delete Group",
-    EDIT_GROUP: "Edit Group"
-} as const;
+import { logCreateUser, logUpdateUser, logDeleteUser, logResetPassword, logCreateGroup, logUpdateGroup, logDeleteGroup } from "./log";
 
 // =========================================
 // CREATE OPERATIONS
@@ -94,15 +83,7 @@ export const createUser = mutation({
       }
     }
     // Log the user creation
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "user",
-      affected_entity_id: userId,
-      affected_entity_name: `${args.first_name} ${args.last_name}`,
-      action: LOG_ACTIONS.CREATE_USER,
-      details: `Created new ${args.role === 1 ? "adviser" : "student"}`,
-    });
+    await logCreateUser(ctx, args.instructorId, userId);
     return { success: true, userId };
   },
 });
@@ -132,18 +113,6 @@ export const createAdviserCode = mutation({
       adviser_id: args.adviserId,
       code,
       group_ids: [],
-    });
-    // Log the code creation
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "user",
-      affected_entity_id: args.adviserId,
-      affected_entity_name: `${adviser.first_name} ${adviser.last_name}`,
-      action: "Create Adviser Code",
-      details: `Generated adviser code: ${code}`,
     });
     return { success: true, code };
   },
@@ -208,15 +177,7 @@ export const createGroup = mutation({
     }
 
     // Log the group creation
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "group",
-      affected_entity_id: groupId,
-      affected_entity_name: `${project_manager.last_name} et al`,
-      action: LOG_ACTIONS.CREATE_GROUP,
-      details: `Created new group with ${allMembers.length} members`,
-    });
+    await logCreateGroup(ctx, args.instructorId, groupId);
 
     return { success: true, groupId };
   },
@@ -369,17 +330,7 @@ export const updateUser = mutation({
       changes.push(`User Type: ${oldRole} → ${newRole}`);
     }
     // Only log if there are actual changes
-    if (changes.length > 0) {
-      await ctx.db.insert("instructorLogs", {
-        instructor_id: args.instructorId,
-        instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-        affected_entity_type: "user",
-        affected_entity_id: args.userId,
-        affected_entity_name: `${user.first_name} ${user.last_name}`,
-        action: LOG_ACTIONS.EDIT_USER,
-        details: changes.join("\n"),
-      });
-    }
+    await logUpdateUser(ctx, args.instructorId, args.userId, changes.join("\n"));
     return { success: true };
   },
 });
@@ -402,19 +353,6 @@ export const updateAdviserGroups = mutation({
     // Update the groups
     await ctx.db.patch(adviserCode._id, {
       group_ids: args.groupIds,
-    });
-    // Log the update
-    const adviser = await ctx.db.get(args.adviserId);
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!adviser || !instructor) throw new Error("User not found");
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "user",
-      affected_entity_id: args.adviserId,
-      affected_entity_name: `${adviser.first_name} ${adviser.last_name}`,
-      action: "Update Adviser Groups",
-      details: `Updated groups for adviser code: ${adviserCode.code}`,
     });
     return { success: true };
   },
@@ -538,24 +476,37 @@ export const updateGroup = mutation({
     }
 
     // Check adviser changes
-    if (group.adviser_id !== args.adviser_id) {
-      if (!group.adviser_id && args.adviser_id) {
-        changes.push('Adviser: Added');
-      } else if (group.adviser_id && !args.adviser_id) {
-        changes.push('Adviser: Removed');
-      } else {
-        changes.push('Adviser: Changed');
+    if (!group.adviser_id && args.adviser_id) {
+      const newAdviser = await ctx.db.get(args.adviser_id);
+      if (newAdviser) {
+        changes.push(`Adviser: None -> ${newAdviser.first_name} ${newAdviser.last_name}`);
+      }
+    } else if (group.adviser_id && !args.adviser_id) {
+      if (group.adviser_id !== undefined) {
+        const oldAdviser = await ctx.db.get(group.adviser_id);
+        if (oldAdviser) {
+          changes.push(`Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> Removed`);
+        }
+      }
+    } else if (
+      group.adviser_id !== undefined &&
+      args.adviser_id !== undefined &&
+      group.adviser_id !== args.adviser_id
+    ) {
+      const oldAdviser = await ctx.db.get(group.adviser_id);
+      const newAdviser = await ctx.db.get(args.adviser_id);
+      if (oldAdviser && newAdviser) {
+        changes.push(`Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> ${newAdviser.first_name} ${newAdviser.last_name}`);
       }
     }
 
     // Check grade changes
     if (args.grade !== group.grade) {
       const gradeMap: Record<number, string> = {
-        0: 'Fail',
-        1: 'Passed',
-        2: 'Good',
-        3: 'Very Good',
-        4: 'Excellent'
+        0: 'No Grade',
+        1: 'Failed',
+        2: 'Redefense',
+        3: 'Passed',
       };
       const oldGrade = group.grade !== undefined ? gradeMap[group.grade] : 'None';
       const newGrade = gradeMap[args.grade];
@@ -563,15 +514,7 @@ export const updateGroup = mutation({
     }
 
     // Log the update
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "group",
-      affected_entity_id: args.groupId,
-      affected_entity_name: `${project_manager.last_name} et al`,
-      action: LOG_ACTIONS.EDIT_GROUP,
-      details: changes.join("\n"),
-    });
+    await logUpdateGroup(ctx, args.instructorId, args.groupId, changes.join("\n"));
 
     return { success: true };
   },
@@ -679,15 +622,7 @@ export const deleteUser = mutation({
     }
 
     // Log the deletion
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "user",
-      affected_entity_id: args.userId,
-      affected_entity_name: `${user.first_name} ${user.last_name}`,
-      action: LOG_ACTIONS.DELETE_USER,
-      details: `Deleted user`,
-    });
+    await logDeleteUser(ctx, args.instructorId, args.userId);
 
     // Delete from users table
     await ctx.db.delete(args.userId);
@@ -771,15 +706,7 @@ export const deleteGroup = mutation({
     await ctx.db.delete(args.groupId);
 
     // Log the deletion
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "group",
-      affected_entity_id: args.groupId,
-      affected_entity_name: `${project_manager.last_name} et al`,
-      action: LOG_ACTIONS.DELETE_GROUP,
-      details: `Deleted group`,
-    });
+    await logDeleteGroup(ctx, args.instructorId, args.groupId);
 
     return { success: true };
   },
@@ -799,15 +726,7 @@ export const resetPassword = mutation({
     if (!user) throw new Error("User not found");
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "user",
-      affected_entity_id: args.userId,
-      affected_entity_name: `${user.first_name} ${user.last_name}`,
-      action: LOG_ACTIONS.RESET_PASSWORD,
-      details: "Password was reset",
-    });
+    await logResetPassword(ctx, args.instructorId, args.userId);
     return { success: true };
   },
 });
@@ -839,17 +758,6 @@ export const removeMemberFromGroup = mutation({
     if (studentEntry) {
       await ctx.db.delete(studentEntry._id);
     }
-
-    // Log the removal
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "user",
-      affected_entity_id: args.memberId,
-      affected_entity_name: `${member.first_name} ${member.last_name}`,
-      action: LOG_ACTIONS.REMOVE_MEMBER,
-      details: `Removed from group: ${group.capstone_title}`,
-    });
 
     return { success: true };
   },
@@ -895,17 +803,6 @@ export const addMemberToGroup = mutation({
         group_id: args.groupId,
       });
     }
-
-    // Log the addition
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_entity_type: "user",
-      affected_entity_id: args.memberId,
-      affected_entity_name: `${member.first_name} ${member.last_name}`,
-      action: LOG_ACTIONS.ADD_MEMBER,
-      details: `Added to group: ${group.capstone_title}`,
-    });
 
     return { success: true };
   },

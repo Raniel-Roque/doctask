@@ -14,6 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as fetch from "../fetch.js";
+import type * as log from "../log.js";
 import type * as mutations from "../mutations.js";
 import type * as utils_adviserCode from "../utils/adviserCode.js";
 
@@ -27,6 +28,7 @@ import type * as utils_adviserCode from "../utils/adviserCode.js";
  */
 declare const fullApi: ApiFromModules<{
   fetch: typeof fetch;
+  log: typeof log;
   mutations: typeof mutations;
   "utils/adviserCode": typeof utils_adviserCode;
 }>;

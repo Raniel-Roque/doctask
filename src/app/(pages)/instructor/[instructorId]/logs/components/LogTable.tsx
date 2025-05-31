@@ -2,6 +2,8 @@ import { format } from "date-fns";
 import { FaChevronLeft, FaChevronRight, FaSearch, FaSort, FaSortUp, FaSortDown, FaChevronDown } from "react-icons/fa";
 import { useState } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../../convex/_generated/api";
 
 // =========================================
 // Types
@@ -9,10 +11,8 @@ import { Id } from "../../../../../../../convex/_generated/dataModel";
 interface Log {
     _id: Id<"instructorLogs">;
     instructor_id: Id<"users">;
-    instructor_name: string;
     affected_entity_type: string;
     affected_entity_id: Id<"users"> | Id<"groupsTable">;
-    affected_entity_name: string;
     action: string;
     details: string;
     _creationTime: number;
@@ -31,13 +31,13 @@ type SortDirection = "asc" | "desc";
 const LOG_ACTIONS = {
     ALL: "All Actions",
     CREATE_USER: "Create User",
-    EDIT_USER: "Edit User",
-    DELETE_USER: "Delete User",
-    RESET_PASSWORD: "Reset Password",
-    ADD_MEMBER: "Add Member",
     CREATE_GROUP: "Create Group",
+    EDIT_USER: "Edit User",
+    EDIT_GROUP: "Edit Group",
+    DELETE_USER: "Delete User",
     DELETE_GROUP: "Delete Group",
-    EDIT_GROUP: "Edit Group"    
+    RESET_PASSWORD: "Reset Password"
+
 } as const;
 
 const ACTION_COLORS = {
@@ -56,10 +56,6 @@ const ACTION_COLORS = {
     [LOG_ACTIONS.RESET_PASSWORD]: {
         bg: 'bg-yellow-100',
         text: 'text-yellow-800'
-    },
-    [LOG_ACTIONS.ADD_MEMBER]: {
-        bg: 'bg-green-100',
-        text: 'text-green-800'
     },
     [LOG_ACTIONS.CREATE_GROUP]: {
         bg: 'bg-green-100',
@@ -98,6 +94,30 @@ export const LogTable = ({ logs }: LogTableProps) => {
     
     const [expandedColumns, setExpandedColumns] = useState<ExpandedColumns>({});
 
+    // Fetch all users to get names
+    const users = useQuery(api.fetch.getUsers) || [];
+    const groups = useQuery(api.fetch.getGroups) || [];
+
+    const getUserName = (userId: Id<"users">) => {
+        const user = users.find(u => u._id === userId);
+        return user ? `${user.first_name} ${user.last_name}` : 'Unknown User';
+    };
+
+    const getGroupName = (groupId: Id<"groupsTable">) => {
+        const group = groups.find(g => g._id === groupId);
+        if (!group) return 'Unknown Group';
+        const projectManager = users.find(u => u._id === group.project_manager_id);
+        return projectManager ? `${projectManager.last_name} et al` : 'Unknown Group';
+    };
+
+    const getEntityName = (log: Log) => {
+        if (log.affected_entity_type === 'user') {
+            return getUserName(log.affected_entity_id as Id<"users">);
+        } else {
+            return getGroupName(log.affected_entity_id as Id<"groupsTable">);
+        }
+    };
+
     const getSortIcon = (field: SortField) => {
         if (field !== sortField) return <FaSort />;
         return sortDirection === "asc" ? <FaSortUp /> : <FaSortDown />;
@@ -114,10 +134,12 @@ export const LogTable = ({ logs }: LogTableProps) => {
 
     const filterAndSortLogs = () => {
         const filtered = logs.filter((log) => {
+            const instructorName = getUserName(log.instructor_id);
+            const entityName = getEntityName(log);
             const matchesSearch = searchTerm === "" ||
-                log.instructor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                instructorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.affected_entity_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                entityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.instructor_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (log.affected_entity_id && log.affected_entity_id.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -301,11 +323,11 @@ export const LogTable = ({ logs }: LogTableProps) => {
                         <tbody>
                             {paginatedLogs.map((log, index) => (
                                 <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        {format(new Date(log._creationTime), "MMM dd, yyyy hh:mmaaa")}
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {format(new Date(log._creationTime), "MMM dd, yyyy hh:mm a")}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left">
-                                        {log.instructor_name}
+                                        {getUserName(log.instructor_id)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
@@ -313,7 +335,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left">
-                                        {log.affected_entity_name || '-'}
+                                        {getEntityName(log)}
                                     </td>
                                     <td className="px-6 py-4 text-left cursor-pointer whitespace-pre">
                                         <CollapsibleText 
@@ -323,7 +345,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                                     .join('\n')
                                             } 
                                             maxLength={20} 
-                                            column="details"
+                                            column="details" 
                                             logId={log._id}
                                         />
                                     </td>

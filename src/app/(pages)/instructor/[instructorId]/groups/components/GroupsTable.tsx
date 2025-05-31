@@ -5,9 +5,17 @@ import DeleteGroupConfirmation from './DeleteGroupConfirmation';
 
 // Capstone Title filter options
 const CAPSTONE_FILTERS = {
-  ALL: "All Groups",
+  ALL: "All Capstone Titles",
   WITH_TITLE: "With Capstone Title",
   WITHOUT_TITLE: "Without Capstone Title"
+} as const;
+
+const GRADE_FILTERS = {
+  ALL: "All Grades",
+  FAILED: "Failed",
+  REDEFENSE: "Redefense",
+  PASSED: "Passed",
+  NO_GRADE: "No Grade"
 } as const;
 
 const getGradeDisplay = (grade?: number): { text: string; color: string } => {
@@ -16,7 +24,7 @@ const getGradeDisplay = (grade?: number): { text: string; color: string } => {
     case 1:
       return { text: 'Failed', color: 'bg-red-100 text-red-800' };
     case 2:
-      return { text: 'Revision', color: 'bg-yellow-100 text-yellow-800' };
+      return { text: 'Redefense', color: 'bg-yellow-100 text-yellow-800' };
     case 3:
       return { text: 'Passed', color: 'bg-green-100 text-green-800' };
     default:
@@ -39,11 +47,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   const [searchTerm, setSearchTerm] = useState(""); // State for search term
   const [sortField, setSortField] = useState<SortField>("name"); // State for sorting
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc"); // State for sorting direction
-  const [adviserFilter, setAdviserFilter] = useState<string>(""); // State for adviser filter
+  const [adviserFilter, setAdviserFilter] = useState<string>("");
   const [showAdviserDropdown, setShowAdviserDropdown] = useState(false);
   const [adviserSearch, setAdviserSearch] = useState("");
   const [capstoneFilter, setCapstoneFilter] = useState<typeof CAPSTONE_FILTERS[keyof typeof CAPSTONE_FILTERS]>(CAPSTONE_FILTERS.ALL);
   const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
+  const [gradeFilter, setGradeFilter] = useState<typeof GRADE_FILTERS[keyof typeof GRADE_FILTERS]>(GRADE_FILTERS.ALL);
+  const [showGradeDropdown, setShowGradeDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
 
@@ -76,7 +86,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   const uniqueAdvisers = Array.from(new Set(
     groups
       .filter(group => group.adviser)
-      .map(group => getFullName(group.adviser!))
+      .map(group => group.adviser!)
+      .map(adviser => getFullName(adviser))
   )).sort();
 
   // Update the filtering logic
@@ -95,9 +106,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
       memberNames.toLowerCase().includes(term) ||
       (group.capstone_title?.toLowerCase().includes(term) || false)
     );
+
+    const { text: gradeText } = getGradeDisplay(group.grade);
+    const matchesGrade = gradeFilter === GRADE_FILTERS.ALL || gradeText === gradeFilter;
     
     return (
       matchesSearch &&
+      matchesGrade &&
       (adviserFilter === "" || 
        (adviserFilter === "No Adviser" && !group.adviser) ||
        (group.adviser && getFullName(group.adviser) === adviserFilter)) &&
@@ -161,9 +176,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
             onClick={() => {
               setShowCapstoneDropdown(!showCapstoneDropdown);
               setShowAdviserDropdown(false);
+              setShowGradeDropdown(false);
             }}
           >
-            {capstoneFilter}
+            {capstoneFilter === CAPSTONE_FILTERS.ALL ? "All Capstone Titles" : capstoneFilter}
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
               <FaChevronDown color="#6B7280" />
             </div>
@@ -196,6 +212,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
             onClick={() => {
               setShowAdviserDropdown(!showAdviserDropdown);
               setShowCapstoneDropdown(false);
+              setShowGradeDropdown(false);
             }}
           >
             {adviserFilter || "All Advisers"}
@@ -254,6 +271,42 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                       }}
                     >
                       {adviser}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Grade Filter */}
+        <div className="relative">
+          <div 
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10 cursor-pointer min-w-[150px]"
+            onClick={() => {
+              setShowGradeDropdown(!showGradeDropdown);
+              setShowCapstoneDropdown(false);
+              setShowAdviserDropdown(false);
+            }}
+          >
+            {gradeFilter}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <FaChevronDown color="#6B7280" />
+            </div>
+          </div>
+          
+          {showGradeDropdown && (
+            <div className="absolute z-10 w-[200px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+              <div className="max-h-48 overflow-y-auto">
+                {Object.values(GRADE_FILTERS).map((filter) => (
+                  <div
+                    key={filter}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setGradeFilter(filter);
+                      setShowGradeDropdown(false);
+                    }}
+                  >
+                    {filter}
                     </div>
                   ))}
               </div>

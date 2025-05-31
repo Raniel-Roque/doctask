@@ -74,12 +74,10 @@ export default defineSchema({
   instructorLogs: defineTable({
     // Log Identification
     instructor_id: v.id("users"),
-    instructor_name: v.string(), // Full name of instructor who performed the action
     
     // Affected Entity Information
     affected_entity_type: v.string(), // "user" or "group"
     affected_entity_id: v.union(v.id("users"), v.id("groupsTable")), // ID of affected entity
-    affected_entity_name: v.string(), // Name of affected entity (user name or group title)
     
     // Log Details
     action: v.string(), 
