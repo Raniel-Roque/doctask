@@ -14,9 +14,10 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as fetch from "../fetch.js";
-import type * as log from "../log.js";
 import type * as mutations from "../mutations.js";
 import type * as utils_adviserCode from "../utils/adviserCode.js";
+import type * as utils_backup from "../utils/backup.js";
+import type * as utils_log from "../utils/log.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -28,9 +29,10 @@ import type * as utils_adviserCode from "../utils/adviserCode.js";
  */
 declare const fullApi: ApiFromModules<{
   fetch: typeof fetch;
-  log: typeof log;
   mutations: typeof mutations;
   "utils/adviserCode": typeof utils_adviserCode;
+  "utils/backup": typeof utils_backup;
+  "utils/log": typeof utils_log;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

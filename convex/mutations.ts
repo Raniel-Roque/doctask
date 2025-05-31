@@ -1,7 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { generateUniqueAdviserCode } from "./utils/adviserCode";
-import { logCreateUser, logUpdateUser, logDeleteUser, logResetPassword, logCreateGroup, logUpdateGroup, logDeleteGroup } from "./log";
+import { logCreateUser, logUpdateUser, logDeleteUser, logResetPassword, logCreateGroup, logUpdateGroup, logDeleteGroup } from "./utils/log";
 
 // =========================================
 // CREATE OPERATIONS
@@ -805,5 +805,60 @@ export const addMemberToGroup = mutation({
     }
 
     return { success: true };
+  },
+});
+
+// =========================================
+// BACKUP OPERATIONS
+// =========================================
+
+export const downloadConvexBackup = mutation({
+  args: {
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+
+    // Fetch all data from each table
+    const users = await ctx.db.query("users").collect();
+    const groups = await ctx.db.query("groupsTable").collect();
+    const students = await ctx.db.query("studentsTable").collect();
+    const advisers = await ctx.db.query("advisersTable").collect();
+    const logs = await ctx.db.query("instructorLogs").collect();
+
+    // Create backup object with timestamp
+    const backup = {
+      timestamp: new Date().toISOString(),
+      version: "1.0",
+      tables: {
+        users,
+        groups,
+        students,
+        advisers,
+        logs
+      }
+    };
+
+    return backup;
+  },
+});
+
+export const downloadClerkBackup = mutation({
+  args: {
+    instructorId: v.id("users"),
+    clerkApiKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+
+    // Import the downloadClerkBackup function
+    const { downloadClerkBackup: downloadClerk } = await import("./utils/backup");
+    
+    // Download Clerk backup
+    const backup = await downloadClerk(args.clerkApiKey);
+    
+    return backup;
   },
 }); 
