@@ -16,9 +16,9 @@ interface LogQueryResult {
     _id: Id<"instructorLogs">;
     instructor_id: Id<"users">;
     instructor_name: string;
-    affected_user_id: Id<"users"> | null;
-    affected_user_name: string;
-    affected_user_email: string;
+    affected_entity_type: string;
+    affected_entity_id: Id<"users"> | Id<"groupsTable">;
+    affected_entity_name: string;
     action: string;
     details: string;
     _creationTime: number;

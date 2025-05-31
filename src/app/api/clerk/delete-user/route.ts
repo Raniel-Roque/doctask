@@ -66,7 +66,9 @@ export async function POST(request: Request) {
     try {
       await convex.mutation(api.mutations.deleteUser, {
         userId: convexUser._id,
-        instructorId: instructorId
+        instructorId: instructorId,
+        clerkId: clerkId,
+        clerkApiKey: process.env.CLERK_API_KEY!
       });
     } catch (error) {
       // If Convex deletion fails, we can't restore the Clerk user

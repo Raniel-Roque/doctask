@@ -1,6 +1,6 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-import { generateUniqueAdviserCode, validateAdviserCode } from "./utils/adviserCode";
+import { validateAdviserCode } from "./utils/adviserCode";
 
 // =========================================
 // User Queries
@@ -106,7 +106,10 @@ export const getAdviserByCode = query({
 
 export const getLogs = query({
   handler: async (ctx) => {
-    const logs = await ctx.db.query("instructorLogs").collect();
+    const logs = await ctx.db
+      .query("instructorLogs")
+      .order("desc")
+      .collect();
     return logs;
   },
 });

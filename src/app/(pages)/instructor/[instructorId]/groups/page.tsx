@@ -5,7 +5,7 @@ import { useState, use } from "react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
-import { User, Group } from "./types";
+import { User, Group } from "./components/types";
 
 // Import components
 import GroupsTable from "./components/GroupsTable";
@@ -67,6 +67,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     // Handlers
     const createGroup = useMutation(api.mutations.createGroup);
     const updateGroup = useMutation(api.mutations.updateGroup);
+    const deleteGroup = useMutation(api.mutations.deleteGroup);
 
     const handleAddGroup = async (formData: {
       projectManager: string;
@@ -161,6 +162,37 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
       }
     };
 
+    const handleDeleteGroup = async (group: Group) => {
+      try {
+        setIsSubmitting(true);
+        setNetworkError(null);
+        // Call the mutation
+        await deleteGroup({
+          groupId: group._id,
+          instructorId: instructorId as Id<"users">,
+        });
+      } catch (error) {
+        // Handle specific error cases
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            setNetworkError("Request timed out. Please try again.");
+          } else if (error.message.includes('Network error')) {
+            setNetworkError("Network error - please check your internet connection");
+          } else if (error.message.includes('not found')) {
+            setNetworkError("Group could not be found");
+          } else if (error.message.includes('permission denied')) {
+            setNetworkError("You don't have permission to delete this group");
+          } else {
+            setNetworkError("Failed to delete group. Please try again.");
+          }
+        } else {
+          setNetworkError("An unexpected error occurred. Please try again.");
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar instructorId={instructorId} />
@@ -174,8 +206,8 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
                 <GroupsTable
                     groups={processedGroups}
                     onEdit={(group) => setIsEditingGroup(group)}
-                    onDelete={() => {}}
-                  onAdd={() => setIsAddingGroup(true)}
+                    onDelete={handleDeleteGroup}
+                    onAdd={() => setIsAddingGroup(true)}
                 />
 
                 {/* Add Group Form */}

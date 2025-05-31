@@ -14,28 +14,217 @@ const LOG_ACTIONS = {
     EDIT_GROUP: "Edit Group"
 } as const;
 
-export const resetPassword = mutation({
+// =========================================
+// CREATE OPERATIONS
+// =========================================
+
+export const createUser = mutation({
   args: {
-    userId: v.id("users"),
+    clerk_id: v.string(),
+    first_name: v.string(),
+    last_name: v.string(),
+    email: v.string(),
+    role: v.number(),
+    middle_name: v.optional(v.string()),
+    instructorId: v.id("users"),
+    subrole: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(args.email)) {
+      throw new Error("Invalid email format");
+    }
+    // Get instructor first to fail fast if not found
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+    // Check if user already exists in Convex
+    const existingUser = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+    if (existingUser) {
+      // If user exists but doesn't have a clerk_id, update it
+      if (!existingUser.clerk_id) {
+        await ctx.db.patch(existingUser._id, {
+          clerk_id: args.clerk_id,
+          email_verified: false
+        });
+        return { success: true, userId: existingUser._id };
+      }
+      // If user exists with a different clerk_id, throw error
+      if (existingUser.clerk_id !== args.clerk_id) {
+        throw new Error("Email already registered. Please choose another email.");
+      }
+      // If user exists with same clerk_id, return success
+      return { success: true, userId: existingUser._id };
+    }
+    // Create new user
+    const userId = await ctx.db.insert("users", {
+      clerk_id: args.clerk_id,
+      email: args.email,
+      email_verified: false,
+      first_name: args.first_name,
+      middle_name: args.middle_name,
+      last_name: args.last_name,
+      role: args.role,
+      subrole: args.subrole,
+    });
+
+    // If the user is a student (role 0), create an entry in studentsTable
+    if (args.role === 0) {
+      await ctx.db.insert("studentsTable", {
+        user_id: userId,
+        group_id: null, // No group assigned yet
+      });
+    }
+
+    // If the user is an adviser, generate a code
+    if (args.role === 1) {
+      try {
+        const code = await generateUniqueAdviserCode(ctx);
+        await ctx.db.insert("advisersTable", {
+          adviser_id: userId,
+          code,
+          group_ids: [],
+        });
+      } catch (error) {
+        console.error("Failed to generate adviser code:", error);
+        // Don't throw here - we still want the user to be created even if code generation fails
+      }
+    }
+    // Log the user creation
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+      affected_entity_type: "user",
+      affected_entity_id: userId,
+      affected_entity_name: `${args.first_name} ${args.last_name}`,
+      action: LOG_ACTIONS.CREATE_USER,
+      details: `Created new ${args.role === 1 ? "adviser" : "student"}`,
+    });
+    return { success: true, userId };
+  },
+});
+
+export const createAdviserCode = mutation({
+  args: {
+    adviserId: v.id("users"),
     instructorId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error("User not found");
+    // Verify the user is an adviser
+    const adviser = await ctx.db.get(args.adviserId);
+    if (!adviser) throw new Error("Adviser not found");
+    if (adviser.role !== 1) throw new Error("User is not an adviser");
+    // Check if adviser already has a code
+    const existingCode = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+    if (existingCode) {
+      throw new Error("Adviser already has a code");
+    }
+    // Generate unique code
+    const code = await generateUniqueAdviserCode(ctx);
+    // Create adviser code record
+    await ctx.db.insert("advisersTable", {
+      adviser_id: args.adviserId,
+      code,
+      group_ids: [],
+    });
+    // Log the code creation
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
     await ctx.db.insert("instructorLogs", {
       instructor_id: args.instructorId,
       instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: args.userId,
-      affected_user_name: `${user.first_name} ${user.last_name}`,
-      affected_user_email: user.email,
-      action: LOG_ACTIONS.RESET_PASSWORD,
-      details: "Password was reset",
+      affected_entity_type: "user",
+      affected_entity_id: args.adviserId,
+      affected_entity_name: `${adviser.first_name} ${adviser.last_name}`,
+      action: "Create Adviser Code",
+      details: `Generated adviser code: ${code}`,
     });
-    return { success: true };
+    return { success: true, code };
   },
 });
+
+export const createGroup = mutation({
+  args: {
+    project_manager_id: v.id("users"),
+    member_ids: v.array(v.id("users")),
+    adviser_id: v.optional(v.id("users")),
+    capstone_title: v.string(),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+    const project_manager = await ctx.db.get(args.project_manager_id);
+    if (!project_manager) throw new Error("Project manager not found");
+    if (args.adviser_id) {
+      const adviser = await ctx.db.get(args.adviser_id);
+      if (!adviser) throw new Error("Adviser not found");
+    }
+    // Create the group
+    const groupId = await ctx.db.insert("groupsTable", {
+      project_manager_id: args.project_manager_id,
+      member_ids: args.member_ids,
+      adviser_id: args.adviser_id,
+      capstone_title: args.capstone_title,
+    });
+
+    // Create student table entries for project manager and all members
+    const allMembers = [args.project_manager_id, ...args.member_ids];
+    for (const memberId of allMembers) {
+      const existingEntry = await ctx.db
+        .query("studentsTable")
+        .withIndex("by_user", (q) => q.eq("user_id", memberId))
+        .first();
+
+      if (existingEntry) {
+        await ctx.db.patch(existingEntry._id, {
+          group_id: groupId,
+        });
+      } else {
+        await ctx.db.insert("studentsTable", {
+          user_id: memberId,
+          group_id: groupId,
+        });
+      }
+    }
+
+    // Update adviser's group_ids if exists
+    if (args.adviser_id) {
+      const adviserCode = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviser_id!))
+        .first();
+      if (adviserCode) {
+        await ctx.db.patch(adviserCode._id, {
+          group_ids: [...adviserCode.group_ids, groupId],
+        });
+      }
+    }
+
+    // Log the group creation
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+      affected_entity_type: "group",
+      affected_entity_id: groupId,
+      affected_entity_name: `${project_manager.last_name} et al`,
+      action: LOG_ACTIONS.CREATE_GROUP,
+      details: `Created new group with ${allMembers.length} members`,
+    });
+
+    return { success: true, groupId };
+  },
+});
+
+// =========================================
+// UPDATE OPERATIONS
+// =========================================
 
 export const updateUser = mutation({
   args: {
@@ -184,9 +373,9 @@ export const updateUser = mutation({
       await ctx.db.insert("instructorLogs", {
         instructor_id: args.instructorId,
         instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-        affected_user_id: args.userId,
-        affected_user_name: `${user.first_name} ${user.last_name}`,
-        affected_user_email: user.email,
+        affected_entity_type: "user",
+        affected_entity_id: args.userId,
+        affected_entity_name: `${user.first_name} ${user.last_name}`,
         action: LOG_ACTIONS.EDIT_USER,
         details: changes.join("\n"),
       });
@@ -195,10 +384,209 @@ export const updateUser = mutation({
   },
 });
 
+export const updateAdviserGroups = mutation({
+  args: {
+    adviserId: v.id("users"),
+    groupIds: v.array(v.id("groupsTable")),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Verify the adviser code exists
+    const adviserCode = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+    if (!adviserCode) {
+      throw new Error("Adviser code not found");
+    }
+    // Update the groups
+    await ctx.db.patch(adviserCode._id, {
+      group_ids: args.groupIds,
+    });
+    // Log the update
+    const adviser = await ctx.db.get(args.adviserId);
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!adviser || !instructor) throw new Error("User not found");
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+      affected_entity_type: "user",
+      affected_entity_id: args.adviserId,
+      affected_entity_name: `${adviser.first_name} ${adviser.last_name}`,
+      action: "Update Adviser Groups",
+      details: `Updated groups for adviser code: ${adviserCode.code}`,
+    });
+    return { success: true };
+  },
+});
+
+export const updateGroup = mutation({
+  args: {
+    groupId: v.id("groupsTable"),
+    project_manager_id: v.id("users"),
+    member_ids: v.array(v.id("users")),
+    adviser_id: v.optional(v.id("users")),
+    capstone_title: v.string(),
+    grade: v.number(),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const group = await ctx.db.get(args.groupId);
+    if (!group) throw new Error("Group not found");
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+    const project_manager = await ctx.db.get(args.project_manager_id);
+    if (!project_manager) throw new Error("Project manager not found");
+    if (args.adviser_id) {
+      const adviser = await ctx.db.get(args.adviser_id);
+      if (!adviser) throw new Error("Adviser not found");
+    }
+
+    // Get old members for cleanup
+    const oldMembers = [group.project_manager_id, ...group.member_ids];
+    const newMembers = [args.project_manager_id, ...args.member_ids];
+
+    // Remove old members from studentsTable if they're no longer in the group
+    for (const memberId of oldMembers) {
+      if (!newMembers.includes(memberId)) {
+        const studentEntry = await ctx.db
+          .query("studentsTable")
+          .withIndex("by_user", (q) => q.eq("user_id", memberId))
+          .first();
+        if (studentEntry) {
+          await ctx.db.patch(studentEntry._id, { group_id: null });
+        }
+      }
+    }
+
+    // Add new members to studentsTable if they weren't in the group before
+    for (const memberId of newMembers) {
+      if (!oldMembers.includes(memberId)) {
+        const existingEntry = await ctx.db
+          .query("studentsTable")
+          .withIndex("by_user", (q) => q.eq("user_id", memberId))
+          .first();
+
+        if (existingEntry) {
+          await ctx.db.patch(existingEntry._id, {
+            group_id: args.groupId,
+          });
+        } else {
+          await ctx.db.insert("studentsTable", {
+            user_id: memberId,
+            group_id: args.groupId,
+          });
+        }
+      }
+    }
+
+    // Handle adviser changes
+    if (group.adviser_id !== args.adviser_id) {
+      // Remove from old adviser's group_ids
+      if (group.adviser_id) {
+        const oldAdviserCode = await ctx.db
+          .query("advisersTable")
+          .withIndex("by_adviser", (q) => q.eq("adviser_id", group.adviser_id!))
+          .first();
+        if (oldAdviserCode) {
+          await ctx.db.patch(oldAdviserCode._id, {
+            group_ids: oldAdviserCode.group_ids.filter(id => id !== args.groupId),
+          });
+        }
+      }
+
+      // Add to new adviser's group_ids
+      if (args.adviser_id) {
+        const newAdviserCode = await ctx.db
+          .query("advisersTable")
+          .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviser_id!))
+          .first();
+        if (newAdviserCode) {
+          await ctx.db.patch(newAdviserCode._id, {
+            group_ids: [...newAdviserCode.group_ids, args.groupId],
+          });
+        }
+      }
+    }
+
+    // Update the group
+    await ctx.db.patch(args.groupId, {
+      project_manager_id: args.project_manager_id,
+      member_ids: args.member_ids,
+      adviser_id: args.adviser_id ? args.adviser_id : undefined,
+      capstone_title: args.capstone_title,
+      grade: args.grade,
+    });
+
+    // Create human-readable details for edited fields
+    const changes = [];
+
+    // Check capstone title changes
+    if (args.capstone_title !== group.capstone_title) {
+      changes.push(`Capstone Title: ${group.capstone_title || 'None'} → ${args.capstone_title}`);
+    }
+
+    // Check member changes
+    const removedMembers = oldMembers.filter(id => !newMembers.includes(id));
+    const addedMembers = newMembers.filter(id => !oldMembers.includes(id));
+    
+    if (removedMembers.length > 0) {
+      changes.push(`Members: Removed ${removedMembers.length} Member${removedMembers.length > 1 ? 's' : ''}`);
+    }
+    if (addedMembers.length > 0) {
+      changes.push(`Members: Added ${addedMembers.length} Member${addedMembers.length > 1 ? 's' : ''}`);
+    }
+
+    // Check adviser changes
+    if (group.adviser_id !== args.adviser_id) {
+      if (!group.adviser_id && args.adviser_id) {
+        changes.push('Adviser: Added');
+      } else if (group.adviser_id && !args.adviser_id) {
+        changes.push('Adviser: Removed');
+      } else {
+        changes.push('Adviser: Changed');
+      }
+    }
+
+    // Check grade changes
+    if (args.grade !== group.grade) {
+      const gradeMap: Record<number, string> = {
+        0: 'Fail',
+        1: 'Passed',
+        2: 'Good',
+        3: 'Very Good',
+        4: 'Excellent'
+      };
+      const oldGrade = group.grade !== undefined ? gradeMap[group.grade] : 'None';
+      const newGrade = gradeMap[args.grade];
+      changes.push(`Grade: ${oldGrade} → ${newGrade}`);
+    }
+
+    // Log the update
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+      affected_entity_type: "group",
+      affected_entity_id: args.groupId,
+      affected_entity_name: `${project_manager.last_name} et al`,
+      action: LOG_ACTIONS.EDIT_GROUP,
+      details: changes.join("\n"),
+    });
+
+    return { success: true };
+  },
+});
+
+// =========================================
+// DELETE OPERATIONS
+// =========================================
+
 export const deleteUser = mutation({
   args: {
     userId: v.id("users"),
     instructorId: v.id("users"),
+    clerkId: v.string(),
+    clerkApiKey: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -294,182 +682,28 @@ export const deleteUser = mutation({
     await ctx.db.insert("instructorLogs", {
       instructor_id: args.instructorId,
       instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: args.userId,
-      affected_user_name: `${user.first_name} ${user.last_name}`,
-      affected_user_email: user.email,
+      affected_entity_type: "user",
+      affected_entity_id: args.userId,
+      affected_entity_name: `${user.first_name} ${user.last_name}`,
       action: LOG_ACTIONS.DELETE_USER,
       details: `Deleted user`,
     });
 
     // Delete from users table
     await ctx.db.delete(args.userId);
-    return { success: true };
-  },
-});
 
-export const createUser = mutation({
-  args: {
-    clerk_id: v.string(),
-    first_name: v.string(),
-    last_name: v.string(),
-    email: v.string(),
-    role: v.number(),
-    middle_name: v.optional(v.string()),
-    instructorId: v.id("users"),
-    subrole: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(args.email)) {
-      throw new Error("Invalid email format");
-    }
-    // Get instructor first to fail fast if not found
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
-    // Check if user already exists in Convex
-    const existingUser = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
-      .first();
-    if (existingUser) {
-      // If user exists but doesn't have a clerk_id, update it
-      if (!existingUser.clerk_id) {
-        await ctx.db.patch(existingUser._id, {
-          clerk_id: args.clerk_id,
-          email_verified: false
-        });
-        return { success: true, userId: existingUser._id };
-      }
-      // If user exists with a different clerk_id, throw error
-      if (existingUser.clerk_id !== args.clerk_id) {
-        throw new Error("Email already registered. Please choose another email.");
-      }
-      // If user exists with same clerk_id, return success
-      return { success: true, userId: existingUser._id };
-    }
-    // Create new user
-    const userId = await ctx.db.insert("users", {
-      clerk_id: args.clerk_id,
-      email: args.email,
-      email_verified: false,
-      first_name: args.first_name,
-      middle_name: args.middle_name,
-      last_name: args.last_name,
-      role: args.role,
-      subrole: args.subrole,
+    // Delete from Clerk
+    const response = await fetch(`https://api.clerk.dev/v1/users/${args.clerkId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${args.clerkApiKey}`,
+        'Content-Type': 'application/json',
+      },
     });
-
-    // If the user is a student (role 0), create an entry in studentsTable
-    if (args.role === 0) {
-      await ctx.db.insert("studentsTable", {
-        user_id: userId,
-        group_id: null, // No group assigned yet
-      });
+    if (!response.ok) {
+      throw new Error("Clerk deletion failed: " + (await response.text()));
     }
 
-    // If the user is an adviser, generate a code
-    if (args.role === 1) {
-      try {
-        const code = await generateUniqueAdviserCode(ctx);
-        await ctx.db.insert("advisersTable", {
-          adviser_id: userId,
-          code,
-          group_ids: [],
-        });
-      } catch (error) {
-        console.error("Failed to generate adviser code:", error);
-        // Don't throw here - we still want the user to be created even if code generation fails
-      }
-    }
-    // Log the user creation
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: userId,
-      affected_user_name: `${args.first_name} ${args.last_name}`,
-      affected_user_email: args.email,
-      action: LOG_ACTIONS.CREATE_USER,
-      details: `Created new ${args.role === 1 ? "adviser" : "student"}`,
-    });
-    return { success: true, userId };
-  },
-});
-
-export const createAdviserCode = mutation({
-  args: {
-    adviserId: v.id("users"),
-    instructorId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    // Verify the user is an adviser
-    const adviser = await ctx.db.get(args.adviserId);
-    if (!adviser) throw new Error("Adviser not found");
-    if (adviser.role !== 1) throw new Error("User is not an adviser");
-    // Check if adviser already has a code
-    const existingCode = await ctx.db
-      .query("advisersTable")
-      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
-      .first();
-    if (existingCode) {
-      throw new Error("Adviser already has a code");
-    }
-    // Generate unique code
-    const code = await generateUniqueAdviserCode(ctx);
-    // Create adviser code record
-    await ctx.db.insert("advisersTable", {
-      adviser_id: args.adviserId,
-      code,
-      group_ids: [],
-    });
-    // Log the code creation
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: args.adviserId,
-      affected_user_name: `${adviser.first_name} ${adviser.last_name}`,
-      affected_user_email: adviser.email,
-      action: "Create Adviser Code",
-      details: `Generated adviser code: ${code}`,
-    });
-    return { success: true, code };
-  },
-});
-
-export const updateAdviserGroups = mutation({
-  args: {
-    adviserId: v.id("users"),
-    groupIds: v.array(v.id("groupsTable")),
-    instructorId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    // Verify the adviser code exists
-    const adviserCode = await ctx.db
-      .query("advisersTable")
-      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
-      .first();
-    if (!adviserCode) {
-      throw new Error("Adviser code not found");
-    }
-    // Update the groups
-    await ctx.db.patch(adviserCode._id, {
-      group_ids: args.groupIds,
-    });
-    // Log the update
-    const adviser = await ctx.db.get(args.adviserId);
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!adviser || !instructor) throw new Error("User not found");
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: args.adviserId,
-      affected_user_name: `${adviser.first_name} ${adviser.last_name}`,
-      affected_user_email: adviser.email,
-      action: "Update Adviser Groups",
-      details: `Updated groups for adviser code: ${adviserCode.code}`,
-    });
     return { success: true };
   },
 });
@@ -493,76 +727,88 @@ export const deleteAdviserCode = mutation({
   },
 });
 
-export const createGroup = mutation({
+export const deleteGroup = mutation({
   args: {
-    project_manager_id: v.id("users"),
-    member_ids: v.array(v.id("users")),
-    adviser_id: v.optional(v.id("users")),
-    capstone_title: v.string(),
+    groupId: v.id("groupsTable"),
     instructorId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    const group = await ctx.db.get(args.groupId);
+    if (!group) throw new Error("Group not found");
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
-    const project_manager = await ctx.db.get(args.project_manager_id);
+    const project_manager = await ctx.db.get(group.project_manager_id);
     if (!project_manager) throw new Error("Project manager not found");
-    if (args.adviser_id) {
-      const adviser = await ctx.db.get(args.adviser_id);
-      if (!adviser) throw new Error("Adviser not found");
-    }
-    // Create the group
-    const groupId = await ctx.db.insert("groupsTable", {
-      project_manager_id: args.project_manager_id,
-      member_ids: args.member_ids,
-      adviser_id: args.adviser_id,
-      capstone_title: args.capstone_title,
-    });
 
-    // Create student table entries for project manager and all members
-    const allMembers = [args.project_manager_id, ...args.member_ids];
+    // Get all members including project manager
+    const allMembers = [group.project_manager_id, ...group.member_ids];
+
+    // Set group_id to null for all members in studentsTable
     for (const memberId of allMembers) {
-      const existingEntry = await ctx.db
+      const studentEntry = await ctx.db
         .query("studentsTable")
         .withIndex("by_user", (q) => q.eq("user_id", memberId))
         .first();
-
-      if (existingEntry) {
-        await ctx.db.patch(existingEntry._id, {
-          group_id: groupId,
-        });
-      } else {
-        await ctx.db.insert("studentsTable", {
-          user_id: memberId,
-          group_id: groupId,
-        });
+      if (studentEntry) {
+        await ctx.db.patch(studentEntry._id, { group_id: null });
       }
     }
 
     // Update adviser's group_ids if exists
-    if (args.adviser_id) {
+    if (group.adviser_id) {
       const adviserCode = await ctx.db
         .query("advisersTable")
-        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviser_id!))
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", group.adviser_id!))
         .first();
       if (adviserCode) {
         await ctx.db.patch(adviserCode._id, {
-          group_ids: [...adviserCode.group_ids, groupId],
+          group_ids: adviserCode.group_ids.filter(id => id !== args.groupId),
         });
       }
     }
 
-    // Log the group creation
+    // Delete the group
+    await ctx.db.delete(args.groupId);
+
+    // Log the deletion
     await ctx.db.insert("instructorLogs", {
       instructor_id: args.instructorId,
       instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: args.project_manager_id,
-      affected_user_name: `${project_manager.first_name} ${project_manager.last_name}`,
-      affected_user_email: project_manager.email,
-      action: LOG_ACTIONS.CREATE_GROUP,
-      details: `Created group: ${args.capstone_title}`,
+      affected_entity_type: "group",
+      affected_entity_id: args.groupId,
+      affected_entity_name: `${project_manager.last_name} et al`,
+      action: LOG_ACTIONS.DELETE_GROUP,
+      details: `Deleted group`,
     });
 
-    return { success: true, groupId };
+    return { success: true };
+  },
+});
+
+// =========================================
+// MISCELLANEOUS OPERATIONS
+// =========================================
+
+export const resetPassword = mutation({
+  args: {
+    userId: v.id("users"),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+    await ctx.db.insert("instructorLogs", {
+      instructor_id: args.instructorId,
+      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
+      affected_entity_type: "user",
+      affected_entity_id: args.userId,
+      affected_entity_name: `${user.first_name} ${user.last_name}`,
+      action: LOG_ACTIONS.RESET_PASSWORD,
+      details: "Password was reset",
+    });
+    return { success: true };
   },
 });
 
@@ -598,9 +844,9 @@ export const removeMemberFromGroup = mutation({
     await ctx.db.insert("instructorLogs", {
       instructor_id: args.instructorId,
       instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: args.memberId,
-      affected_user_name: `${member.first_name} ${member.last_name}`,
-      affected_user_email: member.email,
+      affected_entity_type: "user",
+      affected_entity_id: args.memberId,
+      affected_entity_name: `${member.first_name} ${member.last_name}`,
       action: LOG_ACTIONS.REMOVE_MEMBER,
       details: `Removed from group: ${group.capstone_title}`,
     });
@@ -654,180 +900,11 @@ export const addMemberToGroup = mutation({
     await ctx.db.insert("instructorLogs", {
       instructor_id: args.instructorId,
       instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: args.memberId,
-      affected_user_name: `${member.first_name} ${member.last_name}`,
-      affected_user_email: member.email,
+      affected_entity_type: "user",
+      affected_entity_id: args.memberId,
+      affected_entity_name: `${member.first_name} ${member.last_name}`,
       action: LOG_ACTIONS.ADD_MEMBER,
       details: `Added to group: ${group.capstone_title}`,
-    });
-
-    return { success: true };
-  },
-});
-
-export const deleteGroup = mutation({
-  args: {
-    groupId: v.id("groupsTable"),
-    instructorId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const group = await ctx.db.get(args.groupId);
-    if (!group) throw new Error("Group not found");
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
-
-    // Get all members including project manager
-    const allMembers = [group.project_manager_id, ...group.member_ids];
-
-    // Remove all members from studentsTable
-    for (const memberId of allMembers) {
-      const studentEntry = await ctx.db
-        .query("studentsTable")
-        .withIndex("by_user", (q) => q.eq("user_id", memberId))
-        .first();
-      if (studentEntry) {
-        await ctx.db.delete(studentEntry._id);
-      }
-    }
-
-    // Update adviser's group_ids if exists
-    if (group.adviser_id) {
-      const adviserCode = await ctx.db
-        .query("advisersTable")
-        .withIndex("by_adviser", (q) => q.eq("adviser_id", group.adviser_id!))
-        .first();
-      if (adviserCode) {
-        await ctx.db.patch(adviserCode._id, {
-          group_ids: adviserCode.group_ids.filter(id => id !== args.groupId),
-        });
-      }
-    }
-
-    // Delete the group
-    await ctx.db.delete(args.groupId);
-
-    // Log the deletion
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: group.project_manager_id,
-      affected_user_name: "Group Deletion",
-      affected_user_email: "-",
-      action: LOG_ACTIONS.DELETE_GROUP,
-      details: `Deleted group: ${group.capstone_title}`,
-    });
-
-    return { success: true };
-  },
-});
-
-export const updateGroup = mutation({
-  args: {
-    groupId: v.id("groupsTable"),
-    project_manager_id: v.id("users"),
-    member_ids: v.array(v.id("users")),
-    adviser_id: v.optional(v.id("users")),
-    capstone_title: v.string(),
-    grade: v.number(),
-    instructorId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const group = await ctx.db.get(args.groupId);
-    if (!group) throw new Error("Group not found");
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
-    const project_manager = await ctx.db.get(args.project_manager_id);
-    if (!project_manager) throw new Error("Project manager not found");
-    if (args.adviser_id) {
-      const adviser = await ctx.db.get(args.adviser_id);
-      if (!adviser) throw new Error("Adviser not found");
-    }
-
-    // Get old members for cleanup
-    const oldMembers = [group.project_manager_id, ...group.member_ids];
-    const newMembers = [args.project_manager_id, ...args.member_ids];
-
-    // Remove old members from studentsTable if they're no longer in the group
-    for (const memberId of oldMembers) {
-      if (!newMembers.includes(memberId)) {
-        const studentEntry = await ctx.db
-          .query("studentsTable")
-          .withIndex("by_user", (q) => q.eq("user_id", memberId))
-          .first();
-        if (studentEntry) {
-          await ctx.db.delete(studentEntry._id);
-        }
-      }
-    }
-
-    // Add new members to studentsTable if they weren't in the group before
-    for (const memberId of newMembers) {
-      if (!oldMembers.includes(memberId)) {
-        const existingEntry = await ctx.db
-          .query("studentsTable")
-          .withIndex("by_user", (q) => q.eq("user_id", memberId))
-          .first();
-
-        if (existingEntry) {
-          await ctx.db.patch(existingEntry._id, {
-            group_id: args.groupId,
-          });
-        } else {
-          await ctx.db.insert("studentsTable", {
-            user_id: memberId,
-            group_id: args.groupId,
-          });
-        }
-      }
-    }
-
-    // Handle adviser changes
-    if (group.adviser_id !== args.adviser_id) {
-      // Remove from old adviser's group_ids
-      if (group.adviser_id) {
-        const oldAdviserCode = await ctx.db
-          .query("advisersTable")
-          .withIndex("by_adviser", (q) => q.eq("adviser_id", group.adviser_id!))
-          .first();
-        if (oldAdviserCode) {
-          await ctx.db.patch(oldAdviserCode._id, {
-            group_ids: oldAdviserCode.group_ids.filter(id => id !== args.groupId),
-          });
-        }
-      }
-
-      // Add to new adviser's group_ids
-      if (args.adviser_id) {
-        const newAdviserCode = await ctx.db
-          .query("advisersTable")
-          .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviser_id!))
-          .first();
-        if (newAdviserCode) {
-          await ctx.db.patch(newAdviserCode._id, {
-            group_ids: [...newAdviserCode.group_ids, args.groupId],
-          });
-        }
-      }
-    }
-
-    // Update the group
-    await ctx.db.patch(args.groupId, {
-      project_manager_id: args.project_manager_id,
-      member_ids: args.member_ids,
-      adviser_id: args.adviser_id ? args.adviser_id : undefined,
-      capstone_title: args.capstone_title,
-      grade: args.grade,
-    });
-
-    // Log the update
-    await ctx.db.insert("instructorLogs", {
-      instructor_id: args.instructorId,
-      instructor_name: `${instructor.first_name} ${instructor.last_name}`,
-      affected_user_id: args.project_manager_id,
-      affected_user_name: `${project_manager.first_name} ${project_manager.last_name}`,
-      affected_user_email: project_manager.email,
-      action: LOG_ACTIONS.EDIT_GROUP,
-      details: `Updated group: ${args.capstone_title}`,
     });
 
     return { success: true };

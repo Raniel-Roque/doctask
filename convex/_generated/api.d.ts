@@ -13,7 +13,6 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as actions from "../actions.js";
 import type * as fetch from "../fetch.js";
 import type * as mutations from "../mutations.js";
 import type * as utils_adviserCode from "../utils/adviserCode.js";
@@ -27,7 +26,6 @@ import type * as utils_adviserCode from "../utils/adviserCode.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  actions: typeof actions;
   fetch: typeof fetch;
   mutations: typeof mutations;
   "utils/adviserCode": typeof utils_adviserCode;

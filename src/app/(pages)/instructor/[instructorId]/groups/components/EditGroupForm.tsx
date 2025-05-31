@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes, FaEdit, FaExclamationTriangle, FaUsers, FaUserTie, FaBook, FaSearch, FaChevronDown, FaSave, FaSpinner } from "react-icons/fa";
-import { Group } from "../types";
+import { Group } from "./types";
 import { UnsavedChangesConfirmation } from "../../components/UnsavedChangesConfirmation";
 import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../components/SanitizeInput";
 
@@ -206,6 +206,12 @@ export default function EditGroupForm({
     setFormData(prev => ({ ...prev, members: [] }));
   };
 
+  // Handle clear adviser
+  const handleClearAdviser = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFormData(prev => ({ ...prev, adviser: null }));
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,9 +312,20 @@ export default function EditGroupForm({
             <div className="flex gap-4">
               {/* Adviser */}
               <div className="dropdown-container w-[70%]">
-                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <FaUserTie color="#6B7280" />
-                  Adviser
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FaUserTie color="#6B7280" />
+                    Adviser
+                  </div>
+                  {formData.adviser && (
+                    <button
+                      type="button"
+                      onClick={handleClearAdviser}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </label>
                 <div className="relative">
                   <div 

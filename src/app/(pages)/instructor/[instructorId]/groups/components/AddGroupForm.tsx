@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaPlus, FaTimes, FaExclamationTriangle, FaChevronDown, FaSearch, FaSpinner, FaBook, FaUserTie, FaUserGraduate, FaUsers } from "react-icons/fa";
-import { Notification } from "../../components/Notification";
 import { UnsavedChangesConfirmation } from "../../components/UnsavedChangesConfirmation";
 import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../components/SanitizeInput";
 
@@ -44,7 +43,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   const [initialFormData, setInitialFormData] = useState(formData);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   const [memberSearch, setMemberSearch] = useState('');
@@ -252,7 +250,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     if (setNetworkError) {
       setNetworkError(null);
     }
-    setSuccessMessage(null);
     setValidationErrors({});
     
     // Validate form
@@ -277,9 +274,9 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
 
     try {
       await onSubmit(formData);
-      setSuccessMessage("Group created successfully!");
       setHasUnsavedChanges(false);
       setInitialFormData(formData);
+      closeForm();
     } catch (error) {
       setValidationErrors({
         general: error instanceof Error ? error.message : "Failed to create group"
@@ -700,11 +697,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     </div>
 
       {/* Notifications */}
-      <Notification 
-        message={successMessage} 
-        onClose={() => setSuccessMessage(null)} 
-        type="success"
-      />
       <UnsavedChangesConfirmation
         isOpen={showUnsavedChangesDialog}
         onContinue={() => {

@@ -1,4 +1,4 @@
-import { Id, Doc } from "../../../../../../convex/_generated/dataModel";
+import { Id, Doc } from "../../../../../../../convex/_generated/dataModel";
 
 export interface User {
   _id: Id<"users">;

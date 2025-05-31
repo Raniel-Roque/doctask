@@ -29,7 +29,7 @@ export const UnsavedChangesConfirmation: React.FC<UnsavedChangesConfirmationProp
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            className="px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 hover:text-gray-800 transition-colors"
           >
             Cancel
           </button>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus, FaChevronLeft, FaChevronRight, FaMinus } from "react-icons/fa"; // Import icons and pagination icons
-import { User, Group } from '../types';
+import { User, Group } from './types';
+import DeleteGroupConfirmation from './DeleteGroupConfirmation';
 
 // Capstone Title filter options
 const CAPSTONE_FILTERS = {
@@ -44,6 +45,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   const [capstoneFilter, setCapstoneFilter] = useState<typeof CAPSTONE_FILTERS[keyof typeof CAPSTONE_FILTERS]>(CAPSTONE_FILTERS.ALL);
   const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
 
   const toggleExpand = (groupId: string) => {
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
@@ -368,7 +370,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                   <button onClick={() => onEdit(group)} className="p-2 text-blue-600 hover:text-blue-800" title="Edit Group">
                     <FaEdit />
                   </button>
-                  <button onClick={() => onDelete(group)} className="p-2 text-red-600 hover:text-red-800" title="Delete Group">
+                  <button onClick={() => setGroupToDelete(group)} className="p-2 text-red-600 hover:text-red-800" title="Delete Group">
                     <FaTrash />
                   </button>
                 </div>
@@ -377,6 +379,19 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
           ))}
         </tbody>
       </table>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteGroupConfirmation
+        group={groupToDelete}
+        isOpen={!!groupToDelete}
+        onClose={() => setGroupToDelete(null)}
+        onConfirm={() => {
+          if (groupToDelete) {
+            onDelete(groupToDelete);
+            setGroupToDelete(null);
+          }
+        }}
+      />
 
       {/* Pagination */}
       <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">

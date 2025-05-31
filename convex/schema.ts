@@ -76,10 +76,10 @@ export default defineSchema({
     instructor_id: v.id("users"),
     instructor_name: v.string(), // Full name of instructor who performed the action
     
-    // Affected User Information (stored directly to prevent data loss on user deletion)
-    affected_user_id: v.optional(v.id("users")), // ID of affected user (optional in case user is deleted)
-    affected_user_name: v.string(), // Full name of affected user
-    affected_user_email: v.string(), // Email of affected user
+    // Affected Entity Information
+    affected_entity_type: v.string(), // "user" or "group"
+    affected_entity_id: v.union(v.id("users"), v.id("groupsTable")), // ID of affected entity
+    affected_entity_name: v.string(), // Name of affected entity (user name or group title)
     
     // Log Details
     action: v.string(), 
@@ -87,5 +87,5 @@ export default defineSchema({
   })
   .index("by_instructor", ["instructor_id"])
   .index("by_action", ["action"])
-  .index("by_affected_user", ["affected_user_id"])
+  .index("by_affected_entity", ["affected_entity_id"])
 });

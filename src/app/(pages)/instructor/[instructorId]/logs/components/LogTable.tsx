@@ -10,9 +10,9 @@ interface Log {
     _id: Id<"instructorLogs">;
     instructor_id: Id<"users">;
     instructor_name: string;
-    affected_user_id: Id<"users"> | null;
-    affected_user_name: string;
-    affected_user_email: string;
+    affected_entity_type: string;
+    affected_entity_id: Id<"users"> | Id<"groupsTable">;
+    affected_entity_name: string;
     action: string;
     details: string;
     _creationTime: number;
@@ -33,7 +33,11 @@ const LOG_ACTIONS = {
     CREATE_USER: "Create User",
     EDIT_USER: "Edit User",
     DELETE_USER: "Delete User",
-    RESET_PASSWORD: "Reset Password"
+    RESET_PASSWORD: "Reset Password",
+    ADD_MEMBER: "Add Member",
+    CREATE_GROUP: "Create Group",
+    DELETE_GROUP: "Delete Group",
+    EDIT_GROUP: "Edit Group"    
 } as const;
 
 const ACTION_COLORS = {
@@ -52,6 +56,22 @@ const ACTION_COLORS = {
     [LOG_ACTIONS.RESET_PASSWORD]: {
         bg: 'bg-yellow-100',
         text: 'text-yellow-800'
+    },
+    [LOG_ACTIONS.ADD_MEMBER]: {
+        bg: 'bg-green-100',
+        text: 'text-green-800'
+    },
+    [LOG_ACTIONS.CREATE_GROUP]: {
+        bg: 'bg-green-100',
+        text: 'text-green-800'
+    },
+    [LOG_ACTIONS.DELETE_GROUP]: {
+        bg: 'bg-red-100',
+        text: 'text-red-800'
+    },
+    [LOG_ACTIONS.EDIT_GROUP]: {
+        bg: 'bg-blue-100',
+        text: 'text-blue-800'
     },
     // Default colors for any new actions
     default: {
@@ -73,18 +93,10 @@ export const LogTable = ({ logs }: LogTableProps) => {
     const [endDate, setEndDate] = useState<string>("");
     
     type ExpandedColumns = {
-        instructorId: boolean;
-        affectedUserId: boolean;
-        email: boolean;
-        details: boolean;
+        [key: string]: boolean;
     };
     
-    const [expandedColumns, setExpandedColumns] = useState<ExpandedColumns>({
-        instructorId: false,
-        affectedUserId: false,
-        email: false,
-        details: false
-    });
+    const [expandedColumns, setExpandedColumns] = useState<ExpandedColumns>({});
 
     const getSortIcon = (field: SortField) => {
         if (field !== sortField) return <FaSort />;
@@ -105,11 +117,10 @@ export const LogTable = ({ logs }: LogTableProps) => {
             const matchesSearch = searchTerm === "" ||
                 log.instructor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.affected_user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.affected_user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                log.affected_entity_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.instructor_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (log.affected_user_id && log.affected_user_id.toLowerCase().includes(searchTerm.toLowerCase()));
+                (log.affected_entity_id && log.affected_entity_id.toLowerCase().includes(searchTerm.toLowerCase()));
 
             const matchesAction = actionFilter === LOG_ACTIONS.ALL || log.action === actionFilter;
 
@@ -164,16 +175,21 @@ export const LogTable = ({ logs }: LogTableProps) => {
     // =========================================
     // Collapsible Text Component
     // =========================================
-    const CollapsibleText = ({ text, maxLength = 10, column }: { text: string | null, maxLength?: number, column: keyof ExpandedColumns }) => {
+    const CollapsibleText = ({ text, maxLength = 10, column, logId }: { text: string | null, maxLength?: number, column: keyof ExpandedColumns, logId: string }) => {
         if (!text) return <span>-</span>;
         if (text.length <= maxLength) return <span>{text}</span>;
 
+        const isExpanded = expandedColumns[`${logId}-${column}`] || false;
+
         return (
             <button
-                onClick={() => setExpandedColumns((prev: ExpandedColumns) => ({ ...prev, [column]: !prev[column] }))}
+                onClick={() => setExpandedColumns((prev: ExpandedColumns) => ({ 
+                    ...prev, 
+                    [`${logId}-${column}`]: !isExpanded 
+                }))}
                 className="w-full text-left"
             >
-                {expandedColumns[column] ? text : `${text.slice(0, maxLength)}...`}
+                {isExpanded ? text : `${text.slice(0, maxLength)}...`}
             </button>
         );
     };
@@ -269,22 +285,13 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                     </div>
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    Instructor ID
-                                </th>
-                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    Instructor Name
+                                    User Name
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
                                     Action
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    User ID
-                                </th>
-                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    User Name
-                                </th>
-                                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    User Email
+                                    Affected Entity 
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
                                     Details
@@ -294,11 +301,8 @@ export const LogTable = ({ logs }: LogTableProps) => {
                         <tbody>
                             {paginatedLogs.map((log, index) => (
                                 <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-left">
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
                                         {format(new Date(log._creationTime), "MMM dd, yyyy hh:mmaaa")}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
-                                        <CollapsibleText text={log.instructor_id} maxLength={4} column="instructorId" />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left">
                                         {log.instructor_name}
@@ -308,14 +312,8 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                             {log.action}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
-                                        <CollapsibleText text={log.affected_user_id} maxLength={4} column="affectedUserId" />
-                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left">
-                                        {log.affected_user_name || '-'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-left cursor-pointer">
-                                        <CollapsibleText text={log.affected_user_email} maxLength={10} column="email" />
+                                        {log.affected_entity_name || '-'}
                                     </td>
                                     <td className="px-6 py-4 text-left cursor-pointer whitespace-pre">
                                         <CollapsibleText 
@@ -325,7 +323,8 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                                     .join('\n')
                                             } 
                                             maxLength={20} 
-                                            column="details" 
+                                            column="details"
+                                            logId={log._id}
                                         />
                                     </td>
                                 </tr>
