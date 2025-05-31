@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient, auth } from '@clerk/nextjs/server';
 import { generatePassword } from '@/utils/passwordGeneration';
 import { Resend } from 'resend';
 
@@ -20,7 +20,29 @@ interface BackupUser {
 
 export async function POST(request: Request) {
   try {
-    const { backup, instructorId } = await request.json();
+    const { userId } = await auth();
+    if (!userId) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const { backup, instructorId, password } = await request.json();
+    if (!backup || !instructorId || !password) {
+      return new NextResponse("Missing required fields", { status: 400 });
+    }
+
+    // Initialize Clerk client
+    const clerk = await clerkClient();
+
+    // Verify password first
+    try {
+      await clerk.users.verifyPassword({
+        userId,
+        password,
+      });
+    } catch (verifyError) {
+      console.error("Password verification failed:", verifyError);
+      return new NextResponse("Invalid password", { status: 401 });
+    }
 
     if (!backup || !backup.tables || !backup.timestamp || !backup.version) {
       return NextResponse.json(
@@ -37,25 +59,55 @@ export async function POST(request: Request) {
     
     // Delete students
     await convex.mutation(api.restore.deleteAllStudents);
-    
+
     // Delete advisers
     await convex.mutation(api.restore.deleteAllAdvisers);
-    
+
     // Delete groups
     await convex.mutation(api.restore.deleteAllGroups);
     
     // Delete users (except instructor)
     await convex.mutation(api.restore.deleteAllUsers, { instructorId });
 
-    // Step 2: Create Clerk accounts
-    console.log('Step 2: Creating Clerk accounts...');
-    const clerkUsers = backup.tables.users.filter((user: BackupUser) => user.role !== 2);
+    // Step 2: Delete existing Clerk accounts (except instructor)
+    console.log('Step 2: Deleting existing Clerk accounts...');
+    
+    // Get all users from Clerk
+    const { data: existingClerkUsers } = await clerk.users.getUserList();
+    
+    // Delete all users except the instructor
+    for (const clerkUser of existingClerkUsers) {
+      if (clerkUser.id !== userId) { // Don't delete the instructor
+        try {
+          // Delete from Clerk
+          await clerk.users.deleteUser(clerkUser.id);
+          console.log(`Deleted Clerk user: ${clerkUser.emailAddresses[0]?.emailAddress}`);
+
+          // Delete from Convex if exists
+          const convexUser = await convex.query(api.fetch.getUserByClerkId, { clerkId: clerkUser.id });
+          if (convexUser) {
+            await convex.mutation(api.mutations.deleteUser, {
+              userId: convexUser._id,
+              instructorId,
+              clerkId: clerkUser.id,
+              clerkApiKey: process.env.CLERK_API_KEY!
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to delete user ${clerkUser.emailAddresses[0]?.emailAddress}:`, error);
+          // Continue with other deletions even if one fails
+        }
+      }
+    }
+
+    // Step 3: Create Clerk accounts
+    console.log('Step 3: Creating Clerk accounts...');
+    const usersToCreate = backup.tables.users.filter((user: BackupUser) => user.role !== 2);
     const clerkResults = [];
 
-    for (const user of clerkUsers) {
+    for (const user of usersToCreate) {
       try {
         const password = generatePassword(user.first_name, user.last_name, Date.now());
-        const clerk = await clerkClient();
         
         // Create user in Clerk with just email and password
         const newUser = await clerk.users.createUser({
@@ -120,8 +172,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Step 3: Create Convex users with new Clerk IDs
-    console.log('Step 3: Creating Convex users...');
+    // Step 4: Create Convex users with new Clerk IDs
+    console.log('Step 4: Creating Convex users...');
     const idMap = new Map(clerkResults.map(r => [r.oldId, r.newId]));
 
     for (const user of backup.tables.users) {
@@ -144,8 +196,8 @@ export async function POST(request: Request) {
       });
     }
 
-    // Step 4: Restore groups and relationships
-    console.log('Step 4: Restoring groups and relationships...');
+    // Step 5: Restore groups and relationships
+    console.log('Step 5: Restoring groups and relationships...');
     
     // First restore all groups
     for (const group of backup.tables.groups) {
@@ -179,9 +231,9 @@ export async function POST(request: Request) {
       users: clerkResults,
     });
   } catch (error) {
-    console.error('Failed to restore backup:', error);
-    return NextResponse.json(
-      { error: 'Failed to restore backup', details: error instanceof Error ? error.message : 'Unknown error' },
+    console.error("Restore error:", error);
+    return new NextResponse(
+      error instanceof Error ? error.message : "Failed to restore database",
       { status: 500 }
     );
   }
