@@ -70,7 +70,9 @@ const LoginPage = () => {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-      } 
+      } else {
+        setError("Incorrect Login Credentials. Please try again.");
+      }
       
     } catch (err) {
       const clerkError = err as ClerkError;

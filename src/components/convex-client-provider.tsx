@@ -55,8 +55,9 @@ function UnauthRedirect() {
   const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
-    // Redirect to login if not signed in and not on login page
-    if (isLoaded && !isSignedIn && pathname !== "/login") {
+    // Allow access to login and forgot-password pages only
+    const publicPages = ["/login", "/forgot-password"];
+    if (isLoaded && !isSignedIn && !publicPages.includes(pathname)) {
       router.replace("/login");
     }
   }, [isLoaded, isSignedIn, pathname, router]);
@@ -69,6 +70,7 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const pathname = usePathname();
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   const convexUser = useQuery(api.fetch.getUserByClerkId, {
@@ -107,8 +109,39 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
     return pathPattern.test(sanitizedPath);
   };
 
-  // Render children when loaded, signed in, user and convexUser are available, AND on an authorized path
-  if (isLoaded && isSignedIn && user && convexUser && isAuthorizedPath()) {
+  useEffect(() => {
+    if (isLoaded) {
+      // If not signed in, redirect to login regardless of the path
+      if (!isSignedIn) {
+        router.replace('/login');
+        return;
+      }
+
+      // If signed in but no user data, also redirect to login
+      if (!user) {
+        router.replace('/login');
+        return;
+      }
+
+      // If signed in and has user data, check verification status
+      // If not verified, stay on /login (handled by login page step logic)
+    }
+  }, [isLoaded, isSignedIn, user, convexUser, pathname, router]);
+
+  // If not loaded yet, show nothing
+  if (!isLoaded) {
+    return null;
+  }
+
+  // If not signed in or no user data, show nothing (will be redirected by useEffect)
+  if (!isSignedIn || !user) {
+    return null;
+  }
+
+  // No more special handling for /login/verify-account
+
+  // Render children when loaded, signed in, user and convexUser are available, AND on an authorized path and verified
+  if (isLoaded && isSignedIn && user && convexUser && isAuthorizedPath() && convexUser.email_verified) {
     return <>{children}</>;
   }
 
@@ -127,7 +160,8 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 // Auth check component that will be used inside ClerkProvider
 function AuthCheck({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/login";
+  const publicPages = ["/login", "/forgot-password"];
+  const isPublicPage = publicPages.includes(pathname);
 
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
@@ -138,11 +172,11 @@ function AuthCheck({ children }: { children: ReactNode }) {
 
       <Unauthenticated>
         <UnauthRedirect />
-        {isLoginPage && children}
+        {isPublicPage && children}
       </Unauthenticated>
 
       <AuthLoading>
-        {isLoginPage ? (
+        {isPublicPage ? (
           children
         ) : (
           <div className="flex items-center justify-center min-h-screen bg-white text-lg font-semibold">

@@ -520,6 +520,25 @@ export const updateGroup = mutation({
   },
 });
 
+export const updateEmailStatus = mutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+
+    // Only update if email is not already verified
+    if (!user.email_verified) {
+      await ctx.db.patch(args.userId, {
+        email_verified: true
+      });
+    }
+
+    return { success: true };
+  },
+});
+
 // =========================================
 // DELETE OPERATIONS
 // =========================================
