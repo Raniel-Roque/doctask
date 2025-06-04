@@ -77,9 +77,8 @@ export const createUser = mutation({
           code,
           group_ids: [],
         });
-      } catch (error) {
-        console.error("Failed to generate adviser code:", error);
-        // Don't throw here - we still want the user to be created even if code generation fails
+      } catch {
+
       }
     }
     // Log the user creation

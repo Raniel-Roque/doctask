@@ -3,11 +3,14 @@
 import { useSignIn } from "@clerk/clerk-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
-import * as Label from "@radix-ui/react-label";
+import { FaArrowLeft } from 'react-icons/fa';
+import EmailInput from "../components/EmailInput";
+import VerifyCodeInput from "../components/VerifyCodeInput";
+import PasswordInput from "../components/PasswordInput";
+import ResetCodeInput from "../components/ResetCodeInput";
+import ResetPasswordInput from "../components/ResetPasswordInput";
 
 interface ClerkError {
   errors: Array<{
@@ -27,8 +30,13 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [step, setStep] = useState(1); // 1: Email, 2: Verification Code, 3: Password
+  const [step, setStep] = useState(1); // 1: Email, 2: Verification Code, 3: Password, 4: Reset Password
   const [resentSuccess, setResentSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [forgotStep, setForgotStep] = useState(false); // false: login, true: forgot password
+  const [forgotStepIndex, setForgotStepIndex] = useState(0); // 0: code, 1: reset password
 
   useEffect(() => {
     if (isSignedIn) {
@@ -114,8 +122,7 @@ const LoginPage = () => {
           setError("Failed to send verification code. Please try again.");
         }
       }
-    } catch (error) {
-      console.error("Email verification error:", error);
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -167,8 +174,7 @@ const LoginPage = () => {
       } else {
         setError("Invalid code. Please try again.");
       }
-    } catch (error) {
-      console.error("Code verification error:", error);
+    } catch {
       setError("Invalid code. Please try again.");
     } finally {
       setLoading(false);
@@ -216,16 +222,65 @@ const LoginPage = () => {
       if (result.status === "needs_first_factor") {
         setError(""); // Clear any previous errors
         setResentSuccess(true);
+        setSuccessMessage("A new verification code has been sent to your email. Please check your inbox and spam folder.");
       } else {
         setError("Failed to resend code. Please try again.");
         setResentSuccess(false);
+        setSuccessMessage("");
       }
     } catch (error) {
       console.error("Resend code error:", error);
       setError("An error occurred. Please try again.");
       setResentSuccess(false);
+      setSuccessMessage("");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setForgotStep(true);
+    setStep(4);
+    setForgotStepIndex(0);
+    setError("");
+    setCode("");
+    setPassword("");
+    setConfirmPassword("");
+    setLoading(true);
+    try {
+      if (!signIn) throw new Error("SignIn is not loaded");
+      const result = await signIn.create({
+        strategy: "reset_password_email_code",
+        identifier: email,
+      });
+      if (result.status === "needs_first_factor") {
+        setSuccessMessage("A password reset code has been sent to your email. Please check your inbox and spam folder.");
+        setError("");
+      } else {
+        setError("Failed to send reset code. Please try again.");
+        setSuccessMessage("");
+      }
+    } catch {
+      setError("Failed to send reset code. Please try again.");
+      setSuccessMessage("");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotBack = () => {
+    if (forgotStepIndex === 1) {
+      setForgotStepIndex(0);
+      setError("");
+      setPassword("");
+      setConfirmPassword("");
+    } else {
+      setForgotStep(false);
+      setStep(3);
+      setError("");
+      setCode("");
+      setPassword("");
+      setConfirmPassword("");
     }
   };
 
@@ -251,11 +306,11 @@ const LoginPage = () => {
       {/* Right Section */}
       <div className="w-full md:w-[35%] bg-[#B54A4A] flex flex-col items-center justify-center p-8 md:p-12 relative shadow-2xl">
         <div className="max-w-sm w-full space-y-8 z-10 relative pb-16">
-          {/* Back Button for step 2 and 3 */}
-          {(step === 2 || step === 3) && (
+          {/* Back Button for steps 2, 3, 4 */}
+          {(step > 1) && (
             <button
               type="button"
-              onClick={() => setStep(1)}
+              onClick={handleForgotBack}
               className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20"
               style={{ marginTop: '-2rem', marginLeft: '-1rem' }}
             >
@@ -263,128 +318,54 @@ const LoginPage = () => {
             </button>
           )}
           <div className="text-center mb-8">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-3">Login</h2>
+            <h2 className="text-5xl md:text-6xl font-bold text-white mb-3">{forgotStep ? "Reset" : "Login"}</h2>
             <p className="text-white text-lg md:text-2xl font-light">
               {step === 1 && "Enter your email"}
               {step === 2 && "Enter verification code"}
               {step === 3 && "Enter your password"}
+              {step === 4 && "Reset your password"}
             </p>
           </div>
-
-          {/* Sign In Form */}
-          <form className="mt-8 space-y-6" onSubmit={
-            step === 1 ? handleEmailSubmit :
-            step === 2 ? handleCodeSubmit :
-            handlePasswordSubmit
-          }>
+          {/* Step 1: Email Input */}
             {step === 1 && (
-            <div className="relative">
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <div className="absolute left-0 top-0 bottom-0 flex items-center h-full pl-3 pointer-events-none z-20">
-                <FaEnvelope color="#B54A4A" size={18} />
+            <form className="mt-8 space-y-6" onSubmit={handleEmailSubmit}>
+              <EmailInput email={email} setEmail={setEmail} loading={loading} />
+              {error && <div className="text-red-300 text-sm text-center mt-4">{error}</div>}
+              <div className="mt-6">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                >
+                  {loading ? "Processing..." : "Continue"}
+                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </button>
               </div>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-lg relative block w-full pl-10 pr-3 h-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
-                placeholder="Email"
-              />
-            </div>
-            )}
-
+            </form>
+          )}
+          {/* Step 2: Verification Code */}
             {step === 2 && (
-              <div>
+            <form className="mt-8 space-y-6" onSubmit={handleCodeSubmit}>
                 {resentSuccess && (
-                  <div className="text-green-300 text-sm text-center mb-2">Verification code sent! Please check your email, including the spam folder if you don&apos;t see it in your inbox.</div>
-                )}
-                <div className="relative">
-                  <label htmlFor="code" className="sr-only">
-                    Verification Code
-                  </label>
-                  <div className="absolute left-0 top-0 bottom-0 flex items-center h-full pl-3 pointer-events-none z-20">
-                    <FaEnvelope color="#B54A4A" size={18} />
+                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span className="block sm:inline">{successMessage}</span>
                   </div>
-                  <input
-                    id="code"
-                    name="code"
-                    type="text"
-                    required
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    className="appearance-none rounded-lg relative block w-full pl-10 pr-3 h-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
-                    placeholder="Enter verification code"
-                  />
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-            <div className="relative">
-              <Label.Root htmlFor="password" className="sr-only">
-                Password
-              </Label.Root>
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
-                <FaLock color="#B54A4A" />
-              </div>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
-                placeholder="Password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-20"
-              >
-                {showPassword ? <FaEye color="#9CA3AF" /> : <FaEyeSlash color="#9CA3AF" />}
-              </button>
-            </div>
-            )}
-
-            {error && (
-              <div className="text-red-300 text-sm text-center mt-4">{error}</div>
-            )}
-
+                )}
+              <VerifyCodeInput code={code} setCode={setCode} loading={loading} />
+              {error && <div className="text-red-300 text-sm text-center mt-4">{error}</div>}
             <div className="mt-6">
               <button
                 type="submit"
                 disabled={loading}
                 className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
               >
-                {loading ? "Processing..." : 
-                  step === 1 ? "Continue" :
-                  step === 2 ? "Verify Code" :
-                  "Log In"
-                }
-                <svg 
-                  className="ml-2 w-5 h-5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24" 
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M14 5l7 7m0 0l-7 7m7-7H3" 
-                  />
+                  {loading ? "Processing..." : "Verify Code"}
+                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </button>
-              {step === 2 && (
                 <div className="text-sm text-center mt-4">
                   <button
                     type="button"
@@ -395,20 +376,86 @@ const LoginPage = () => {
                     Didn&apos;t receive a code? Click here to resend
                   </button>
                 </div>
-              )}
+              </div>
+            </form>
+          )}
+          {/* Step 3: Password Input with Forgot Password */}
+          {step === 3 && !forgotStep && (
+            <form className="mt-8 space-y-6" onSubmit={handlePasswordSubmit}>
+              <PasswordInput password={password} setPassword={setPassword} showPassword={showPassword} setShowPassword={setShowPassword} loading={loading} />
+              {error && <div className="text-red-300 text-sm text-center mt-4">{error}</div>}
+              <div className="mt-6">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                >
+                  {loading ? "Processing..." : "Log In"}
+                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </button>
             </div>
-
-            {step === 3 && (
             <div className="text-sm text-right mt-2">
-              <Link
-                href="/forgot-password"
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
                 className="font-medium text-red-200 hover:text-red-100"
               >
                 Forgot Password?
-              </Link>
+                </button>
             </div>
-            )}
-          </form>
+            </form>
+          )}
+          {/* Step 4: Forgot Password Flow (sequential) */}
+          {step === 4 && forgotStep && (
+            <>
+              {/* Back Button for forgot password sub-steps */}
+              <button
+                type="button"
+                onClick={handleForgotBack}
+                className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20"
+                style={{ marginTop: '-2rem', marginLeft: '-1rem' }}
+              >
+                <FaArrowLeft className="mr-2" /> Back
+              </button>
+              {forgotStepIndex === 0 && (
+                <>
+                  {successMessage && (
+                    <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                      <span className="block sm:inline">{successMessage}</span>
+                    </div>
+                  )}
+                  <ResetCodeInput
+                    code={code}
+                    setCode={setCode}
+                    loading={loading}
+                    error={error}
+                    onResendCode={handleResendCode}
+                    onSubmit={(e) => {
+                      handleCodeSubmit(e);
+                      if (!error) setForgotStepIndex(1);
+                    }}
+                  />
+                </>
+              )}
+              {forgotStepIndex === 1 && (
+                <ResetPasswordInput
+                  newPassword={password}
+                  setNewPassword={setPassword}
+                  confirmPassword={confirmPassword}
+                  setConfirmPassword={setConfirmPassword}
+                  showPassword={showPassword}
+                  setShowPassword={setShowPassword}
+                  showConfirmPassword={showConfirmPassword}
+                  setShowConfirmPassword={setShowConfirmPassword}
+                  loading={loading}
+                  error={error}
+                  onSubmit={handlePasswordSubmit}
+                />
+              )}
+            </>
+          )}
         </div>
         {/* College of Computer Studies Text - always at the bottom right of the red container */}
         <div className="absolute bottom-0 right-0 mb-4 mr-4 text-sm text-red-200 font-light select-none">
