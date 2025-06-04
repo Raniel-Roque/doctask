@@ -160,6 +160,11 @@ export async function POST(request: Request) {
       // Continue with the update even if email fails
     }
 
+    // Set email_verified to false in Convex
+    await convex.mutation(api.mutations.updateEmailStatus, {
+      userId: convexUser._id,
+    });
+
     return NextResponse.json({ 
       success: true,
       clerkId: newUser.id // Return the new clerkId

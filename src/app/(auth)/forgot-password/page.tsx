@@ -52,14 +52,6 @@ const ForgotPasswordPage = () => {
       if (result.status === "needs_first_factor") {
         setStep(2);
         setError(""); // Clear any previous errors
-        // Add a success message about checking spam
-        const successMessage = document.createElement("div");
-        successMessage.className = "text-green-300 text-sm text-center mt-4";
-        successMessage.innerHTML = "Verification code sent! Please check your email, including the spam folder if you don't see it in your inbox.";
-        const form = document.querySelector("form");
-        if (form) {
-          form.insertBefore(successMessage, form.firstChild);
-        }
       } else if (result.status === "complete") {
         // If somehow the reset is already complete, redirect to login
         router.push("/login");
@@ -173,14 +165,6 @@ const ForgotPasswordPage = () => {
 
       if (result.status === "needs_first_factor") {
         setError(""); // Clear any previous errors
-        // Add a success message about checking spam
-        const successMessage = document.createElement("div");
-        successMessage.className = "text-green-300 text-sm text-center mt-4";
-        successMessage.innerHTML = "Verification code resent! Please check your email, including the spam folder if you don't see it in your inbox.";
-        const form = document.querySelector("form");
-        if (form) {
-          form.insertBefore(successMessage, form.firstChild);
-        }
       } else {
         setError("Failed to resend code. Please try again.");
       }

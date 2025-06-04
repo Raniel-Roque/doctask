@@ -25,24 +25,13 @@ export async function POST(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { backup, instructorId, password } = await request.json();
-    if (!backup || !instructorId || !password) {
+    const { backup, instructorId } = await request.json();
+    if (!backup || !instructorId) {
       return new NextResponse("Missing required fields", { status: 400 });
     }
 
     // Initialize Clerk client
     const clerk = await clerkClient();
-
-    // Verify password first
-    try {
-      await clerk.users.verifyPassword({
-        userId,
-        password,
-      });
-    } catch (verifyError) {
-      console.error("Password verification failed:", verifyError);
-      return new NextResponse("Invalid password", { status: 401 });
-    }
 
     if (!backup || !backup.tables || !backup.timestamp || !backup.version) {
       return NextResponse.json(
@@ -175,17 +164,16 @@ export async function POST(request: Request) {
     // Step 4: Create Convex users with new Clerk IDs
     console.log('Step 4: Creating Convex users...');
     const idMap = new Map(clerkResults.map(r => [r.oldId, r.newId]));
-
+    const oldUserIdToNewUserId = new Map();
     for (const user of backup.tables.users) {
       if (user.role === 2) continue; // Skip instructor
-
       const newClerkId = idMap.get(user.clerk_id);
       if (!newClerkId) {
         console.error(`No new Clerk ID found for user ${user.email}`);
         continue;
       }
-
-      await convex.mutation(api.restore.restoreUser, {
+      // Insert user and keep mapping from old _id to new _id
+      const result = await convex.mutation(api.restore.restoreUser, {
         clerk_id: newClerkId,
         first_name: user.first_name,
         last_name: user.last_name,
@@ -194,35 +182,44 @@ export async function POST(request: Request) {
         middle_name: user.middle_name,
         subrole: user.subrole,
       });
+      oldUserIdToNewUserId.set(user._id, result.userId);
     }
 
     // Step 5: Restore groups and relationships
     console.log('Step 5: Restoring groups and relationships...');
-    
     // First restore all groups
+    const oldGroupIdToNewGroupId = new Map();
     for (const group of backup.tables.groups) {
-      await convex.mutation(api.restore.restoreGroup, {
-        project_manager_id: group.project_manager_id,
-        member_ids: group.member_ids,
-        adviser_id: group.adviser_id,
+      const newProjectManagerId = oldUserIdToNewUserId.get(group.project_manager_id);
+      const newMemberIds = group.member_ids.map((id: string) => oldUserIdToNewUserId.get(id)).filter(Boolean);
+      const newAdviserId = group.adviser_id ? oldUserIdToNewUserId.get(group.adviser_id) : undefined;
+      const result = await convex.mutation(api.restore.restoreGroup, {
+        project_manager_id: newProjectManagerId,
+        member_ids: newMemberIds,
+        adviser_id: newAdviserId,
         capstone_title: group.capstone_title,
       });
+      oldGroupIdToNewGroupId.set(group._id, result.groupId);
     }
 
     // Then restore student entries
     for (const student of backup.tables.students) {
+      const newUserId = oldUserIdToNewUserId.get(student.user_id);
+      const newGroupId = student.group_id ? oldGroupIdToNewGroupId.get(student.group_id) : null;
       await convex.mutation(api.restore.restoreStudentEntry, {
-        user_id: student.user_id,
-        group_id: student.group_id,
+        user_id: newUserId,
+        group_id: newGroupId ?? null,
       });
     }
 
     // Finally restore adviser codes
     for (const adviser of backup.tables.advisers) {
+      const newAdviserId = oldUserIdToNewUserId.get(adviser.adviser_id);
+      const newGroupIds = adviser.group_ids.map((gid: string) => oldGroupIdToNewGroupId.get(gid)).filter(Boolean);
       await convex.mutation(api.restore.restoreAdviserCode, {
-        adviser_id: adviser.adviser_id,
+        adviser_id: newAdviserId,
         code: adviser.code,
-        group_ids: adviser.group_ids,
+        group_ids: newGroupIds,
       });
     }
 

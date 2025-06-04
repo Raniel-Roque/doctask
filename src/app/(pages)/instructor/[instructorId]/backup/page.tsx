@@ -17,33 +17,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SuccessBanner } from "../components/SuccessBanner";
-
-interface BackupUser {
-  _id: string;
-  role: number;
-  clerk_id: string;
-  email: string;
-  email_verified: boolean;
-  first_name: string;
-  last_name: string;
-  middle_name?: string;
-  subrole?: number;
-}
-
-interface BackupData {
-  tables: {
-    users: BackupUser[];
-    groups: unknown[];
-    students: unknown[];
-    advisers: unknown[];
-    logs: unknown[];
-  };
-  timestamp: string;
-  version: string;
-}
 
 interface BackupAndRestorePageProps {
   params: Promise<{ instructorId: string }>;
@@ -54,9 +29,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
-  const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
-  const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { getToken } = useAuth();
@@ -64,50 +36,10 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   
   const downloadConvexBackup = useMutation(api.mutations.downloadConvexBackup);
 
-  const verifyPassword = async (password: string) => {
-    try {
-      console.log('Verifying password...');
-      const response = await fetch('/api/clerk/verify-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      });
-
-      const responseText = await response.text();
-      console.log('Password verification response:', response.status, responseText);
-
-      if (!response.ok) {
-        console.error('Password verification failed:', responseText);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Password verification error:', error);
-      return false;
-    }
-  };
-
-  const handleDownload = () => {
-    setShowDownloadConfirm(true);
-    setPasswordError("");
-    setPassword("");
-  };
-
-  const confirmDownload = async () => {
+  const handleDownload = async () => {
     try {
       setIsDownloading(true);
-      setPasswordError("");
       
-      const isValid = await verifyPassword(password);
-      if (!isValid) {
-        setPasswordError("Incorrect password");
-        setIsDownloading(false);
-        return;
-      }
-
       const token = await getToken();
       if (!token) {
         throw new Error("Not authenticated");
@@ -125,7 +57,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      setShowDownloadConfirm(false);
       setSuccessMessage("Database backup has been successfully downloaded.");
     } catch (error: unknown) {
       console.error("Failed to download database backup:", error);
@@ -141,8 +72,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
   const handleRestore = () => {
     setShowRestoreConfirm(true);
-    setPasswordError("");
-    setPassword("");
     setSelectedFile(null);
   };
 
@@ -165,30 +94,19 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
     try {
       setIsRestoring(true);
-      setPasswordError("");
-
-      const isValid = await verifyPassword(password);
-      if (!isValid) {
-        setPasswordError("Incorrect password");
-        setIsRestoring(false);
-        return;
-      }
-
-      const text = await selectedFile.text();
-      const backup = JSON.parse(text) as BackupData;
-
-      if (!backup.tables || !backup.timestamp || !backup.version) {
-        throw new Error("Invalid backup format");
-      }
-
-      const instructor = backup.tables.users.find((user: BackupUser) => user.role === 2);
-      if (!instructor) {
-        throw new Error("No instructor found in backup");
-      }
 
       const token = await getToken();
       if (!token) {
         throw new Error("Not authenticated");
+      }
+
+      // Read the file contents
+      const fileContent = await selectedFile.text();
+      let parsedBackup;
+      try {
+        parsedBackup = JSON.parse(fileContent);
+      } catch {
+        throw new Error("Invalid backup file format");
       }
 
       const response = await fetch('/api/convex/restore', {
@@ -198,9 +116,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ 
-          backup,
-          instructorId: instructor._id,
-          password
+          backup: parsedBackup,
+          instructorId: instructorId,
         }),
       });
 
@@ -305,8 +222,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             setShowRestoreConfirm(open);
             if (!open) {
               setSelectedFile(null);
-              setPassword("");
-              setPasswordError("");
             }
           }
         }}
@@ -323,7 +238,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           <DialogHeader>
             <DialogTitle>Restore Database</DialogTitle>
             <DialogDescription>
-              Select a backup file and enter your password to restore the database. This will delete all existing data.
+              Select a backup file to restore the database. This will delete all existing data.
             </DialogDescription>
           </DialogHeader>
           
@@ -353,24 +268,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
                 />
                 </label>
               </div>
-            <div>
-              <Label htmlFor="password">Enter your password to confirm</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setPasswordError("");
-                }}
-                placeholder="Enter your password"
-                disabled={isRestoring}
-                className={`mt-2 ${passwordError ? 'border-red-500' : ''}`}
-              />
-              {passwordError && (
-                <p className="text-red-500 text-sm mt-2">{passwordError}</p>
-              )}
-            </div>
           </div>
           <DialogFooter>
             <Button
@@ -378,8 +275,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               onClick={() => {
                 setShowRestoreConfirm(false);
                 setSelectedFile(null);
-                setPassword("");
-                setPasswordError("");
               }}
               disabled={isRestoring}
             >
@@ -387,7 +282,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             </Button>
             <Button
               onClick={confirmRestore}
-              disabled={!password || !selectedFile || isRestoring}
+              disabled={!selectedFile || isRestoring}
               className="bg-red-600 hover:bg-red-700"
             >
               {isRestoring ? (
@@ -397,86 +292,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
                 </>
               ) : (
                 "Confirm Restore"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Download Confirmation Dialog */}
-      <Dialog 
-        open={showDownloadConfirm} 
-        onOpenChange={(open) => {
-          if (!isDownloading) {
-            setShowDownloadConfirm(open);
-            if (!open) {
-              setPassword("");
-              setPasswordError("");
-            }
-          }
-        }}
-      >
-        <DialogContent 
-          className="sm:max-w-[425px]"
-          onPointerDownOutside={(e) => {
-            if (isDownloading) {
-              e.preventDefault();
-            }
-          }}
-          onEscapeKeyDown={(e) => {
-            if (isDownloading) {
-              e.preventDefault();
-            }
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Download Backup</DialogTitle>
-            <DialogDescription>
-              Enter your password to download the database backup.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-2">
-            <Label htmlFor="download-password">Enter your password</Label>
-            <Input
-              id="download-password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setPasswordError("");
-              }}
-              placeholder="Enter your password"
-              disabled={isDownloading}
-              className={`mt-2 ${passwordError ? 'border-red-500' : ''}`}
-            />
-            {passwordError && (
-              <p className="text-red-500 text-sm mt-2">{passwordError}</p>
-            )}
-        </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowDownloadConfirm(false);
-                setPassword("");
-                setPasswordError("");
-              }}
-              disabled={isDownloading}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={confirmDownload}
-              disabled={!password || isDownloading}
-            >
-              {isDownloading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Downloading...
-                </>
-              ) : (
-                "Confirm Download"
               )}
             </Button>
           </DialogFooter>

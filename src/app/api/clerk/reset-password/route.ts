@@ -43,6 +43,10 @@ export async function POST(request: Request) {
       password: newPassword,
     });
 
+    await convex.mutation(api.mutations.updateEmailStatus, {
+      userId: user._id,
+    });
+
     try {
       await convex.mutation(api.mutations.resetPassword, {
         userId: user._id,
