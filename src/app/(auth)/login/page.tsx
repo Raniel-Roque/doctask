@@ -270,8 +270,11 @@ const LoginPage = () => {
 
   const handleForgotBack = () => {
     if (forgotStepIndex === 1) {
-      setForgotStepIndex(0);
+      // If on reset password input, go back to password input (step 3)
+      setForgotStep(false);
+      setStep(3);
       setError("");
+      setCode("");
       setPassword("");
       setConfirmPassword("");
     } else {
@@ -349,7 +352,7 @@ const LoginPage = () => {
             {step === 2 && (
             <form className="mt-8 space-y-6" onSubmit={handleCodeSubmit}>
                 {resentSuccess && (
-                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                  <div className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs" role="alert">
                     <span className="block sm:inline">{successMessage}</span>
                   </div>
                 )}
@@ -422,7 +425,7 @@ const LoginPage = () => {
               {forgotStepIndex === 0 && (
                 <>
                   {successMessage && (
-                    <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <div className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs" role="alert">
                       <span className="block sm:inline">{successMessage}</span>
                     </div>
                   )}
@@ -432,9 +435,27 @@ const LoginPage = () => {
                     loading={loading}
                     error={error}
                     onResendCode={handleResendCode}
-                    onSubmit={(e) => {
-                      handleCodeSubmit(e);
-                      if (!error) setForgotStepIndex(1);
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!isLoaded) return;
+                      setLoading(true);
+                      setError("");
+                      try {
+                        const result = await signIn.attemptFirstFactor({
+                          strategy: "reset_password_email_code",
+                          code,
+                        });
+                        if (result.status === "needs_new_password") {
+                          setForgotStepIndex(1);
+                          setError("");
+                        } else {
+                          setError("Invalid code. Please try again.");
+                        }
+                      } catch {
+                        setError("Invalid code. Please try again.");
+                      } finally {
+                        setLoading(false);
+                      }
                     }}
                   />
                 </>
@@ -451,7 +472,47 @@ const LoginPage = () => {
                   setShowConfirmPassword={setShowConfirmPassword}
                   loading={loading}
                   error={error}
-                  onSubmit={handlePasswordSubmit}
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!isLoaded) return;
+                    if (password !== confirmPassword) {
+                      setError("Passwords do not match");
+                      return;
+                    }
+                    if (password.length < 8) {
+                      setError("Password must be at least 8 characters long");
+                      return;
+                    }
+                    setLoading(true);
+                    setError("");
+                    try {
+                      const result = await signIn.resetPassword({ password });
+                      if (result.status === "complete") {
+                        // Update Convex database to mark email as verified
+                        const userRes = await fetch("/api/convex/get-user-by-email", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ email })
+                        });
+                        if (userRes.ok) {
+                          const user = await userRes.json();
+                          await fetch("/api/convex/mark-email-verified", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId: user._id })
+                          });
+                        }
+                        await signOut();
+                        router.push("/login");
+                      } else {
+                        setError("Failed to reset password. Please try again.");
+                      }
+                    } catch {
+                      setError("Failed to reset password. Please try again.");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
                 />
               )}
             </>
