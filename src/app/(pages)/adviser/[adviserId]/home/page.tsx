@@ -1,4 +1,4 @@
-import { Navbar } from "../navbar";
+import { Navbar } from "../components/navbar";
 
 interface AdviserIdPageProps {
     params: Promise<{ adviserId: string }>
@@ -10,7 +10,7 @@ const AdviserIdPage = async ({ params }: AdviserIdPageProps) => {
     return ( 
         <div className="min-h-screen flex flex-col">
             <div className="fixed top-0 left-0 right-0 z-10 h-16 bg-white">
-                <Navbar />
+                <Navbar adviserId={adviserId} />
             </div>
             <div className="mt-16">
                 Adviser ID: {adviserId}, Home Page

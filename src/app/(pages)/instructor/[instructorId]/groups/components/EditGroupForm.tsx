@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes, FaEdit, FaExclamationTriangle, FaUsers, FaUserTie, FaBook, FaSearch, FaChevronDown, FaSave, FaSpinner } from "react-icons/fa";
 import { Group } from "./types";
-import { UnsavedChangesConfirmation } from "../../components/UnsavedChangesConfirmation";
-import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../components/SanitizeInput";
+import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
+import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../../../components/SanitizeInput";
 
 interface User {
   _id: string;

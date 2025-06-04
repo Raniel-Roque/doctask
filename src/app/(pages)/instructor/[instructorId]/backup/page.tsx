@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { SuccessBanner } from "../components/SuccessBanner";
+import { SuccessBanner } from "../../../components/SuccessBanner";
 
 interface BackupAndRestorePageProps {
   params: Promise<{ instructorId: string }>;

@@ -7,7 +7,7 @@ import { useClerk } from "@clerk/clerk-react";
 import { useState, useEffect, useRef } from "react";
 import { FaHome, FaUser, FaUsers, FaClipboardList, FaDatabase, FaSignOutAlt, FaChevronDown } from "react-icons/fa";
 import { Users, GraduationCap } from "lucide-react";
-import { LogoutConfirmation } from "./LogoutConfirmation";
+import { LogoutConfirmation } from "../../../components/LogoutConfirmation";
 
 interface NavbarProps {
   instructorId: string;

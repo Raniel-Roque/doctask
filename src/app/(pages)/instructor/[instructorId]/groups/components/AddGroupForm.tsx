@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaPlus, FaTimes, FaExclamationTriangle, FaChevronDown, FaSearch, FaSpinner, FaBook, FaUserTie, FaUserGraduate, FaUsers } from "react-icons/fa";
-import { UnsavedChangesConfirmation } from "../../components/UnsavedChangesConfirmation";
-import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../components/SanitizeInput";
+import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
+import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../../../components/SanitizeInput";
 
 interface AddGroupFormProps {
   isOpen: boolean;
