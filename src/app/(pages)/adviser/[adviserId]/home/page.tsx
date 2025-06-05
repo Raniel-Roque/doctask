@@ -5,11 +5,11 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Users } from "lucide-react";
 import { CopyButton } from "./components/copy-button";
 
-interface AdviserIdPageProps {
+interface AdviserHomePageProps {
     params: Promise<{ adviserId: string }>
 };
 
-const AdviserIdPage = async ({ params }: AdviserIdPageProps) => {
+const AdviserHomePage = async ({ params }: AdviserHomePageProps) => {
     const { adviserId } = await params;
 
     // Fetch adviser data
@@ -77,10 +77,10 @@ const AdviserIdPage = async ({ params }: AdviserIdPageProps) => {
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <p className="text-sm font-medium text-gray-600">
-                                    Your Adviser Code                                     
+                                <p className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                                    Your Adviser Code
                                     {adviserCode?.code && (
-                                        <CopyButton code={adviserCode.code} />
+                                        <span className="align-middle ml-1"><CopyButton code={adviserCode.code} /></span>
                                     )}
                                 </p>
                                 <div className="flex items-center gap-2">
@@ -153,4 +153,4 @@ const AdviserIdPage = async ({ params }: AdviserIdPageProps) => {
     );
 }
 
-export default AdviserIdPage;
+export default AdviserHomePage;
