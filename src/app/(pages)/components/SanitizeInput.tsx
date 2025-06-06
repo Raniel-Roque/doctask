@@ -16,6 +16,11 @@ interface SanitizeInputProps {
 // Component
 // =========================================
 export const sanitizeInput = (value: string, options: SanitizeInputProps['options'] = {}): string => {
+  // Handle null or undefined values
+  if (value === null || value === undefined) {
+    return '';
+  }
+
   const {
     trim = true,
     removeHtml = true,

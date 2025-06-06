@@ -44,7 +44,6 @@ function validateBackupFile(file: unknown): file is ConvexBackup {
 
 export const createUser = mutation({
   args: {
-    clerk_id: v.string(),
     first_name: v.string(),
     last_name: v.string(),
     email: v.string(),
@@ -59,62 +58,94 @@ export const createUser = mutation({
     if (!emailRegex.test(args.email)) {
       throw new Error("Invalid email format");
     }
+
     // Get instructor first to fail fast if not found
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
+
     // Check if user already exists in Convex
     const existingUser = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("email"), args.email))
       .first();
+
     if (existingUser) {
-      // If user exists but doesn't have a clerk_id, update it
-      if (!existingUser.clerk_id) {
-        await ctx.db.patch(existingUser._id, {
-          clerk_id: args.clerk_id,
-          email_verified: false
-        });
-        return { success: true, userId: existingUser._id };
-      }
-      // If user exists with a different clerk_id, throw error
-      if (existingUser.clerk_id !== args.clerk_id) {
-        throw new Error("Email already registered. Please choose another email.");
-      }
-      // If user exists with same clerk_id, return success
-      return { success: true, userId: existingUser._id };
+      throw new Error("Email already registered. Please choose another email.");
     }
-    // Create new user
-    const userId = await ctx.db.insert("users", {
-      clerk_id: args.clerk_id,
-      email: args.email,
-      email_verified: false,
-      first_name: args.first_name,
-      middle_name: args.middle_name,
-      last_name: args.last_name,
-      role: args.role,
-      subrole: args.subrole,
+
+    // Create user in Clerk first
+    const response = await fetch("/api/clerk/create-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: args.email,
+        firstName: args.first_name,
+        lastName: args.last_name,
+        role: args.role,
+        instructorId: args.instructorId,
+        middle_name: args.middle_name,
+        subrole: args.subrole
+      }),
     });
 
-    // If the user is a student (role 0), create an entry in studentsTable
-    if (args.role === 0) {
-      await ctx.db.insert("studentsTable", {
-        user_id: userId,
-        group_id: null, // No group assigned yet
-      });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to create user in Clerk");
     }
 
-    // If the user is an adviser, generate a code
-    if (args.role === 1) {
-      const code = await generateUniqueAdviserCode(ctx);
-      await ctx.db.insert("advisersTable", {
-        adviser_id: userId,
-        code,
-        group_ids: [],
-      });
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error("Failed to create user in Clerk");
     }
-    // Log the user creation
-    await logCreateUser(ctx, args.instructorId, userId);
-    return { success: true, userId };
+
+    try {
+      // Create new user in Convex
+      const userId = await ctx.db.insert("users", {
+        clerk_id: data.user.id,
+        email: args.email,
+        email_verified: false,
+        first_name: args.first_name,
+        middle_name: args.middle_name,
+        last_name: args.last_name,
+        role: args.role,
+        subrole: args.subrole,
+      });
+
+      // If the user is a student (role 0), create an entry in studentsTable
+      if (args.role === 0) {
+        await ctx.db.insert("studentsTable", {
+          user_id: userId,
+          group_id: null, // No group assigned yet
+        });
+      }
+
+      // If the user is an adviser, generate a code
+      if (args.role === 1) {
+        const code = await generateUniqueAdviserCode(ctx);
+        await ctx.db.insert("advisersTable", {
+          adviser_id: userId,
+          code,
+          group_ids: [],
+        });
+      }
+
+      // Log the user creation
+      await logCreateUser(ctx, args.instructorId, userId);
+      return { success: true, userId };
+    } catch (error) {
+      // If Convex creation fails, attempt cleanup in Clerk
+      await fetch("/api/clerk/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ clerkId: data.user.id }),
+      });
+      throw error; // Re-throw the original error
+    }
   },
 });
 
@@ -585,6 +616,21 @@ export const deleteUser = mutation({
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
 
+    // Delete from Clerk first
+    const response = await fetch("/api/clerk/delete-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ 
+        clerkId: args.clerkId
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to delete user from Clerk");
+    }
+
     // Student (member)
     if (user.role === 0 && user.subrole === 0) {
       // Remove from studentsTable
@@ -669,24 +715,11 @@ export const deleteUser = mutation({
       }
     }
 
-    // Log the deletion
-    await logDeleteUser(ctx, args.instructorId, args.userId);
-
     // Delete from users table
     await ctx.db.delete(args.userId);
 
-    // Delete from Clerk using the API endpoint
-    const response = await fetch("/api/clerk/delete-restore-clerk", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ clerkId: args.clerkId }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to delete user from Clerk");
-    }
+    // Log the deletion last
+    await logDeleteUser(ctx, args.instructorId, args.userId);
 
     return { success: true };
   },

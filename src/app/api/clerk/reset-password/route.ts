@@ -17,8 +17,19 @@ interface ClerkError {
 
 export async function POST(request: Request) {
   try {
-    const { clerkId } = await request.json();
+    const body = await request.json();
+    
+    // Validate request body
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
 
+    const { clerkId } = body;
+
+    // Validate required fields before sanitization
     if (!clerkId) {
       return NextResponse.json(
         { error: "Clerk ID is required" },
@@ -26,9 +37,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Sanitize input
     const sanitizedClerkId = sanitizeInput(clerkId, { trim: true, removeHtml: true, escapeSpecialChars: true });
 
-    const user = await convex.query(api.fetch.getUserByClerkId, { clerkId });
+    // Validate required fields after sanitization
+    if (!sanitizedClerkId) {
+      return NextResponse.json(
+        { error: "Clerk ID is invalid after sanitization" },
+        { status: 400 }
+      );
+    }
+
+    const user = await convex.query(api.fetch.getUserByClerkId, { clerkId: sanitizedClerkId });
     
     if (!user) {
       return NextResponse.json(

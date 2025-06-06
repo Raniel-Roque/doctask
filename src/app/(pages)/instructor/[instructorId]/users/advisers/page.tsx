@@ -73,6 +73,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   const updateUser = useMutation(api.mutations.updateUser);
   const createUser = useMutation(api.mutations.createUser);
+  const deleteUserMutation = useMutation(api.mutations.deleteUser);
 
   // =========================================
   // Effects
@@ -293,31 +294,12 @@ const UsersPage = ({ params }: UsersPageProps) => {
         email: deleteUser.email
       });
 
-      // Delete from Clerk API (which also handles Convex deletion)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const clerkResponse = await fetch("/api/clerk/delete-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          clerkId: deleteUser.clerk_id,
-          instructorId: instructorId
-        }),
-        signal: controller.signal
+      // Delete from Convex (which also handles Clerk deletion)
+      await deleteUserMutation({
+        userId: deleteUser._id as Id<"users">,
+        instructorId: instructorId as Id<"users">,
+        clerkId: deleteUser.clerk_id
       });
-
-      clearTimeout(timeoutId);
-
-      if (!clerkResponse.ok) {
-        if (clerkResponse.status === 0) {
-          throw new Error("Network error - please check your internet connection");
-        }
-        const errorData = await clerkResponse.json();
-        throw new Error(errorData.error || "Failed to delete user");
-      }
 
       logUserAction('Delete Success', { 
         userId: deleteUser._id,
@@ -333,16 +315,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          setDeleteNetworkError("Request timed out. Please try again.");
-        } else if (error.message.includes('Network error')) {
-          setDeleteNetworkError("Network error - please check your internet connection");
-        } else {
-          setNotification({
-            type: 'error',
-            message: error.message || 'Failed to delete adviser. Please try again.'
-          });
-        }
+        setNotification({
+          type: 'error',
+          message: error.message || 'Failed to delete adviser. Please try again.'
+        });
       } else {
         setNotification({
           type: 'error',
@@ -380,61 +356,14 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setAddNetworkError(null);
 
     try {
-      // Create user in Clerk first
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const response = await fetch("/api/clerk/create-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
-          firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
-          lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
-          role: 1, // Add role for advisers
-          instructorId: instructorId,
-          middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined
-        }),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        if (response.status === 0) {
-          throw new Error("Network error - please check your internet connection");
-        }
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create user in Clerk");
-      }
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || "Failed to create user");
-      }
-
-      // Create user in Convex
+      // Create user in Convex (which handles Clerk creation)
       await createUser({
-        clerk_id: data.user.id,
         first_name: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
         middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
         last_name: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
         email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
         role: 1, // 1 = adviser
         instructorId: instructorId as Id<"users">,
-      }).catch(async (error) => {
-        // If Convex creation fails, attempt cleanup
-        await fetch("/api/clerk/delete-user", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ clerkId: data.user.id }),
-        });
-        throw error; // Re-throw the original error
       });
 
       // Only show success message if there were values
@@ -449,16 +378,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
       await refreshAdvisers();
     } catch (error) {
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          setAddNetworkError("Request timed out. Please try again.");
-        } else if (error.message.includes('Network error')) {
-          setAddNetworkError("Network error - please check your internet connection");
-        } else {
-          setNotification({
-            type: 'error',
-            message: error.message || 'Failed to create adviser. Please try again.'
-          });
-        }
+        setNotification({
+          type: 'error',
+          message: error.message || 'Failed to create adviser. Please try again.'
+        });
       } else {
         setNotification({
           type: 'error',

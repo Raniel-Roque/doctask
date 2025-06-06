@@ -17,9 +17,19 @@ interface ClerkError {
 
 export async function POST(request: Request) {
   try {
-    const { clerkId, email, firstName, lastName } = await request.json();
+    const body = await request.json();
+    
+    // Validate request body
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
 
-    // Validate input
+    const { clerkId, email, firstName, lastName } = body;
+
+    // Validate required fields before sanitization
     if (!clerkId || !email || !firstName || !lastName) {
       return NextResponse.json(
         { error: "All fields are required" },
@@ -27,9 +37,23 @@ export async function POST(request: Request) {
       );
     }
 
+    // Sanitize inputs
+    const sanitizedClerkId = sanitizeInput(clerkId, { trim: true, removeHtml: true, escapeSpecialChars: true });
+    const sanitizedEmail = sanitizeInput(email, { trim: true, removeHtml: true, escapeSpecialChars: true });
+    const sanitizedFirstName = sanitizeInput(firstName, { trim: true, removeHtml: true, escapeSpecialChars: true });
+    const sanitizedLastName = sanitizeInput(lastName, { trim: true, removeHtml: true, escapeSpecialChars: true });
+
+    // Validate required fields after sanitization
+    if (!sanitizedClerkId || !sanitizedEmail || !sanitizedFirstName || !sanitizedLastName) {
+      return NextResponse.json(
+        { error: "Required fields are missing or invalid after sanitization" },
+        { status: 400 }
+      );
+    }
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(sanitizedEmail)) {
       return NextResponse.json(
         { error: "Invalid email format" },
         { status: 400 }
@@ -40,12 +64,12 @@ export async function POST(request: Request) {
 
     // Check if the new email already exists in Clerk (excluding the current user)
     const existingUsers = await client.users.getUserList({
-      emailAddress: [email],
+      emailAddress: [sanitizedEmail],
     });
 
     const emailExists = existingUsers.data.some((user) => 
-      user.id !== clerkId && 
-      user.emailAddresses.some((e) => e.emailAddress === email)
+      user.id !== sanitizedClerkId && 
+      user.emailAddresses.some((e) => e.emailAddress === sanitizedEmail)
     );
 
     if (emailExists) {
@@ -56,7 +80,7 @@ export async function POST(request: Request) {
     }
 
     // Get the current user to verify it exists
-    const currentUser = await client.users.getUser(clerkId);
+    const currentUser = await client.users.getUser(sanitizedClerkId);
     if (!currentUser) {
       return NextResponse.json(
         { error: "User not found" },
@@ -65,7 +89,7 @@ export async function POST(request: Request) {
     }
 
     // Get the Convex user record
-    const convexUser = await convex.query(api.fetch.getUserByClerkId, { clerkId });
+    const convexUser = await convex.query(api.fetch.getUserByClerkId, { clerkId: sanitizedClerkId });
     if (!convexUser) {
       return NextResponse.json(
         { error: "User not found in database" },
@@ -75,21 +99,21 @@ export async function POST(request: Request) {
 
     // Check if a new user was already created for this email
     const existingNewUser = await client.users.getUserList({
-      emailAddress: [email],
+      emailAddress: [sanitizedEmail],
     });
 
     let newUser;
     let newPassword;
-    if (existingNewUser.data.some(user => user.id !== clerkId)) {
+    if (existingNewUser.data.some(user => user.id !== sanitizedClerkId)) {
       // A new user was already created but the process didn't complete
-      newUser = existingNewUser.data.find(user => user.id !== clerkId);
+      newUser = existingNewUser.data.find(user => user.id !== sanitizedClerkId);
     } else {
       // Generate a new password using the shared utility
-      newPassword = generatePassword(firstName, lastName, Date.now());
+      newPassword = generatePassword(sanitizedFirstName, sanitizedLastName, Date.now());
 
       // Create new user with the new email
       newUser = await client.users.createUser({
-        emailAddress: [email],
+        emailAddress: [sanitizedEmail],
         password: newPassword,
       });
 
@@ -109,9 +133,9 @@ export async function POST(request: Request) {
     }
 
 
-    const oldUser = await client.users.getUser(clerkId);
+    const oldUser = await client.users.getUser(sanitizedClerkId);
     if (oldUser) {
-      await client.users.deleteUser(clerkId);
+      await client.users.deleteUser(sanitizedClerkId);
     }
     
     // Send email upate notification using Resend
@@ -119,14 +143,9 @@ export async function POST(request: Request) {
       throw new Error("Email service is not properly configured");
     }
 
-    // Use sanitizeInput for input sanitization
-    const sanitizedEmail = sanitizeInput(email, { trim: true, removeHtml: true, escapeSpecialChars: true });
-    const sanitizedFirstName = sanitizeInput(firstName, { trim: true, removeHtml: true, escapeSpecialChars: true });
-    const sanitizedLastName = sanitizeInput(lastName, { trim: true, removeHtml: true, escapeSpecialChars: true });
-
     await resend.emails.send({
       from: 'DocTask <onboarding@resend.dev>',
-      to: email,
+      to: sanitizedEmail,
       subject: 'Welcome to DocTask - Your Account Details',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

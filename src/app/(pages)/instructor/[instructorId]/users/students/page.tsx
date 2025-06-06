@@ -16,6 +16,7 @@ import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmati
 import { User, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirection, Notification as NotificationType, LogDetails } from "../components/types";
 import { SuccessBanner } from "../../../../components/SuccessBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
+import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 // =========================================
 // Types
@@ -75,6 +76,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   const updateUser = useMutation(api.mutations.updateUser);
   const createUser = useMutation(api.mutations.createUser);
+  const deleteUserMutation = useMutation(api.mutations.deleteUser);
 
   // =========================================
   // Effects
@@ -210,60 +212,16 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         }
       });
 
-      // If email is changed, update in Clerk first
-      if (editFormData.email !== editingUser.email) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-        const response = await fetch("/api/clerk/update-user", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            clerkId: editingUser.clerk_id,
-            email: editFormData.email.trim(),
-            firstName: editFormData.first_name.trim(),
-            lastName: editFormData.last_name.trim(),
-          }),
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          if (response.status === 0) {
-            throw new Error("Network error - please check your internet connection");
-          }
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to update user email");
-        }
-
-        const data = await response.json();
-        
-        // Update in Convex with all changed fields
-        await updateUser({
-          userId: editingUser._id,
-          instructorId: instructorId as Id<"users">,
-          first_name: editFormData.first_name.trim(),
-          middle_name: editFormData.middle_name?.trim() || undefined,
-          last_name: editFormData.last_name.trim(),
-          email: editFormData.email.trim(),
-          subrole: editFormData.subrole,
-          clerk_id: data.clerkId
-        });
-      } else {
-        // Update in Convex without changing Clerk ID
-        await updateUser({
-          userId: editingUser._id,
-          instructorId: instructorId as Id<"users">,
-          first_name: editFormData.first_name.trim(),
-          middle_name: editFormData.middle_name?.trim() || undefined,
-          last_name: editFormData.last_name.trim(),
-          email: editFormData.email.trim(),
-          subrole: editFormData.subrole,
-        });
-      }
+      // Update in Convex without changing Clerk ID
+      await updateUser({
+        userId: editingUser._id,
+        instructorId: instructorId as Id<"users">,
+        first_name: editFormData.first_name.trim(),
+        middle_name: editFormData.middle_name?.trim() || undefined,
+        last_name: editFormData.last_name.trim(),
+        email: editFormData.email.trim(),
+        subrole: editFormData.subrole,
+      });
 
       logUserAction('Edit Success', { 
         userId: editingUser._id,
@@ -308,31 +266,12 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         email: deleteUser.email
       });
 
-      // Delete from Clerk API (which also handles Convex deletion)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const clerkResponse = await fetch("/api/clerk/delete-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          clerkId: deleteUser.clerk_id,
-          instructorId: instructorId
-        }),
-        signal: controller.signal
+      // Delete from Convex (which also handles Clerk deletion)
+      await deleteUserMutation({
+        userId: deleteUser._id as Id<"users">,
+        instructorId: instructorId as Id<"users">,
+        clerkId: deleteUser.clerk_id
       });
-
-      clearTimeout(timeoutId);
-
-      if (!clerkResponse.ok) {
-        if (clerkResponse.status === 0) {
-          throw new Error("Network error - please check your internet connection");
-        }
-        const errorData = await clerkResponse.json();
-        throw new Error(errorData.error || "Failed to delete user");
-      }
 
       logUserAction('Delete Success', { 
         userId: deleteUser._id,
@@ -348,16 +287,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          setDeleteNetworkError("Request timed out. Please try again.");
-        } else if (error.message.includes('Network error')) {
-          setDeleteNetworkError("Network error - please check your internet connection");
-        } else {
-          setNotification({
-            type: 'error',
-            message: error.message || 'Failed to delete student. Please try again.'
-          });
-        }
+        setNotification({
+          type: 'error',
+          message: error.message || 'Failed to delete student. Please try again.'
+        });
       } else {
         setNotification({
           type: 'error',
@@ -387,63 +320,15 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setAddNetworkError(null);
 
     try {
-      // Create user in Clerk first
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const response = await fetch("/api/clerk/create-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: addFormData.email.trim(),
-          firstName: addFormData.first_name.trim(),
-          lastName: addFormData.last_name.trim(),
-          role: 0, // Add role for students
-          instructorId: instructorId as Id<"users">,
-          middle_name: addFormData.middle_name?.trim() || undefined,
-          subrole: addFormData.subrole
-        }),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        if (response.status === 0) {
-          throw new Error("Network error - please check your internet connection");
-        }
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create user in Clerk");
-      }
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error("Failed to create user");
-      }
-
-      // Create user in Convex
+      // Create user in Convex (which handles Clerk creation)
       await createUser({
-        clerk_id: data.user.id,
-        first_name: addFormData.first_name.trim(),
-        middle_name: addFormData.middle_name?.trim() || undefined,
-        last_name: addFormData.last_name.trim(),
-        email: addFormData.email.trim(),
-        role: 0, // Always 0 for students
+        first_name: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
+        middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
+        last_name: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
+        email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
+        role: 0, // 0 = student
         subrole: addFormData.subrole,
         instructorId: instructorId as Id<"users">,
-      }).catch(async (error) => {
-        // If Convex creation fails, attempt cleanup
-        await fetch("/api/clerk/delete-user", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ clerkId: data.user.id }),
-        });
-        throw error; // Re-throw the original error
       });
 
       // Only show success message if there were values
@@ -459,15 +344,15 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       await refreshStudents();
     } catch (error) {
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          setAddNetworkError("Request timed out. Please try again.");
-        } else if (error.message.includes('Network error')) {
-          setAddNetworkError("Network error - please check your internet connection");
-        } else {
-          setValidationError(error.message);
-        }
+        setNotification({
+          type: 'error',
+          message: error.message || 'Failed to create student. Please try again.'
+        });
       } else {
-        setValidationError("An unexpected error occurred. Please try again.");
+        setNotification({
+          type: 'error',
+          message: 'An unexpected error occurred. Please try again.'
+        });
       }
     } finally {
       setIsSubmitting(false);

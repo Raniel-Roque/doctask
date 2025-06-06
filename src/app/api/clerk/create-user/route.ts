@@ -18,7 +18,25 @@ interface ClerkError {
 export async function POST(request: Request) {
   let clerkUser = null;
   try {
-    const { firstName, lastName, email, role, middle_name, instructorId, subrole } = await request.json();
+    const body = await request.json();
+    
+    // Validate request body
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
+
+    const { firstName, lastName, email, role, middle_name, instructorId, subrole } = body;
+
+    // Validate required fields before sanitization
+    if (!firstName || !lastName || !email || role === undefined || !instructorId) {
+      return NextResponse.json(
+        { error: "Required fields are missing" },
+        { status: 400 }
+      );
+    }
 
     // Trim all string values and convert null to undefined
     const trimmedFirstName = sanitizeInput(firstName, { trim: true, removeHtml: true, escapeSpecialChars: true }) || null;
@@ -26,10 +44,10 @@ export async function POST(request: Request) {
     const trimmedEmail = sanitizeInput(email, { trim: true, removeHtml: true, escapeSpecialChars: true }) || null;
     const trimmedMiddleName = sanitizeInput(middle_name, { trim: true, removeHtml: true, escapeSpecialChars: true }) || null;
 
-    // Validate required fields
-    if (!trimmedFirstName || !trimmedLastName || !trimmedEmail || role === undefined || !instructorId) {
+    // Validate required fields after sanitization
+    if (!trimmedFirstName || !trimmedLastName || !trimmedEmail) {
       return NextResponse.json(
-        { error: "Required fields are missing" },
+        { error: "Required fields are missing or invalid after sanitization" },
         { status: 400 }
       );
     }
@@ -124,8 +142,14 @@ export async function POST(request: Request) {
     }
 
     const clerkError = error as ClerkError;
+    const errorMessage = clerkError.errors?.[0]?.message || 
+                        (error instanceof Error ? error.message : "Failed to create user");
+    
     return NextResponse.json(
-      { error: clerkError.errors?.[0]?.message || "Failed to create user" },
+      { 
+        error: errorMessage,
+        details: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
