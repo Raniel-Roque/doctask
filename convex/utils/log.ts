@@ -11,43 +11,91 @@ const LOG_ACTIONS = {
   UPDATE_GROUP: "Update Group"
 } as const;
 
-export async function logCreateUser(ctx: MutationCtx, instructorId: Id<"users">, affectedEntityId: Id<"users">) {
+interface UserInfo {
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  email: string;
+}
+
+function formatUserName(userInfo: UserInfo): string {
+  return `${userInfo.first_name} ${userInfo.middle_name ? userInfo.middle_name + ' ' : ''}${userInfo.last_name}`;
+}
+
+export async function logCreateUser(
+  ctx: MutationCtx, 
+  instructorId: Id<"users">, 
+  affectedEntityId: Id<"users">,
+  userInfo: UserInfo
+) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
     affected_entity_type: "user",
     affected_entity_id: affectedEntityId,
+    affected_user_first_name: userInfo.first_name,
+    affected_user_middle_name: userInfo.middle_name,
+    affected_user_last_name: userInfo.last_name,
+    affected_user_email: userInfo.email,
     action: LOG_ACTIONS.CREATE_USER,
-    details: "Created User"
+    details: `Created User: ${formatUserName(userInfo)}`
   });
 }
 
-export async function logUpdateUser(ctx: MutationCtx, instructorId: Id<"users">, affectedEntityId: Id<"users">, details: string) {
+export async function logUpdateUser(
+  ctx: MutationCtx, 
+  instructorId: Id<"users">, 
+  affectedEntityId: Id<"users">, 
+  details: string,
+  userInfo: UserInfo
+) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
     affected_entity_type: "user",
     affected_entity_id: affectedEntityId,
+    affected_user_first_name: userInfo.first_name,
+    affected_user_middle_name: userInfo.middle_name,
+    affected_user_last_name: userInfo.last_name,
+    affected_user_email: userInfo.email,
     action: LOG_ACTIONS.UPDATE_USER,
-    details
+    details: `Updated User: ${formatUserName(userInfo)} - ${details}`
   });
 }
 
-export async function logDeleteUser(ctx: MutationCtx, instructorId: Id<"users">, affectedEntityId: Id<"users">) {
+export async function logDeleteUser(
+  ctx: MutationCtx, 
+  instructorId: Id<"users">, 
+  affectedEntityId: Id<"users">,
+  userInfo: UserInfo
+) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
     affected_entity_type: "user",
     affected_entity_id: affectedEntityId,
+    affected_user_first_name: userInfo.first_name,
+    affected_user_middle_name: userInfo.middle_name,
+    affected_user_last_name: userInfo.last_name,
+    affected_user_email: userInfo.email,
     action: LOG_ACTIONS.DELETE_USER,
-    details: "Deleted User"
+    details: `Deleted User: ${formatUserName(userInfo)}`
   });
 }
 
-export async function logResetPassword(ctx: MutationCtx, instructorId: Id<"users">, affectedEntityId: Id<"users">) {
+export async function logResetPassword(
+  ctx: MutationCtx, 
+  instructorId: Id<"users">, 
+  affectedEntityId: Id<"users">,
+  userInfo: UserInfo
+) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
     affected_entity_type: "user",
     affected_entity_id: affectedEntityId,
+    affected_user_first_name: userInfo.first_name,
+    affected_user_middle_name: userInfo.middle_name,
+    affected_user_last_name: userInfo.last_name,
+    affected_user_email: userInfo.email,
     action: LOG_ACTIONS.RESET_PASSWORD,
-    details: "Reset Password"
+    details: `Reset Password for: ${formatUserName(userInfo)}`
   });
 }
 

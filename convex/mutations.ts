@@ -2,6 +2,7 @@ import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { generateUniqueAdviserCode } from "./utils/adviserCode";
 import { logCreateUser, logUpdateUser, logDeleteUser, logResetPassword, logCreateGroup, logUpdateGroup, logDeleteGroup } from "./utils/log";
+import { Id } from "./_generated/dataModel";
 
 // Backup types and validation
 interface ConvexBackup {
@@ -51,8 +52,9 @@ export const createUser = mutation({
     middle_name: v.optional(v.string()),
     instructorId: v.id("users"),
     subrole: v.optional(v.number()),
+    clerk_id: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ success: boolean; userId: Id<"users"> }> => {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(args.email)) {
@@ -70,80 +72,49 @@ export const createUser = mutation({
       .first();
 
     if (existingUser) {
-      throw new Error("Email already registered. Please choose another email.");
-    }
-
-    // Create user in Clerk first
-    const response = await fetch("/api/clerk/create-user", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: args.email,
-        firstName: args.first_name,
-        lastName: args.last_name,
-        role: args.role,
-        instructorId: args.instructorId,
-        middle_name: args.middle_name,
-        subrole: args.subrole
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to create user in Clerk");
-    }
-
-    const data = await response.json();
-    
-    if (!data.success) {
-      throw new Error("Failed to create user in Clerk");
+        throw new Error("Email already registered. Please choose another email.");
     }
 
     try {
       // Create new user in Convex
-      const userId = await ctx.db.insert("users", {
-        clerk_id: data.user.id,
-        email: args.email,
-        email_verified: false,
-        first_name: args.first_name,
-        middle_name: args.middle_name,
-        last_name: args.last_name,
-        role: args.role,
-        subrole: args.subrole,
+    const userId = await ctx.db.insert("users", {
+      clerk_id: args.clerk_id,
+      email: args.email,
+      email_verified: false,
+      first_name: args.first_name,
+      middle_name: args.middle_name,
+      last_name: args.last_name,
+      role: args.role,
+      subrole: args.subrole,
+    });
+
+    // If the user is a student (role 0), create an entry in studentsTable
+    if (args.role === 0) {
+      await ctx.db.insert("studentsTable", {
+        user_id: userId,
+        group_id: null, // No group assigned yet
       });
+    }
 
-      // If the user is a student (role 0), create an entry in studentsTable
-      if (args.role === 0) {
-        await ctx.db.insert("studentsTable", {
-          user_id: userId,
-          group_id: null, // No group assigned yet
-        });
-      }
+    // If the user is an adviser, generate a code
+    if (args.role === 1) {
+      const code = await generateUniqueAdviserCode(ctx);
+      await ctx.db.insert("advisersTable", {
+        adviser_id: userId,
+        code,
+        group_ids: [],
+      });
+    }
 
-      // If the user is an adviser, generate a code
-      if (args.role === 1) {
-        const code = await generateUniqueAdviserCode(ctx);
-        await ctx.db.insert("advisersTable", {
-          adviser_id: userId,
-          code,
-          group_ids: [],
-        });
-      }
-
-      // Log the user creation
-      await logCreateUser(ctx, args.instructorId, userId);
-      return { success: true, userId };
+    // Log the user creation with user info
+    await logCreateUser(ctx, args.instructorId, userId, {
+      first_name: args.first_name,
+      middle_name: args.middle_name,
+      last_name: args.last_name,
+      email: args.email
+    });
+    return { success: true, userId };
     } catch (error) {
-      // If Convex creation fails, attempt cleanup in Clerk
-      await fetch("/api/clerk/delete-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ clerkId: data.user.id }),
-      });
       throw error; // Re-throw the original error
     }
   },
@@ -391,7 +362,14 @@ export const updateUser = mutation({
       changes.push(`User Type: ${oldRole} → ${newRole}`);
     }
     // Only log if there are actual changes
-    await logUpdateUser(ctx, args.instructorId, args.userId, changes.join("\n"));
+    if (changes.length > 0) {
+      await logUpdateUser(ctx, args.instructorId, args.userId, changes.join("\n"), {
+        first_name: args.first_name,
+        middle_name: args.middle_name,
+        last_name: args.last_name,
+        email: args.email
+      });
+    }
     return { success: true };
   },
 });
@@ -610,26 +588,19 @@ export const deleteUser = mutation({
     instructorId: v.id("users"),
     clerkId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
 
-    // Delete from Clerk first
-    const response = await fetch("/api/clerk/delete-user", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ 
-        clerkId: args.clerkId
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to delete user from Clerk");
-    }
+    // Store user info for logging
+    const userInfo = {
+      first_name: user.first_name,
+      middle_name: user.middle_name,
+      last_name: user.last_name,
+      email: user.email
+    };
 
     // Student (member)
     if (user.role === 0 && user.subrole === 0) {
@@ -718,8 +689,8 @@ export const deleteUser = mutation({
     // Delete from users table
     await ctx.db.delete(args.userId);
 
-    // Log the deletion last
-    await logDeleteUser(ctx, args.instructorId, args.userId);
+    // Log the deletion with user info
+    await logDeleteUser(ctx, args.instructorId, args.userId, userInfo);
 
     return { success: true };
   },
@@ -808,7 +779,12 @@ export const resetPassword = mutation({
     if (!user) throw new Error("User not found");
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
-    await logResetPassword(ctx, args.instructorId, args.userId);
+    await logResetPassword(ctx, args.instructorId, args.userId, {
+      first_name: user.first_name,
+      middle_name: user.middle_name,
+      last_name: user.last_name,
+      email: user.email
+    });
     return { success: true };
   },
 });

@@ -356,7 +356,30 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setAddNetworkError(null);
 
     try {
-      // Create user in Convex (which handles Clerk creation)
+      // Create user in Clerk first
+      const response = await fetch("/api/clerk/create-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
+          firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
+          lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
+          role: 1, // 1 = adviser
+          instructorId: instructorId,
+          middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create user in Clerk");
+      }
+
+      const data = await response.json();
+
+      // Then create in Convex
       await createUser({
         first_name: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
         middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
@@ -364,6 +387,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
         role: 1, // 1 = adviser
         instructorId: instructorId as Id<"users">,
+        clerk_id: data.user.id, // Pass the Clerk ID to Convex
       });
 
       // Only show success message if there were values

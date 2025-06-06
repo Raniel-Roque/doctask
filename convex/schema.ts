@@ -80,6 +80,12 @@ export default defineSchema({
     affected_entity_type: v.string(), // "user" or "group"
     affected_entity_id: v.union(v.id("users"), v.id("groupsTable")), // ID of affected entity
     
+    // User Information (for deleted users)
+    affected_user_first_name: v.optional(v.string()),
+    affected_user_middle_name: v.optional(v.string()),
+    affected_user_last_name: v.optional(v.string()),
+    affected_user_email: v.optional(v.string()),
+    
     // Log Details
     action: v.string(), 
     details: v.string(), // JSON stringified details of the action

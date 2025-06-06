@@ -266,7 +266,23 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         email: deleteUser.email
       });
 
-      // Delete from Convex (which also handles Clerk deletion)
+      // First delete from Clerk
+      const response = await fetch("/api/clerk/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clerkId: deleteUser.clerk_id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete user from Clerk");
+      }
+
+      // Then delete from Convex
       await deleteUserMutation({
         userId: deleteUser._id as Id<"users">,
         instructorId: instructorId as Id<"users">,
@@ -320,7 +336,31 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setAddNetworkError(null);
 
     try {
-      // Create user in Convex (which handles Clerk creation)
+      // Create user in Clerk first
+      const response = await fetch("/api/clerk/create-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
+          firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
+          lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
+          role: 0, // 0 = student
+          instructorId: instructorId,
+          middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
+          subrole: addFormData.subrole,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create user in Clerk");
+      }
+
+      const data = await response.json();
+      
+      // Then create in Convex
       await createUser({
         first_name: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
         middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
@@ -329,6 +369,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         role: 0, // 0 = student
         subrole: addFormData.subrole,
         instructorId: instructorId as Id<"users">,
+        clerk_id: data.user.id, // Pass the Clerk ID to Convex
       });
 
       // Only show success message if there were values
