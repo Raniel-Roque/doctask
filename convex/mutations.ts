@@ -3,6 +3,41 @@ import { v } from "convex/values";
 import { generateUniqueAdviserCode } from "./utils/adviserCode";
 import { logCreateUser, logUpdateUser, logDeleteUser, logResetPassword, logCreateGroup, logUpdateGroup, logDeleteGroup } from "./utils/log";
 
+// Backup types and validation
+interface ConvexBackup {
+  timestamp: string;
+  version: string;
+  tables: {
+    users: unknown[];
+    groups: unknown[];
+    students: unknown[];
+    advisers: unknown[];
+    logs: unknown[];
+  };
+}
+
+function validateBackupFile(file: unknown): file is ConvexBackup {
+  if (!file || typeof file !== 'object') {
+    throw new Error("Invalid backup file format");
+  }
+
+  const backup = file as ConvexBackup;
+  if (!backup.timestamp || !backup.version || !backup.tables) {
+    throw new Error("Backup file is missing required fields");
+  }
+
+  // Validate each table exists and has data
+  const requiredTables = ['users', 'groups', 'students', 'advisers', 'logs'];
+  for (const table of requiredTables) {
+    if (!backup.tables[table as keyof typeof backup.tables] || 
+        !Array.isArray(backup.tables[table as keyof typeof backup.tables])) {
+      throw new Error(`Backup file is missing or has invalid ${table} table`);
+    }
+  }
+
+  return true;
+}
+
 // =========================================
 // CREATE OPERATIONS
 // =========================================
@@ -70,16 +105,12 @@ export const createUser = mutation({
 
     // If the user is an adviser, generate a code
     if (args.role === 1) {
-      try {
-        const code = await generateUniqueAdviserCode(ctx);
-        await ctx.db.insert("advisersTable", {
-          adviser_id: userId,
-          code,
-          group_ids: [],
-        });
-      } catch {
-
-      }
+      const code = await generateUniqueAdviserCode(ctx);
+      await ctx.db.insert("advisersTable", {
+        adviser_id: userId,
+        code,
+        group_ids: [],
+      });
     }
     // Log the user creation
     await logCreateUser(ctx, args.instructorId, userId);
@@ -547,7 +578,6 @@ export const deleteUser = mutation({
     userId: v.id("users"),
     instructorId: v.id("users"),
     clerkId: v.string(),
-    clerkApiKey: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -645,16 +675,17 @@ export const deleteUser = mutation({
     // Delete from users table
     await ctx.db.delete(args.userId);
 
-    // Delete from Clerk
-    const response = await fetch(`https://api.clerk.dev/v1/users/${args.clerkId}`, {
-      method: 'DELETE',
+    // Delete from Clerk using the API endpoint
+    const response = await fetch("/api/clerk/delete-restore-clerk", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${args.clerkApiKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({ clerkId: args.clerkId }),
     });
+
     if (!response.ok) {
-      throw new Error("Clerk deletion failed: " + (await response.text()));
+      throw new Error("Failed to delete user from Clerk");
     }
 
     return { success: true };
@@ -749,83 +780,6 @@ export const resetPassword = mutation({
   },
 });
 
-export const removeMemberFromGroup = mutation({
-  args: {
-    groupId: v.id("groupsTable"),
-    memberId: v.id("users"),
-    instructorId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const group = await ctx.db.get(args.groupId);
-    if (!group) throw new Error("Group not found");
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
-    const member = await ctx.db.get(args.memberId);
-    if (!member) throw new Error("Member not found");
-
-    // Remove member from group
-    await ctx.db.patch(args.groupId, {
-      member_ids: group.member_ids.filter((id) => id !== args.memberId),
-    });
-
-    // Remove member from studentsTable
-    const studentEntry = await ctx.db
-      .query("studentsTable")
-      .withIndex("by_user", (q) => q.eq("user_id", args.memberId))
-      .first();
-    if (studentEntry) {
-      await ctx.db.delete(studentEntry._id);
-    }
-
-    return { success: true };
-  },
-});
-
-export const addMemberToGroup = mutation({
-  args: {
-    groupId: v.id("groupsTable"),
-    memberId: v.id("users"),
-    instructorId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const group = await ctx.db.get(args.groupId);
-    if (!group) throw new Error("Group not found");
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
-    const member = await ctx.db.get(args.memberId);
-    if (!member) throw new Error("Member not found");
-
-    // Check if member is already in the group
-    if (group.member_ids.includes(args.memberId)) {
-      throw new Error("Member is already in the group");
-    }
-
-    // Add member to group
-    await ctx.db.patch(args.groupId, {
-      member_ids: [...group.member_ids, args.memberId],
-    });
-
-    // Create or update student table entry
-    const existingEntry = await ctx.db
-      .query("studentsTable")
-      .withIndex("by_user", (q) => q.eq("user_id", args.memberId))
-      .first();
-
-    if (existingEntry) {
-      await ctx.db.patch(existingEntry._id, {
-        group_id: args.groupId,
-      });
-    } else {
-      await ctx.db.insert("studentsTable", {
-        user_id: args.memberId,
-        group_id: args.groupId,
-      });
-    }
-
-    return { success: true };
-  },
-});
-
 // =========================================
 // BACKUP OPERATIONS
 // =========================================
@@ -846,7 +800,7 @@ export const downloadConvexBackup = mutation({
     const logs = await ctx.db.query("instructorLogs").collect();
 
     // Create backup object with timestamp
-    const backup = {
+    const backup: ConvexBackup = {
       timestamp: new Date().toISOString(),
       version: "1.0",
       tables: {
@@ -858,25 +812,9 @@ export const downloadConvexBackup = mutation({
       }
     };
 
+    // Validate the backup before returning
+    validateBackupFile(backup);
+
     return backup;
   },
 });
-
-export const downloadClerkBackup = mutation({
-  args: {
-    instructorId: v.id("users"),
-    clerkApiKey: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
-
-    // Import the downloadClerkBackup function
-    const { downloadClerkBackup: downloadClerk } = await import("./utils/backup");
-    
-    // Download Clerk backup
-    const backup = await downloadClerk(args.clerkApiKey);
-    
-    return backup;
-  },
-}); 

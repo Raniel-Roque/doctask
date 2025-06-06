@@ -17,7 +17,6 @@ import type * as fetch from "../fetch.js";
 import type * as mutations from "../mutations.js";
 import type * as restore from "../restore.js";
 import type * as utils_adviserCode from "../utils/adviserCode.js";
-import type * as utils_backup from "../utils/backup.js";
 import type * as utils_log from "../utils/log.js";
 
 /**
@@ -33,7 +32,6 @@ declare const fullApi: ApiFromModules<{
   mutations: typeof mutations;
   restore: typeof restore;
   "utils/adviserCode": typeof utils_adviserCode;
-  "utils/backup": typeof utils_backup;
   "utils/log": typeof utils_log;
 }>;
 export declare const api: FilterApi<
