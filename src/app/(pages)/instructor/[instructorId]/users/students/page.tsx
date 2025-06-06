@@ -163,11 +163,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     });
   };
 
-  const logUserAction = (action: string, details: LogDetails) => {
-    console.log(`[User Action] ${action}:`, {
-      instructorId,
-      ...details
-    });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const logUserAction = (_action: string, _details: LogDetails) => {
+    // No-op in production
   };
 
   // =========================================
@@ -349,7 +347,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         userId: deleteUser._id,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
-      console.error("Error deleting user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           setDeleteNetworkError("Request timed out. Please try again.");
@@ -437,6 +434,16 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         role: 0, // Always 0 for students
         subrole: addFormData.subrole,
         instructorId: instructorId as Id<"users">,
+      }).catch(async (error) => {
+        // If Convex creation fails, attempt cleanup
+        await fetch("/api/clerk/delete-user", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ clerkId: data.user.id }),
+        });
+        throw error; // Re-throw the original error
       });
 
       // Only show success message if there were values
@@ -451,7 +458,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       });
       await refreshStudents();
     } catch (error) {
-      console.error("Error adding user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           setAddNetworkError("Request timed out. Please try again.");
@@ -506,7 +512,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       await refreshStudents();
       setSuccessMessage("Password reset successfully");
     } catch (error) {
-      console.error("Error resetting password:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           setResetPasswordNetworkError("Request timed out. Please try again.");

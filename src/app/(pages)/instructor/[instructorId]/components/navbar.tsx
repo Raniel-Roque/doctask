@@ -49,8 +49,7 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
       setIsLoggingOut(true);
       await signOut();
       router.replace("/login");
-    } catch (error) {
-      console.error("Error signing out:", error);
+    } catch {
       setIsLoggingOut(false);
     }
   };

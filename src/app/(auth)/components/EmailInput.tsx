@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaEnvelope } from 'react-icons/fa';
+import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface EmailInputProps {
   email: string;
@@ -24,7 +25,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ email, setEmail, disabled = fal
       autoComplete="email"
       required
       value={email}
-      onChange={(e) => setEmail(e.target.value)}
+      onChange={(e) => setEmail(sanitizeInput(e.target.value, { trim: true, removeHtml: true, escapeSpecialChars: true }))}
       className="appearance-none rounded-lg relative block w-full pl-10 pr-3 h-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
       placeholder={placeholder}
       disabled={disabled || loading}

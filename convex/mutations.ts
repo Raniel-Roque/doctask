@@ -170,7 +170,7 @@ export const createGroup = mutation({
         .first();
       if (adviserCode) {
         await ctx.db.patch(adviserCode._id, {
-          group_ids: [...adviserCode.group_ids, groupId],
+          group_ids: [...(adviserCode.group_ids || []), groupId],
         });
       }
     }
@@ -258,7 +258,7 @@ export const updateUser = mutation({
             
             if (adviserCode) {
               await ctx.db.patch(adviserCode._id, {
-                group_ids: adviserCode.group_ids.filter(id => id !== group._id)
+                group_ids: (adviserCode.group_ids || []).filter(id => id !== group._id)
               });
             }
           }
@@ -427,7 +427,7 @@ export const updateGroup = mutation({
           .first();
         if (oldAdviserCode) {
           await ctx.db.patch(oldAdviserCode._id, {
-            group_ids: oldAdviserCode.group_ids.filter(id => id !== args.groupId),
+            group_ids: (oldAdviserCode.group_ids || []).filter(id => id !== args.groupId),
           });
         }
       }
@@ -440,7 +440,7 @@ export const updateGroup = mutation({
           .first();
         if (newAdviserCode) {
           await ctx.db.patch(newAdviserCode._id, {
-            group_ids: [...newAdviserCode.group_ids, args.groupId],
+            group_ids: [...(newAdviserCode.group_ids || []), args.groupId],
           });
         }
       }
@@ -602,7 +602,7 @@ export const deleteUser = mutation({
             .first();
           if (adviserCode) {
             await ctx.db.patch(adviserCode._id, {
-              group_ids: adviserCode.group_ids.filter(id => id !== group._id)
+              group_ids: (adviserCode.group_ids || []).filter(id => id !== group._id)
             });
           }
         }
@@ -715,7 +715,7 @@ export const deleteGroup = mutation({
         .first();
       if (adviserCode) {
         await ctx.db.patch(adviserCode._id, {
-          group_ids: adviserCode.group_ids.filter(id => id !== args.groupId),
+          group_ids: (adviserCode.group_ids || []).filter(id => id !== args.groupId)
         });
       }
     }

@@ -228,8 +228,7 @@ const LoginPage = () => {
         setResentSuccess(false);
         setSuccessMessage("");
       }
-    } catch (error) {
-      console.error("Resend code error:", error);
+    } catch {
       setError("An error occurred. Please try again.");
       setResentSuccess(false);
       setSuccessMessage("");

@@ -63,8 +63,8 @@ export default defineSchema({
     code: v.string(), // Format: XXXX-XXXX-XXXX where X is a capital letter
     
     // Associated Groups
-    group_ids: v.array(v.id("groupsTable")), // Array of group IDs this adviser handles
-    requests_group_ids: v.array(v.id("groupsTable")), // Array of requesting group IDs this adviser need to accept to handle
+    group_ids: v.optional(v.array(v.id("groupsTable"))), // Array of group IDs this adviser handles
+    requests_group_ids: v.optional(v.array(v.id("groupsTable"))), // Array of requesting group IDs this adviser need to accept to handle
   })
   .index("by_adviser", ["adviser_id"])
   .index("by_code", ["code"]),

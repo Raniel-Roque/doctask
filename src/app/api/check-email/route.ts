@@ -19,8 +19,7 @@ export async function POST(request: Request) {
     const user = await convex.query(api.fetch.getUserByEmail, { email });
 
     return NextResponse.json({ exists: !!user });
-  } catch (error) {
-    console.error("Error checking email:", error);
+  } catch {
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

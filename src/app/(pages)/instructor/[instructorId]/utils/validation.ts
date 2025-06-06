@@ -31,19 +31,6 @@ export const VALIDATION_RULES = {
 } as const;
 
 // =========================================
-// Input Sanitization
-// =========================================
-export const sanitizeInput = (input: string): string => {
-  return input
-    .trim()
-    .replace(/[<>]/g, '') // Remove potential HTML tags
-    .replace(/[&]/g, '&amp;') // Escape ampersands
-    .replace(/["]/g, '&quot;') // Escape quotes
-    .replace(/[']/g, '&#x27;') // Escape single quotes
-    .replace(/[/]/g, '&#x2F;'); // Escape forward slashes
-};
-
-// =========================================
 // Validation Functions
 // =========================================
 export const validateField = (

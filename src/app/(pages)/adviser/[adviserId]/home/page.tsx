@@ -25,7 +25,7 @@ const AdviserHomePage = async ({ params }: AdviserHomePageProps) => {
     // Fetch all groups to filter by adviser's group_ids
     const allGroups = await fetchQuery(api.fetch.getGroups);
     const adviserGroups = allGroups?.filter(group => 
-        adviserCode?.group_ids.includes(group._id)
+        adviserCode?.group_ids?.includes(group._id) ?? false
     ) || [];
 
     // Fetch all users to get project manager names

@@ -59,7 +59,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       
       setSuccessMessage("Database backup has been successfully downloaded.");
     } catch (error: unknown) {
-      console.error("Failed to download database backup:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to download database backup",
@@ -135,7 +134,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         setSuccessMessage("Database has been successfully restored.");
       }
     } catch (error: unknown) {
-      console.error("Failed to restore database backup:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to restore database backup",

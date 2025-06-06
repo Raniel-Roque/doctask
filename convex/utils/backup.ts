@@ -110,8 +110,7 @@ export async function downloadClerkBackup(clerkApiKey: string): Promise<ClerkBac
     };
 
     return backup;
-  } catch (error) {
-    console.error("Error downloading Clerk backup:", error);
+  } catch {
     throw new Error("Failed to download Clerk backup");
   }
 }

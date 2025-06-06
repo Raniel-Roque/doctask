@@ -45,9 +45,7 @@ export async function POST(request: Request) {
         if (adviserCode) {
           await convex.mutation(api.mutations.deleteAdviserCode, { adviserId: convexUser._id });
         }
-      } catch (error) {
-        console.error("Failed to delete adviser code:", error);
-        // Continue with user deletion even if code deletion fails
+      } catch {
       }
     }
 
@@ -70,10 +68,7 @@ export async function POST(request: Request) {
         clerkId: clerkId,
         clerkApiKey: process.env.CLERK_API_KEY!
       });
-    } catch (error) {
-      // If Convex deletion fails, we can't restore the Clerk user
-      // Just log the error and return success since the main goal (deleting the user) was achieved
-      console.error("Failed to delete from Convex:", error);
+    } catch {
       return NextResponse.json({ success: true });
     }
 

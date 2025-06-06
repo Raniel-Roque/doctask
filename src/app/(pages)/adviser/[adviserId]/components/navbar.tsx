@@ -56,8 +56,8 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
   const isLogsActive = () => pathname.includes(`/adviser/${adviserId}/logs`);
 
   const handleLogout = async () => {
-    await signOut();
-    router.replace("/login");
+      await signOut();
+      router.replace("/login");
   };
 
   return (

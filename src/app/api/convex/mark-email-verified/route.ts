@@ -12,8 +12,7 @@ export async function POST(request: Request) {
     }
     const result = await convex.mutation(api.mutations.updateEmailStatus, { userId });
     return NextResponse.json({ success: true, result });
-  } catch (error) {
-    console.error("Error marking email as verified:", error);
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 } 

@@ -16,6 +16,7 @@ import { User, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirect
 import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
 import { SuccessBanner } from "../../../../components/SuccessBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
+import { sanitizeInput } from "../../../../components/SanitizeInput";
 
 // =========================================
 // Types
@@ -150,11 +151,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
     });
   };
 
-  const logUserAction = (action: string, details: LogDetails) => {
-    console.log(`[User Action] ${action}:`, {
-      instructorId,
-      ...details
-    });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const logUserAction = (_action: string, _details: LogDetails) => {
+    // No-op in production
   };
 
   // =========================================
@@ -333,7 +332,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
         userId: deleteUser._id,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
-      console.error("Error deleting user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           setDeleteNetworkError("Request timed out. Please try again.");
@@ -392,12 +390,12 @@ const UsersPage = ({ params }: UsersPageProps) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: addFormData.email.trim(),
-          firstName: addFormData.first_name.trim(),
-          lastName: addFormData.last_name.trim(),
+          email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
+          firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
+          lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
           role: 1, // Add role for advisers
           instructorId: instructorId,
-          middle_name: addFormData.middle_name?.trim() || undefined
+          middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined
         }),
         signal: controller.signal
       });
@@ -419,31 +417,25 @@ const UsersPage = ({ params }: UsersPageProps) => {
       }
 
       // Create user in Convex
-      try {
-        await createUser({
-          clerk_id: data.user.id,
-          first_name: addFormData.first_name.trim(),
-          middle_name: addFormData.middle_name?.trim() || undefined,
-          last_name: addFormData.last_name.trim(),
-          email: addFormData.email.trim(),
-          role: 1, // 1 = adviser
-          instructorId: instructorId as Id<"users">,
+      await createUser({
+        clerk_id: data.user.id,
+        first_name: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
+        middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
+        last_name: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
+        email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
+        role: 1, // 1 = adviser
+        instructorId: instructorId as Id<"users">,
+      }).catch(async (error) => {
+        // If Convex creation fails, attempt cleanup
+        await fetch("/api/clerk/delete-user", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ clerkId: data.user.id }),
         });
-      } catch (convexError) {
-        // If Convex creation fails, we should clean up the Clerk user
-        try {
-          await fetch("/api/clerk/delete-user", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ clerkId: data.user.id }),
-          });
-        } catch (cleanupError) {
-          console.error("Failed to clean up Clerk user:", cleanupError);
-        }
-        throw convexError;
-      }
+        throw error; // Re-throw the original error
+      });
 
       // Only show success message if there were values
       setSuccessMessage("Adviser added successfully");
@@ -456,7 +448,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
       await refreshAdvisers();
     } catch (error) {
-      console.error("Error creating user:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           setAddNetworkError("Request timed out. Please try again.");
@@ -517,7 +508,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
       await refreshAdvisers();
       setSuccessMessage("Password reset successfully");
     } catch (error) {
-      console.error("Error resetting password:", error);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           setResetPasswordNetworkError("Request timed out. Please try again.");
