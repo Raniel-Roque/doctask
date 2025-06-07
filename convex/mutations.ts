@@ -65,55 +65,72 @@ export const createUser = mutation({
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
 
-    // Check if user already exists in Convex
-    const existingUser = await ctx.db
+    // Check if user already exists in Convex by clerk_id first
+    const existingUserByClerkId = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerk_id", args.clerk_id))
+      .first();
+
+    if (existingUserByClerkId) {
+      // If user exists with this clerk_id, return success with existing user ID
+      return { success: true, userId: existingUserByClerkId._id };
+    }
+
+    // Then check by email as a fallback
+    const existingUserByEmail = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("email"), args.email))
       .first();
 
-    if (existingUser) {
-        throw new Error("Email already registered. Please choose another email.");
+    if (existingUserByEmail) {
+      // If user exists with this email but different clerk_id, something is wrong
+      throw new Error("Email already registered with a different account. Please contact support.");
     }
 
     try {
       // Create new user in Convex
-    const userId = await ctx.db.insert("users", {
-      clerk_id: args.clerk_id,
-      email: args.email,
-      email_verified: false,
-      first_name: args.first_name,
-      middle_name: args.middle_name,
-      last_name: args.last_name,
-      role: args.role,
-      subrole: args.subrole,
-    });
-
-    // If the user is a student (role 0), create an entry in studentsTable
-    if (args.role === 0) {
-      await ctx.db.insert("studentsTable", {
-        user_id: userId,
-        group_id: null, // No group assigned yet
+      const userId = await ctx.db.insert("users", {
+        clerk_id: args.clerk_id,
+        email: args.email,
+        email_verified: false,
+        first_name: args.first_name,
+        middle_name: args.middle_name,
+        last_name: args.last_name,
+        role: args.role,
+        subrole: args.subrole,
       });
-    }
 
-    // If the user is an adviser, generate a code
-    if (args.role === 1) {
-      const code = await generateUniqueAdviserCode(ctx);
-      await ctx.db.insert("advisersTable", {
-        adviser_id: userId,
-        code,
-        group_ids: [],
+      // If the user is a student (role 0), create an entry in studentsTable
+      if (args.role === 0) {
+        await ctx.db.insert("studentsTable", {
+          user_id: userId,
+          group_id: null, // No group assigned yet
+        });
+      }
+
+      // If the user is an adviser, generate a code
+      if (args.role === 1) {
+        const code = await generateUniqueAdviserCode(ctx);
+        await ctx.db.insert("advisersTable", {
+          adviser_id: userId,
+          code,
+          group_ids: [],
+        });
+      }
+
+      // Log the user creation with user info
+      await logCreateUser(ctx, args.instructorId, userId, {
+        first_name: args.first_name,
+        middle_name: args.middle_name,
+        last_name: args.last_name,
+        email: args.email
+      }, {
+        first_name: instructor.first_name,
+        middle_name: instructor.middle_name,
+        last_name: instructor.last_name,
+        email: instructor.email
       });
-    }
-
-    // Log the user creation with user info
-    await logCreateUser(ctx, args.instructorId, userId, {
-      first_name: args.first_name,
-      middle_name: args.middle_name,
-      last_name: args.last_name,
-      email: args.email
-    });
-    return { success: true, userId };
+      return { success: true, userId };
     } catch (error) {
       throw error; // Re-throw the original error
     }
@@ -208,8 +225,18 @@ export const createGroup = mutation({
       }
     }
 
-    // Log the group creation
-    await logCreateGroup(ctx, args.instructorId, groupId);
+    // Log the group creation with instructor and project manager info
+    await logCreateGroup(ctx, args.instructorId, groupId, {
+      first_name: instructor.first_name,
+      middle_name: instructor.middle_name,
+      last_name: instructor.last_name,
+      email: instructor.email
+    }, {
+      first_name: project_manager.first_name,
+      middle_name: project_manager.middle_name,
+      last_name: project_manager.last_name,
+      email: project_manager.email
+    });
 
     return { success: true, groupId };
   },
@@ -368,6 +395,11 @@ export const updateUser = mutation({
         middle_name: args.middle_name,
         last_name: args.last_name,
         email: args.email
+      }, {
+        first_name: instructor.first_name,
+        middle_name: instructor.middle_name,
+        last_name: instructor.last_name,
+        email: instructor.email
       });
     }
     return { success: true };
@@ -552,8 +584,18 @@ export const updateGroup = mutation({
       changes.push(`Grade: ${oldGrade} → ${newGrade}`);
     }
 
-    // Log the update
-    await logUpdateGroup(ctx, args.instructorId, args.groupId, changes.join("\n"));
+    // Log the update with instructor and project manager info
+    await logUpdateGroup(ctx, args.instructorId, args.groupId, changes.join("\n"), {
+      first_name: instructor.first_name,
+      middle_name: instructor.middle_name,
+      last_name: instructor.last_name,
+      email: instructor.email
+    }, {
+      first_name: project_manager.first_name,
+      middle_name: project_manager.middle_name,
+      last_name: project_manager.last_name,
+      email: project_manager.email
+    });
 
     return { success: true };
   },
@@ -690,7 +732,12 @@ export const deleteUser = mutation({
     await ctx.db.delete(args.userId);
 
     // Log the deletion with user info
-    await logDeleteUser(ctx, args.instructorId, args.userId, userInfo);
+    await logDeleteUser(ctx, args.instructorId, args.userId, userInfo, {
+      first_name: instructor.first_name,
+      middle_name: instructor.middle_name,
+      last_name: instructor.last_name,
+      email: instructor.email
+    });
 
     return { success: true };
   },
@@ -758,8 +805,18 @@ export const deleteGroup = mutation({
     // Delete the group
     await ctx.db.delete(args.groupId);
 
-    // Log the deletion
-    await logDeleteGroup(ctx, args.instructorId, args.groupId);
+    // Log the deletion with instructor and project manager info
+    await logDeleteGroup(ctx, args.instructorId, args.groupId, {
+      first_name: instructor.first_name,
+      middle_name: instructor.middle_name,
+      last_name: instructor.last_name,
+      email: instructor.email
+    }, {
+      first_name: project_manager.first_name,
+      middle_name: project_manager.middle_name,
+      last_name: project_manager.last_name,
+      email: project_manager.email
+    });
 
     return { success: true };
   },
@@ -784,6 +841,11 @@ export const resetPassword = mutation({
       middle_name: user.middle_name,
       last_name: user.last_name,
       email: user.email
+    }, {
+      first_name: instructor.first_name,
+      middle_name: instructor.middle_name,
+      last_name: instructor.last_name,
+      email: instructor.email
     });
     return { success: true };
   },

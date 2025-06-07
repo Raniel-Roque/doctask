@@ -228,6 +228,18 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
         const data = await response.json();
         
+        // Send update email
+        await fetch("/api/resend/update-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            password: data.password
+          }),
+        });
+
         // Update in Convex with all changed fields
         await updateUser({
           userId: editingUser._id,
@@ -294,7 +306,23 @@ const UsersPage = ({ params }: UsersPageProps) => {
         email: deleteUser.email
       });
 
-      // Delete from Convex (which also handles Clerk deletion)
+      // First delete from Clerk
+      const response = await fetch("/api/clerk/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clerkId: deleteUser.clerk_id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete user from Clerk");
+      }
+
+      // Then delete from Convex
       await deleteUserMutation({
         userId: deleteUser._id as Id<"users">,
         instructorId: instructorId as Id<"users">,
@@ -356,7 +384,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setAddNetworkError(null);
 
     try {
-      // Create user in Clerk first
+      // Step 1: Create user in Clerk first
       const response = await fetch("/api/clerk/create-user", {
         method: "POST",
         headers: {
@@ -367,8 +395,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
           firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
           lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
           role: 1, // 1 = adviser
-          instructorId: instructorId,
-          middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
         }),
       });
 
@@ -378,17 +404,36 @@ const UsersPage = ({ params }: UsersPageProps) => {
       }
 
       const data = await response.json();
-
-      // Then create in Convex
+      
+      // Step 2: Create in Convex with the Clerk ID
       await createUser({
         first_name: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
         middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
         last_name: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
         email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
         role: 1, // 1 = adviser
+        subrole: addFormData.subrole,
         instructorId: instructorId as Id<"users">,
         clerk_id: data.user.id, // Pass the Clerk ID to Convex
       });
+
+      // Step 3: Send welcome email via Resend
+      const emailResponse = await fetch("/api/resend/welcome-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
+          lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
+          email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
+          password: data.user.password,
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        console.error("Failed to send welcome email, but user was created successfully");
+      }
 
       // Only show success message if there were values
       setSuccessMessage("Adviser added successfully");
@@ -398,6 +443,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         middle_name: "",
         last_name: "",
         email: "",
+        subrole: 0,
       });
       await refreshAdvisers();
     } catch (error) {
@@ -450,6 +496,18 @@ const UsersPage = ({ params }: UsersPageProps) => {
       if (!response.ok) {
         throw new Error(data.error || "Failed to reset password");
       }
+
+      // Send reset password email
+      await fetch("/api/resend/reset-password-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          password: data.password
+        }),
+      });
       
       setResetPasswordUser(null);
       await refreshAdvisers();

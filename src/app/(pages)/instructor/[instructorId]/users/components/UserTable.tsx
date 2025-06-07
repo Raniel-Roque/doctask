@@ -283,9 +283,11 @@ export const UserTable = ({
           <tbody>
             {paginatedUsers.map((user) => (
               <tr key={user._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 border-b text-center">{user.first_name}</td>
-                <td className="px-6 py-4 border-b text-center">{user.middle_name || "-"}</td>
-                <td className="px-6 py-4 border-b text-center">{user.last_name}</td>
+                <td className="px-6 py-4 border-b text-left">{user.first_name}</td>
+                <td className={`px-6 py-4 border-b ${!user.middle_name ? 'text-center' : 'text-left'}`}>
+                  {user.middle_name || "-"}
+                </td>
+                <td className="px-6 py-4 border-b text-left">{user.last_name}</td>
                 <td className="px-6 py-4 border-b text-center">
                   <CollapsibleEmail email={user.email} userId={user._id} />
                 </td>

@@ -212,16 +212,72 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         }
       });
 
-      // Update in Convex without changing Clerk ID
-      await updateUser({
-        userId: editingUser._id,
-        instructorId: instructorId as Id<"users">,
-        first_name: editFormData.first_name.trim(),
-        middle_name: editFormData.middle_name?.trim() || undefined,
-        last_name: editFormData.last_name.trim(),
-        email: editFormData.email.trim(),
-        subrole: editFormData.subrole,
-      });
+      // If email is changed, update in Clerk first
+      if (editFormData.email !== editingUser.email) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+        const response = await fetch("/api/clerk/update-user", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            clerkId: editingUser.clerk_id,
+            email: editFormData.email.trim(),
+            firstName: editFormData.first_name.trim(),
+            lastName: editFormData.last_name.trim(),
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          if (response.status === 0) {
+            throw new Error("Network error - please check your internet connection");
+          }
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to update user email");
+        }
+
+        const data = await response.json();
+        
+        // Send update email
+        await fetch("/api/resend/update-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            password: data.password
+          }),
+        });
+
+        // Update in Convex with all changed fields
+        await updateUser({
+          userId: editingUser._id,
+          instructorId: instructorId as Id<"users">,
+          first_name: editFormData.first_name.trim(),
+          middle_name: editFormData.middle_name?.trim() || undefined,
+          last_name: editFormData.last_name.trim(),
+          email: editFormData.email.trim(),
+          subrole: editFormData.subrole,
+          clerk_id: data.clerkId
+        });
+      } else {
+        // Update in Convex without changing Clerk ID
+        await updateUser({
+          userId: editingUser._id,
+          instructorId: instructorId as Id<"users">,
+          first_name: editFormData.first_name.trim(),
+          middle_name: editFormData.middle_name?.trim() || undefined,
+          last_name: editFormData.last_name.trim(),
+          email: editFormData.email.trim(),
+          subrole: editFormData.subrole,
+        });
+      }
 
       logUserAction('Edit Success', { 
         userId: editingUser._id,
@@ -336,7 +392,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setAddNetworkError(null);
 
     try {
-      // Create user in Clerk first
+      // Step 1: Create user in Clerk first
       const response = await fetch("/api/clerk/create-user", {
         method: "POST",
         headers: {
@@ -347,9 +403,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
           lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
           role: 0, // 0 = student
-          instructorId: instructorId,
-          middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
-          subrole: addFormData.subrole,
         }),
       });
 
@@ -360,7 +413,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
       const data = await response.json();
       
-      // Then create in Convex
+      // Step 2: Create in Convex with the Clerk ID
       await createUser({
         first_name: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
         middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
@@ -371,6 +424,24 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         instructorId: instructorId as Id<"users">,
         clerk_id: data.user.id, // Pass the Clerk ID to Convex
       });
+
+      // Step 3: Send welcome email via Resend
+      const emailResponse = await fetch("/api/resend/welcome-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
+          lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
+          email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
+          password: data.user.password,
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        console.error("Failed to send welcome email, but user was created successfully");
+      }
 
       // Only show success message if there were values
       setSuccessMessage("Student added successfully");
@@ -433,6 +504,18 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       if (!response.ok) {
         throw new Error(data.error || "Failed to reset password");
       }
+
+      // Send reset password email
+      await fetch("/api/resend/reset-password-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          password: data.password
+        }),
+      });
       
       setResetPasswordUser(null);
       await refreshStudents();

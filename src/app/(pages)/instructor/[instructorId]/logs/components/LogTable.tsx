@@ -2,8 +2,6 @@ import { format } from "date-fns";
 import { FaChevronLeft, FaChevronRight, FaSearch, FaSort, FaSortUp, FaSortDown, FaChevronDown } from "react-icons/fa";
 import { useState } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
-import { useQuery } from "convex/react";
-import { api } from "../../../../../../../convex/_generated/api";
 
 // =========================================
 // Types
@@ -11,8 +9,16 @@ import { api } from "../../../../../../../convex/_generated/api";
 interface Log {
     _id: Id<"instructorLogs">;
     instructor_id: Id<"users">;
+    instructor_first_name: string | null;
+    instructor_middle_name: string | null;
+    instructor_last_name: string | null;
+    instructor_email: string | null;
     affected_entity_type: string;
     affected_entity_id: Id<"users"> | Id<"groupsTable">;
+    affected_entity_first_name: string | null;
+    affected_entity_middle_name: string | null;
+    affected_entity_last_name: string | null;
+    affected_entity_email: string | null;
     action: string;
     details: string;
     _creationTime: number;
@@ -94,28 +100,22 @@ export const LogTable = ({ logs }: LogTableProps) => {
     
     const [expandedColumns, setExpandedColumns] = useState<ExpandedColumns>({});
 
-    // Fetch all users to get names
-    const users = useQuery(api.fetch.getUsers) || [];
-    const groups = useQuery(api.fetch.getGroups) || [];
-
-    const getUserName = (userId: Id<"users">) => {
-        const user = users.find(u => u._id === userId);
-        return user ? `${user.first_name} ${user.last_name}` : 'Unknown User';
-    };
-
-    const getGroupName = (groupId: Id<"groupsTable">) => {
-        const group = groups.find(g => g._id === groupId);
-        if (!group) return 'Unknown Group';
-        const projectManager = users.find(u => u._id === group.project_manager_id);
-        return projectManager ? `${projectManager.last_name} et al` : 'Unknown Group';
-    };
-
-    const getEntityName = (log: Log) => {
-        if (log.affected_entity_type === 'user') {
-            return getUserName(log.affected_entity_id as Id<"users">);
-        } else {
-            return getGroupName(log.affected_entity_id as Id<"groupsTable">);
+    const getInstructorName = (log: Log) => {
+        if (log.instructor_first_name && log.instructor_last_name) {
+            return `${log.instructor_first_name} ${log.instructor_middle_name ? log.instructor_middle_name + ' ' : ''}${log.instructor_last_name}`;
         }
+        return 'Unknown Instructor';
+    };
+
+    const getAffectedEntityName = (log: Log) => {
+        if (log.affected_entity_type === 'user') {
+            if (log.affected_entity_first_name && log.affected_entity_last_name) {
+                return `${log.affected_entity_first_name} ${log.affected_entity_middle_name ? log.affected_entity_middle_name + ' ' : ''}${log.affected_entity_last_name}`;
+            }
+            return '-';
+        }
+        // For groups, just show the project manager's last name + et al.
+        return log.affected_entity_last_name ? `${log.affected_entity_last_name} et al.` : '-';
     };
 
     const getSortIcon = (field: SortField) => {
@@ -134,15 +134,13 @@ export const LogTable = ({ logs }: LogTableProps) => {
 
     const filterAndSortLogs = () => {
         const filtered = logs.filter((log) => {
-            const instructorName = getUserName(log.instructor_id);
-            const entityName = getEntityName(log);
+            const instructorName = getInstructorName(log);
+            const entityName = getAffectedEntityName(log);
             const matchesSearch = searchTerm === "" ||
                 instructorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 entityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.instructor_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (log.affected_entity_id && log.affected_entity_id.toLowerCase().includes(searchTerm.toLowerCase()));
+                log.details.toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesAction = actionFilter === LOG_ACTIONS.ALL || log.action === actionFilter;
 
@@ -307,7 +305,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                     </div>
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                                    User Name
+                                    Instructor
                                 </th>
                                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
                                     Action
@@ -327,7 +325,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                         {format(new Date(log._creationTime), "MMM dd, yyyy hh:mm a")}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left">
-                                        {getUserName(log.instructor_id)}
+                                        {getInstructorName(log)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
@@ -335,15 +333,11 @@ export const LogTable = ({ logs }: LogTableProps) => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left">
-                                        {getEntityName(log)}
+                                        {getAffectedEntityName(log)}
                                     </td>
-                                    <td className="px-6 py-4 text-left cursor-pointer whitespace-pre">
+                                    <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line">
                                         <CollapsibleText 
-                                            text={typeof log.details === 'string' ? log.details : 
-                                                Object.entries(log.details)
-                                                    .map(([key, value]) => `${key}: ${value}`)
-                                                    .join('\n')
-                                            } 
+                                            text={log.details}
                                             maxLength={20} 
                                             column="details" 
                                             logId={log._id}

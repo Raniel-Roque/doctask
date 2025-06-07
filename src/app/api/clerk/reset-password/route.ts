@@ -1,19 +1,10 @@
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
-import { Resend } from 'resend';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { generatePassword } from "@/utils/passwordGeneration";
-import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
-interface ClerkError {
-  errors?: Array<{
-    message?: string;
-  }>;
-}
 
 export async function POST(request: Request) {
   try {
@@ -29,7 +20,7 @@ export async function POST(request: Request) {
 
     const { clerkId } = body;
 
-    // Validate required fields before sanitization
+    // Validate required fields
     if (!clerkId) {
       return NextResponse.json(
         { error: "Clerk ID is required" },
@@ -37,88 +28,51 @@ export async function POST(request: Request) {
       );
     }
 
-    // Sanitize input
-    const sanitizedClerkId = sanitizeInput(clerkId, { trim: true, removeHtml: true, escapeSpecialChars: true });
+    const client = await clerkClient();
 
-    // Validate required fields after sanitization
-    if (!sanitizedClerkId) {
+    // Get the user to verify it exists
+    const user = await client.users.getUser(clerkId);
+    if (!user) {
       return NextResponse.json(
-        { error: "Clerk ID is invalid after sanitization" },
-        { status: 400 }
+        { error: "User not found" },
+        { status: 404 }
       );
     }
 
-    const user = await convex.query(api.fetch.getUserByClerkId, { clerkId: sanitizedClerkId });
-    
-    if (!user) {
+    // Get the Convex user record
+    const convexUser = await convex.query(api.fetch.getUserByClerkId, { clerkId });
+    if (!convexUser) {
       return NextResponse.json(
         { error: "User not found in database" },
         { status: 404 }
       );
     }
 
-    const client = await clerkClient();
-    const clerkUser = await client.users.getUser(sanitizedClerkId);
-    const email = clerkUser.emailAddresses[0].emailAddress;
-    const newPassword = generatePassword(user.first_name, user.last_name, user._creationTime);
+    // Generate a new password using the shared utility
+    const newPassword = generatePassword(convexUser.first_name, convexUser.last_name, Date.now());
 
-    await client.users.updateUser(sanitizedClerkId, {
+    // Update the user's password
+    await client.users.updateUser(clerkId, {
       password: newPassword,
     });
 
-    await convex.mutation(api.mutations.updateEmailStatus, {
-      userId: user._id,
-    });
-
+    // Log the password reset
     await convex.mutation(api.mutations.resetPassword, {
-      userId: user._id,
-      instructorId: user._id
-    });
-
-    await resend.emails.send({
-      from: 'DocTask <onboarding@resend.dev>',
-      to: email,
-      subject: 'DocTask - Your Password Has Been Reset',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Password Reset Notification</h2>
-          
-          <p>Dear ${user.first_name} ${user.last_name},</p>
-          
-          <p>Your password has been reset by an instructor. Here are your new login credentials:</p>
-          
-          <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Email:</strong> ${email}</p>
-            <p style="margin: 10px 0 0 0;"><strong>New Password:</strong> ${newPassword}</p>
-          </div>
-          
-          <p><strong>Important Next Steps:</strong></p>
-          <ol>
-            <li>Log in to your account using the new password above</li>
-            <li>Change your password immediately for security purposes</li>
-          </ol>
-          
-          <p>If you did not request this password reset, please contact our support team immediately.</p>
-          
-          <p style="margin-top: 30px; color: #666;">
-            Best regards,<br>
-            The DocTask Team
-          </p>
-          <p style="margin-top: 10px; color: #999; font-size: 12px;">
-            Please do not reply to this email.
-          </p>
-        </div>
-      `,
+      userId: convexUser._id,
+      instructorId: convexUser._id, // Using the same ID since this is a self-reset
     });
 
     return NextResponse.json({ 
       success: true,
-      clerkId: sanitizedClerkId,
+      email: user.emailAddresses[0].emailAddress,
+      firstName: convexUser.first_name,
+      lastName: convexUser.last_name,
+      password: newPassword
     });
   } catch (error) {
-    const clerkError = error as ClerkError;
+    console.error('Error resetting password:', error);
     return NextResponse.json(
-      { error: clerkError.errors?.[0]?.message || "Failed to reset password" },
+      { error: "Failed to reset password" },
       { status: 500 }
     );
   }
