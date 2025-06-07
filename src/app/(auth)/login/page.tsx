@@ -88,7 +88,7 @@ const LoginPage = () => {
       const data = await response.json();
       
       if (!data.exists) {
-        setError("Email not found in our system");
+        setError("Email not found");
         return;
       }
 
