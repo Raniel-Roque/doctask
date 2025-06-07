@@ -9,7 +9,8 @@ export function generatePassword(firstName: string, lastName: string, creationTi
   const firstInitial = firstName.charAt(0).toUpperCase();
   
   // Last Name part: will be adjusted to fit within max length
-  const cleanLastName = lastName.toLowerCase().replace(/[^a-z]/g, '');
+  // Handle compound last names by removing spaces and keeping only first letter capitalized
+  const cleanLastName = lastName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z]/g, '');
   const lastInitial = cleanLastName.charAt(0).toUpperCase();
   
   // Timestamp: minimum 4 digits, will add more if needed to reach 8 chars
