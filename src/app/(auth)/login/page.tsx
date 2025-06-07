@@ -129,6 +129,90 @@ const LoginPage = () => {
     }
   };
 
+  const handleAutocomplete = async (email: string) => {
+    if (!isLoaded) return;
+
+    try {
+      setLoading(true);
+      setError("");
+      setEmail(email);
+
+      // Check if email exists in our database
+      const response = await fetch("/api/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      
+      if (!data.exists) {
+        setError("Email not found");
+        return;
+      }
+
+      // Check if email is verified in Convex
+      const userRes = await fetch("/api/convex/get-user-by-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+
+      if (!userRes.ok) {
+        throw new Error("Failed to fetch user verification status");
+      }
+
+      const user = await userRes.json();
+      
+      if (user.email_verified) {
+        // If email is verified, try to auto-login if password is present
+        if (password) {
+          // Try to log in
+          setLoading(true);
+          setStep(3); // Show password step in case login fails
+          setError("");
+          try {
+            const result = await signIn.create({
+              identifier: email,
+              password,
+            });
+            if (result.status === "complete") {
+              await setActive({ session: result.createdSessionId });
+              return; // Success, user will be redirected
+            } else {
+              setError("Incorrect password. Please try again.");
+            }
+          } catch (err) {
+            const clerkError = err as ClerkError;
+            setError(clerkError.errors?.[0]?.message || "An error occurred during sign in");
+          } finally {
+            setLoading(false);
+          }
+        } else {
+          // No password present, show password step
+          setStep(3);
+        }
+      } else {
+        // If email is not verified, send verification code
+        const result = await signIn.create({
+          strategy: "email_code",
+          identifier: email,
+        });
+
+        if (result.status === "needs_first_factor") {
+          setStep(2);
+          setError(""); // Clear any previous errors
+        } else {
+          setError("Failed to send verification code. Please try again.");
+        }
+      }
+    } catch {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoaded) return;
@@ -276,6 +360,11 @@ const LoginPage = () => {
       setCode("");
       setPassword("");
       setConfirmPassword("");
+    } else if (step === 3 && !forgotStep) {
+      // If on password step, go back to email input
+      setStep(1);
+      setError("");
+      setPassword("");
     } else {
       setForgotStep(false);
       setStep(3);
@@ -330,8 +419,16 @@ const LoginPage = () => {
           </div>
           {/* Step 1: Email Input */}
             {step === 1 && (
-            <form className="mt-8 space-y-6" onSubmit={handleEmailSubmit}>
-              <EmailInput email={email} setEmail={setEmail} loading={loading} />
+            <form className="mt-8 space-y-6" onSubmit={handleEmailSubmit} autoComplete="on" action="#" method="post">
+              <input type="hidden" name="username" value={email} />
+              <EmailInput 
+                email={email} 
+                setEmail={setEmail} 
+                loading={loading}
+                name="email"
+                autoComplete="username"
+                onAutocomplete={handleAutocomplete}
+              />
               {error && <div className="text-red-300 text-sm text-center mt-4">{error}</div>}
               <div className="mt-6">
                 <button
@@ -383,8 +480,17 @@ const LoginPage = () => {
           )}
           {/* Step 3: Password Input with Forgot Password */}
           {step === 3 && !forgotStep && (
-            <form className="mt-8 space-y-6" onSubmit={handlePasswordSubmit}>
-              <PasswordInput password={password} setPassword={setPassword} showPassword={showPassword} setShowPassword={setShowPassword} loading={loading} />
+            <form className="mt-8 space-y-6" onSubmit={handlePasswordSubmit} autoComplete="on">
+              <input type="hidden" name="username" value={email} />
+              <PasswordInput 
+                password={password} 
+                setPassword={setPassword} 
+                showPassword={showPassword} 
+                setShowPassword={setShowPassword} 
+                loading={loading}
+                name="password"
+                autoComplete="current-password"
+              />
               {error && <div className="text-red-300 text-sm text-center mt-4">{error}</div>}
               <div className="mt-6">
                 <button
@@ -397,16 +503,16 @@ const LoginPage = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                 </button>
-            </div>
-            <div className="text-sm text-right mt-2">
+              </div>
+              <div className="text-sm text-right mt-2">
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                className="font-medium text-red-200 hover:text-red-100"
-              >
-                Forgot Password?
+                  className="font-medium text-red-200 hover:text-red-100"
+                >
+                  Forgot Password?
                 </button>
-            </div>
+              </div>
             </form>
           )}
           {/* Step 4: Forgot Password Flow (sequential) */}

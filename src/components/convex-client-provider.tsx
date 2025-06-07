@@ -7,6 +7,7 @@ import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient, useQuery } from "convex/react";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { SessionTimeout } from "./session-timeout";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -166,6 +167,7 @@ function AuthCheck({ children }: { children: ReactNode }) {
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
       <Authenticated>
+        <SessionTimeout />
         <RedirectHandler />
         <AuthStatusGate>{children}</AuthStatusGate>
       </Authenticated>

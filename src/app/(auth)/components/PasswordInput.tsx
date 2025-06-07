@@ -10,21 +10,23 @@ interface PasswordInputProps {
   disabled?: boolean;
   loading?: boolean;
   placeholder?: string;
+  name?: string;
+  autoComplete?: string;
 }
 
-const PasswordInput: React.FC<PasswordInputProps> = ({ password, setPassword, showPassword, setShowPassword, disabled = false, loading = false, placeholder = 'Password' }) => (
+const PasswordInput: React.FC<PasswordInputProps> = ({ password, setPassword, showPassword, setShowPassword, disabled = false, loading = false, placeholder = 'Password', name = "password", autoComplete = "current-password" }) => (
   <div className="relative">
-    <label htmlFor="password" className="sr-only">
+    <label htmlFor={name} className="sr-only">
       Password
     </label>
     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
       <FaLock color="#B54A4A" />
     </div>
     <input
-      id="password"
-      name="password"
+      id={name}
+      name={name}
       type={showPassword ? 'text' : 'password'}
-      autoComplete="current-password"
+      autoComplete={autoComplete}
       required
       value={password}
       onChange={(e) => setPassword(sanitizeInput(e.target.value, { trim: true, removeHtml: true, escapeSpecialChars: true }))}
@@ -37,6 +39,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({ password, setPassword, sh
       onClick={() => setShowPassword(!showPassword)}
       className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-20"
       tabIndex={-1}
+      disabled={loading}
     >
       {showPassword ? <FaEye color="#9CA3AF" /> : <FaEyeSlash color="#9CA3AF" />}
     </button>
