@@ -5,8 +5,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { useState, useRef, useEffect } from "react";
-import { FaHome } from "react-icons/fa";
-import { Users, FileText, Folder, LogOut, User as UserIcon } from "lucide-react";
+import { FaHome, FaClipboardList, FaCheckCircle } from "react-icons/fa";
+import { Users, FileText, LogOut, User as UserIcon } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 
@@ -136,7 +136,7 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
               onClick={() => setIsApprovalDropdownOpen(!isApprovalDropdownOpen)}
               className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isApprovalActive() ? 'underline italic' : ''}`}
             >
-              <Folder className="w-5 h-5" />
+              <FaCheckCircle size={20} />
               Approval
               <svg className={`w-4 h-4 transition-transform ${isApprovalDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
@@ -170,7 +170,7 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
               href={`/adviser/${adviserId}/logs`}
               className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isLogsActive() ? 'underline italic' : ''}`}
             >
-              <Folder className="w-5 h-5" />
+              <FaClipboardList size={20} />
               Logs
             </Link>
           </li>
