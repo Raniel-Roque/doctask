@@ -148,6 +148,26 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
       setSortField(field);
       setSortDirection("asc");
     }
+    setCurrentPage(1); // Reset pagination when sort changes
+  };
+
+  // Update filter handlers to reset pagination
+  const handleCapstoneFilter = (filter: typeof CAPSTONE_FILTERS[keyof typeof CAPSTONE_FILTERS]) => {
+    setCapstoneFilter(filter);
+    setShowCapstoneDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const handleAdviserFilter = (filter: string) => {
+    setAdviserFilter(filter);
+    setShowAdviserDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const handleGradeFilter = (filter: typeof GRADE_FILTERS[keyof typeof GRADE_FILTERS]) => {
+    setGradeFilter(filter);
+    setShowGradeDropdown(false);
+    setCurrentPage(1);
   };
 
   const { totalEntries, totalPages, startEntry, endEntry, paginatedGroups } = getPaginationInfo(filteredAndSortedGroups);
@@ -165,7 +185,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
             placeholder="Search groups..."
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
           />
         </div>
 
@@ -192,10 +215,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                   <div
                     key={filter}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
-                      setCapstoneFilter(filter);
-                      setShowCapstoneDropdown(false);
-                    }}
+                    onClick={() => handleCapstoneFilter(filter)}
                   >
                     {filter}
                   </div>
@@ -241,19 +261,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
               <div className="max-h-48 overflow-y-auto">
                 <div
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    setAdviserFilter("");
-                    setShowAdviserDropdown(false);
-                  }}
+                  onClick={() => handleAdviserFilter("")}
                 >
                   All Advisers
                 </div>
                 <div
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    setAdviserFilter("No Adviser");
-                    setShowAdviserDropdown(false);
-                  }}
+                  onClick={() => handleAdviserFilter("No Adviser")}
                 >
                   No Adviser
                 </div>
@@ -265,10 +279,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                     <div
                       key={adviser}
                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer whitespace-nowrap"
-                      onClick={() => {
-                        setAdviserFilter(adviser);
-                        setShowAdviserDropdown(false);
-                      }}
+                      onClick={() => handleAdviserFilter(adviser)}
                     >
                       {adviser}
                     </div>
@@ -301,10 +312,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                   <div
                     key={filter}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
-                      setGradeFilter(filter);
-                      setShowGradeDropdown(false);
-                    }}
+                    onClick={() => handleGradeFilter(filter)}
                   >
                     {filter}
                     </div>

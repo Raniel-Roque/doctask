@@ -123,11 +123,29 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   const handleSort = (field: SortField) => {
     if (field === sortField) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(prevDirection => prevDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
       setSortDirection("asc");
     }
+    setCurrentPage(1); // Reset pagination when sort changes
+  };
+
+  // Update filter handlers to reset pagination
+  const handleStatusFilterChange = (value: typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleRoleFilterChange = (value: typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS]) => {
+    setRoleFilter(value);
+    setCurrentPage(1);
+  };
+
+  // Update search handler to reset pagination
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
   };
 
   // =========================================
@@ -558,9 +576,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           sortField={sortField}
           sortDirection={sortDirection}
           currentPage={currentPage}
-          onSearchChange={setSearchTerm}
-          onStatusFilterChange={setStatusFilter}
-          onRoleFilterChange={setRoleFilter}
+          onSearchChange={handleSearchChange}
+          onStatusFilterChange={handleStatusFilterChange}
+          onRoleFilterChange={handleRoleFilterChange}
           onSort={handleSort}
           onPageChange={setCurrentPage}
           onEdit={handleEdit}

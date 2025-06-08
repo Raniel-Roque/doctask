@@ -120,11 +120,12 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   const handleSort = (field: SortField) => {
     if (field === sortField) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(prevDirection => prevDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
       setSortDirection("asc");
     }
+    setCurrentPage(1); // Reset pagination when sort changes
   };
 
   // =========================================

@@ -889,3 +889,69 @@ export const downloadConvexBackup = mutation({
     return backup;
   },
 });
+
+export const acceptGroupRequest = mutation({
+  args: {
+    adviserId: v.id("users"),
+    groupId: v.id("groupsTable"),
+  },
+  handler: async (ctx, args) => {
+    // Get the adviser's record
+    const adviserCode = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+
+    if (!adviserCode) {
+      throw new Error("Adviser not found");
+    }
+
+    // Verify the group is in requests_group_ids
+    if (!adviserCode.requests_group_ids?.includes(args.groupId)) {
+      throw new Error("Group is not in pending requests");
+    }
+
+    // Update the group's adviser_id
+    await ctx.db.patch(args.groupId, {
+      adviser_id: args.adviserId
+    });
+
+    // Update adviser's records
+    await ctx.db.patch(adviserCode._id, {
+      requests_group_ids: adviserCode.requests_group_ids.filter(id => id !== args.groupId),
+      group_ids: [...(adviserCode.group_ids || []), args.groupId]
+    });
+
+    return { success: true };
+  },
+});
+
+export const rejectGroupRequest = mutation({
+  args: {
+    adviserId: v.id("users"),
+    groupId: v.id("groupsTable"),
+  },
+  handler: async (ctx, args) => {
+    // Get the adviser's record
+    const adviserCode = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+
+    if (!adviserCode) {
+      throw new Error("Adviser not found");
+    }
+
+    // Verify the group is in requests_group_ids
+    if (!adviserCode.requests_group_ids?.includes(args.groupId)) {
+      throw new Error("Group is not in pending requests");
+    }
+
+    // Remove the group from requests_group_ids
+    await ctx.db.patch(adviserCode._id, {
+      requests_group_ids: adviserCode.requests_group_ids.filter(id => id !== args.groupId)
+    });
+
+    return { success: true };
+  },
+});

@@ -1,0 +1,235 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from 'react';
+import { FaCheck, FaTimes, FaPlus, FaChevronLeft, FaChevronRight, FaMinus } from "react-icons/fa";
+import { User, Group } from './types';
+
+interface GroupsTableProps {
+  groups: Group[];
+  onAccept: (group: Group) => void;
+  onReject: (group: Group) => void;
+  sortField: "name" | "capstoneTitle" | "projectManager";
+  sortDirection: "asc" | "desc";
+  onSort: (field: "name" | "capstoneTitle" | "projectManager") => void;
+  getSortIcon: (field: "name" | "capstoneTitle" | "projectManager") => React.ReactNode;
+  'data-pagination-reset'?: boolean;
+}
+
+const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onAccept, onReject, onSort, getSortIcon }) => {
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleResetPagination = () => {
+      setCurrentPage(1);
+    };
+
+    const tableElement = tableRef.current;
+    if (tableElement) {
+      tableElement.addEventListener('resetPagination', handleResetPagination);
+    }
+
+    return () => {
+      if (tableElement) {
+        tableElement.removeEventListener('resetPagination', handleResetPagination);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [groups]);
+
+  const toggleExpand = (groupId: string) => {
+    setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
+  };
+
+  const getFullName = (user: User) => {
+    return `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`;
+  };
+
+  const getPaginationInfo = (groups: Group[]) => {
+    const entriesPerPage = 5;
+    const totalEntries = groups.length;
+    const totalPages = Math.ceil(totalEntries / entriesPerPage);
+    const startEntry = (currentPage - 1) * entriesPerPage + 1;
+    const endEntry = Math.min(startEntry + entriesPerPage - 1, totalEntries);
+    const paginatedGroups = groups.slice(startEntry - 1, endEntry);
+
+    return {
+      totalEntries,
+      totalPages,
+      startEntry,
+      endEntry,
+      paginatedGroups,
+    };
+  };
+
+  const { totalEntries, totalPages, startEntry, endEntry, paginatedGroups } = getPaginationInfo(groups);
+
+  return (
+    <div ref={tableRef}>
+      <div className="overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-[#B54A4A] text-white">
+              <tr>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => onSort("name")}
+                >
+                  <div className="flex items-center justify-center">
+                    Group Name
+                    <span className="ml-1">{getSortIcon("name")}</span>
+                  </div>
+                </th>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => onSort("capstoneTitle")}
+                >
+                  <div className="flex items-center justify-center">
+                    Capstone Title
+                    <span className="ml-1">{getSortIcon("capstoneTitle")}</span>
+                  </div>
+                </th>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => onSort("projectManager")}
+                >
+                  <div className="flex items-center justify-center">
+                    Project Manager
+                    <span className="ml-1">{getSortIcon("projectManager")}</span>
+                  </div>
+                </th>
+                <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                  Members
+                </th>
+                <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedGroups.map((group) => (
+                <tr key={group._id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {group.name || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.capstone_title || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {group.projectManager ? getFullName(group.projectManager) : '-'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => toggleExpand(group._id)}
+                          className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                          disabled={!group.members || group.members.length === 0}
+                        >
+                          {group.members && group.members.length > 0 ? (
+                            expandedGroupId === group._id ? (
+                              <FaMinus color="#6B7280" />
+                            ) : (
+                              <FaPlus color="#6B7280" />
+                            )
+                          ) : null}
+                        </button>
+                        <span className="ml-2">
+                          {group.members && group.members.length > 0 ? (
+                            `${group.members.length} member${group.members.length === 1 ? '' : 's'}`
+                          ) : (
+                            <span className="text-gray-500">-</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    {group.members && group.members.length > 0 && expandedGroupId === group._id && (
+                      <div className="mt-2 pl-6">
+                        <ul className="list-disc list-inside">
+                          {group.members
+                            ?.slice()
+                            .sort((a, b) => {
+                              const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
+                              const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+                              return aName.localeCompare(bName);
+                            })
+                            .map((member) => (
+                              <li key={member._id} className="text-sm text-gray-600">
+                                {getFullName(member)}
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onAccept(group)}
+                        className="p-2 text-green-600 hover:text-green-800 transition-colors"
+                        title="Accept"
+                      >
+                        <FaCheck />
+                      </button>
+                      <button
+                        onClick={() => onReject(group)}
+                        className="p-2 text-red-600 hover:text-red-800 transition-colors"
+                        title="Reject"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+          <div className="flex items-center">
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}
+              <span className="font-medium">{totalEntries}</span> entries
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-md ${
+                currentPage === 1
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <FaChevronLeft />
+            </button>
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-md ${
+                currentPage === totalPages
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <FaChevronRight />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GroupsTable; 

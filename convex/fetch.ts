@@ -1,6 +1,7 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { validateAdviserCode } from "./utils/adviserCode";
+import type { Id } from "./_generated/dataModel";
 
 // =========================================
 // User Queries
@@ -59,7 +60,8 @@ interface AdviserCode {
   _id: string;
   adviser_id: string;
   code: string;
-  group_ids: string[];
+  group_ids?: Id<"groupsTable">[];
+  requests_group_ids?: Id<"groupsTable">[];
 }
 
 export const getAdviserCodes = query({
@@ -129,5 +131,18 @@ export const getUsers = query({
       .query("users")
       .collect();
     return users;
+  },
+});
+
+export const getPendingGroupIdsForAdviser = query({
+  args: { adviserId: v.id("users") },
+  handler: async (ctx, args) => {
+    const adviser = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+
+    // Return just the array of group IDs (or an empty array)
+    return adviser?.requests_group_ids ?? [];
   },
 }); 

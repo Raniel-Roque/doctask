@@ -130,6 +130,7 @@ export const LogTable = ({ logs }: LogTableProps) => {
             setSortField(field);
             setSortDirection("asc");
         }
+        setCurrentPage(1);
     };
 
     const filterAndSortLogs = () => {
