@@ -168,7 +168,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onAccept, onReject, o
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => onAccept(group)}
                         className="p-2 text-green-600 hover:text-green-800 transition-colors"

@@ -192,7 +192,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
             <div className="container mx-auto px-4 py-8">
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold">Adviser Groups</h1>
-                    <p className="text-muted-foreground">Review and approve group submissions</p>
+                    <p className="text-muted-foreground">Review and manage groups to be handled</p>
                 </div>
 
                 {/* Search Bar */}
