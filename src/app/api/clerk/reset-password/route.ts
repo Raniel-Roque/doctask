@@ -69,8 +69,7 @@ export async function POST(request: Request) {
       lastName: convexUser.last_name,
       password: newPassword
     });
-  } catch (error) {
-    console.error('Error resetting password:', error);
+  } catch {
     return NextResponse.json(
       { error: "Failed to reset password" },
       { status: 500 }

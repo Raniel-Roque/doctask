@@ -444,7 +444,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       });
 
       // Step 3: Send welcome email via Resend
-      const emailResponse = await fetch("/api/resend/welcome-email", {
+      await fetch("/api/resend/welcome-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -456,10 +456,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           password: data.user.password,
         }),
       });
-
-      if (!emailResponse.ok) {
-        console.error("Failed to send welcome email, but user was created successfully");
-      }
 
       // Only show success message if there were values
       setSuccessMessage("Student added successfully");

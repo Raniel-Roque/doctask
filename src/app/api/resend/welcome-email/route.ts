@@ -62,7 +62,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error sending welcome email:', error);
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : "Failed to send welcome email",

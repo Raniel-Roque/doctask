@@ -432,10 +432,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
         }),
       });
 
-      if (!emailResponse.ok) {
-        console.error("Failed to send welcome email, but user was created successfully");
-      }
-
       // Only show success message if there were values
       setSuccessMessage("Adviser added successfully");
       setIsAddingUser(false);
