@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 const TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 const LAST_ACTIVITY_KEY = "lastActivityTimestamp";
@@ -10,13 +10,20 @@ const LAST_ACTIVITY_KEY = "lastActivityTimestamp";
 export function SessionTimeout() {
   const { signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [lastActivity, setLastActivity] = useState(() => {
     // Initialize from localStorage or current time
     const stored = localStorage.getItem(LAST_ACTIVITY_KEY);
     return stored ? parseInt(stored) : Date.now();
   });
 
-  useEffect(() => {    
+  useEffect(() => {
+    // Clear timestamp if we're on the login page
+    if (pathname === "/login") {
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      return;
+    }
+    
     // Check if session has expired on mount
     const checkInitialTimeout = () => {
       const currentTime = Date.now();
@@ -88,7 +95,7 @@ export function SessionTimeout() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       clearInterval(intervalId);
     };
-  }, [lastActivity, signOut, router]);
+  }, [lastActivity, signOut, router, pathname]);
 
   return null; // This component doesn't render anything
 } 

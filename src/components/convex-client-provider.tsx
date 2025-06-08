@@ -139,8 +139,6 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
     return null;
   }
 
-  // No more special handling for /login/verify-account
-
   // Render children when loaded, signed in, user and convexUser are available, AND on an authorized path and verified
   if (isLoaded && isSignedIn && user && convexUser && isAuthorizedPath() && convexUser.email_verified) {
     return <>{children}</>;
@@ -161,7 +159,7 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 // Auth check component that will be used inside ClerkProvider
 function AuthCheck({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const publicPages = ["/login", "/forgot-password"];
+  const publicPages = ["/login"];
   const isPublicPage = publicPages.includes(pathname);
 
   return (
