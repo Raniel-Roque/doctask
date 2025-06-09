@@ -36,6 +36,20 @@ function validateBackupFile(file: unknown): file is ConvexBackup {
     }
   }
 
+  // Validate advisers table has required fields
+  const advisers = backup.tables.advisers as Array<{
+    adviser_id: string;
+    code: string;
+    group_ids?: string[];
+    requests_group_ids?: string[];
+  }>;
+  
+  for (const adviser of advisers) {
+    if (!adviser.adviser_id || !adviser.code) {
+      throw new Error("Adviser record is missing required fields");
+    }
+  }
+
   return true;
 }
 

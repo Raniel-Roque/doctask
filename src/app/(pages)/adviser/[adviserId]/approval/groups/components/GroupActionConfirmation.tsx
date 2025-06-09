@@ -51,7 +51,7 @@ export default function GroupActionConfirmation({
 
         {/* Confirmation Message */}
         <p className="mb-8 text-gray-600">
-          Are you sure you want to {action} group &quot;{group.capstone_title || group.name}&quot;?
+          Are you sure you want to {action} group &quot;{group.projectManager ? `${group.projectManager.last_name} et al` : 'Unknown Group'}&quot;?
           {isAccept 
             ? ' This will make you the adviser for this group.'
             : ' This will remove the group from your pending requests.'}

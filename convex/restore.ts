@@ -126,12 +126,14 @@ export const restoreAdviserCode = mutation({
     adviser_id: v.id("users"),
     code: v.string(),
     group_ids: v.optional(v.array(v.id("groupsTable"))),
+    requests_group_ids: v.optional(v.array(v.id("groupsTable"))),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("advisersTable", {
       adviser_id: args.adviser_id,
       code: args.code,
       group_ids: args.group_ids || [],
+      requests_group_ids: args.requests_group_ids || [],
     });
 
     return { success: true };
