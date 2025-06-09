@@ -419,7 +419,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
 
       // Step 3: Send welcome email via Resend
-      const emailResponse = await fetch("/api/resend/welcome-email", {
+      await fetch("/api/resend/welcome-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
