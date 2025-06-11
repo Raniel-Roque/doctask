@@ -351,15 +351,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
                     grade.toLowerCase().includes(gradeSearch.toLowerCase())
                   )
                   .map((filter) => (
-                    <div
-                      key={filter}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  <div
+                    key={filter}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         handleGradeFilter(filter);
                         setGradeSearch('');
                       }}
-                    >
-                      {filter}
+                  >
+                    {filter}
                     </div>
                   ))}
               </div>

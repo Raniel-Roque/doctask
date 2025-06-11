@@ -284,8 +284,21 @@ const LoginPage = () => {
         setError("Incorrect password. Please try again.");
       }
     } catch (err) {
-      const clerkError = err as ClerkError;
-      setError(clerkError.errors?.[0]?.message || "An error occurred during sign in");
+      const errorMessage = (err as Error).message || "";
+      
+      if (errorMessage.includes("Your account is locked")) {
+        const minutes = errorMessage.match(/\d+/)?.[0] || "60";
+        setError(`Too many failed attempts. Your account is locked for ${minutes} minutes. Please try again later.`);
+      } else if (
+        errorMessage.toLowerCase().includes("password") || 
+        errorMessage.toLowerCase().includes("invalid credentials") ||
+        errorMessage.toLowerCase().includes("incorrect")
+      ) {
+        setError("Incorrect password. Please try again. You have 2 more attempts before your account is locked for 1 hour.");
+      } else {
+        console.log("Unhandled error:", errorMessage); // Debug log
+        setError("An error occurred during sign in");
+      }
     } finally {
       setLoading(false);
     }
@@ -508,11 +521,17 @@ const LoginPage = () => {
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  className="font-medium text-red-200 hover:text-red-100"
+                  disabled={error?.includes("Your account is locked")}
+                  className={`font-medium text-red-200 hover:text-red-100 ${error?.includes("Your account is locked") ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Forgot Password?
                 </button>
               </div>
+              {error?.includes("Your account is locked") && (
+                <div className="text-red-300 text-sm text-center mt-2">
+                  Your account is locked. Password reset is unavailable during this period.
+                </div>
+              )}
             </form>
           )}
           {/* Step 4: Forgot Password Flow (sequential) */}
