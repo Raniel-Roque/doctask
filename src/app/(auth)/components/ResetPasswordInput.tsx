@@ -39,7 +39,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         required
         value={newPassword}
         onChange={(e) => setNewPassword(sanitizeInput(e.target.value, { trim: true, removeHtml: true, escapeSpecialChars: true }))}
-        className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm"
+        className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white disabled:bg-gray-50 disabled:opacity-100"
         placeholder="New Password"
         disabled={loading}
       />
@@ -48,6 +48,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         onClick={() => setShowPassword(!showPassword)}
         className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-20"
         tabIndex={-1}
+        disabled={loading}
       >
         {showPassword ? <FaEye color="#9CA3AF" /> : <FaEyeSlash color="#9CA3AF" />}
       </button>
@@ -61,7 +62,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         required
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(sanitizeInput(e.target.value, { trim: true, removeHtml: true, escapeSpecialChars: true }))}
-        className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm"
+        className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white disabled:bg-gray-50 disabled:opacity-100"
         placeholder="Confirm Password"
         disabled={loading}
       />
@@ -70,6 +71,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
         className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none z-20"
         tabIndex={-1}
+        disabled={loading}
       >
         {showConfirmPassword ? <FaEye color="#9CA3AF" /> : <FaEyeSlash color="#9CA3AF" />}
       </button>
