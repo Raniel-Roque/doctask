@@ -70,8 +70,7 @@ export async function POST(request: Request) {
           await convex.mutation(api.mutations.deleteUser, {
             userId: convexUser._id,
             instructorId,
-            clerkId: clerkUser.id,
-            clerkApiKey: process.env.CLERK_API_KEY!
+            clerkId: clerkUser.id
           });
         }
       }
@@ -131,7 +130,6 @@ export async function POST(request: Request) {
           </div>
         `,
       });
-
 
       clerkResults.push({
         oldId: user.clerk_id,

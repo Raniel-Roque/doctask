@@ -19,6 +19,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SuccessBanner } from "../../../components/SuccessBanner";
+import { generateEncryptionKey, exportKey, encryptData, importKey, decryptData } from "@/utils/encryption";
+import JSZip from 'jszip';
 
 interface BackupAndRestorePageProps {
   params: Promise<{ instructorId: string }>;
@@ -30,6 +32,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const [isRestoring, setIsRestoring] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedKeyFile, setSelectedKeyFile] = useState<File | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { getToken } = useAuth();
   const { toast } = useToast();
@@ -47,17 +50,33 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
       const backup = await downloadConvexBackup({ instructorId: instructorId as Id<"users"> });
       
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `database-backup-${new Date().toISOString()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const key = await generateEncryptionKey();
+      const keyString = await exportKey(key);
+      const encryptedData = await encryptData(backup, key);
       
-      setSuccessMessage("Database backup has been successfully downloaded.");
+      // Create a new ZIP file
+      const zip = new JSZip();
+      
+      // Add the encrypted backup file
+      zip.file("backup.enc", encryptedData);
+      
+      // Add the key file
+      zip.file("backup.key", keyString);
+      
+      // Generate the ZIP file
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      
+      // Create download link for the ZIP file
+      const zipUrl = window.URL.createObjectURL(zipBlob);
+      const zipLink = document.createElement('a');
+      zipLink.href = zipUrl;
+      zipLink.download = `doctask-backup-${new Date().toISOString()}.zip`;
+      document.body.appendChild(zipLink);
+      zipLink.click();
+      window.URL.revokeObjectURL(zipUrl);
+      document.body.removeChild(zipLink);
+      
+      setSuccessMessage("Database backup has been successfully downloaded as a ZIP file. Keep it safe!");
     } catch (error: unknown) {
       toast({
         title: "Error",
@@ -72,20 +91,25 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const handleRestore = () => {
     setShowRestoreConfirm(true);
     setSelectedFile(null);
+    setSelectedKeyFile(null);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      if (event.target.id === 'backup-file') {
+        setSelectedFile(file);
+      } else if (event.target.id === 'key-file') {
+        setSelectedKeyFile(file);
+      }
     }
   };
 
   const confirmRestore = async () => {
-    if (!selectedFile) {
+    if (!selectedFile || !selectedKeyFile) {
       toast({
         title: "Error",
-        description: "Please select a backup file",
+        description: "Please select both backup and key files",
         variant: "destructive",
       });
       return;
@@ -99,14 +123,17 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         throw new Error("Not authenticated");
       }
 
-      // Read the file contents
-      const fileContent = await selectedFile.text();
-      let parsedBackup;
-      try {
-        parsedBackup = JSON.parse(fileContent);
-      } catch {
-        throw new Error("Invalid backup file format");
-      }
+      // Read the files
+      const [encryptedData, keyString] = await Promise.all([
+        selectedFile.text(),
+        selectedKeyFile.text()
+      ]);
+
+      // Import the key
+      const key = await importKey(keyString);
+
+      // Decrypt the backup
+      const backup = await decryptData(encryptedData, key);
 
       const response = await fetch('/api/convex/restore', {
         method: 'POST',
@@ -115,7 +142,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ 
-          backup: parsedBackup,
+          backup,
           instructorId: instructorId,
         }),
       });
@@ -198,7 +225,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               <h2 className="text-lg font-semibold">How Backup & Restore Works</h2>
             </div>
             <ul className="list-disc pl-5 text-gray-700 text-sm mb-3">
-              <li><b>Backup</b> lets you download a snapshot of all your database data.</li>
+              <li><b>Backup</b> lets you download an encrypted snapshot of all your database data.</li>
               <li><b>Restore</b> allows you to upload a backup file and overwrite your current data.</li>
             </ul>
             <div className="mb-2 text-gray-800 font-semibold">Precautions:</div>
@@ -207,6 +234,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               <li>Always download a backup before restoring, in case you need to revert.</li>
               <li>Restoring is <b>irreversible</b> and cannot be undone.</li>
               <li>Make sure you are uploading a valid backup file.</li>
+              <li>Keep your encryption key file safe - you&apos;ll need it to restore the backup.</li>
             </ul>
           </div>
         </div>
@@ -220,6 +248,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             setShowRestoreConfirm(open);
             if (!open) {
               setSelectedFile(null);
+              setSelectedKeyFile(null);
             }
           }
         }}
@@ -236,11 +265,11 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           <DialogHeader>
             <DialogTitle>Restore Database</DialogTitle>
             <DialogDescription>
-              Select a backup file to restore the database. This will delete all existing data.
+              Select your backup file and its corresponding key file to restore the database. This will delete all existing data.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-2 space-y-2">
+          <div className="py-2 space-y-4">
             <div>
               <Label htmlFor="backup-file">Select Backup File</Label>
               <label
@@ -259,13 +288,38 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
                 <input
                   id="backup-file"
                   type="file"
-                  accept=".json,.backup"
+                  accept=".enc"
                   onChange={handleFileSelect}
                   disabled={isRestoring}
                   className="hidden"
                 />
-                </label>
-              </div>
+              </label>
+            </div>
+            <div>
+              <Label htmlFor="key-file">Select Key File</Label>
+              <label
+                htmlFor="key-file"
+                className={`flex items-center gap-2 mt-2 px-3 py-2 border rounded-md bg-white cursor-pointer transition-colors ${isRestoring ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'} border-gray-300 w-full`}
+                style={{ minHeight: 40 }}
+              >
+                <Upload className="w-5 h-5 text-gray-400" />
+                <span
+                  className="truncate text-sm text-gray-700 overflow-hidden whitespace-nowrap"
+                  style={{ maxWidth: 180, display: 'inline-block' }}
+                  title={selectedKeyFile?.name || ''}
+                >
+                  {selectedKeyFile ? selectedKeyFile.name : 'No file selected'}
+                </span>
+                <input
+                  id="key-file"
+                  type="file"
+                  accept=".key"
+                  onChange={handleFileSelect}
+                  disabled={isRestoring}
+                  className="hidden"
+                />
+              </label>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -273,6 +327,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               onClick={() => {
                 setShowRestoreConfirm(false);
                 setSelectedFile(null);
+                setSelectedKeyFile(null);
               }}
               disabled={isRestoring}
             >
@@ -280,7 +335,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             </Button>
             <Button
               onClick={confirmRestore}
-              disabled={!selectedFile || isRestoring}
+              disabled={!selectedFile || !selectedKeyFile || isRestoring}
               className="bg-red-600 hover:bg-red-700"
             >
               {isRestoring ? (
