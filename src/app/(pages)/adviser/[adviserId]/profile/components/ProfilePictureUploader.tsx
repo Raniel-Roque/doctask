@@ -3,8 +3,6 @@ import { FaCamera } from 'react-icons/fa';
 import Image from "next/image";
 import { Cropper, ReactCropperElement } from 'react-cropper';
 import 'cropperjs/dist/cropper.css';
-import { SuccessBanner } from "@/app/(pages)/components/SuccessBanner";
-import { Notification } from "@/app/(pages)/components/Notification";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface User {
@@ -15,34 +13,49 @@ interface User {
 
 interface ProfilePictureUploaderProps {
   user: User;
+  onSuccess: (message: string) => void;
+  onError: (message: string) => void;
 }
 
-export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({ user }) => {
+export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({ 
+  user,
+  onSuccess,
+  onError
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showCropper, setShowCropper] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [successBanner, setSuccessBanner] = useState<string | null>(null);
-  const [notification, setNotification] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const cropperRef = useRef<ReactCropperElement>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const sanitizedFileName = sanitizeInput(file.name, { trim: true, removeHtml: true, escapeSpecialChars: true, maxLength: 100 });
+
+    const sanitizedFileName = sanitizeInput(file.name, { 
+      trim: true, 
+      removeHtml: true, 
+      escapeSpecialChars: true, 
+      maxLength: 100 
+    });
+
     // Only allow jpg, jpeg, png
     const allowedTypes = ["image/jpeg", "image/png"];
     if (!allowedTypes.includes(file.type)) {
-      setNotification("Please select a JPG or PNG image file");
+      onError("Please select a JPG or PNG image file");
       return;
     }
+
     if (file.size > 2 * 1024 * 1024) {
-      setNotification("Image size should be less than 2MB");
+      onError("Image size should be less than 2MB");
       return;
     }
+
     if (!sanitizedFileName || sanitizedFileName !== file.name) {
-      setNotification("Invalid file name");
+      onError("Invalid file name");
       return;
     }
+
     const reader = new FileReader();
     reader.onload = () => {
       setSelectedImage(reader.result as string);
@@ -65,6 +78,7 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({ 
 
   const handleSaveImage = async (imageData: string) => {
     if (!user) return;
+    setIsLoading(true);
     try {
       const response = await fetch("/api/clerk/change-profile", {
         method: "POST",
@@ -78,52 +92,52 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({ 
       if (!response.ok) {
         throw new Error(data.error || "Failed to update profile picture");
       }
-      setSuccessBanner("Profile picture updated successfully");
+      onSuccess("Profile picture updated successfully");
       setSelectedImage(null);
       setTimeout(() => {
         window.location.reload();
       }, 2000);
     } catch (err) {
-      setNotification(err instanceof Error ? err.message : "Failed to update profile picture");
+      onError(err instanceof Error ? err.message : "Failed to update profile picture");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <>
-      <SuccessBanner message={successBanner} onClose={() => setSuccessBanner(null)} />
-      <Notification message={notification} type="error" onClose={() => setNotification(null)} />
-      <div className="relative group">
-        <div className="w-48 h-48 overflow-hidden border-4 border-[#B54A4A]">
-          {user?.imageUrl ? (
-            <Image
-              src={user.imageUrl}
-              alt="Profile"
-              width={192}
-              height={192}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-4xl text-gray-400">
-                {user?.firstName?.[0] || "?"}
-              </span>
-            </div>
-          )}
-        </div>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleImageUpload}
-          accept=".jpg,.jpeg,.png"
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-        >
-          <FaCamera className="text-white text-2xl" />
-        </button>
+    <div className="relative group">
+      <div className="w-48 h-48 overflow-hidden border-4 border-[#B54A4A]">
+        {user?.imageUrl ? (
+          <Image
+            src={user.imageUrl}
+            alt="Profile"
+            width={192}
+            height={192}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+            <span className="text-4xl text-gray-400">
+              {user?.firstName?.[0] || "?"}
+            </span>
+          </div>
+        )}
       </div>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        accept=".jpg,.jpeg,.png"
+        className="hidden"
+        disabled={isLoading}
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:opacity-0"
+        disabled={isLoading}
+      >
+        <FaCamera className="text-white text-2xl" />
+      </button>
       {showCropper && selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full">
@@ -148,19 +162,21 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({ 
                   setSelectedImage(null);
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 onClick={onCrop}
-                className="px-4 py-2 bg-[#B54A4A] text-white rounded-md hover:bg-[#A43A3A]"
+                className="px-4 py-2 bg-[#B54A4A] text-white rounded-md hover:bg-[#A43A3A] disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading}
               >
-                Save
+                {isLoading ? "Saving..." : "Save"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }; 

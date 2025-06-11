@@ -43,9 +43,11 @@ const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
                 if (response.ok) {
                     const data = await response.json();
                     setUserData(data);
+                } else {
+                    setNotification("Failed to fetch user data");
                 }
             } catch {
-                console.error("Error fetching user data");
+                setNotification("Error fetching user data");
             }
         };
         if (user?.primaryEmailAddress?.emailAddress) {
@@ -72,6 +74,8 @@ const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
                                   imageUrl: user.imageUrl ?? undefined,
                                   firstName: user.firstName ?? undefined,
                                 }}
+                                onSuccess={(message) => setSuccessBanner(message)}
+                                onError={(message) => setNotification(message)}
                               />
                             )}
 
@@ -120,12 +124,12 @@ const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
                                         />
                                     </div>
                                     <div className="col-span-2 flex items-end">
-                                <button
+                                        <button
                                             onClick={() => {}}
                                             className="w-full px-4 py-2 bg-[#B54A4A] text-white rounded-md hover:bg-[#A43A3A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B54A4A]"
-                                >
-                                    Change Password
-                                </button>
+                                        >
+                                            Change Password
+                                        </button>
                                     </div>
                                 </div>
 
