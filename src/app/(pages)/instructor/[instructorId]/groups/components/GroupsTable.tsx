@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus, FaChevronLeft, FaChevronRight, FaMinus } from "react-icons/fa"; // Import icons and pagination icons
+import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus, FaChevronLeft, FaChevronRight, FaMinus, FaTimes } from "react-icons/fa"; // Import icons and pagination icons
 import { User, Group } from './types';
 import DeleteGroupConfirmation from './DeleteGroupConfirmation';
 
@@ -12,23 +12,34 @@ const CAPSTONE_FILTERS = {
 
 const GRADE_FILTERS = {
   ALL: "All Grades",
-  FAILED: "Failed",
-  REDEFENSE: "Redefense",
-  PASSED: "Passed",
-  NO_GRADE: "No Grade"
+  NO_GRADE: "No Grade",
+  APPROVED: "Approved",
+  APPROVED_WITH_REVISIONS: "Approved With Revisions",
+  DISAPPROVED: "Disapproved",
+  ACCEPTED_WITH_REVISIONS: "Accepted With Revisions",
+  REORAL_DEFENSE: "Reoral Defense",
+  NOT_ACCEPTED: "Not Accepted"
 } as const;
 
 const getGradeDisplay = (grade?: number): { text: string; color: string } => {
-  if (grade === undefined || grade === null) return { text: 'No Grade', color: 'bg-gray-100 text-gray-800' };
+  if (grade === undefined || grade === null) return { text: 'No grade', color: 'bg-gray-100 text-gray-800' };
   switch (grade) {
+    case 0:
+      return { text: 'No grade', color: 'bg-gray-100 text-gray-800' };
     case 1:
-      return { text: 'Failed', color: 'bg-red-100 text-red-800' };
+      return { text: 'Approved', color: 'bg-green-100 text-green-800' };
     case 2:
-      return { text: 'Redefense', color: 'bg-yellow-100 text-yellow-800' };
+      return { text: 'Approved With Revisions', color: 'bg-yellow-100 text-yellow-800' };
     case 3:
-      return { text: 'Passed', color: 'bg-green-100 text-green-800' };
+      return { text: 'Disapproved', color: 'bg-red-100 text-red-800' };
+    case 4:
+      return { text: 'Accepted With Revisions', color: 'bg-green-100 text-green-800' };
+    case 5:
+      return { text: 'Reoral Defense', color: 'bg-yellow-100 text-yellow-800' };
+    case 6:
+      return { text: 'Not Accepted', color: 'bg-red-100 text-red-800' };
     default:
-      return { text: 'No Grade', color: 'bg-gray-100 text-gray-800' };
+      return { text: 'No grade', color: 'bg-gray-100 text-gray-800' };
   }
 };
 
@@ -54,6 +65,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<typeof GRADE_FILTERS[keyof typeof GRADE_FILTERS]>(GRADE_FILTERS.ALL);
   const [showGradeDropdown, setShowGradeDropdown] = useState(false);
+  const [gradeSearch, setGradeSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
 
@@ -306,15 +318,48 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
           </div>
           
           {showGradeDropdown && (
-            <div className="absolute z-10 w-[200px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+            <div className="absolute z-10 w-[300px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+              <div className="p-2 border-b">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={gradeSearch}
+                    onChange={(e) => setGradeSearch(e.target.value)}
+                    placeholder="Search grades..."
+                    className="w-full pl-8 pr-8 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    autoFocus
+                  />
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
+                    <FaSearch />
+                  </div>
+                  {gradeSearch && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setGradeSearch('');
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <FaTimes size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="max-h-48 overflow-y-auto">
-                {Object.values(GRADE_FILTERS).map((filter) => (
-                  <div
-                    key={filter}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => handleGradeFilter(filter)}
-                  >
-                    {filter}
+                {Object.values(GRADE_FILTERS)
+                  .filter(grade => 
+                    grade.toLowerCase().includes(gradeSearch.toLowerCase())
+                  )
+                  .map((filter) => (
+                    <div
+                      key={filter}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        handleGradeFilter(filter);
+                        setGradeSearch('');
+                      }}
+                    >
+                      {filter}
                     </div>
                   ))}
               </div>

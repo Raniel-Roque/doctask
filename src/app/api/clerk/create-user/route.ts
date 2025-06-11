@@ -52,6 +52,7 @@ export async function POST(request: Request) {
     clerkUser = await client.users.createUser({
       emailAddress: [trimmedEmail],
       password: password,
+      skipPasswordChecks: true // Skip password complexity checks
     });
 
     // Set email as unverified

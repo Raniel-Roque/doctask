@@ -2,13 +2,10 @@ import { MutationCtx } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
 
 const LOG_ACTIONS = {
-  CREATE_entity: "Create User",
-  UPDATE_entity: "Update User",
-  DELETE_entity: "Delete User",
-  RESET_PASSWORD: "Reset Password",
-  CREATE_GROUP: "Create Group",
-  DELETE_GROUP: "Delete Group",
-  UPDATE_GROUP: "Update Group"
+  CREATE: "Create",
+  EDIT: "Edit",
+  DELETE: "Delete",
+  RESET_PASSWORD: "Reset Password"
 } as const;
 
 interface UserInfo {
@@ -37,7 +34,7 @@ export async function logCreateUser(
     affected_entity_middle_name: userInfo.middle_name,
     affected_entity_last_name: userInfo.last_name,
     affected_entity_email: userInfo.email,
-    action: LOG_ACTIONS.CREATE_entity,
+    action: LOG_ACTIONS.CREATE,
     details: "Created User"
   });
 }
@@ -62,7 +59,7 @@ export async function logUpdateUser(
     affected_entity_middle_name: userInfo.middle_name,
     affected_entity_last_name: userInfo.last_name,
     affected_entity_email: userInfo.email,
-    action: LOG_ACTIONS.UPDATE_entity,
+    action: LOG_ACTIONS.EDIT,
     details: details
   });
 }
@@ -86,7 +83,7 @@ export async function logDeleteUser(
     affected_entity_middle_name: userInfo.middle_name,
     affected_entity_last_name: userInfo.last_name,
     affected_entity_email: userInfo.email,
-    action: LOG_ACTIONS.DELETE_entity,
+    action: LOG_ACTIONS.DELETE,
     details: "Deleted User"
   });
 }
@@ -134,7 +131,7 @@ export async function logCreateGroup(
     affected_entity_middle_name: projectManagerInfo.middle_name,
     affected_entity_last_name: projectManagerInfo.last_name,
     affected_entity_email: projectManagerInfo.email,
-    action: LOG_ACTIONS.CREATE_GROUP,
+    action: LOG_ACTIONS.CREATE,
     details: "Created Group"
   });
 }
@@ -159,7 +156,7 @@ export async function logUpdateGroup(
     affected_entity_middle_name: projectManagerInfo.middle_name,
     affected_entity_last_name: projectManagerInfo.last_name,
     affected_entity_email: projectManagerInfo.email,
-    action: LOG_ACTIONS.UPDATE_GROUP,
+    action: LOG_ACTIONS.EDIT,
     details
   });
 }
@@ -183,7 +180,7 @@ export async function logDeleteGroup(
     affected_entity_middle_name: projectManagerInfo.middle_name,
     affected_entity_last_name: projectManagerInfo.last_name,
     affected_entity_email: projectManagerInfo.email,
-    action: LOG_ACTIONS.DELETE_GROUP,
+    action: LOG_ACTIONS.DELETE,
     details: "Deleted Group"
   });
 }

@@ -413,10 +413,13 @@ export default function EditGroupForm({
                     } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white`}
                     disabled={isSubmitting}
                   >
-                    <option value={0}>No Grade</option>
-                    <option value={1}>Failed</option>
-                    <option value={2}>Redefense</option>
-                    <option value={3}>Passed</option>
+                    <option value={0}>No grade</option>
+                    <option value={1}>Approved</option>
+                    <option value={2}>Approved With Revisions</option>
+                    <option value={3}>Disapproved</option>
+                    <option value={4}>Accepted With Revisions</option>
+                    <option value={5}>Reoral Defense</option>
+                    <option value={6}>Not Accepted</option>
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                     <FaChevronDown color="#6B7280" />

@@ -36,44 +36,28 @@ type SortDirection = "asc" | "desc";
 // =========================================
 const LOG_ACTIONS = {
     ALL: "All Actions",
-    CREATE_USER: "Create User",
-    CREATE_GROUP: "Create Group",
-    EDIT_USER: "Edit User",
-    EDIT_GROUP: "Edit Group",
-    DELETE_USER: "Delete User",
-    DELETE_GROUP: "Delete Group",
+    CREATE: "Create",
+    EDIT: "Edit",
+    DELETE: "Delete",
     RESET_PASSWORD: "Reset Password"
-
 } as const;
 
 const ACTION_COLORS = {
-    [LOG_ACTIONS.CREATE_USER]: {
+    [LOG_ACTIONS.CREATE]: {
         bg: 'bg-green-100',
         text: 'text-green-800'
     },
-    [LOG_ACTIONS.EDIT_USER]: {
+    [LOG_ACTIONS.EDIT]: {
         bg: 'bg-blue-100',
         text: 'text-blue-800'
     },
-    [LOG_ACTIONS.DELETE_USER]: {
+    [LOG_ACTIONS.DELETE]: {
         bg: 'bg-red-100',
         text: 'text-red-800'
     },
     [LOG_ACTIONS.RESET_PASSWORD]: {
         bg: 'bg-yellow-100',
         text: 'text-yellow-800'
-    },
-    [LOG_ACTIONS.CREATE_GROUP]: {
-        bg: 'bg-green-100',
-        text: 'text-green-800'
-    },
-    [LOG_ACTIONS.DELETE_GROUP]: {
-        bg: 'bg-red-100',
-        text: 'text-red-800'
-    },
-    [LOG_ACTIONS.EDIT_GROUP]: {
-        bg: 'bg-blue-100',
-        text: 'text-blue-800'
     },
     // Default colors for any new actions
     default: {
@@ -94,28 +78,50 @@ export const LogTable = ({ logs }: LogTableProps) => {
     const [startDate, setStartDate] = useState<string>("");
     const [endDate, setEndDate] = useState<string>("");
     
+    // Update the state to track column-level expansion
     type ExpandedColumns = {
-        [key: string]: boolean;
+        instructor: boolean;
+        affectedEntity: boolean;
+        details: boolean;
     };
     
-    const [expandedColumns, setExpandedColumns] = useState<ExpandedColumns>({});
+    const [expandedColumns, setExpandedColumns] = useState<ExpandedColumns>({
+        instructor: false,
+        affectedEntity: false,
+        details: false
+    });
 
     const getInstructorName = (log: Log) => {
         if (log.instructor_first_name && log.instructor_last_name) {
-            return `${log.instructor_first_name} ${log.instructor_middle_name ? log.instructor_middle_name + ' ' : ''}${log.instructor_last_name}`;
+            const shortId = log.instructor_id.toString().slice(-4);
+            return {
+                display: `${log.instructor_first_name} ${log.instructor_middle_name ? log.instructor_middle_name + ' ' : ''}${log.instructor_last_name}`,
+                id: shortId
+            };
         }
-        return 'Unknown Instructor';
+        return { display: 'Unknown Instructor', id: null };
     };
 
     const getAffectedEntityName = (log: Log) => {
         if (log.affected_entity_type === 'user') {
             if (log.affected_entity_first_name && log.affected_entity_last_name) {
-                return `${log.affected_entity_first_name} ${log.affected_entity_middle_name ? log.affected_entity_middle_name + ' ' : ''}${log.affected_entity_last_name}`;
+                const shortId = log.affected_entity_id.toString().slice(-4);
+                return {
+                    display: `${log.affected_entity_first_name} ${log.affected_entity_middle_name ? log.affected_entity_middle_name + ' ' : ''}${log.affected_entity_last_name}`,
+                    id: shortId
+                };
             }
-            return '-';
+            return { display: '-', id: null };
         }
-        // For groups, just show the project manager's last name + et al.
-        return log.affected_entity_last_name ? `${log.affected_entity_last_name} et al.` : '-';
+        // For groups, show the project manager's last name + et al. and include the ID
+        if (log.affected_entity_last_name) {
+            const shortId = log.affected_entity_id.toString().slice(-4);
+            return {
+                display: `${log.affected_entity_last_name} et al.`,
+                id: shortId
+            };
+        }
+        return { display: '-', id: null };
     };
 
     const getSortIcon = (field: SortField) => {
@@ -138,9 +144,9 @@ export const LogTable = ({ logs }: LogTableProps) => {
             const instructorName = getInstructorName(log);
             const entityName = getAffectedEntityName(log);
             const matchesSearch = searchTerm === "" ||
-                instructorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                instructorName.display.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                entityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                entityName.display.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 log.details.toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesAction = actionFilter === LOG_ACTIONS.ALL || log.action === actionFilter;
@@ -186,7 +192,19 @@ export const LogTable = ({ logs }: LogTableProps) => {
     };
 
     const getActionColors = (action: string) => {
-        const colors = ACTION_COLORS[action as keyof typeof ACTION_COLORS] || ACTION_COLORS.default;
+        // Map the detailed actions to their consolidated versions
+        const actionMap: { [key: string]: string } = {
+            'Create User': LOG_ACTIONS.CREATE,
+            'Create Group': LOG_ACTIONS.CREATE,
+            'Edit User': LOG_ACTIONS.EDIT,
+            'Edit Group': LOG_ACTIONS.EDIT,
+            'Delete User': LOG_ACTIONS.DELETE,
+            'Delete Group': LOG_ACTIONS.DELETE,
+            'Reset Password': LOG_ACTIONS.RESET_PASSWORD
+        };
+
+        const consolidatedAction = actionMap[action] || action;
+        const colors = ACTION_COLORS[consolidatedAction as keyof typeof ACTION_COLORS] || ACTION_COLORS.default;
         return `${colors.bg} ${colors.text}`;
     };
 
@@ -196,21 +214,38 @@ export const LogTable = ({ logs }: LogTableProps) => {
     // =========================================
     // Collapsible Text Component
     // =========================================
-    const CollapsibleText = ({ text, maxLength = 10, column, logId }: { text: string | null, maxLength?: number, column: keyof ExpandedColumns, logId: string }) => {
+    const CollapsibleText = ({ 
+        text, 
+        maxLength = 10, 
+        column, 
+        id 
+    }: { 
+        text: string | null, 
+        maxLength?: number, 
+        column: keyof ExpandedColumns, 
+        id?: string | null 
+    }) => {
         if (!text) return <span>-</span>;
-        if (text.length <= maxLength) return <span>{text}</span>;
+        if (text.length <= maxLength && !id) return <span>{text}</span>;
 
-        const isExpanded = expandedColumns[`${logId}-${column}`] || false;
+        const isExpanded = expandedColumns[column];
 
         return (
             <button
-                onClick={() => setExpandedColumns((prev: ExpandedColumns) => ({ 
+                onClick={() => setExpandedColumns(prev => ({ 
                     ...prev, 
-                    [`${logId}-${column}`]: !isExpanded 
+                    [column]: !prev[column]
                 }))}
                 className="w-full text-left"
             >
-                {isExpanded ? text : `${text.slice(0, maxLength)}...`}
+                {isExpanded ? (
+                    <span>
+                        {text}
+                        {id && <span className="text-gray-500 ml-1">(ID: {id})</span>}
+                    </span>
+                ) : (
+                    <span>{text.length > maxLength ? `${text.slice(0, maxLength)}...` : text}</span>
+                )}
             </button>
         );
     };
@@ -320,32 +355,45 @@ export const LogTable = ({ logs }: LogTableProps) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedLogs.map((log, index) => (
-                                <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {format(new Date(log._creationTime), "MMM dd, yyyy hh:mm a")}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-left">
-                                        {getInstructorName(log)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
-                                            {log.action}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-left">
-                                        {getAffectedEntityName(log)}
-                                    </td>
-                                    <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line">
-                                        <CollapsibleText 
-                                            text={log.details}
-                                            maxLength={20} 
-                                            column="details" 
-                                            logId={log._id}
-                                        />
-                                    </td>
-                                </tr>
-                            ))}
+                            {paginatedLogs.map((log, index) => {
+                                const instructor = getInstructorName(log);
+                                const affectedEntity = getAffectedEntityName(log);
+                                return (
+                                    <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {format(new Date(log._creationTime), "MMM dd, yyyy hh:mm a")}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-left">
+                                            <CollapsibleText 
+                                                text={instructor.display}
+                                                maxLength={20}
+                                                column="instructor"
+                                                id={instructor.id}
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
+                                                {log.action}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-left">
+                                            <CollapsibleText 
+                                                text={affectedEntity.display}
+                                                maxLength={20}
+                                                column="affectedEntity"
+                                                id={affectedEntity.id}
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line">
+                                            <CollapsibleText 
+                                                text={log.details}
+                                                maxLength={20} 
+                                                column="details" 
+                                            />
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                     <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
