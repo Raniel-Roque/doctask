@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaEnvelope } from 'react-icons/fa';
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import ResendTimer from './ResendTimer';
 
 interface VerifyCodeInputProps {
   code: string;
@@ -9,9 +10,18 @@ interface VerifyCodeInputProps {
   loading?: boolean;
   placeholder?: string;
   resentSuccess?: boolean;
+  onResendCode?: () => void;
 }
 
-const VerifyCodeInput: React.FC<VerifyCodeInputProps> = ({ code, setCode, disabled = false, loading = false, placeholder = 'Enter verification code', resentSuccess }) => (
+const VerifyCodeInput: React.FC<VerifyCodeInputProps> = ({ 
+  code, 
+  setCode, 
+  disabled = false, 
+  loading = false, 
+  placeholder = 'Enter verification code', 
+  resentSuccess,
+  onResendCode 
+}) => (
   <div className="relative">
     {resentSuccess && (
       <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-300 text-blue-800 text-sm text-center font-medium shadow-sm">
@@ -35,6 +45,11 @@ const VerifyCodeInput: React.FC<VerifyCodeInputProps> = ({ code, setCode, disabl
       placeholder={placeholder}
       disabled={disabled || loading}
     />
+    {onResendCode && (
+      <div className="text-sm text-center mt-4">
+        <ResendTimer onResend={onResendCode} disabled={disabled} loading={loading} />
+      </div>
+    )}
   </div>
 );
 

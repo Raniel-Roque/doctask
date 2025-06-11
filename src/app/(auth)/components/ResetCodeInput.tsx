@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaEnvelope } from 'react-icons/fa';
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import ResendTimer from './ResendTimer';
 
 interface ResetCodeInputProps {
   code: string;
@@ -51,16 +52,11 @@ const ResetCodeInput: React.FC<ResetCodeInputProps> = ({
         {loading ? "Verifying..." : "Verify Code"}
       </button>
     </div>
-    <div className="text-sm text-center">
-      <button
-        type="button"
-        onClick={onResendCode}
-        disabled={loading}
-        className="font-medium text-red-200 hover:text-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Didn&apos;t receive a code? Click here to resend
-      </button>
-    </div>
+    {onResendCode && (
+      <div className="text-sm text-center">
+        <ResendTimer onResend={onResendCode} disabled={loading} loading={loading} />
+      </div>
+    )}
   </form>
 );
 
