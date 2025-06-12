@@ -5,7 +5,6 @@ import { Download, Upload, Database, Loader2 } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { useState, use } from "react";
-import { useToast } from "@/hooks/use-toast";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useAuth } from "@clerk/nextjs";
 import {
@@ -19,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SuccessBanner } from "../../../components/SuccessBanner";
+import { Notification } from "../../../components/Notification";
 import { generateEncryptionKey, exportKey, encryptData, importKey, decryptData } from "@/utils/encryption";
 import JSZip from 'jszip';
 
@@ -34,8 +34,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedKeyFile, setSelectedKeyFile] = useState<File | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' | 'warning' | 'info' } | null>(null);
   const { getToken } = useAuth();
-  const { toast } = useToast();
   
   const downloadConvexBackup = useMutation(api.mutations.downloadConvexBackup);
 
@@ -78,10 +78,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       
       setSuccessMessage("Database backup has been successfully downloaded as a ZIP file. Keep it safe!");
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to download database backup",
-        variant: "destructive",
+      setNotification({
+        type: 'error',
+        message: error instanceof Error ? error.message : "Failed to download database backup"
       });
     } finally {
       setIsDownloading(false);
@@ -107,10 +106,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
   const confirmRestore = async () => {
     if (!selectedFile || !selectedKeyFile) {
-      toast({
-        title: "Error",
-        description: "Please select both backup and key files",
-        variant: "destructive",
+      setNotification({
+        type: 'error',
+        message: "Please select both backup and key files"
       });
       return;
     }
@@ -161,10 +159,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         setSuccessMessage("Database has been successfully restored.");
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to restore database backup",
-        variant: "destructive",
+      setNotification({
+        type: 'error',
+        message: error instanceof Error ? error.message : "Failed to restore database backup"
       });
     } finally {
       setIsRestoring(false);
@@ -175,6 +172,11 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     <div className="min-h-screen bg-gray-50">
       <Navbar instructorId={instructorId} />
       <SuccessBanner message={successMessage} onClose={() => setSuccessMessage(null)} />
+      <Notification 
+        message={notification?.message || null} 
+        type={notification?.type || 'error'} 
+        onClose={() => setNotification(null)} 
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Backup & Restore</h1>
