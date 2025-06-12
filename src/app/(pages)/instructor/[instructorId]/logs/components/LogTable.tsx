@@ -39,7 +39,9 @@ const LOG_ACTIONS = {
     CREATE: "Create",
     EDIT: "Edit",
     DELETE: "Delete",
-    RESET_PASSWORD: "Reset Password"
+    RESET_PASSWORD: "Reset Password",
+    LOCK_ACCOUNT: "Lock Account",
+    UNLOCK_ACCOUNT: "Unlock Account"
 } as const;
 
 const ACTION_COLORS = {
@@ -58,6 +60,14 @@ const ACTION_COLORS = {
     [LOG_ACTIONS.RESET_PASSWORD]: {
         bg: 'bg-yellow-100',
         text: 'text-yellow-800'
+    },
+    [LOG_ACTIONS.LOCK_ACCOUNT]: {
+        bg: 'bg-red-100',
+        text: 'text-red-800'
+    },
+    [LOG_ACTIONS.UNLOCK_ACCOUNT]: {
+        bg: 'bg-green-100',
+        text: 'text-green-800'
     },
     // Default colors for any new actions
     default: {
@@ -200,7 +210,9 @@ export const LogTable = ({ logs }: LogTableProps) => {
             'Edit Group': LOG_ACTIONS.EDIT,
             'Delete User': LOG_ACTIONS.DELETE,
             'Delete Group': LOG_ACTIONS.DELETE,
-            'Reset Password': LOG_ACTIONS.RESET_PASSWORD
+            'Reset Password': LOG_ACTIONS.RESET_PASSWORD,
+            'Lock Account': LOG_ACTIONS.LOCK_ACCOUNT,
+            'Unlock Account': LOG_ACTIONS.UNLOCK_ACCOUNT
         };
 
         const consolidatedAction = actionMap[action] || action;
