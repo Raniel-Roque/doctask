@@ -63,8 +63,6 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
     try {
       await signOut();
       router.replace("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
     } finally {
       setIsLoggingOut(false);
       setShowLogoutConfirmation(false);

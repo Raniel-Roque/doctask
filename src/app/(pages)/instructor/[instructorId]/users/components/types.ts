@@ -39,7 +39,7 @@ export interface AddFormData {
 // Notification Types
 // =========================================
 export interface Notification {
-  type: "error";
+  type: 'error' | 'success' | 'warning' | 'info';
   message: string;
 }
 
@@ -63,6 +63,7 @@ export interface LogDetails {
     subrole?: boolean;
   };
   user?: User;
+  action?: 'lock' | 'unlock';
 }
 
 // =========================================

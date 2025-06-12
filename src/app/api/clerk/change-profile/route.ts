@@ -71,8 +71,7 @@ export async function POST(request: Request) {
       success: true,
       message: "Profile picture updated successfully"
     });
-  } catch (error) {
-    console.error("Profile update error:", error);
+  } catch {
     return NextResponse.json(
       { error: "Failed to update profile picture" },
       { status: 500 }

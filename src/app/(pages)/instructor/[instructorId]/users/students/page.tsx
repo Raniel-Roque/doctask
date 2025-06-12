@@ -590,6 +590,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           onAdd={() => setIsAddingUser(true)}
           onResetPassword={setResetPasswordUser}
           showRoleColumn={true}
+          onLockAccount={() => {}}
         />
 
         {/* Add Form */}

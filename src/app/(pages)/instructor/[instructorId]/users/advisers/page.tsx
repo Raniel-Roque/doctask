@@ -4,7 +4,7 @@ import { Navbar } from "../../components/navbar";
 import { api } from "../../../../../../../convex/_generated/api";
 import { ConvexHttpClient } from "convex/browser";
 import { useState, useEffect, use } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { UserTable } from "../components/UserTable";
 import { AddForm } from "../components/AddForm";
@@ -17,6 +17,7 @@ import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmati
 import { SuccessBanner } from "../../../../components/SuccessBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { sanitizeInput } from "../../../../components/SanitizeInput";
+import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
 
 // =========================================
 // Types
@@ -67,6 +68,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [pendingCloseAction, setPendingCloseAction] = useState<(() => void) | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [networkError, setNetworkError] = useState<string | null>(null);
 
   // =========================================
   // Mutations
@@ -75,6 +78,12 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const createUser = useMutation(api.mutations.createUser);
   const deleteUserMutation = useMutation(api.mutations.deleteUser);
   const resetPassword = useMutation(api.mutations.resetPassword);
+  const logLockAccount = useMutation(api.mutations.logLockAccountMutation);
+
+  // =========================================
+  // Queries
+  // =========================================
+  const instructor = useQuery(api.fetch.getUserById, { id: instructorId as Id<"users"> });
 
   // =========================================
   // Effects
@@ -534,6 +543,62 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
   };
 
+  const handleLockAccount = async (user: User) => {
+    setSelectedUser(user);
+  };
+
+  const handleLockAccountSubmit = async (action: 'lock' | 'unlock') => {
+    if (!selectedUser || !instructor) return;
+
+    setIsSubmitting(true);
+    setNetworkError(null);
+
+    try {
+      const response = await fetch('/api/clerk/lock-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: selectedUser.clerk_id,
+          action,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to process request');
+      }
+
+      // Log the action
+      await logLockAccount({
+        instructorId: instructor._id,
+        affectedEntityId: selectedUser._id,
+        action,
+        affectedUserInfo: {
+          first_name: selectedUser.first_name,
+          middle_name: selectedUser.middle_name,
+          last_name: selectedUser.last_name,
+          email: selectedUser.email,
+        },
+        instructorInfo: {
+          first_name: instructor.first_name,
+          middle_name: instructor.middle_name,
+          last_name: instructor.last_name,
+          email: instructor.email,
+        },
+      });
+
+      setSuccessMessage(`Account ${action}ed successfully`);
+      setSelectedUser(null);
+    } catch (error) {
+      setNetworkError(error instanceof Error ? error.message : 'An error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // =========================================
   // Render
   // =========================================
@@ -562,6 +627,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onDelete={setDeleteUser}
           onAdd={() => setIsAddingUser(true)}
           onResetPassword={setResetPasswordUser}
+          onLockAccount={handleLockAccount}
           showCodeColumn={true}
         />
 
@@ -713,6 +779,18 @@ const UsersPage = ({ params }: UsersPageProps) => {
             setShowUnsavedConfirm(false);
             setPendingCloseAction(null);
           }}
+      />
+
+      <LockAccountConfirmation
+        user={selectedUser}
+        onCancel={() => {
+          setSelectedUser(null);
+          setNetworkError(null);
+        }}
+        onConfirm={handleLockAccountSubmit}
+        isSubmitting={isSubmitting}
+        networkError={networkError}
+        setNetworkError={setNetworkError}
       />
       </div>
     </div>

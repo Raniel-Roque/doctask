@@ -1,4 +1,4 @@
-import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown, FaChevronDown } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown, FaChevronDown, FaLock } from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 import { useState } from "react";
 import { useQuery } from "convex/react";
@@ -24,6 +24,7 @@ interface UserTableProps {
   onDelete: (user: User) => void;
   onAdd: () => void;
   onResetPassword: (user: User) => void;
+  onLockAccount: (user: User) => void;
   showRoleColumn?: boolean;
   showCodeColumn?: boolean;
 }
@@ -48,6 +49,7 @@ export const UserTable = ({
   onDelete,
   onAdd,
   onResetPassword,
+  onLockAccount,
   showRoleColumn = false,
   showCodeColumn = false,
 }: UserTableProps) => {
@@ -325,6 +327,13 @@ export const UserTable = ({
                       title="Reset Password"
                     >
                       <FaKey />
+                    </button>
+                    <button
+                      onClick={() => onLockAccount(user)}
+                      className="p-2 text-purple-600 hover:text-purple-800"
+                      title="Lock/Unlock Account"
+                    >
+                      <FaLock />
                     </button>
                     <button
                       onClick={() => onDelete(user)}

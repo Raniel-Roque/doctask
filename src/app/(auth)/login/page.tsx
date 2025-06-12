@@ -287,16 +287,14 @@ const LoginPage = () => {
       const errorMessage = (err as Error).message || "";
       
       if (errorMessage.includes("Your account is locked")) {
-        const minutes = errorMessage.match(/\d+/)?.[0] || "60";
-        setError(`Too many failed attempts. Your account is locked for ${minutes} minutes. Please try again later.`);
+        setError(`Your account is locked. Please try again later or contact your capstone instructor.`);
       } else if (
         errorMessage.toLowerCase().includes("password") || 
         errorMessage.toLowerCase().includes("invalid credentials") ||
         errorMessage.toLowerCase().includes("incorrect")
       ) {
-        setError("Incorrect password. Please try again. You have 2 more attempts before your account is locked for 1 hour.");
+        setError("Incorrect password. Please try again.");
       } else {
-        console.log("Unhandled error:", errorMessage); // Debug log
         setError("An error occurred during sign in");
       }
     } finally {

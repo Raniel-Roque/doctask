@@ -1,7 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { generateUniqueAdviserCode } from "./utils/adviserCode";
-import { logCreateUser, logUpdateUser, logDeleteUser, logResetPassword, logCreateGroup, logUpdateGroup, logDeleteGroup } from "./utils/log";
+import { logCreateUser, logUpdateUser, logDeleteUser, logResetPassword, logCreateGroup, logUpdateGroup, logDeleteGroup, logLockAccount } from "./utils/log";
 import { Id } from "./_generated/dataModel";
 
 // Backup types and validation
@@ -975,5 +975,35 @@ export const rejectGroupRequest = mutation({
     });
 
     return { success: true };
+  },
+});
+
+export const logLockAccountMutation = mutation({
+  args: {
+    instructorId: v.id("users"),
+    affectedEntityId: v.id("users"),
+    action: v.union(v.literal("lock"), v.literal("unlock")),
+    affectedUserInfo: v.object({
+      first_name: v.string(),
+      middle_name: v.optional(v.string()),
+      last_name: v.string(),
+      email: v.string(),
+    }),
+    instructorInfo: v.object({
+      first_name: v.string(),
+      middle_name: v.optional(v.string()),
+      last_name: v.string(),
+      email: v.string(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await logLockAccount(
+      ctx,
+      args.instructorId,
+      args.affectedEntityId,
+      args.action,
+      args.affectedUserInfo,
+      args.instructorInfo
+    );
   },
 });

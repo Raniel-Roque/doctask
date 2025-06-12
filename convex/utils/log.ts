@@ -5,7 +5,9 @@ const LOG_ACTIONS = {
   CREATE: "Create",
   EDIT: "Edit",
   DELETE: "Delete",
-  RESET_PASSWORD: "Reset Password"
+  RESET_PASSWORD: "Reset Password",
+  LOCK_ACCOUNT: "Lock Account",
+  UNLOCK_ACCOUNT: "Unlock Account"
 } as const;
 
 interface UserInfo {
@@ -182,5 +184,30 @@ export async function logDeleteGroup(
     affected_entity_email: projectManagerInfo.email,
     action: LOG_ACTIONS.DELETE,
     details: "Deleted Group"
+  });
+}
+
+export async function logLockAccount(
+  ctx: MutationCtx, 
+  instructorId: Id<"users">, 
+  affectedEntityId: Id<"users">,
+  action: 'lock' | 'unlock',
+  affectedUserInfo: UserInfo,
+  instructorInfo: UserInfo
+) {
+  await ctx.db.insert("instructorLogs", {
+    instructor_id: instructorId,
+    instructor_first_name: instructorInfo.first_name,
+    instructor_middle_name: instructorInfo.middle_name,
+    instructor_last_name: instructorInfo.last_name,
+    instructor_email: instructorInfo.email,
+    affected_entity_type: "user",
+    affected_entity_id: affectedEntityId,
+    affected_entity_first_name: affectedUserInfo.first_name,
+    affected_entity_middle_name: affectedUserInfo.middle_name,
+    affected_entity_last_name: affectedUserInfo.last_name,
+    affected_entity_email: affectedUserInfo.email,
+    action: action === 'lock' ? LOG_ACTIONS.LOCK_ACCOUNT : LOG_ACTIONS.UNLOCK_ACCOUNT,
+    details: action === 'lock' ? "Locked Account" : "Unlocked Account"
   });
 }
