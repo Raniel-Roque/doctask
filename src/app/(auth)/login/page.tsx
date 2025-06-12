@@ -521,17 +521,11 @@ const LoginPage = () => {
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  disabled={error?.includes("Your account is locked")}
-                  className={`font-medium text-red-200 hover:text-red-100 ${error?.includes("Your account is locked") ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className="font-medium text-red-200 hover:text-red-100"
                 >
                   Forgot Password?
                 </button>
               </div>
-              {error?.includes("Your account is locked") && (
-                <div className="text-red-300 text-sm text-center mt-2">
-                  Your account is locked. Password reset is unavailable during this period.
-                </div>
-              )}
             </form>
           )}
           {/* Step 4: Forgot Password Flow (sequential) */}
