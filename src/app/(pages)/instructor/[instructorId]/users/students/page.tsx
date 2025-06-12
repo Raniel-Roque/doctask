@@ -77,6 +77,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const updateUser = useMutation(api.mutations.updateUser);
   const createUser = useMutation(api.mutations.createUser);
   const deleteUserMutation = useMutation(api.mutations.deleteUser);
+  const resetPassword = useMutation(api.mutations.resetPassword);
 
   // =========================================
   // Effects
@@ -497,6 +498,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         email: resetPasswordUser.email
       });
 
+      // Step 1: Call Clerk API to reset password
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
@@ -519,7 +521,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         throw new Error(data.error || "Failed to reset password");
       }
 
-      // Send reset password email
+      // Step 2: Call Convex mutation to log the action
+      await resetPassword({
+        userId: resetPasswordUser._id,
+        instructorId: instructorId as Id<"users">,
+      });
+
+      // Step 3: Send reset password email
       await fetch("/api/resend/reset-password-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

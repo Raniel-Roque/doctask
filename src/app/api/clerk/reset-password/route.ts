@@ -56,18 +56,9 @@ export async function POST(request: Request) {
       password: newPassword,
     });
 
-    // Log the password reset
-    await convex.mutation(api.mutations.resetPassword, {
-      userId: convexUser._id,
-      instructorId: convexUser._id, // Using the same ID since this is a self-reset
-    });
-
     return NextResponse.json({ 
       success: true,
-      email: user.emailAddresses[0].emailAddress,
-      firstName: convexUser.first_name,
-      lastName: convexUser.last_name,
-      password: newPassword
+      message: "Password reset successfully"
     });
   } catch {
     return NextResponse.json(

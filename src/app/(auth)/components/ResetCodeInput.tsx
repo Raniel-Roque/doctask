@@ -53,9 +53,9 @@ const ResetCodeInput: React.FC<ResetCodeInputProps> = ({
       </button>
     </div>
     {onResendCode && (
-      <div className="text-sm text-center">
+    <div className="text-sm text-center">
         <ResendTimer onResend={onResendCode} disabled={loading} loading={loading} />
-      </div>
+    </div>
     )}
   </form>
 );

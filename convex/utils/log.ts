@@ -92,7 +92,7 @@ export async function logResetPassword(
   ctx: MutationCtx, 
   instructorId: Id<"users">, 
   affectedEntityId: Id<"users">,
-  userInfo: UserInfo,
+  affectedUserInfo: UserInfo,
   instructorInfo: UserInfo
 ) {
   await ctx.db.insert("instructorLogs", {
@@ -103,10 +103,10 @@ export async function logResetPassword(
     instructor_email: instructorInfo.email,
     affected_entity_type: "user",
     affected_entity_id: affectedEntityId,
-    affected_entity_first_name: userInfo.first_name,
-    affected_entity_middle_name: userInfo.middle_name,
-    affected_entity_last_name: userInfo.last_name,
-    affected_entity_email: userInfo.email,
+    affected_entity_first_name: affectedUserInfo.first_name,
+    affected_entity_middle_name: affectedUserInfo.middle_name,
+    affected_entity_last_name: affectedUserInfo.last_name,
+    affected_entity_email: affectedUserInfo.email,
     action: LOG_ACTIONS.RESET_PASSWORD,
     details: "Reset Password"
   });

@@ -850,17 +850,25 @@ export const resetPassword = mutation({
     if (!user) throw new Error("User not found");
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
-    await logResetPassword(ctx, args.instructorId, args.userId, {
-      first_name: user.first_name,
-      middle_name: user.middle_name,
-      last_name: user.last_name,
-      email: user.email
-    }, {
-      first_name: instructor.first_name,
-      middle_name: instructor.middle_name,
-      last_name: instructor.last_name,
-      email: instructor.email
-    });
+
+    // Log the password reset with correct user and instructor info
+    await logResetPassword(
+      ctx,
+      args.instructorId,
+      args.userId,
+      {
+        first_name: user.first_name,
+        middle_name: user.middle_name,
+        last_name: user.last_name,
+        email: user.email
+      },
+      {
+        first_name: instructor.first_name,
+        middle_name: instructor.middle_name,
+        last_name: instructor.last_name,
+        email: instructor.email
+      }
+    );
     return { success: true };
   },
 });
