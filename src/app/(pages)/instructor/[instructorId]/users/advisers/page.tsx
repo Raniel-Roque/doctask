@@ -11,10 +11,9 @@ import { AddForm } from "../components/AddForm";
 import EditForm from "../components/EditForm";
 import { DeleteConfirmation } from "../components/DeleteConfirmation";
 import { ValidationError } from "../components/ValidationError";
-import { Notification } from "../../../../components/Notification";
+import { NotificationBanner } from "../../../../components/NotificationBanner";
 import { User, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirection, LogDetails, Notification as NotificationType } from "../components/types";
 import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
-import { SuccessBanner } from "../../../../components/SuccessBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { sanitizeInput } from "../../../../components/SanitizeInput";
 import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
@@ -751,16 +750,13 @@ const UsersPage = ({ params }: UsersPageProps) => {
         />
 
         {/* Notification */}
-        <Notification
-          message={notification?.message || null}
-          type={notification?.type || 'error'}
-          onClose={() => setNotification(null)}
-        />
-
-        {/* Success Banner */}
-        <SuccessBanner
-          message={successMessage}
-          onClose={() => setSuccessMessage(null)}
+        <NotificationBanner
+          message={notification?.message || successMessage}
+          type={notification?.type || 'success'}
+          onClose={() => {
+            setNotification(null);
+            setSuccessMessage(null);
+          }}
         />
 
         {/* Unsaved Changes Confirmation */}

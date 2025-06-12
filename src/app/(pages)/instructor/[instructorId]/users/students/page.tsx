@@ -11,10 +11,9 @@ import { AddForm } from "../components/AddForm";
 import EditForm from "../components/EditForm";
 import { DeleteConfirmation } from "../components/DeleteConfirmation";
 import { ValidationError } from "../components/ValidationError";
-import { Notification } from "../../../../components/Notification";
+import { NotificationBanner } from "../../../../components/NotificationBanner";
 import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
 import { User, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirection, Notification as NotificationType, LogDetails } from "../components/types";
-import { SuccessBanner } from "../../../../components/SuccessBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
@@ -67,7 +66,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   });
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [pendingCloseAction, setPendingCloseAction] = useState<(() => void) | null>(null);
 
@@ -309,7 +307,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       });
 
       // Only show success message if there were changes
-      setSuccessMessage("User updated successfully");
+      setNotification({
+        type: 'success',
+        message: "User updated successfully"
+      });
       setEditingUser(null);
       await refreshStudents();
     } catch (error) {
@@ -371,7 +372,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
       setDeleteUser(null);
       await refreshStudents();
-      setSuccessMessage("Student deleted successfully");
+      setNotification({
+        type: 'success',
+        message: "Student deleted successfully"
+      });
     } catch (error) {
       logUserAction('Delete Failed', { 
         userId: deleteUser._id,
@@ -459,7 +463,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       });
 
       // Only show success message if there were values
-      setSuccessMessage("Student added successfully");
+      setNotification({
+        type: 'success',
+        message: "Student added successfully"
+      });
       setIsAddingUser(false);
       setAddFormData({
         first_name: "",
@@ -541,7 +548,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       
       setResetPasswordUser(null);
       await refreshStudents();
-      setSuccessMessage("Password reset successfully");
+      setNotification({
+        type: 'success',
+        message: "Password reset successfully"
+      });
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -556,6 +566,19 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       }
     } finally {
       setIsResettingPassword(false);
+    }
+  };
+
+  const handleCloseAddForm = () => {
+    if (isSubmitting) {
+      setShowUnsavedConfirm(true);
+      setPendingCloseAction(() => () => {
+        setIsAddingUser(false);
+        setNotification(null);
+      });
+    } else {
+      setIsAddingUser(false);
+      setNotification(null);
     }
   };
 
@@ -600,40 +623,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           networkError={addNetworkError}
           setNetworkError={setAddNetworkError}
           formData={addFormData}
-          onClose={() => {
-            if (isSubmitting) {
-              // During submission, don't allow closing
-              return;
-            }
-            
-            // Check if there are any unsaved changes
-            const hasChanges = Object.values(addFormData).some(value => value !== "" && value !== 0);
-            if (hasChanges) {
-              // Just show the confirmation dialog without closing anything
-              setPendingCloseAction(() => () => {
-              setIsAddingUser(false);
-              setAddFormData({
-                first_name: "",
-                middle_name: "",
-                last_name: "",
-                email: "",
-                subrole: 0,
-              });
-              });
-              setShowUnsavedConfirm(true);
-              return; // Prevent the form from closing
-            }
-            
-            // No changes, safe to close
-            setIsAddingUser(false);
-            setAddFormData({
-              first_name: "",
-              middle_name: "",
-              last_name: "",
-              email: "",
-              subrole: 0,
-            });
-          }}
+          onClose={handleCloseAddForm}
           onSubmit={handleAddSubmit}
           onFormDataChange={setAddFormData}
           isStudent={true}
@@ -718,17 +708,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         />
 
         {/* Notification */}
-        <Notification
-          message={notification?.message || null}
-          type={notification?.type || 'error'}
-          onClose={() => setNotification(null)}
+        <NotificationBanner
+          message={notification?.message || ''}
+          type={notification?.type || 'success'}
+          onClose={() => {
+            setNotification(null);
+          }}
         />
-
-        {/* Success Banner */}
-        <SuccessBanner
-          message={successMessage}
-          onClose={() => setSuccessMessage(null)}
-      />
 
         {/* Unsaved Changes Confirmation */}
         <UnsavedChangesConfirmation

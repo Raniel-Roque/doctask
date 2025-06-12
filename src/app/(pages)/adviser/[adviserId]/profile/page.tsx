@@ -6,9 +6,8 @@ import { useUser } from "@clerk/nextjs";
 import { useState } from "react";
 import { Cropper } from 'react-cropper';
 import 'cropperjs/dist/cropper.css';
-import { SuccessBanner } from "@/app/(pages)/components/SuccessBanner";
-import { Notification } from "@/app/(pages)/components/Notification";
-import { ProfilePictureUploader } from "@/app/(pages)/adviser/[adviserId]/profile/components/ProfilePictureUploader";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { ProfilePictureUploader } from "./components/ProfilePictureUploader";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
@@ -22,8 +21,8 @@ const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
     const { user } = useUser();
     const [showCropper, setShowCropper] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [successBanner, setSuccessBanner] = useState<string | null>(null);
-    const [notification, setNotification] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' | 'warning' | 'info' } | null>(null);
 
     // Fetch user data from Convex
     const userData = useQuery(api.fetch.getUserById, { id: adviserId as Id<"users"> });
@@ -47,8 +46,8 @@ const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
                                   imageUrl: user.imageUrl ?? undefined,
                                   firstName: user.firstName ?? undefined,
                                 }}
-                                onSuccess={(message) => setSuccessBanner(message)}
-                                onError={(message) => setNotification(message)}
+                                onSuccess={(message) => setSuccessMessage(message)}
+                                onError={(message) => setNotification({ message, type: 'error' })}
                               />
                             )}
 
@@ -161,8 +160,14 @@ const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
             )}
 
             {/* Success/Error Messages */}
-            <SuccessBanner message={successBanner} onClose={() => setSuccessBanner(null)} />
-            <Notification message={notification} type="error" onClose={() => setNotification(null)} />
+            <NotificationBanner
+                message={notification?.message || successMessage}
+                type={notification?.type || 'success'}
+                onClose={() => {
+                    setNotification(null);
+                    setSuccessMessage(null);
+                }}
+            />
         </div>
     );
 };

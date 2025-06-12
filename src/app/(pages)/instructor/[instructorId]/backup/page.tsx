@@ -17,8 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { SuccessBanner } from "../../../components/SuccessBanner";
-import { Notification } from "../../../components/Notification";
+import { NotificationBanner } from "../../../components/NotificationBanner";
 import { generateEncryptionKey, exportKey, encryptData, importKey, decryptData } from "@/utils/encryption";
 import JSZip from 'jszip';
 
@@ -33,7 +32,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedKeyFile, setSelectedKeyFile] = useState<File | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' | 'warning' | 'info' } | null>(null);
   const { getToken } = useAuth();
   
@@ -76,7 +74,10 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       window.URL.revokeObjectURL(zipUrl);
       document.body.removeChild(zipLink);
       
-      setSuccessMessage("Database backup has been successfully downloaded as a ZIP file. Keep it safe!");
+      setNotification({
+        type: 'success',
+        message: "Database backup has been successfully downloaded as a ZIP file. Keep it safe!"
+      });
     } catch (error: unknown) {
       setNotification({
         type: 'error',
@@ -154,9 +155,15 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       setShowRestoreConfirm(false);
       
       if (result.users && result.users.length > 0) {
-        setSuccessMessage("Database has been successfully restored. New user credentials have been generated.");
+        setNotification({
+          type: 'success',
+          message: "Database has been successfully restored. New user credentials have been generated."
+        });
       } else {
-        setSuccessMessage("Database has been successfully restored.");
+        setNotification({
+          type: 'success',
+          message: "Database has been successfully restored."
+        });
       }
     } catch (error: unknown) {
       setNotification({
@@ -171,11 +178,10 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar instructorId={instructorId} />
-      <SuccessBanner message={successMessage} onClose={() => setSuccessMessage(null)} />
-      <Notification 
-        message={notification?.message || null} 
-        type={notification?.type || 'error'} 
-        onClose={() => setNotification(null)} 
+      <NotificationBanner
+        message={notification?.message || null}
+        type={notification?.type || 'error'}
+        onClose={() => setNotification(null)}
       />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">

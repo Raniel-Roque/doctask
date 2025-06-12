@@ -8,8 +8,7 @@ import { Group, User } from "./components/types";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
-import { Notification } from "../../../../components/Notification";
-import { SuccessBanner } from "../../../../components/SuccessBanner";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import GroupActionConfirmation from "./components/GroupActionConfirmation";
 
 interface AdviserGroupsPageProps {
@@ -30,10 +29,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
     const [networkError, setNetworkError] = useState<string | null>(null);
 
     // State for notifications
-    const [notification, setNotification] = useState<{ message: string | null; type: 'error' | 'success' | 'warning' | 'info' }>({
-        message: null,
-        type: 'success'
-    });
+    const [notification, setNotification] = useState<{ message: string | null; type: 'error' | 'success' | 'warning' | 'info' } | null>(null);
 
     const acceptGroup = useMutation(api.mutations.acceptGroupRequest);
     const rejectGroup = useMutation(api.mutations.rejectGroupRequest);
@@ -234,14 +230,12 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
                 />
 
                 {/* Notifications */}
-                <Notification
-                    message={notification.type === 'error' ? notification.message : null}
-                    type="error"
-                    onClose={() => setNotification({ message: null, type: 'success' })}
-                />
-                <SuccessBanner
-                    message={notification.type === 'success' ? notification.message : null}
-                    onClose={() => setNotification({ message: null, type: 'success' })}
+                <NotificationBanner
+                    message={notification?.message || ''}
+                    type={notification?.type || 'success'}
+                    onClose={() => {
+                        setNotification(null);
+                    }}
                 />
             </div>
         </div>

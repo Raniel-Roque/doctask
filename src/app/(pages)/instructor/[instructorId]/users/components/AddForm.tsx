@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FaPlus, FaTimes, FaExclamationTriangle, FaChevronDown, FaSearch, FaEnvelope, FaUserPlus, FaSpinner, FaUserTag, FaUser } from "react-icons/fa";
 import { AddFormData } from "./types";
 import { validateUserForm } from "../../utils/validation";
-import { Notification } from "../../../../components/Notification";
+import { NotificationBanner } from "../../../../components/NotificationBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../../../components/SanitizeInput";
 
@@ -383,12 +383,12 @@ export const AddForm = ({
     </div>
 
       {/* Notifications */}
-      <Notification 
+      <NotificationBanner 
         message={errorMessage} 
         onClose={() => setErrorMessage(null)} 
         type="error"
       />
-      <Notification 
+      <NotificationBanner 
         message={successMessage} 
         onClose={() => setSuccessMessage(null)} 
         type="success"
