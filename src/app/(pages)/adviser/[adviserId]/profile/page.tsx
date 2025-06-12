@@ -3,20 +3,15 @@
 import { Navbar } from "../components/navbar";
 import { use } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Cropper } from 'react-cropper';
 import 'cropperjs/dist/cropper.css';
 import { SuccessBanner } from "@/app/(pages)/components/SuccessBanner";
 import { Notification } from "@/app/(pages)/components/Notification";
 import { ProfilePictureUploader } from "@/app/(pages)/adviser/[adviserId]/profile/components/ProfilePictureUploader";
-
-interface UserData {
-    _id: string;
-    first_name: string;
-    middle_name?: string;
-    last_name: string;
-    email: string;
-}
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 
 interface AdviserProfilePageProps {
     params: Promise<{ adviserId: string }>
@@ -31,29 +26,7 @@ const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
     const [notification, setNotification] = useState<string | null>(null);
 
     // Fetch user data from Convex
-    const [userData, setUserData] = useState<UserData | null>(null);
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await fetch("/api/convex/get-user-by-email", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: user?.primaryEmailAddress?.emailAddress })
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setUserData(data);
-                } else {
-                    setNotification("Failed to fetch user data");
-                }
-            } catch {
-                setNotification("Error fetching user data");
-            }
-        };
-        if (user?.primaryEmailAddress?.emailAddress) {
-            fetchUserData();
-        }
-    }, [user]);
+    const userData = useQuery(api.fetch.getUserById, { id: adviserId as Id<"users"> });
 
     return ( 
         <div className="min-h-screen bg-gray-50">
@@ -118,7 +91,7 @@ const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
                                         <label className="block text-sm font-medium text-gray-700">Email</label>
                                         <input
                                             type="email"
-                                            value={user?.primaryEmailAddress?.emailAddress || ""}
+                                            value={userData?.email || ""}
                                             disabled
                                             className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm text-gray-500"
                                         />
