@@ -235,8 +235,8 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
 
                 {/* Notifications */}
                 <Notification
-                    message={notification.message}
-                    type={notification.type}
+                    message={notification.type === 'error' ? notification.message : null}
+                    type="error"
                     onClose={() => setNotification({ message: null, type: 'success' })}
                 />
                 <SuccessBanner

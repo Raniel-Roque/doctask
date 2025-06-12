@@ -367,6 +367,13 @@ export const LogTable = ({ logs }: LogTableProps) => {
                             </tr>
                         </thead>
                         <tbody>
+                            {paginatedLogs.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                                        No logs available
+                                    </td>
+                                </tr>
+                            )}
                             {paginatedLogs.map((log, index) => {
                                 const instructor = getInstructorName(log);
                                 const affectedEntity = getAffectedEntityName(log);

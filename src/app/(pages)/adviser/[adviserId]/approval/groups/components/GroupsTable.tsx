@@ -114,6 +114,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onAccept, onReject, o
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedGroups.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    No group requests available at this time.
+                  </td>
+                </tr>
+              )}
               {paginatedGroups.map((group) => (
                 <tr key={group._id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">

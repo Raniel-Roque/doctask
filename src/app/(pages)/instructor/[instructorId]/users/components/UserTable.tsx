@@ -282,7 +282,16 @@ export const UserTable = ({
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {paginatedUsers.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  {showRoleColumn 
+                    ? "No students available. Click \"Add User\" to create a new student."
+                    : "No advisers available. Click \"Add User\" to create a new adviser."}
+                </td>
+              </tr>
+            )}
             {paginatedUsers.map((user) => (
               <tr key={user._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 border-b text-left">{user.first_name}</td>
