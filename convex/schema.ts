@@ -127,7 +127,6 @@ export default defineSchema({
     appendix_i: v.optional(v.id("documents")),
 
     // Version History Arrays
-    title_page_versions: v.optional(v.array(v.id("documents"))),
     acknowledgement_versions: v.optional(v.array(v.id("documents"))),
     abstract_versions: v.optional(v.array(v.id("documents"))),
     table_of_contents_versions: v.optional(v.array(v.id("documents"))),
@@ -139,15 +138,17 @@ export default defineSchema({
     references_versions: v.optional(v.array(v.id("documents"))),
     resource_person_versions: v.optional(v.array(v.id("documents"))),
     glossary_versions: v.optional(v.array(v.id("documents"))),
-    appendix_a_versions: v.optional(v.array(v.id("documents"))),
     appendix_b_versions: v.optional(v.array(v.id("documents"))),
     appendix_c_versions: v.optional(v.array(v.id("documents"))),
     appendix_d_versions: v.optional(v.array(v.id("documents"))),
     appendix_e_versions: v.optional(v.array(v.id("documents"))),
     appendix_f_versions: v.optional(v.array(v.id("documents"))),
     appendix_g_versions: v.optional(v.array(v.id("documents"))),
-    appendix_h_versions: v.optional(v.array(v.id("documents"))),
     appendix_i_versions: v.optional(v.array(v.id("documents"))),
+
+    // Title Pages;
+    // Appendix A (Work Assignment);
+    // Appendix H (Curriculum Vitae) are downloadable only
   })
   .index("by_group", ["group_id"]),
 
