@@ -97,77 +97,18 @@ export default defineSchema({
   .index("by_affected_entity", ["affected_entity_id"]),
 
   // =========================================
-  // Group Documents Table
+  // Documents Table (Normalized Versioning)
   // =========================================
-  groupDocumentsTable: defineTable({
-    // Group Reference
-    group_id: v.id("groupsTable"),
 
-    // Current/Latest Version References
-    title_page: v.optional(v.id("documents")), // Points to latest version
-    acknowledgement: v.optional(v.id("documents")),
-    abstract: v.optional(v.id("documents")),
-    table_of_contents: v.optional(v.id("documents")),
-    chapter1: v.optional(v.id("documents")),
-    chapter2: v.optional(v.id("documents")),
-    chapter3: v.optional(v.id("documents")),
-    chapter4: v.optional(v.id("documents")),
-    chapter5: v.optional(v.id("documents")),
-    references: v.optional(v.id("documents")),
-    resource_person: v.optional(v.id("documents")),
-    glossary: v.optional(v.id("documents")),
-    appendix_a: v.optional(v.id("documents")),
-    appendix_b: v.optional(v.id("documents")),
-    appendix_c: v.optional(v.id("documents")),
-    appendix_d: v.optional(v.id("documents")),
-    appendix_e: v.optional(v.id("documents")),
-    appendix_f: v.optional(v.id("documents")),
-    appendix_g: v.optional(v.id("documents")),
-    appendix_h: v.optional(v.id("documents")),
-    appendix_i: v.optional(v.id("documents")),
-
-    // Version History Arrays
-    acknowledgement_versions: v.optional(v.array(v.id("documents"))),
-    abstract_versions: v.optional(v.array(v.id("documents"))),
-    table_of_contents_versions: v.optional(v.array(v.id("documents"))),
-    chapter1_versions: v.optional(v.array(v.id("documents"))),
-    chapter2_versions: v.optional(v.array(v.id("documents"))),
-    chapter3_versions: v.optional(v.array(v.id("documents"))),
-    chapter4_versions: v.optional(v.array(v.id("documents"))),
-    chapter5_versions: v.optional(v.array(v.id("documents"))),
-    references_versions: v.optional(v.array(v.id("documents"))),
-    resource_person_versions: v.optional(v.array(v.id("documents"))),
-    glossary_versions: v.optional(v.array(v.id("documents"))),
-    appendix_b_versions: v.optional(v.array(v.id("documents"))),
-    appendix_c_versions: v.optional(v.array(v.id("documents"))),
-    appendix_d_versions: v.optional(v.array(v.id("documents"))),
-    appendix_e_versions: v.optional(v.array(v.id("documents"))),
-    appendix_f_versions: v.optional(v.array(v.id("documents"))),
-    appendix_g_versions: v.optional(v.array(v.id("documents"))),
-    appendix_i_versions: v.optional(v.array(v.id("documents"))),
-
-    // Title Pages;
-    // Appendix A (Work Assignment);
-    // Appendix H (Curriculum Vitae) are downloadable only
-  })
-  .index("by_group", ["group_id"]),
-
-  // =========================================
-  // Documents Table
-  // =========================================
+  //To version use filters of group_id, part, and creation time (desc)
   documents: defineTable({
-    // Document Identification
     group_id: v.id("groupsTable"),
+    part: v.string(), // e.g., "chapter1", "appendix_a", etc.
     room_id: v.string(),
-    
-    // Document Content
     title: v.string(),
     content: v.string(),
-    
-    // Version Control
-    submitted: v.boolean(),
-    status: v.string(), 
+    student_ids: v.array(v.id("users")), // students assigned to this version
   })
-  .index("by_group", ["group_id"])
-  .index("by_room", ["room_id"])
+    .index("by_group_part", ["group_id", "part"])
+    .index("by_room", ["room_id"]),
 });

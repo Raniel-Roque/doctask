@@ -226,6 +226,41 @@ export const createGroup = mutation({
       }
     }
 
+    // Create initial documents for all parts
+    const partsAndTitles: [string, string][] = [
+      ["title_page", "Title Page"],
+      ["acknowledgement", "Acknowledgement"],
+      ["abstract", "Abstract"],
+      ["table_of_contents", "Table of Contents"],
+      ["chapter1", "Chapter 1"],
+      ["chapter2", "Chapter 2"],
+      ["chapter3", "Chapter 3"],
+      ["chapter4", "Chapter 4"],
+      ["chapter5", "Chapter 5"],
+      ["references", "References"],
+      ["resource_person", "Resource Person"],
+      ["glossary", "Glossary"],
+      ["appendix_a", "Appendix A"],
+      ["appendix_b", "Appendix B"],
+      ["appendix_c", "Appendix C"],
+      ["appendix_d", "Appendix D"],
+      ["appendix_e", "Appendix E"],
+      ["appendix_f", "Appendix F"],
+      ["appendix_g", "Appendix G"],
+      ["appendix_h", "Appendix H"],
+      ["appendix_i", "Appendix I"],
+    ];
+    for (const [part, title] of partsAndTitles) {
+      await ctx.db.insert("documents", {
+        group_id: groupId,
+        part,
+        room_id: "",
+        title,
+        content: "",
+        student_ids: [args.project_manager_id],
+      });
+    }
+
     // Update adviser's group_ids if exists
     if (args.adviser_id) {
       const adviserCode = await ctx.db
@@ -335,6 +370,15 @@ export const updateUser = mutation({
                 group_ids: (adviserCode.group_ids || []).filter(id => id !== group._id)
               });
             }
+          }
+          
+          // Delete all documents associated with this group
+          const docs = await ctx.db
+            .query("documents")
+            .withIndex("by_group_part", (q) => q.eq("group_id", group._id))
+            .collect();
+          for (const doc of docs) {
+            await ctx.db.delete(doc._id);
           }
           
           // Delete the group
@@ -814,6 +858,15 @@ export const deleteGroup = mutation({
           group_ids: (adviserCode.group_ids || []).filter(id => id !== args.groupId)
         });
       }
+    }
+
+    // Delete all documents associated with this group
+    const docs = await ctx.db
+      .query("documents")
+      .withIndex("by_group_part", (q) => q.eq("group_id", args.groupId))
+      .collect();
+    for (const doc of docs) {
+      await ctx.db.delete(doc._id);
     }
 
     // Delete the group
