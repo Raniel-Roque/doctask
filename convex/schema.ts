@@ -48,7 +48,19 @@ export default defineSchema({
   })
   .index("by_project_manager", ["project_manager_id"])
   .index("by_adviser", ["adviser_id"])
-  .index("by_member", ["member_ids"]),
+  .index("by_member", ["member_ids"])
+  .searchIndex("search_by_capstone_title", {
+    searchField: "capstone_title",
+    filterFields: ["grade", "adviser_id", "capstone_title"]
+  })
+  .searchIndex("search_by_project_manager", {
+    searchField: "project_manager_id",
+    filterFields: ["grade", "adviser_id", "capstone_title"]
+  })
+  .searchIndex("search_by_member", {
+    searchField: "member_ids",
+    filterFields: ["grade", "adviser_id", "capstone_title"]
+  }),
 
   // =========================================
   // Students Table (Many-to-Many Relationship)

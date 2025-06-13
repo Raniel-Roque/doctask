@@ -45,19 +45,52 @@ const getGradeDisplay = (grade?: number): { text: string; color: string } => {
 
 interface GroupsTableProps {
   groups: Group[];
+  advisers: User[];
   onEdit: (group: Group) => void;
   onDelete: (group: Group) => void;
   onAdd: () => void;
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  onSort: (field: string) => void;
+  sortField: string;
+  sortDirection: "asc" | "desc";
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  status: 'idle' | 'loading' | 'error';
+  hasResults: boolean;
+  onCapstoneFilterChange: (filter: typeof CAPSTONE_FILTERS[keyof typeof CAPSTONE_FILTERS]) => void;
+  onAdviserFilterChange: (filter: string) => void;
+  onGradeFilterChange: (filter: typeof GRADE_FILTERS[keyof typeof GRADE_FILTERS]) => void;
 }
 
-type SortField = "name" | "projectManager" | "capstoneTitle";
-type SortDirection = "asc" | "desc";
-
-const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onAdd }) => {
+const GroupsTable: React.FC<GroupsTableProps> = ({
+  groups,
+  advisers,
+  onEdit,
+  onDelete,
+  onAdd,
+  currentPage,
+  totalPages,
+  totalCount,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  onSort,
+  sortField,
+  sortDirection,
+  searchTerm,
+  onSearchChange,
+  status,
+  hasResults,
+  onCapstoneFilterChange,
+  onAdviserFilterChange,
+  onGradeFilterChange,
+}) => {
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState(""); // State for search term
-  const [sortField, setSortField] = useState<SortField>("name"); // State for sorting
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc"); // State for sorting direction
   const [adviserFilter, setAdviserFilter] = useState<string>("");
   const [showAdviserDropdown, setShowAdviserDropdown] = useState(false);
   const [adviserSearch, setAdviserSearch] = useState("");
@@ -66,7 +99,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
   const [gradeFilter, setGradeFilter] = useState<typeof GRADE_FILTERS[keyof typeof GRADE_FILTERS]>(GRADE_FILTERS.ALL);
   const [showGradeDropdown, setShowGradeDropdown] = useState(false);
   const [gradeSearch, setGradeSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
 
   const toggleExpand = (groupId: string) => {
@@ -77,112 +109,37 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
     return `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`;
   };
 
-  const getPaginationInfo = (groups: Group[]) => {
-    const entriesPerPage = 5;
-    const totalEntries = groups.length;
-    const totalPages = Math.ceil(totalEntries / entriesPerPage);
-    const startEntry = (currentPage - 1) * entriesPerPage + 1;
-    const endEntry = Math.min(startEntry + entriesPerPage - 1, totalEntries);
-    const paginatedGroups = groups.slice(startEntry - 1, endEntry);
-
-    return {
-      totalEntries,
-      totalPages,
-      startEntry,
-      endEntry,
-      paginatedGroups,
-    };
-  };
-
   // Get unique advisers for filter dropdown
   const uniqueAdvisers = Array.from(new Set(
-    groups
-      .filter(group => group.adviser)
-      .map(group => group.adviser!)
-      .map(adviser => getFullName(adviser))
+    advisers.map(adviser => getFullName(adviser))
   )).sort();
 
-  // Update the filtering logic
-  const filteredAndSortedGroups = groups.filter(group => {
-    const groupName = group.name || '';
-    const adviserName = group.adviser ? getFullName(group.adviser) : '';
-    const memberNames = group.members?.map(member => 
-      `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name} ${member.last_name} ${member.first_name}`
-    ).join(' ') || '';
-    
-    const searchTerms = searchTerm.toLowerCase().split(' ').filter(term => term.length > 0);
-    
-    const matchesSearch = searchTerms.length === 0 || searchTerms.every(term =>
-      groupName.toLowerCase().includes(term) ||
-      adviserName.toLowerCase().includes(term) ||
-      memberNames.toLowerCase().includes(term) ||
-      (group.capstone_title?.toLowerCase().includes(term) || false)
-    );
-
-    const { text: gradeText } = getGradeDisplay(group.grade);
-    const matchesGrade = gradeFilter === GRADE_FILTERS.ALL || gradeText === gradeFilter;
-    
-    return (
-      matchesSearch &&
-      matchesGrade &&
-      (adviserFilter === "" || 
-       (adviserFilter === "No Adviser" && !group.adviser) ||
-       (group.adviser && getFullName(group.adviser) === adviserFilter)) &&
-      (capstoneFilter === CAPSTONE_FILTERS.ALL ||
-       (capstoneFilter === CAPSTONE_FILTERS.WITH_TITLE && group.capstone_title) ||
-       (capstoneFilter === CAPSTONE_FILTERS.WITHOUT_TITLE && !group.capstone_title))
-    );
-  }).sort((a, b) => {
-    let comparison = 0;
-    if (sortField === "name") {
-      const aName = a.name || '';
-      const bName = b.name || '';
-      comparison = aName.localeCompare(bName);
-    } else if (sortField === "projectManager" && a.projectManager && b.projectManager) {
-      comparison = getFullName(a.projectManager).localeCompare(getFullName(b.projectManager));
-    } else if (sortField === "capstoneTitle") {
-      const aTitle = a.capstone_title || '';
-      const bTitle = b.capstone_title || '';
-      comparison = aTitle.localeCompare(bTitle);
-    }
-    return sortDirection === "asc" ? comparison : -comparison;
-  });
-
-   const getSortIcon = (field: SortField) => {
+  const getSortIcon = (field: string) => {
        if (field !== sortField) return <FaSort />;
        return sortDirection === "asc" ? <FaSortUp /> : <FaSortDown />;
-   };
-
-  const handleSort = (field: SortField) => {
-    if (field === sortField) {
-      setSortDirection(prevDirection => prevDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-    setCurrentPage(1); // Reset pagination when sort changes
   };
 
-  // Update filter handlers to reset pagination
+  // Update filter handlers to call parent component handlers
   const handleCapstoneFilter = (filter: typeof CAPSTONE_FILTERS[keyof typeof CAPSTONE_FILTERS]) => {
     setCapstoneFilter(filter);
     setShowCapstoneDropdown(false);
-    setCurrentPage(1);
+    onPageChange(1);
+    onCapstoneFilterChange(filter);
   };
 
   const handleAdviserFilter = (filter: string) => {
     setAdviserFilter(filter);
     setShowAdviserDropdown(false);
-    setCurrentPage(1);
+    onPageChange(1);
+    onAdviserFilterChange(filter);
   };
 
   const handleGradeFilter = (filter: typeof GRADE_FILTERS[keyof typeof GRADE_FILTERS]) => {
     setGradeFilter(filter);
     setShowGradeDropdown(false);
-    setCurrentPage(1);
+    onPageChange(1);
+    onGradeFilterChange(filter);
   };
-
-  const { totalEntries, totalPages, startEntry, endEntry, paginatedGroups } = getPaginationInfo(filteredAndSortedGroups);
 
   return (
     <>
@@ -194,12 +151,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
           </div>
           <input
             type="text"
-            placeholder="Search groups..."
+            placeholder="Search..."
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={searchTerm}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
+              onSearchChange(e.target.value);
+              onPageChange(1);
             }}
           />
         </div>
@@ -373,125 +330,146 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
       </div>
 
       {/* Table content */}
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-[#B54A4A] text-white">
-          <tr>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer" onClick={() => handleSort("name")}>
-              <div className="flex items-center justify-center">
-                Group Name
-                <span className="ml-1">{getSortIcon("name")}</span>
-              </div>
-            </th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer" onClick={() => handleSort("capstoneTitle")}>
-              <div className="flex items-center justify-center">
-                Capstone Title
-                <span className="ml-1">{getSortIcon("capstoneTitle")}</span>
-              </div>
-            </th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer" onClick={() => handleSort("projectManager")}>
-              <div className="flex items-center justify-center">
-                Project Manager
-                <span className="ml-1">{getSortIcon("projectManager")}</span>
-              </div>
-            </th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Members</th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
-                Adviser
-            </th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
-                Grade
-            </th>
-            <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {paginatedGroups.length === 0 && (
+      <div className="relative">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-[#B54A4A] text-white">
             <tr>
-              <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                No groups available. Click &quot;Add Group&quot; to create a new group.
-              </td>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer" onClick={() => onSort("name")}>
+                <div className="flex items-center justify-center">
+                  Group Name
+                  <span className="ml-1">{getSortIcon("name")}</span>
+                </div>
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer" onClick={() => onSort("capstoneTitle")}>
+                <div className="flex items-center justify-center">
+                  Capstone Title
+                  <span className="ml-1">{getSortIcon("capstoneTitle")}</span>
+                </div>
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer" onClick={() => onSort("projectManager")}>
+                <div className="flex items-center justify-center">
+                  Project Manager
+                  <span className="ml-1">{getSortIcon("projectManager")}</span>
+                </div>
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Members</th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                <div className="flex items-center justify-center">
+                  Adviser
+                </div>
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer" onClick={() => onSort("grade")}>
+                <div className="flex items-center justify-center">
+                  Grade
+                  <span className="ml-1">{getSortIcon("grade")}</span>
+                </div>
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Actions</th>
             </tr>
-          )}
-          {paginatedGroups.map((group) => (
-            <tr key={group._id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {group.name || '-'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.capstone_title || '-'}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {group.projectManager ? getFullName(group.projectManager) : '-'}
-              </td>
-              <td className="px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => toggleExpand(group._id)}
-                      className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                      disabled={!group.members || group.members.length === 0}
-                    >
-                      {group.members && group.members.length > 0 ? (
-                        expandedGroupId === group._id ? (
-                          <FaMinus color="#6B7280" />
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {status === 'loading' && (
+              <tr>
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  Loading...
+                </td>
+              </tr>
+            )}
+            {status === 'error' && (
+              <tr>
+                <td colSpan={7} className="px-6 py-4 text-center text-red-500">
+                  An error occurred while loading groups. Please try again.
+                </td>
+              </tr>
+            )}
+            {status === 'idle' && !hasResults && (
+              <tr>
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  {searchTerm ? 'No groups found matching your search criteria.' : 'No groups available. Click "Add Group" to create a new group.'}
+                </td>
+              </tr>
+            )}
+            {groups.map((group) => (
+              <tr key={group._id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {group.name || '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.capstone_title || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {group.projectManager ? getFullName(group.projectManager) : '-'}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <button
+                        onClick={() => toggleExpand(group._id)}
+                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                        disabled={!group.members || group.members.length === 0}
+                      >
+                        {group.members && group.members.length > 0 ? (
+                          expandedGroupId === group._id ? (
+                            <FaMinus color="#6B7280" />
+                          ) : (
+                            <FaPlus color="#6B7280" />
+                          )
+                        ) : null}
+                      </button>
+                      <span className="ml-2">
+                        {group.members && group.members.length > 0 ? (
+                          `${group.members.length} member${group.members.length === 1 ? '' : 's'}`
                         ) : (
-                          <FaPlus color="#6B7280" />
-                        )
-                      ) : null}
+                          <span className="text-gray-500">-</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  {group.members && group.members.length > 0 && expandedGroupId === group._id && (
+                    <div className="mt-2 pl-6">
+                      <ul className="list-disc list-inside">
+                        {group.members
+                          ?.slice()
+                          .sort((a, b) => {
+                            const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
+                            const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+                            return aName.localeCompare(bName);
+                          })
+                          .map((member) => (
+                            <li key={member._id} className="text-sm text-gray-600">
+                              {getFullName(member)}
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {group.adviser ? getFullName(group.adviser) : '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  {(() => {
+                    const { text, color } = getGradeDisplay(group.grade);
+                    return (
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}>
+                        {text}
+                      </span>
+                    );
+                  })()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                  <div className="flex justify-center gap-2">
+                    <button onClick={() => onEdit(group)} className="p-2 text-blue-600 hover:text-blue-800" title="Edit Group">
+                      <FaEdit />
                     </button>
-                    <span className="ml-2">
-                      {group.members && group.members.length > 0 ? (
-                        `${group.members.length} member${group.members.length === 1 ? '' : 's'}`
-                      ) : (
-                        <span className="text-gray-500">-</span>
-                      )}
-                    </span>
+                    <button onClick={() => setGroupToDelete(group)} className="p-2 text-red-600 hover:text-red-800" title="Delete Group">
+                      <FaTrash />
+                    </button>
                   </div>
-                </div>
-                {group.members && group.members.length > 0 && expandedGroupId === group._id && (
-                  <div className="mt-2 pl-6">
-                    <ul className="list-disc list-inside">
-                      {group.members
-                        ?.slice()
-                        .sort((a, b) => {
-                          const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
-                          const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
-                          return aName.localeCompare(bName);
-                        })
-                        .map((member) => (
-                          <li key={member._id} className="text-sm text-gray-600">
-                            {getFullName(member)}
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                )}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {group.adviser ? getFullName(group.adviser) : '-'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                {(() => {
-                  const { text, color } = getGradeDisplay(group.grade);
-                  return (
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}>
-                      {text}
-                    </span>
-                  );
-                })()}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                <div className="flex justify-center gap-2">
-                  <button onClick={() => onEdit(group)} className="p-2 text-blue-600 hover:text-blue-800" title="Edit Group">
-                    <FaEdit />
-                  </button>
-                  <button onClick={() => setGroupToDelete(group)} className="p-2 text-red-600 hover:text-red-800" title="Delete Group">
-                    <FaTrash />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <DeleteGroupConfirmation
@@ -508,15 +486,39 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
 
       {/* Pagination */}
       <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
           <p className="text-sm text-gray-700">
-            Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}
-            <span className="font-medium">{totalEntries}</span> entries
+            Showing{' '}
+            <span className="font-medium">
+              {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+            </span>
+            {' - '}
+            <span className="font-medium">
+              {Math.min(currentPage * pageSize, totalCount)}
+            </span>
+            {' of '}
+            <span className="font-medium">{totalCount}</span>
+            {' entries'}
           </p>
+          <div className="h-6 w-px bg-gray-300"></div>
+          <div className="flex items-center gap-2">
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="px-2 py-1 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+            <span className="text-sm text-gray-700">entries per page</span>
+          </div>
         </div>
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => setCurrentPage(currentPage - 1)}
+            onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
             className={`p-2 rounded-md ${
               currentPage === 1
@@ -530,7 +532,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onEdit, onDelete, onA
             Page {currentPage} of {totalPages}
           </span>
           <button
-            onClick={() => setCurrentPage(currentPage + 1)}
+            onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
             className={`p-2 rounded-md ${
               currentPage === totalPages

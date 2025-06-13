@@ -228,36 +228,36 @@ export const searchUsers = query({
         })
         .collect();
     } else {
-      // Search in both first name and last name
-      const firstNameResults = await ctx.db
-        .query("users")
-        .withSearchIndex("search_by_first_name", (q) => {
-          let searchQuery = q.search("first_name", searchTerm);
+    // Search in both first name and last name
+    const firstNameResults = await ctx.db
+      .query("users")
+      .withSearchIndex("search_by_first_name", (q) => {
+        let searchQuery = q.search("first_name", searchTerm);
           if (emailVerified !== undefined) {
             searchQuery = searchQuery.eq("email_verified", emailVerified);
           }
           if (subrole !== undefined) {
             searchQuery = searchQuery.eq("subrole", subrole);
           }
-          return searchQuery.eq("role", role);
-        })
+        return searchQuery.eq("role", role);
+      })
         .collect();
 
-      const lastNameResults = await ctx.db
-        .query("users")
-        .withSearchIndex("search_by_last_name", (q) => {
-          let searchQuery = q.search("last_name", searchTerm);
+    const lastNameResults = await ctx.db
+      .query("users")
+      .withSearchIndex("search_by_last_name", (q) => {
+        let searchQuery = q.search("last_name", searchTerm);
           if (emailVerified !== undefined) {
             searchQuery = searchQuery.eq("email_verified", emailVerified);
           }
           if (subrole !== undefined) {
             searchQuery = searchQuery.eq("subrole", subrole);
           }
-          return searchQuery.eq("role", role);
-        })
+        return searchQuery.eq("role", role);
+      })
         .collect();
 
-      // Combine and deduplicate results
+    // Combine and deduplicate results
       results = [...firstNameResults, ...lastNameResults].filter((user, index, self) =>
         index === self.findIndex((u) => u._id === user._id)
       );
@@ -301,5 +301,157 @@ export const searchUsers = query({
       status,
       hasResults: paginatedResults.length > 0
     };
+  },
+});
+
+export const searchGroups = query({
+  args: {
+    searchTerm: v.string(),
+    pageSize: v.number(),
+    pageNumber: v.number(),
+    sortField: v.optional(v.string()),
+    sortDirection: v.optional(v.string()),
+    capstoneFilter: v.optional(v.string()),
+    adviserFilter: v.optional(v.string()),
+    gradeFilter: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { searchTerm, pageSize, pageNumber, sortField, sortDirection, capstoneFilter, adviserFilter, gradeFilter } = args;
+    const skip = (pageNumber - 1) * pageSize;
+
+    try {
+      // Get all users for name lookups
+      const users = await ctx.db.query("users").collect();
+
+      // Start with base query
+      let groups = await ctx.db.query("groupsTable").collect();
+
+      // Apply search filters if searchTerm is provided
+      if (searchTerm.trim()) {
+        const searchTerms = searchTerm.toLowerCase().split(" ").filter(term => term.length > 0);
+        
+        groups = groups.filter(group => {
+          const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
+          const groupName = projectManager ? `${projectManager.last_name} et al`.toLowerCase() : "";
+          const capstoneTitle = (group.capstone_title || "").toLowerCase();
+          const adviser = group.adviser_id ? users.find(u => u._id === group.adviser_id) : null;
+          const members = group.member_ids
+            .map(id => users.find(u => u._id === id))
+            .filter((u): u is NonNullable<typeof u> => u !== undefined);
+
+          const projectManagerName = projectManager ? `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase() : "";
+          const adviserName = adviser ? `${adviser.first_name} ${adviser.last_name}`.toLowerCase() : "";
+          const memberNames = members.map(m => `${m.first_name} ${m.last_name}`.toLowerCase());
+
+          return searchTerms.every(term =>
+            groupName.includes(term) ||
+            capstoneTitle.includes(term) ||
+            projectManagerName.includes(term) ||
+            adviserName.includes(term) ||
+            memberNames.some(name => name.includes(term))
+          );
+        });
+      }
+
+      // Apply capstone filter
+      if (capstoneFilter && capstoneFilter !== "All Capstone Titles") {
+        groups = groups.filter(group => {
+          if (capstoneFilter === "With Capstone Title") {
+            return !!group.capstone_title;
+          } else if (capstoneFilter === "Without Capstone Title") {
+            return !group.capstone_title;
+          }
+          return true;
+        });
+      }
+
+      // Apply adviser filter
+      if (adviserFilter && adviserFilter !== "All Advisers") {
+        groups = groups.filter(group => {
+          const adviser = group.adviser_id ? users.find(u => u._id === group.adviser_id) : null;
+          if (adviserFilter === "No Adviser") {
+            return !adviser;
+          }
+          const adviserName = adviser ? `${adviser.first_name} ${adviser.last_name}` : "";
+          return adviserName === adviserFilter;
+        });
+      }
+
+      // Apply grade filter
+      if (gradeFilter && gradeFilter !== "All Grades") {
+        groups = groups.filter(group => {
+          const grade = group.grade;
+          if (gradeFilter === "No Grade") {
+            return grade === undefined || grade === null;
+          }
+          return grade === parseInt(gradeFilter);
+        });
+      }
+
+      // Sort the results
+      if (sortField && sortDirection) {
+        groups.sort((a, b) => {
+          let comparison = 0;
+          switch (sortField) {
+            case "name":
+              const aManager = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
+              const bManager = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
+              const aName = aManager ? `${aManager.last_name} et al` : "";
+              const bName = bManager ? `${bManager.last_name} et al` : "";
+              comparison = aName.localeCompare(bName);
+              break;
+            case "capstoneTitle":
+              comparison = (a.capstone_title || "").localeCompare(b.capstone_title || "");
+              break;
+            case "projectManager":
+              const aPM = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
+              const bPM = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
+              const aPMName = aPM ? `${aPM.last_name} ${aPM.first_name}` : "";
+              const bPMName = bPM ? `${bPM.last_name} ${bPM.first_name}` : "";
+              comparison = aPMName.localeCompare(bPMName);
+              break;
+            case "grade":
+              comparison = (a.grade || 0) - (b.grade || 0);
+              break;
+          }
+          return sortDirection === "asc" ? comparison : -comparison;
+        });
+      }
+
+      // Process groups to include user information
+      const processedGroups = groups.map(group => {
+        const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
+        return {
+          ...group,
+          name: projectManager ? `${projectManager.last_name} et al` : "Unknown Group",
+          projectManager,
+          adviser: group.adviser_id ? users.find(u => u._id === group.adviser_id) : undefined,
+          members: group.member_ids
+            .map(id => users.find(u => u._id === id))
+            .filter((u): u is NonNullable<typeof u> => u !== undefined),
+        };
+      });
+
+      // Apply pagination
+      const totalCount = processedGroups.length;
+      const paginatedResults = processedGroups.slice(skip, skip + pageSize);
+
+      return {
+        groups: paginatedResults,
+        totalCount,
+        totalPages: Math.ceil(totalCount / pageSize),
+        status: 'idle',
+        hasResults: paginatedResults.length > 0
+      };
+    } catch (error) {
+      console.error("Error in searchGroups:", error);
+      return {
+        groups: [],
+        totalCount: 0,
+        totalPages: 0,
+        status: 'error',
+        hasResults: false
+      };
+    }
   },
 }); 
