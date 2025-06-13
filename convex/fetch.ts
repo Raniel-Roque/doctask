@@ -1,6 +1,5 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-import { validateAdviserCode } from "./utils/adviserCode";
 import type { Id } from "./_generated/dataModel";
 
 // =========================================
@@ -128,31 +127,110 @@ export const getAdviserCode = query({
   },
 });
 
-export const getAdviserByCode = query({
-  args: { code: v.string() },
-  handler: async (ctx, args) => {
-    if (!validateAdviserCode(args.code)) {
-      throw new Error("Invalid adviser code format");
-    }
-    const adviserCode = await ctx.db
-      .query("advisersTable")
-      .withIndex("by_code", (q) => q.eq("code", args.code))
-      .first();
-    if (!adviserCode) {
-      return null;
-    }
-    const adviser = await ctx.db.get(adviserCode.adviser_id);
-    return adviser;
-  },
-});
-
 export const getLogs = query({
-  handler: async (ctx) => {
-    const logs = await ctx.db
-      .query("instructorLogs")
-      .order("desc")
-      .collect();
-    return logs;
+  args: {
+    searchTerm: v.string(),
+    pageSize: v.number(),
+    pageNumber: v.number(),
+    sortField: v.optional(v.string()),
+    sortDirection: v.optional(v.string()),
+    actionFilter: v.optional(v.string()),
+    entityTypeFilter: v.optional(v.string()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const { searchTerm, pageSize, pageNumber, sortField, sortDirection, actionFilter, entityTypeFilter, startDate, endDate } = args;
+    const skip = (pageNumber - 1) * pageSize;
+
+    try {
+      // Start with base query
+      let logs = await ctx.db.query("instructorLogs").collect();
+
+      // Apply search filters if searchTerm is provided
+      if (searchTerm.trim()) {
+        const searchTerms = searchTerm.toLowerCase().split(" ").filter(term => term.length > 0);
+        
+        logs = logs.filter(log => {
+          const instructorName = `${log.instructor_first_name || ''} ${log.instructor_middle_name || ''} ${log.instructor_last_name || ''}`.toLowerCase();
+          const affectedEntityName = `${log.affected_entity_first_name || ''} ${log.affected_entity_middle_name || ''} ${log.affected_entity_last_name || ''}`.toLowerCase();
+          const instructorId = log.instructor_id.toString().toLowerCase();
+          const affectedEntityId = log.affected_entity_id.toString().toLowerCase();
+
+          return searchTerms.every(term =>
+            instructorName.includes(term) ||
+            affectedEntityName.includes(term) ||
+            instructorId.includes(term) ||
+            affectedEntityId.includes(term)
+          );
+        });
+      }
+
+      // Apply action filter
+      if (actionFilter && actionFilter !== "All Actions") {
+        logs = logs.filter(log => log.action === actionFilter);
+      }
+
+      // Apply entity type filter
+      if (entityTypeFilter && entityTypeFilter !== "All Entities") {
+        logs = logs.filter(log => log.affected_entity_type === entityTypeFilter);
+      }
+
+      // Apply date range filter
+      if (startDate) {
+        logs = logs.filter(log => log._creationTime >= startDate);
+      }
+      if (endDate) {
+        logs = logs.filter(log => log._creationTime <= endDate);
+      }
+
+      // Sort the results
+      if (sortField && sortDirection) {
+        logs.sort((a, b) => {
+          let comparison = 0;
+          switch (sortField) {
+            case "_creationTime":
+              comparison = a._creationTime - b._creationTime;
+              break;
+            case "instructor":
+              const aInstructor = `${a.instructor_last_name || ''} ${a.instructor_first_name || ''}`;
+              const bInstructor = `${b.instructor_last_name || ''} ${b.instructor_first_name || ''}`;
+              comparison = aInstructor.localeCompare(bInstructor);
+              break;
+            case "affectedEntity":
+              const aEntity = `${a.affected_entity_last_name || ''} ${a.affected_entity_first_name || ''}`;
+              const bEntity = `${b.affected_entity_last_name || ''} ${b.affected_entity_first_name || ''}`;
+              comparison = aEntity.localeCompare(bEntity);
+              break;
+            case "action":
+              comparison = a.action.localeCompare(b.action);
+              break;
+          }
+          return sortDirection === "asc" ? comparison : -comparison;
+        });
+      }
+
+      // Apply pagination
+      const totalCount = logs.length;
+      const paginatedResults = logs.slice(skip, skip + pageSize);
+
+      return {
+        logs: paginatedResults,
+        totalCount,
+        totalPages: Math.ceil(totalCount / pageSize),
+        status: 'idle',
+        hasResults: paginatedResults.length > 0
+      };
+    } catch (error) {
+      console.error("Error in getLogs:", error);
+      return {
+        logs: [],
+        totalCount: 0,
+        totalPages: 0,
+        status: 'error',
+        hasResults: false
+      };
+    }
   },
 });
 

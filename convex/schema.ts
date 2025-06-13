@@ -115,7 +115,23 @@ export default defineSchema({
   })
   .index("by_instructor", ["instructor_id"])
   .index("by_action", ["action"])
-  .index("by_affected_entity", ["affected_entity_id"]),
+  .index("by_affected_entity", ["affected_entity_id"])
+  .searchIndex("search_by_instructor_name", {
+    searchField: "instructor_first_name",
+    filterFields: ["action", "affected_entity_type"]
+  })
+  .searchIndex("search_by_instructor_last_name", {
+    searchField: "instructor_last_name",
+    filterFields: ["action", "affected_entity_type"]
+  })
+  .searchIndex("search_by_affected_entity_name", {
+    searchField: "affected_entity_first_name",
+    filterFields: ["action", "affected_entity_type"]
+  })
+  .searchIndex("search_by_affected_entity_last_name", {
+    searchField: "affected_entity_last_name",
+    filterFields: ["action", "affected_entity_type"]
+  }),
 
   // =========================================
   // Documents Table (Normalized Versioning)

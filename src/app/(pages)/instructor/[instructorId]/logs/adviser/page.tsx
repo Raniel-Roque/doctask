@@ -2,6 +2,7 @@
 
 import { Navbar } from "../../components/navbar";
 import { use } from "react";
+import { LogTable } from "../components/LogTable";
 
 interface InstructorLogsPageProps {
     params: Promise<{ instructorId: string }>
@@ -18,6 +19,7 @@ const InstructorLogsPage = ({ params }: InstructorLogsPageProps) => {
                     <h1 className="text-3xl font-bold">Capstone Adviser System Logs</h1>
                     <p className="text-muted-foreground">View all system activities and changes by capstone advisers</p>
                 </div>
+                <LogTable />
             </div>
         </div>
     );
