@@ -27,6 +27,12 @@ interface UserTableProps {
   onLockAccount: (user: User) => void;
   showRoleColumn?: boolean;
   showCodeColumn?: boolean;
+  totalPages: number;
+  totalCount: number;
+  isLoading: boolean;
+  hasResults: boolean;
+  pageSize: number;
+  onPageSizeChange: (size: number) => void;
 }
 
 // =========================================
@@ -52,6 +58,12 @@ export const UserTable = ({
   onLockAccount,
   showRoleColumn = false,
   showCodeColumn = false,
+  totalPages,
+  totalCount,
+  isLoading,
+  hasResults,
+  pageSize,
+  onPageSizeChange,
 }: UserTableProps) => {
   const [expandedCode, setExpandedCode] = useState<{ [key: string]: boolean }>({});
   const [expandedEmail, setExpandedEmail] = useState<{ [key: string]: boolean }>({});
@@ -82,59 +94,12 @@ export const UserTable = ({
   // Data Processing
   // =========================================
   const filterAndSortUsers = () => {
-    const filtered = users.filter((user) => {
-      const matchesSearch = searchTerm === "" ||
-        user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus = statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.ALL ||
-        (statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED && user.email_verified) ||
-        (statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED && !user.email_verified);
-
-      const matchesRole = roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.ALL ||
-        (roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER && user.subrole === 1) ||
-        (roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER && user.subrole === 0);
-
-      return matchesSearch && matchesStatus && matchesRole;
-    });
-
-    filtered.sort((a, b) => {
-      let comparison = 0;
-      switch (sortField) {
-        case "_creationTime":
-          comparison = a._creationTime - b._creationTime;
-          break;
-        case "first_name":
-          comparison = a.first_name.localeCompare(b.first_name);
-          break;
-        case "last_name":
-          comparison = a.last_name.localeCompare(b.last_name);
-          break;
-        case "email":
-          comparison = a.email.localeCompare(b.email);
-          break;
-      }
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
-
-    return filtered;
+    return users;
   };
 
   const getPaginationInfo = (users: User[]) => {
-    const entriesPerPage = 5;
-    const totalEntries = users.length;
-    const totalPages = Math.ceil(totalEntries / entriesPerPage);
-    const startEntry = (currentPage - 1) * entriesPerPage + 1;
-    const endEntry = Math.min(startEntry + entriesPerPage - 1, totalEntries);
-    const paginatedUsers = users.slice(startEntry - 1, endEntry);
-
     return {
-      totalEntries,
-      totalPages,
-      startEntry,
-      endEntry,
-      paginatedUsers,
+      paginatedUsers: users,
     };
   };
 
@@ -142,7 +107,7 @@ export const UserTable = ({
   // Data Processing Results
   // =========================================
   const filteredAndSortedUsers = filterAndSortUsers();
-  const { totalEntries, totalPages, startEntry, endEntry, paginatedUsers } = getPaginationInfo(filteredAndSortedUsers);
+  const { paginatedUsers } = getPaginationInfo(filteredAndSortedUsers);
 
   // =========================================
   // Collapsible Text Component
@@ -283,7 +248,13 @@ export const UserTable = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedUsers.length === 0 && (
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  Loading...
+                </td>
+              </tr>
+            ) : !hasResults ? (
               <tr>
                 <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                   {showRoleColumn 
@@ -291,81 +262,106 @@ export const UserTable = ({
                     : "No advisers available. Click \"Add User\" to create a new adviser."}
                 </td>
               </tr>
+            ) : (
+              paginatedUsers.map((user) => (
+                <tr key={user._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 border-b text-left">{user.first_name}</td>
+                  <td className={`px-6 py-4 border-b ${!user.middle_name ? 'text-center' : 'text-left'}`}>
+                    {user.middle_name || "-"}
+                  </td>
+                  <td className="px-6 py-4 border-b text-left">{user.last_name}</td>
+                  <td className="px-6 py-4 border-b text-center">
+                    <CollapsibleEmail email={user.email} userId={user._id} />
+                  </td>
+                  <td className="px-6 py-4 border-b text-center">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      user.email_verified 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {user.email_verified ? 'Verified' : 'Unverified'}
+                    </span>
+                  </td>
+                  {showCodeColumn && (
+                    <td className="px-6 py-4 border-b text-center">
+                      <CollapsibleCode userId={user._id} />
+                    </td>
+                  )}
+                  {showRoleColumn && (
+                    <td className="px-6 py-4 border-b text-center">
+                      {getRoleLabel(user.subrole)}
+                    </td>
+                  )}
+                  <td className="px-6 py-4 border-b text-center">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => onEdit(user)}
+                        className="p-2 text-blue-600 hover:text-blue-800"
+                        title="Edit"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => onResetPassword(user)}
+                        className="p-2 text-yellow-600 hover:text-yellow-800"
+                        title="Reset Password"
+                      >
+                        <FaKey />
+                      </button>
+                      <button
+                        onClick={() => onLockAccount(user)}
+                        className="p-2 text-purple-600 hover:text-purple-800"
+                        title="Lock/Unlock Account"
+                      >
+                        <FaLock />
+                      </button>
+                      <button
+                        onClick={() => onDelete(user)}
+                        className="p-2 text-red-600 hover:text-red-800"
+                        title="Delete"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
-            {paginatedUsers.map((user) => (
-              <tr key={user._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 border-b text-left">{user.first_name}</td>
-                <td className={`px-6 py-4 border-b ${!user.middle_name ? 'text-center' : 'text-left'}`}>
-                  {user.middle_name || "-"}
-                </td>
-                <td className="px-6 py-4 border-b text-left">{user.last_name}</td>
-                <td className="px-6 py-4 border-b text-center">
-                  <CollapsibleEmail email={user.email} userId={user._id} />
-                </td>
-                <td className="px-6 py-4 border-b text-center">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    user.email_verified 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {user.email_verified ? 'Verified' : 'Unverified'}
-                  </span>
-                </td>
-                {showCodeColumn && (
-                  <td className="px-6 py-4 border-b text-center">
-                    <CollapsibleCode userId={user._id} />
-                  </td>
-                )}
-                {showRoleColumn && (
-                  <td className="px-6 py-4 border-b text-center">
-                    {getRoleLabel(user.subrole)}
-                  </td>
-                )}
-                <td className="px-6 py-4 border-b text-center">
-                  <div className="flex justify-center gap-2">
-                    <button 
-                      onClick={() => onEdit(user)}
-                      className="p-2 text-blue-600 hover:text-blue-800"
-                      title="Edit"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={() => onResetPassword(user)}
-                      className="p-2 text-yellow-600 hover:text-yellow-800"
-                      title="Reset Password"
-                    >
-                      <FaKey />
-                    </button>
-                    <button
-                      onClick={() => onLockAccount(user)}
-                      className="p-2 text-purple-600 hover:text-purple-800"
-                      title="Lock/Unlock Account"
-                    >
-                      <FaLock />
-                    </button>
-                    <button
-                      onClick={() => onDelete(user)}
-                      className="p-2 text-red-600 hover:text-red-800"
-                      title="Delete"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
       <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
           <p className="text-sm text-gray-700">
-            Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}
-            <span className="font-medium">{totalEntries}</span> entries
+            Showing{' '}
+            <span className="font-medium">
+              {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+            </span>
+            {' - '}
+            <span className="font-medium">
+              {Math.min(currentPage * pageSize, totalCount)}
+            </span>
+            {' of '}
+            <span className="font-medium">{totalCount}</span>
+            {' entries'}
           </p>
+          <div className="h-6 w-px bg-gray-300"></div>
+          <div className="flex items-center gap-2">
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="px-2 py-1 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+            <span className="text-sm text-gray-700">entries per page</span>
+          </div>
         </div>
         <div className="flex items-center space-x-2">
           <button

@@ -22,7 +22,16 @@ export default defineSchema({
     // User Roles
     role: v.number(), // 0 = student, 1 = adviser, 2 = instructor
     subrole: v.optional(v.number()), // 0 = member, 1 = manager
-  }).index("by_clerk_id", ["clerk_id"]),
+  })
+  .index("by_clerk_id", ["clerk_id"])
+  .searchIndex("search_by_first_name", {
+    searchField: "first_name",
+    filterFields: ["role", "email_verified", "subrole"]
+  })
+  .searchIndex("search_by_last_name", {
+    searchField: "last_name",
+    filterFields: ["role", "email_verified", "subrole"]
+  }),
 
   // =========================================
   // Groups Table

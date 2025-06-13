@@ -2,9 +2,8 @@
 
 import { Navbar } from "../../components/navbar";
 import { api } from "../../../../../../../convex/_generated/api";
-import { ConvexHttpClient } from "convex/browser";
-import { useState, useEffect, use } from "react";
-import { useMutation } from "convex/react";
+import { useState, useEffect, use, useMemo } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { UserTable } from "../components/UserTable";
 import { AddForm } from "../components/AddForm";
@@ -32,13 +31,20 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // State
   // =========================================
   const { instructorId } = use(params);
-  const [students, setStudents] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]>(TABLE_CONSTANTS.STATUS_FILTERS.ALL);
   const [roleFilter, setRoleFilter] = useState<typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS]>(TABLE_CONSTANTS.ROLE_FILTERS.ALL);
   const [sortField, setSortField] = useState<SortField>(TABLE_CONSTANTS.DEFAULT_SORT_FIELD);
   const [sortDirection, setSortDirection] = useState<SortDirection>(TABLE_CONSTANTS.DEFAULT_SORT_DIRECTION);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    // Get saved page size from localStorage or default to 5
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('studentsPageSize');
+      return saved ? parseInt(saved, 10) : 5;
+    }
+    return 5;
+  });
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -78,6 +84,32 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const resetPassword = useMutation(api.mutations.resetPassword);
 
   // =========================================
+  // Queries
+  // =========================================
+  const queryData = useQuery(
+    api.fetch.searchUsers,
+    {
+      searchTerm,
+      role: 0, // 0 for students
+      emailVerified: statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED ? true : 
+                    statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED ? false : 
+                    undefined,
+      subrole: roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER ? 1 :
+               roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER ? 0 :
+               undefined,
+      pageSize,
+      pageNumber: currentPage,
+      sortField,
+      sortDirection,
+    }
+  );
+
+  const searchResult = useMemo(() => 
+    queryData || { users: [], totalCount: 0, totalPages: 0, status: 'idle', hasResults: false },
+    [queryData]
+  );
+
+  // =========================================
   // Effects
   // =========================================
   // Auto-hide notification after 5 seconds
@@ -103,19 +135,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isSubmitting]);
-
-  // =========================================
-  // Data Fetching
-  // =========================================
-  const refreshStudents = async () => {
-    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-    const data = await client.query(api.fetch.getStudents);
-    setStudents(data || []);
-  };
-
-  useEffect(() => {
-    refreshStudents();
-  }, []);
 
   // =========================================
   // Event Handlers
@@ -145,6 +164,19 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Reset to 5 entries when changing pages
+    setPageSize(5);
+    localStorage.setItem('studentsPageSize', '5');
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+    localStorage.setItem('studentsPageSize', size.toString());
   };
 
   // =========================================
@@ -312,7 +344,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         message: "User updated successfully"
       });
       setEditingUser(null);
-      await refreshStudents();
     } catch (error) {
       logUserAction('Edit Failed', { 
         userId: editingUser._id,
@@ -371,11 +402,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       });
 
       setDeleteUser(null);
-      await refreshStudents();
-      setNotification({
-        type: 'success',
-        message: "Student deleted successfully"
-      });
     } catch (error) {
       logUserAction('Delete Failed', { 
         userId: deleteUser._id,
@@ -475,7 +501,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         email: "",
         subrole: 0,
       });
-      await refreshStudents();
     } catch (error) {
       if (error instanceof Error) {
         setNotification({
@@ -547,11 +572,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       });
       
       setResetPasswordUser(null);
-      await refreshStudents();
-      setNotification({
-        type: 'success',
-        message: "Password reset successfully"
-      });
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -596,7 +616,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         
         {/* User Table */}
         <UserTable
-          users={students}
+          users={searchResult.users}
           searchTerm={searchTerm}
           statusFilter={statusFilter}
           roleFilter={roleFilter}
@@ -607,13 +627,19 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           onStatusFilterChange={handleStatusFilterChange}
           onRoleFilterChange={handleRoleFilterChange}
           onSort={handleSort}
-          onPageChange={setCurrentPage}
+          onPageChange={handlePageChange}
           onEdit={handleEdit}
           onDelete={setDeleteUser}
           onAdd={() => setIsAddingUser(true)}
           onResetPassword={setResetPasswordUser}
-          showRoleColumn={true}
           onLockAccount={() => {}}
+          showRoleColumn={true}
+          totalPages={searchResult.totalPages}
+          totalCount={searchResult.totalCount}
+          isLoading={queryData === undefined}
+          hasResults={searchResult.hasResults}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
         />
 
         {/* Add Form */}

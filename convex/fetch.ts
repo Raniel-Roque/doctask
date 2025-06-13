@@ -25,22 +25,62 @@ export const getUserByClerkId = query({
 });
 
 export const getAdvisers = query({
-  handler: async (ctx) => {
-    const advisers = await ctx.db
+  args: { 
+    pageSize: v.number(),
+    pageNumber: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const { pageSize, pageNumber } = args;
+    const skip = (pageNumber - 1) * pageSize;
+
+    const users = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("role"), 1))
-      .collect();
-    return advisers;
+      .order("desc")
+      .collect()
+      .then(results => results.slice(skip, skip + pageSize));
+
+    const totalCount = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("role"), 1))
+      .collect()
+      .then(results => results.length);
+
+    return {
+      users,
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize)
+    };
   },
 });
 
 export const getStudents = query({
-  handler: async (ctx) => {
-    const students = await ctx.db
+  args: { 
+    pageSize: v.number(),
+    pageNumber: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const { pageSize, pageNumber } = args;
+    const skip = (pageNumber - 1) * pageSize;
+
+    const users = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("role"), 0))
-      .collect();
-    return students;
+      .order("desc")
+      .collect()
+      .then(results => results.slice(skip, skip + pageSize));
+
+    const totalCount = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("role"), 0))
+      .collect()
+      .then(results => results.length);
+
+    return {
+      users,
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize)
+    };
   },
 });
 
@@ -144,5 +184,122 @@ export const getPendingGroupIdsForAdviser = query({
 
     // Return just the array of group IDs (or an empty array)
     return adviser?.requests_group_ids ?? [];
+  },
+});
+
+export const searchUsers = query({
+  args: {
+    searchTerm: v.string(),
+    role: v.number(),
+    emailVerified: v.optional(v.boolean()),
+    subrole: v.optional(v.number()),
+    pageSize: v.number(),
+    pageNumber: v.number(),
+    sortField: v.optional(v.string()),
+    sortDirection: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { searchTerm, role, emailVerified, subrole, pageSize, pageNumber, sortField, sortDirection } = args;
+    const skip = (pageNumber - 1) * pageSize;
+
+    // If search term is empty, use a regular query instead of search
+    let results;
+    if (!searchTerm.trim()) {
+      results = await ctx.db
+        .query("users")
+        .filter((q) => {
+          const roleFilter = q.eq(q.field("role"), role);
+          const emailVerifiedFilter = emailVerified !== undefined 
+            ? q.eq(q.field("email_verified"), emailVerified)
+            : null;
+          const subroleFilter = subrole !== undefined
+            ? q.eq(q.field("subrole"), subrole)
+            : null;
+
+          // Combine all filters
+          let finalFilter = roleFilter;
+          if (emailVerifiedFilter) {
+            finalFilter = q.and(finalFilter, emailVerifiedFilter);
+          }
+          if (subroleFilter) {
+            finalFilter = q.and(finalFilter, subroleFilter);
+          }
+          return finalFilter;
+        })
+        .collect();
+    } else {
+      // Search in both first name and last name
+      const firstNameResults = await ctx.db
+        .query("users")
+        .withSearchIndex("search_by_first_name", (q) => {
+          let searchQuery = q.search("first_name", searchTerm);
+          if (emailVerified !== undefined) {
+            searchQuery = searchQuery.eq("email_verified", emailVerified);
+          }
+          if (subrole !== undefined) {
+            searchQuery = searchQuery.eq("subrole", subrole);
+          }
+          return searchQuery.eq("role", role);
+        })
+        .collect();
+
+      const lastNameResults = await ctx.db
+        .query("users")
+        .withSearchIndex("search_by_last_name", (q) => {
+          let searchQuery = q.search("last_name", searchTerm);
+          if (emailVerified !== undefined) {
+            searchQuery = searchQuery.eq("email_verified", emailVerified);
+          }
+          if (subrole !== undefined) {
+            searchQuery = searchQuery.eq("subrole", subrole);
+          }
+          return searchQuery.eq("role", role);
+        })
+        .collect();
+
+      // Combine and deduplicate results
+      results = [...firstNameResults, ...lastNameResults].filter((user, index, self) =>
+        index === self.findIndex((u) => u._id === user._id)
+      );
+    }
+
+    // Get total count
+    const totalCount = results.length;
+
+    // Apply sorting if specified
+    if (sortField && sortDirection) {
+      results.sort((a, b) => {
+        let comparison = 0;
+        switch (sortField) {
+          case "_creationTime":
+            comparison = a._creationTime - b._creationTime;
+            break;
+          case "first_name":
+            comparison = a.first_name.localeCompare(b.first_name);
+            break;
+          case "last_name":
+            comparison = a.last_name.localeCompare(b.last_name);
+            break;
+          case "email":
+            comparison = a.email.localeCompare(b.email);
+            break;
+        }
+        return sortDirection === "asc" ? comparison : -comparison;
+      });
+    }
+
+    // Apply pagination
+    const paginatedResults = results.slice(skip, skip + pageSize);
+
+    // Simplify status to just loading or idle
+    const status = 'idle';
+
+    return {
+      users: paginatedResults,
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize),
+      status,
+      hasResults: paginatedResults.length > 0
+    };
   },
 }); 

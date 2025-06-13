@@ -2,8 +2,7 @@
 
 import { Navbar } from "../../components/navbar";
 import { api } from "../../../../../../../convex/_generated/api";
-import { ConvexHttpClient } from "convex/browser";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { UserTable } from "../components/UserTable";
@@ -33,12 +32,19 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // State
   // =========================================
   const { instructorId } = use(params);
-  const [advisers, setAdvisers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]>(TABLE_CONSTANTS.STATUS_FILTERS.ALL);
   const [sortField, setSortField] = useState<SortField>(TABLE_CONSTANTS.DEFAULT_SORT_FIELD);
   const [sortDirection, setSortDirection] = useState<SortDirection>(TABLE_CONSTANTS.DEFAULT_SORT_DIRECTION);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    // Get saved page size from localStorage or default to 5
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('advisersPageSize');
+      return saved ? parseInt(saved, 10) : 5;
+    }
+    return 5;
+  });
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -84,6 +90,27 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   const instructor = useQuery(api.fetch.getUserById, { id: instructorId as Id<"users"> });
 
+  const queryData = useQuery(
+    api.fetch.searchUsers,
+    {
+      searchTerm,
+      role: 1, // 1 for advisers
+      emailVerified: statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED ? true : 
+                    statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED ? false : 
+                    undefined,
+      subrole: undefined, // We don't use subrole for advisers
+      pageSize,
+      pageNumber: currentPage,
+      sortField,
+      sortDirection,
+    }
+  );
+
+  const searchResult = useMemo(() => 
+    queryData || { users: [], totalCount: 0, totalPages: 0, status: 'idle', hasResults: false },
+    [queryData]
+  );
+
   // =========================================
   // Effects
   // =========================================
@@ -112,19 +139,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
   }, [isSubmitting]);
 
   // =========================================
-  // Data Fetching
-  // =========================================
-  const refreshAdvisers = async () => {
-    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-    const data = await client.query(api.fetch.getAdvisers);
-    setAdvisers(data || []);
-  };
-
-  useEffect(() => {
-    refreshAdvisers();
-  }, []);
-
-  // =========================================
   // Event Handlers
   // =========================================
   const handleSort = (field: SortField) => {
@@ -135,6 +149,19 @@ const UsersPage = ({ params }: UsersPageProps) => {
       setSortDirection("asc");
     }
     setCurrentPage(1); // Reset pagination when sort changes
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Reset to 5 entries when changing pages
+    setPageSize(5);
+    localStorage.setItem('advisersPageSize', '5');
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+    localStorage.setItem('advisersPageSize', size.toString());
   };
 
   // =========================================
@@ -286,7 +313,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
       // Only show success message if there were changes
       setSuccessMessage("User updated successfully");
       setEditingUser(null);
-      await refreshAdvisers();
     } catch (error) {
       logUserAction('Edit Failed', { 
         userId: editingUser._id,
@@ -345,7 +371,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
 
       setDeleteUser(null);
-      await refreshAdvisers();
       setSuccessMessage("Adviser deleted successfully");
     } catch (error) {
       logUserAction('Delete Failed', { 
@@ -451,7 +476,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
         email: "",
         subrole: 0,
       });
-      await refreshAdvisers();
     } catch (error) {
       if (error instanceof Error) {
         setNotification({
@@ -523,7 +547,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
       
       setResetPasswordUser(null);
-      await refreshAdvisers();
       setSuccessMessage("Password reset successfully");
     } catch (error) {
       if (error instanceof Error) {
@@ -612,7 +635,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         
         {/* User Table */}
         <UserTable
-          users={advisers}
+          users={searchResult.users}
           searchTerm={searchTerm}
           statusFilter={statusFilter}
           sortField={sortField}
@@ -621,13 +644,19 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onSearchChange={setSearchTerm}
           onStatusFilterChange={setStatusFilter}
           onSort={handleSort}
-          onPageChange={setCurrentPage}
+          onPageChange={handlePageChange}
           onEdit={handleEdit}
           onDelete={setDeleteUser}
           onAdd={() => setIsAddingUser(true)}
           onResetPassword={setResetPasswordUser}
           onLockAccount={handleLockAccount}
           showCodeColumn={true}
+          totalPages={searchResult.totalPages}
+          totalCount={searchResult.totalCount}
+          isLoading={queryData === undefined}
+          hasResults={searchResult.hasResults}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
         />
 
         {/* Add Form */}
@@ -794,3 +823,4 @@ const UsersPage = ({ params }: UsersPageProps) => {
 };
 
 export default UsersPage;
+

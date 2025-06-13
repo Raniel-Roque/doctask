@@ -62,7 +62,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error in lock-account route:", error);
     const clerkError = error as ClerkError;
     return NextResponse.json(
       { error: clerkError.errors?.[0]?.message || "Failed to process request" },
