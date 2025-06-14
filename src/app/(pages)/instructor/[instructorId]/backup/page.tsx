@@ -1,7 +1,7 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { Download, Upload, Database, Loader2 } from "lucide-react";
+import { Download, Upload, Database, Loader2, Eye, EyeOff } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { useState, use } from "react";
@@ -20,6 +20,8 @@ import { Label } from "@/components/ui/label";
 import { NotificationBanner } from "../../../components/NotificationBanner";
 import { generateEncryptionKey, exportKey, encryptData, importKey, decryptData } from "@/utils/encryption";
 import JSZip from 'jszip';
+import { useUser } from "@clerk/clerk-react";
+import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface BackupAndRestorePageProps {
   params: Promise<{ instructorId: string }>;
@@ -27,15 +29,73 @@ interface BackupAndRestorePageProps {
 
 const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const { instructorId } = use(params);
+  const { user } = useUser();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [showPasswordVerify, setShowPasswordVerify] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedKeyFile, setSelectedKeyFile] = useState<File | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' | 'warning' | 'info' } | null>(null);
+  const [pendingAction, setPendingAction] = useState<'download' | 'restore' | null>(null);
   const { getToken } = useAuth();
   
   const downloadConvexBackup = useMutation(api.mutations.downloadConvexBackup);
+
+  const verifyPassword = async () => {
+    if (!user) return;
+    
+    setIsVerifying(true);
+    try {
+      const sanitizedPassword = sanitizeInput(password, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true
+      });
+
+      const response = await fetch('/api/clerk/verify-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clerkId: user.id,
+          currentPassword: sanitizedPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify password');
+      }
+
+      setShowPasswordVerify(false);
+      setPassword('');
+      
+      // Execute the pending action
+      if (pendingAction === 'download') {
+        await handleDownload();
+      } else if (pendingAction === 'restore') {
+        setShowRestoreConfirm(true);
+      }
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: error instanceof Error ? error.message : "Failed to verify password"
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const initiateAction = (action: 'download' | 'restore') => {
+    setPendingAction(action);
+    setShowPasswordVerify(true);
+  };
 
   const handleDownload = async () => {
     try {
@@ -89,9 +149,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   };
 
   const handleRestore = () => {
-    setShowRestoreConfirm(true);
-    setSelectedFile(null);
-    setSelectedKeyFile(null);
+    initiateAction('restore');
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,7 +259,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             </p>
             <div className="space-y-4">
               <button 
-                onClick={handleDownload}
+                onClick={() => initiateAction('download')}
                 disabled={isDownloading}
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -247,6 +305,76 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           </div>
         </div>
       </div>
+
+      {/* Password Verification Dialog */}
+      <Dialog 
+        open={showPasswordVerify} 
+        onOpenChange={(open) => {
+          if (!isVerifying) {
+            setShowPasswordVerify(open);
+            if (!open) {
+              setPassword('');
+              setPendingAction(null);
+            }
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Verify Password</DialogTitle>
+            <DialogDescription>
+              Please enter your password to continue with this action.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPasswordVerify(false);
+                setPassword('');
+                setPendingAction(null);
+              }}
+              disabled={isVerifying}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={verifyPassword}
+              disabled={!password || isVerifying}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isVerifying ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Verify"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Restore Confirmation Dialog */}
       <Dialog 
