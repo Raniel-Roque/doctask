@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { FaCheck, FaTimes, FaPlus, FaChevronLeft, FaChevronRight, FaMinus } from "react-icons/fa";
 import { User, Group } from './types';
 
@@ -12,34 +12,32 @@ interface GroupsTableProps {
   sortDirection: "asc" | "desc";
   onSort: (field: "name" | "capstoneTitle" | "projectManager") => void;
   getSortIcon: (field: "name" | "capstoneTitle" | "projectManager") => React.ReactNode;
-  'data-pagination-reset'?: boolean;
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  status: 'idle' | 'loading' | 'error';
+  hasResults: boolean;
 }
 
-const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onAccept, onReject, onSort, getSortIcon }) => {
+const GroupsTable: React.FC<GroupsTableProps> = ({
+  groups,
+  onAccept,
+  onReject,
+  onSort,
+  getSortIcon,
+  currentPage,
+  totalPages,
+  totalCount,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  status,
+  hasResults,
+}) => {
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const tableRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleResetPagination = () => {
-      setCurrentPage(1);
-    };
-
-    const tableElement = tableRef.current;
-    if (tableElement) {
-      tableElement.addEventListener('resetPagination', handleResetPagination);
-    }
-
-    return () => {
-      if (tableElement) {
-        tableElement.removeEventListener('resetPagination', handleResetPagination);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [groups]);
 
   const toggleExpand = (groupId: string) => {
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
@@ -49,27 +47,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onAccept, onReject, o
     return `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`;
   };
 
-  const getPaginationInfo = (groups: Group[]) => {
-    const entriesPerPage = 5;
-    const totalEntries = groups.length;
-    const totalPages = Math.ceil(totalEntries / entriesPerPage);
-    const startEntry = (currentPage - 1) * entriesPerPage + 1;
-    const endEntry = Math.min(startEntry + entriesPerPage - 1, totalEntries);
-    const paginatedGroups = groups.slice(startEntry - 1, endEntry);
-
-    return {
-      totalEntries,
-      totalPages,
-      startEntry,
-      endEntry,
-      paginatedGroups,
-    };
-  };
-
-  const { totalEntries, totalPages, startEntry, endEntry, paginatedGroups } = getPaginationInfo(groups);
-
   return (
-    <div ref={tableRef}>
+    <div>
       <div className="overflow-x-auto">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
@@ -114,14 +93,28 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onAccept, onReject, o
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedGroups.length === 0 && (
+              {status === 'loading' && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    Loading...
+                  </td>
+                </tr>
+              )}
+              {status === 'error' && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-4 text-center text-red-500">
+                    An error occurred while loading groups. Please try again.
+                  </td>
+                </tr>
+              )}
+              {status === 'idle' && !hasResults && (
                 <tr>
                   <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                     No group requests available at this time.
                   </td>
                 </tr>
               )}
-              {paginatedGroups.map((group) => (
+              {groups.map((group) => (
                 <tr key={group._id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {group.name || '-'}
@@ -200,15 +193,39 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onAccept, onReject, o
 
         {/* Pagination */}
         <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{startEntry}</span> to <span className="font-medium">{endEntry}</span> of{' '}
-              <span className="font-medium">{totalEntries}</span> entries
+              Showing{' '}
+              <span className="font-medium">
+                {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+              </span>
+              {' - '}
+              <span className="font-medium">
+                {Math.min(currentPage * pageSize, totalCount)}
+              </span>
+              {' of '}
+              <span className="font-medium">{totalCount}</span>
+              {' entries'}
             </p>
+            <div className="h-6 w-px bg-gray-300"></div>
+            <div className="flex items-center gap-2">
+              <select
+                value={pageSize}
+                onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                className="px-2 py-1 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <span className="text-sm text-gray-700">entries per page</span>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setCurrentPage(currentPage - 1)}
+              onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
               className={`p-2 rounded-md ${
                 currentPage === 1
@@ -222,7 +239,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({ groups, onAccept, onReject, o
               Page {currentPage} of {totalPages}
             </span>
             <button
-              onClick={() => setCurrentPage(currentPage + 1)}
+              onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               className={`p-2 rounded-md ${
                 currentPage === totalPages

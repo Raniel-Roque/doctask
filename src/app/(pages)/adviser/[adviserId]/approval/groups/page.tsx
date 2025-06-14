@@ -4,7 +4,7 @@ import { useState, use } from "react";
 import { Navbar } from "../../components/navbar";
 import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import GroupsTable from "./components/GroupsTable";
-import { Group, User } from "./components/types";
+import { Group } from "./components/types";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
@@ -20,6 +20,8 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortField, setSortField] = useState<"name" | "capstoneTitle" | "projectManager">("name");
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(5);
 
     // State for confirmation dialog
     const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -34,68 +36,40 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
     const acceptGroup = useMutation(api.mutations.acceptGroupRequest);
     const rejectGroup = useMutation(api.mutations.rejectGroupRequest);
 
-    // 1. Fetch pending group IDs for this adviser
-    const pendingGroupIds: Id<"groupsTable">[] = useQuery(api.fetch.getPendingGroupIdsForAdviser, { adviserId: adviserId as Id<"users"> }) || [];
+    // Fetch groups with search, pagination, and sorting
+    const result = useQuery(
+        api.fetch.getPendingGroupIdsForAdviser,
+        {
+            adviserId: adviserId as Id<"users">,
+            searchTerm,
+            pageSize,
+            pageNumber: currentPage,
+            sortField,
+            sortDirection,
+        }
+    );
 
-    // 2. Fetch all groups and users
-    const groups = useQuery(api.fetch.getGroups) || [];
-    const users = useQuery(api.fetch.getUsers) || [];
+    // Transform the result to match the Group type
+    const transformedGroups: Group[] = (result?.groups || []).map(group => ({
+        _id: group._id.toString(),
+        name: group.name,
+        capstone_title: group.capstone_title,
+        projectManager: group.projectManager ? {
+            _id: group.projectManager._id.toString(),
+            first_name: group.projectManager.first_name,
+            last_name: group.projectManager.last_name,
+            middle_name: group.projectManager.middle_name
+        } : undefined,
+        members: group.members?.map(member => ({
+            _id: member._id.toString(),
+            first_name: member.first_name,
+            last_name: member.last_name,
+            middle_name: member.middle_name
+        }))
+    }));
 
-    // 3. Build processed groups array
-    const processedGroups = pendingGroupIds
-        .map(groupId => groups.find((g) => g._id === groupId))
-        .filter((g): g is NonNullable<typeof g> => !!g)
-        .map(group => {
-            const projectManager = users.find((u) => u._id === group.project_manager_id);
-            const members = group.member_ids
-                .map((memberId: Id<"users">) => users.find((u) => u._id === memberId))
-                .filter((u): u is NonNullable<typeof u> => !!u);
-            const name = projectManager ? `${projectManager.last_name} et al` : "Unknown Group";
-            return {
-                _id: group._id.toString(),
-                name,
-                capstone_title: group.capstone_title,
-                projectManager: projectManager ? {
-                    _id: projectManager._id.toString(),
-                    first_name: projectManager.first_name,
-                    last_name: projectManager.last_name,
-                    middle_name: projectManager.middle_name
-                } : undefined,
-                members: members.map(member => ({
-                    _id: member._id.toString(),
-                    first_name: member.first_name,
-                    last_name: member.last_name,
-                    middle_name: member.middle_name
-                })),
-            };
-        });
-
-    // Filter groups based on search term
-    const filteredGroups = processedGroups.filter(group => {
-        const searchTerms = searchTerm.toLowerCase().split(' ').filter(term => term.length > 0);
-        if (searchTerms.length === 0) return true;
-
-        const groupName = group.name?.toLowerCase() || '';
-        const capstoneTitle = group.capstone_title?.toLowerCase() || '';
-        const projectManager = group.projectManager ? 
-            `${group.projectManager.first_name} ${group.projectManager.last_name}`.toLowerCase() : '';
-        const memberNames = group.members?.map((member: User) => 
-            `${member.first_name} ${member.last_name}`.toLowerCase()
-        ).join(' ') || '';
-
-        return searchTerms.every(term =>
-            groupName.includes(term) ||
-            capstoneTitle.includes(term) ||
-            projectManager.includes(term) ||
-            memberNames.includes(term)
-        );
-    });
-
-    // Add sorting logic
-    const getSortIcon = (field: typeof sortField) => {
-        if (field !== sortField) return <FaSort />;
-        return sortDirection === "asc" ? <FaSortUp /> : <FaSortDown />;
-    };
+    const { totalCount = 0, totalPages = 0, hasResults = false } = result || {};
+    const status: 'idle' | 'loading' | 'error' = result === undefined ? 'loading' : (result.status as 'idle' | 'error');
 
     const handleSort = (field: typeof sortField) => {
         if (field === sortField) {
@@ -104,25 +78,17 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
             setSortField(field);
             setSortDirection("asc");
         }
-        // Reset pagination when sort changes
-        const paginationResetEvent = new CustomEvent('resetPagination');
-        document.dispatchEvent(paginationResetEvent);
+        setCurrentPage(1); // Reset to first page when sort changes
     };
 
-    // Sort the filtered groups
-    const sortedAndFilteredGroups = filteredGroups.sort((a, b) => {
-        let comparison = 0;
-        if (sortField === "name") {
-            comparison = (a.name || '').localeCompare(b.name || '');
-        } else if (sortField === "capstoneTitle") {
-            comparison = (a.capstone_title || '').localeCompare(b.capstone_title || '');
-        } else if (sortField === "projectManager" && a.projectManager && b.projectManager) {
-            const aName = `${a.projectManager.last_name} ${a.projectManager.first_name}`;
-            const bName = `${b.projectManager.last_name} ${b.projectManager.first_name}`;
-            comparison = aName.localeCompare(bName);
-        }
-        return sortDirection === "asc" ? comparison : -comparison;
-    });
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const handlePageSizeChange = (size: number) => {
+        setPageSize(size);
+        setCurrentPage(1); // Reset to first page when page size changes
+    };
 
     const handleAccept = async (group: Group) => {
         setSelectedGroup(group);
@@ -202,20 +168,34 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
                             placeholder="Search groups..."
                             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1); // Reset to first page when search changes
+                            }}
                         />
                     </div>
                 </div>
 
                 {/* Groups Table */}
                 <GroupsTable 
-                    groups={sortedAndFilteredGroups}
+                    groups={transformedGroups}
                     onAccept={handleAccept}
                     onReject={handleReject}
                     sortDirection={sortDirection}
                     onSort={handleSort}
-                    getSortIcon={getSortIcon}
+                    getSortIcon={(field) => {
+                        if (field !== sortField) return <FaSort />;
+                        return sortDirection === "asc" ? <FaSortUp /> : <FaSortDown />;
+                    }}
                     sortField={sortField}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    status={status}
+                    hasResults={hasResults}
                 />
 
                 {/* Confirmation Dialog */}
