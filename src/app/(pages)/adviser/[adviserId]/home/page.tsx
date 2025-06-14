@@ -17,6 +17,9 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
     const { adviserId } = use(params);
     const [sortField, setSortField] = useState<"name" | "capstoneTitle">("name");
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(5);
 
     // Fetch adviser data
     const adviser = useQuery(api.fetch.getUserById, {
@@ -29,10 +32,11 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
     });
 
     // Fetch all groups to filter by adviser's group_ids
-    const allGroups = useQuery(api.fetch.getGroups) || [];
-    const adviserGroups = allGroups?.filter(group => 
+    const allGroupsResult = useQuery(api.fetch.getGroups, {}) || { groups: [] };
+    const allGroups = allGroupsResult.groups || [];
+    const adviserGroups = allGroups.filter(group => 
         adviserCode?.group_ids?.includes(group._id) ?? false
-    ) || [];
+    );
 
     // Fetch all users to get project manager names
     const allUsers = useQuery(api.fetch.getUsers) || [];
@@ -49,10 +53,40 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
         }
     };
 
+    // Filter groups based on search term
+    const filteredGroups = adviserGroups.filter(group => {
+        if (!searchTerm.trim()) return true;
+        
+        const projectManager = projectManagers.find(pm => pm._id === group.project_manager_id);
+        const groupName = projectManager ? `${projectManager.last_name} et al`.toLowerCase() : "";
+        const capstoneTitle = (group.capstone_title || "").toLowerCase();
+        
+        const searchTerms = searchTerm.toLowerCase().split(" ").filter(term => term.length > 0);
+        return searchTerms.every(term =>
+            groupName.includes(term) ||
+            capstoneTitle.includes(term)
+        );
+    });
+
+    // Calculate pagination
+    const totalCount = filteredGroups.length;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginatedGroups = filteredGroups.slice(startIndex, startIndex + pageSize);
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const handlePageSizeChange = (size: number) => {
+        setPageSize(size);
+        setCurrentPage(1); // Reset to first page when page size changes
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar adviserId={adviserId} />
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-4 pt-8 pb-2">
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold">Welcome Back, {adviser?.first_name ?? "User"}!</h1>
                     <p className="text-muted-foreground">Adviser Overview</p>
@@ -107,18 +141,30 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" />
                                 </svg>
                             </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Groups Table */}
+            <div className="container mx-auto px-4 pb-8">
                 <HandledGroupsTable 
                     adviserId={adviserId as Id<"users">}
-                    groups={adviserGroups}
+                    groups={paginatedGroups}
                     projectManagers={projectManagers}
                     sortField={sortField}
                     sortDirection={sortDirection}
                     onSort={handleSort}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    status={allGroups === undefined ? 'loading' : 'idle'}
+                    hasResults={paginatedGroups.length > 0}
                 />
             </div>
         </div>

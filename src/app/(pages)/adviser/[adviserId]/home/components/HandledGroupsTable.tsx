@@ -1,4 +1,4 @@
-import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaSort, FaSortUp, FaSortDown, FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { Users } from "lucide-react";
 import Link from "next/link";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
@@ -29,6 +29,16 @@ interface HandledGroupsTableProps {
     sortField: "name" | "capstoneTitle";
     sortDirection: "asc" | "desc";
     onSort: (field: "name" | "capstoneTitle") => void;
+    searchTerm: string;
+    onSearchChange: (term: string) => void;
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    pageSize: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (size: number) => void;
+    status: 'idle' | 'loading' | 'error';
+    hasResults: boolean;
 }
 
 export const HandledGroupsTable = ({
@@ -37,7 +47,17 @@ export const HandledGroupsTable = ({
     projectManagers,
     sortField,
     sortDirection,
-    onSort
+    onSort,
+    searchTerm,
+    onSearchChange,
+    currentPage,
+    totalPages,
+    pageSize,
+    onPageChange,
+    onPageSizeChange,
+    totalCount,
+    status,
+    hasResults
 }: HandledGroupsTableProps) => {
     const getSortIcon = (field: "name" | "capstoneTitle") => {
         if (sortField !== field) return <FaSort className="text-gray-400" />;
@@ -60,53 +80,84 @@ export const HandledGroupsTable = ({
     });
 
     return (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold">Handled Groups</h2>
-                    <Link 
-                        href={`/adviser/${adviserId}/approval/groups`}
-                        className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                        <Users className="w-5 h-5" />
-                        View Group Requests
-                    </Link>
+        <div>
+            <h2 className="text-2xl font-semibold mb-2">Groups</h2>
+            <div className="flex items-center justify-between mb-4">
+                {/* Search Bar */}
+                <div className="flex-1 mr-4">
+                    <div className="relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                            <FaSearch />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search groups..."
+                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={searchTerm}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                        />
+                    </div>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="border-b">
-                                <th 
-                                    className="text-left py-3 px-4 font-medium text-gray-600 cursor-pointer"
-                                    onClick={() => onSort("name")}
-                                >
-                                    <div className="flex items-center">
-                                        Group Name
-                                        <span className="ml-1">{getSortIcon("name")}</span>
-                                    </div>
-                                </th>
-                                <th 
-                                    className="text-left py-3 px-4 font-medium text-gray-600 cursor-pointer"
-                                    onClick={() => onSort("capstoneTitle")}
-                                >
-                                    <div className="flex items-center">
-                                        Capstone Title
-                                        <span className="ml-1">{getSortIcon("capstoneTitle")}</span>
-                                    </div>
-                                </th>
-                                <th className="text-center py-3 px-4 font-medium text-gray-600">Progress</th>
-                                <th className="text-center py-3 px-4 font-medium text-gray-600">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sortedGroups.length === 0 ? (
-                                <tr>
-                                    <td colSpan={4} className="py-8 text-center text-gray-500">
-                                        No groups handled at this time. Check group requests to start handling groups.
-                                    </td>
+
+                <Link 
+                    href={`/adviser/${adviserId}/approval/groups`}
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                >
+                    <Users className="w-5 h-5" />
+                    View Group Requests
+                </Link>
+            </div>
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-6">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b">
+                                    <th 
+                                        className="text-left pt-1 pb-3 px-4 font-medium text-gray-600 cursor-pointer"
+                                        onClick={() => onSort("name")}
+                                    >
+                                        <div className="flex items-center">
+                                            Group Name
+                                            <span className="ml-1">{getSortIcon("name")}</span>
+                                        </div>
+                                    </th>
+                                    <th 
+                                        className="text-left pt-1 pb-3 px-4 font-medium text-gray-600 cursor-pointer"
+                                        onClick={() => onSort("capstoneTitle")}
+                                    >
+                                        <div className="flex items-center">
+                                            Capstone Title
+                                            <span className="ml-1">{getSortIcon("capstoneTitle")}</span>
+                                        </div>
+                                    </th>
+                                    <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600">Progress</th>
+                                    <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600">Actions</th>
                                 </tr>
-                            ) : (
-                                sortedGroups.map((group) => {
+                            </thead>
+                            <tbody>
+                                {status === 'loading' && (
+                                    <tr>
+                                        <td colSpan={4} className="pt-7 pb-1 text-center text-gray-500">
+                                            Loading...
+                                        </td>
+                                    </tr>
+                                )}
+                                {status === 'error' && (
+                                    <tr>
+                                        <td colSpan={4} className="pt-7 pb-1 text-center text-red-500">
+                                            An error occurred while loading groups. Please try again.
+                                        </td>
+                                    </tr>
+                                )}
+                                {status === 'idle' && !hasResults && (
+                                    <tr>
+                                        <td colSpan={4} className="pt-7 pb-1 text-center text-gray-500">
+                                            No groups handled at this time. Check group requests to start handling groups.
+                                        </td>
+                                    </tr>
+                                )}
+                                {sortedGroups.map((group) => {
                                     const projectManager = projectManagers.find(
                                         pm => pm._id === group.project_manager_id
                                     );
@@ -133,10 +184,71 @@ export const HandledGroupsTable = ({
                                             </td>
                                         </tr>
                                     );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {/* Pagination */}
+            <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+                <div className="flex items-center gap-4">
+                    <p className="text-sm text-gray-700">
+                        Showing{' '}
+                        <span className="font-medium">
+                            {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+                        </span>
+                        {' - '}
+                        <span className="font-medium">
+                            {Math.min(currentPage * pageSize, totalCount)}
+                        </span>
+                        {' of '}
+                        <span className="font-medium">{totalCount}</span>
+                        {' entries'}
+                    </p>
+                    <div className="h-6 w-px bg-gray-300"></div>
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={pageSize}
+                            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                            className="px-2 py-1 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((size) => (
+                                <option key={size} value={size}>
+                                    {size}
+                                </option>
+                            ))}
+                        </select>
+                        <span className="text-sm text-gray-700">entries per page</span>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`p-2 rounded-md ${
+                            currentPage === 1
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                    >
+                        <FaChevronLeft />
+                    </button>
+                    <span className="text-sm text-gray-700">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`p-2 rounded-md ${
+                            currentPage === totalPages
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                    >
+                        <FaChevronRight />
+                    </button>
                 </div>
             </div>
         </div>

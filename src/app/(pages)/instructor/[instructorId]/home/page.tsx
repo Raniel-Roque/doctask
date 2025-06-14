@@ -18,10 +18,10 @@ const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
   });
 
   // Fetch students and advisers
-  const students = await fetchQuery(api.fetch.getStudents);
-  const advisers = await fetchQuery(api.fetch.getAdvisers);
+  const students = await fetchQuery(api.fetch.getStudents, { pageNumber: 1 });
+  const advisers = await fetchQuery(api.fetch.getAdvisers, { pageNumber: 1 });
   // Fetch groups
-  const groups = await fetchQuery(api.fetch.getGroups);
+  const groups = await fetchQuery(api.fetch.getGroups, { pageNumber: 1 });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -39,7 +39,7 @@ const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <h3 className="text-2xl font-bold mt-1">{students?.length ?? 0}</h3>
+                <h3 className="text-2xl font-bold mt-1">{students?.totalCount ?? 0}</h3>
               </div>
               <div className="bg-blue-100 p-3 rounded-full">
                 <GraduationCap className="w-6 h-6 text-blue-600" />
@@ -52,7 +52,7 @@ const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Advisers</p>
-                <h3 className="text-2xl font-bold mt-1">{advisers?.length ?? 0}</h3>
+                <h3 className="text-2xl font-bold mt-1">{advisers?.totalCount ?? 0}</h3>
               </div>
               <div className="bg-purple-100 p-3 rounded-full">
                 <Users className="w-6 h-6 text-purple-600" />
@@ -65,7 +65,7 @@ const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Groups</p>
-                <h3 className="text-2xl font-bold mt-1">{groups?.length ?? 0}</h3>
+                <h3 className="text-2xl font-bold mt-1">{groups?.totalCount ?? 0}</h3>
               </div>
               <div className="bg-green-100 p-3 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

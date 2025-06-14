@@ -25,11 +25,11 @@ export const getUserByClerkId = query({
 
 export const getAdvisers = query({
   args: { 
-    pageSize: v.number(),
-    pageNumber: v.number(),
+    pageSize: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { pageSize, pageNumber } = args;
+    const { pageSize = 5, pageNumber = 1 } = args;
     const skip = (pageNumber - 1) * pageSize;
 
     const users = await ctx.db
@@ -55,11 +55,11 @@ export const getAdvisers = query({
 
 export const getStudents = query({
   args: { 
-    pageSize: v.number(),
-    pageNumber: v.number(),
+    pageSize: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { pageSize, pageNumber } = args;
+    const { pageSize = 5, pageNumber = 1 } = args;
     const skip = (pageNumber - 1) * pageSize;
 
     const users = await ctx.db
@@ -130,8 +130,8 @@ export const getAdviserCode = query({
 export const getLogs = query({
   args: {
     searchTerm: v.string(),
-    pageSize: v.number(),
-    pageNumber: v.number(),
+    pageSize: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
     sortField: v.optional(v.string()),
     sortDirection: v.optional(v.string()),
     actionFilter: v.optional(v.string()),
@@ -140,7 +140,7 @@ export const getLogs = query({
     endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { searchTerm, pageSize, pageNumber, sortField, sortDirection, actionFilter, entityTypeFilter, startDate, endDate } = args;
+    const { searchTerm, pageSize = 5, pageNumber = 1, sortField, sortDirection, actionFilter, entityTypeFilter, startDate, endDate } = args;
     const skip = (pageNumber - 1) * pageSize;
 
     try {
@@ -234,11 +234,29 @@ export const getLogs = query({
 });
 
 export const getGroups = query({
-  handler: async (ctx) => {
+  args: { 
+    pageSize: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const { pageSize = 5, pageNumber = 1 } = args;
+    const skip = (pageNumber - 1) * pageSize;
+
     const groups = await ctx.db
       .query("groupsTable")
-      .collect();
-    return groups;
+      .collect()
+      .then(results => results.slice(skip, skip + pageSize));
+
+    const totalCount = await ctx.db
+      .query("groupsTable")
+      .collect()
+      .then(results => results.length);
+
+    return {
+      groups,
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize)
+    };
   },
 });
 
@@ -255,13 +273,13 @@ export const getPendingGroupIdsForAdviser = query({
   args: { 
     adviserId: v.id("users"),
     searchTerm: v.string(),
-    pageSize: v.number(),
-    pageNumber: v.number(),
+    pageSize: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
     sortField: v.optional(v.string()),
     sortDirection: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { adviserId, searchTerm, pageSize, pageNumber, sortField, sortDirection } = args;
+    const { adviserId, searchTerm, pageSize = 5, pageNumber = 1, sortField, sortDirection } = args;
     const skip = (pageNumber - 1) * pageSize;
 
     try {
@@ -383,14 +401,14 @@ export const searchUsers = query({
     role: v.number(),
     emailVerified: v.optional(v.boolean()),
     subrole: v.optional(v.number()),
-    pageSize: v.number(),
-    pageNumber: v.number(),
+    pageSize: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
     sortField: v.optional(v.string()),
     sortDirection: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     try {
-      const { searchTerm, role, emailVerified, subrole, pageSize, pageNumber, sortField, sortDirection } = args;
+      const { searchTerm, role, emailVerified, subrole, pageSize = 5, pageNumber = 1, sortField, sortDirection } = args;
       const skip = (pageNumber - 1) * pageSize;
 
       // If search term is empty, use a regular query instead of search
@@ -507,8 +525,8 @@ export const searchUsers = query({
 export const searchGroups = query({
   args: {
     searchTerm: v.string(),
-    pageSize: v.number(),
-    pageNumber: v.number(),
+    pageSize: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
     sortField: v.optional(v.string()),
     sortDirection: v.optional(v.string()),
     capstoneFilter: v.optional(v.string()),
@@ -516,7 +534,7 @@ export const searchGroups = query({
     gradeFilter: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { searchTerm, pageSize, pageNumber, sortField, sortDirection, capstoneFilter, adviserFilter, gradeFilter } = args;
+    const { searchTerm, pageSize = 5, pageNumber = 1, sortField, sortDirection, capstoneFilter, adviserFilter, gradeFilter } = args;
     const skip = (pageNumber - 1) * pageSize;
 
     try {

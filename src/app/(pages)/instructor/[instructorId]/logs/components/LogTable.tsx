@@ -245,7 +245,7 @@ export const LogTable = () => {
     };
 
     const { logs = [], totalCount = 0, totalPages = 0 } = logsData || {};
-    
+
     return (
         <div className="mt-4">
             <div className="mb-4 flex flex-wrap gap-4">
@@ -414,43 +414,43 @@ export const LogTable = () => {
                                 </tr>
                             ) : (
                                 logs.map((log: Log, index: number) => {
-                                    const instructor = getInstructorName(log);
-                                    const affectedEntity = getAffectedEntityName(log);
-                                    return (
-                                    <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {format(new Date(log._creationTime), "MMM dd, yyyy hh:mm a")}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-left">
-                                                <CollapsibleText 
-                                                    text={instructor.display}
-                                                    maxLength={20}
-                                                    column="instructor"
-                                                    id={instructor.id}
-                                                />
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
-                                                {log.action}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-left">
-                                                <CollapsibleText 
-                                                    text={affectedEntity.display}
-                                                    maxLength={20}
-                                                    column="affectedEntity"
-                                                    id={affectedEntity.id}
-                                                />
-                                        </td>
-                                        <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line">
+                                const instructor = getInstructorName(log);
+                                const affectedEntity = getAffectedEntityName(log);
+                                return (
+                                <tr key={log._id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {format(new Date(log._creationTime), "MMM dd, yyyy hh:mm a")}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-left">
                                             <CollapsibleText 
-                                                text={log.details}
-                                                maxLength={20} 
-                                                column="details" 
+                                                text={instructor.display}
+                                                maxLength={20}
+                                                column="instructor"
+                                                id={instructor.id}
                                             />
-                                        </td>
-                                    </tr>
-                                    );
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}>
+                                            {log.action}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-left">
+                                            <CollapsibleText 
+                                                text={affectedEntity.display}
+                                                maxLength={20}
+                                                column="affectedEntity"
+                                                id={affectedEntity.id}
+                                            />
+                                    </td>
+                                    <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line">
+                                        <CollapsibleText 
+                                            text={log.details}
+                                            maxLength={20} 
+                                            column="details" 
+                                        />
+                                    </td>
+                                </tr>
+                                );
                                 })
                             )}
                         </tbody>
