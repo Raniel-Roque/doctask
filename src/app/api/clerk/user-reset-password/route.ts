@@ -5,6 +5,12 @@ import { api } from "../../../../../convex/_generated/api";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
+interface ClerkError {
+  errors?: Array<{
+    message?: string;
+  }>;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -55,18 +61,40 @@ export async function POST(request: Request) {
       );
     }
 
-    // Update the user's password
-    await client.users.updateUser(clerkId, {
-      password: newPassword,
-    });
+    try {
+      // Update the user's password
+      await client.users.updateUser(clerkId, {
+        password: newPassword,
+      });
 
-    return NextResponse.json({ 
-      success: true,
-      message: "Password has been reset successfully"
-    });
-  } catch {
+      return NextResponse.json({ 
+        success: true,
+        message: "Password has been reset successfully"
+      });
+    } catch (error) {
+      const clerkError = error as ClerkError;
+      
+      // Check for password strength error
+      if (clerkError.errors?.[0]?.message?.includes('password_strength') ||
+          clerkError.errors?.[0]?.message?.includes('weak_password') ||
+          clerkError.errors?.[0]?.message?.includes('password is too weak') ||
+          clerkError.errors?.[0]?.message?.includes('not strong enough')) {
+        return NextResponse.json(
+          { error: "Password is too weak. Please use a stronger password with a mix of letters, numbers, and special characters." },
+          { status: 400 }
+        );
+      }
+
+      // Forward other Clerk errors
+      return NextResponse.json(
+        { error: clerkError.errors?.[0]?.message || "Failed to reset password" },
+        { status: 400 }
+      );
+    }
+  } catch (error) {
+    const serverError = error as Error;
     return NextResponse.json(
-      { error: "Failed to reset password" },
+      { error: serverError.message || "Failed to reset password" },
       { status: 500 }
     );
   }
