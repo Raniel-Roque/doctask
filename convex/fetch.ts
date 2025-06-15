@@ -558,7 +558,7 @@ export const searchGroups = query({
             .filter((u): u is NonNullable<typeof u> => u !== undefined);
 
           const projectManagerName = projectManager ? `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase() : "";
-          const adviserName = adviser ? `${adviser.first_name} ${adviser.last_name}`.toLowerCase() : "";
+          const adviserName = adviser ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + ' ' : ''}${adviser.last_name}`.toLowerCase() : "";
           const memberNames = members.map(m => `${m.first_name} ${m.last_name}`.toLowerCase());
 
           return searchTerms.every(term =>
@@ -579,7 +579,8 @@ export const searchGroups = query({
           } else if (capstoneFilter === "Without Capstone Title") {
             return !group.capstone_title;
           }
-          return true;
+          // Match specific capstone title (case-insensitive)
+          return (group.capstone_title || "").toLowerCase() === capstoneFilter.toLowerCase();
         });
       }
 
@@ -590,19 +591,33 @@ export const searchGroups = query({
           if (adviserFilter === "No Adviser") {
             return !adviser;
           }
-          const adviserName = adviser ? `${adviser.first_name} ${adviser.last_name}` : "";
-          return adviserName === adviserFilter;
+          const adviserName = adviser
+            ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + ' ' : ''}${adviser.last_name}`.toLowerCase()
+            : "";
+          return adviserName === adviserFilter.toLowerCase();
         });
       }
 
+      // Grade label to number mapping
+      const GRADE_LABEL_TO_NUMBER: { [key: string]: number } = {
+        "No Grade": 0,
+        "Approved": 1,
+        "Approved With Revisions": 2,
+        "Disapproved": 3,
+        "Accepted With Revisions": 4,
+        "Reoral Defense": 5,
+        "Not Accepted": 6,
+      };
+
       // Apply grade filter
-      if (gradeFilter && gradeFilter !== "All Grades") {
+      if (gradeFilter && gradeFilter.toLowerCase() !== "all grades") {
         groups = groups.filter(group => {
           const grade = group.grade;
-          if (gradeFilter === "No Grade") {
-            return grade === undefined || grade === null;
+          if (gradeFilter.toLowerCase() === "no grade") {
+            return grade === undefined || grade === null || grade === 0;
           }
-          return grade === parseInt(gradeFilter);
+          const gradeNumber = GRADE_LABEL_TO_NUMBER[gradeFilter];
+          return grade === gradeNumber;
         });
       }
 

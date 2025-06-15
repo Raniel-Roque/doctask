@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { FaSearch, FaSort, FaSortUp, FaSortDown, FaEdit, FaTrash, FaChevronDown, FaPlus, FaChevronLeft, FaChevronRight, FaMinus, FaTimes } from "react-icons/fa"; // Import icons and pagination icons
 import { User, Group } from './types';
 import DeleteGroupConfirmation from './DeleteGroupConfirmation';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import GroupPDFReport from './GroupPDFReport';
 
 // Capstone Title filter options
 const CAPSTONE_FILTERS = {
@@ -514,6 +516,36 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               ))}
             </select>
             <span className="text-sm text-gray-700">entries per page</span>
+            {groups.length > 0 && (
+              <>
+                <span className="text-gray-300 mx-1">|</span>
+                <PDFDownloadLink
+                  document={
+                    <GroupPDFReport
+                      groups={groups}
+                      title="Groups Report"
+                      filters={{
+                        searchTerm,
+                        capstoneFilter,
+                        adviserFilter,
+                        gradeFilter,
+                      }}
+                    />
+                  }
+                  fileName={`GroupsReport-${capstoneFilter}_${adviserFilter}_${gradeFilter}_${new Date().toISOString().slice(0,10)}.pdf`}
+                >
+                  {({ loading }) => (
+                    <span
+                      className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
+                      title="Download Report"
+                      style={{ minWidth: 90, display: 'inline-block' }}
+                    >
+                      {loading ? 'Generating...' : 'Download Report'}
+                    </span>
+                  )}
+                </PDFDownloadLink>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">

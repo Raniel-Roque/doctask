@@ -48,6 +48,7 @@ interface PDFReportProps {
   filters?: {
     status?: string;
     subrole?: string;
+    searchTerm?: string;
   };
   isStudent?: boolean;
   adviserCodes?: Record<string, { code: string }>;
