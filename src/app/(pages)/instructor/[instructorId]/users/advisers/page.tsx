@@ -657,6 +657,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           hasResults={searchResult.hasResults}
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}
+          isStudent={false}
         />
 
         {/* Add Form */}

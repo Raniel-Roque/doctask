@@ -2,6 +2,8 @@ import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 import { useState } from "react";
 import { useQuery } from "convex/react";
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import PDFReport from './PDFReport';
 import { api } from "../../../../../../../convex/_generated/api";
 
 // =========================================
@@ -33,6 +35,7 @@ interface UserTableProps {
   hasResults: boolean;
   pageSize: number;
   onPageSizeChange: (size: number) => void;
+  isStudent?: boolean;
 }
 
 // =========================================
@@ -64,12 +67,33 @@ export const UserTable = ({
   hasResults,
   pageSize,
   onPageSizeChange,
+  isStudent,
 }: UserTableProps) => {
   const [expandedCode, setExpandedCode] = useState<{ [key: string]: boolean }>({});
   const [expandedEmail, setExpandedEmail] = useState<{ [key: string]: boolean }>({});
 
   // Fetch adviser codes
   const adviserCodes = useQuery(api.fetch.getAdviserCodes) || {};
+
+  // Fetch all filtered users for PDF export
+  const allFilteredUsersQuery = useQuery(api.fetch.searchUsers, {
+    searchTerm,
+    role: showRoleColumn ? 0 : 1,
+    emailVerified: statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED ? true :
+                  statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED ? false : undefined,
+    ...(
+      showRoleColumn &&
+      (roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
+        ? { subrole: 1 }
+        : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
+        ? { subrole: 0 }
+        : {})
+    ),
+    pageSize: 10000,
+    pageNumber: 1,
+    sortField,
+    sortDirection,
+  });
 
   // =========================================
   // Helper Functions
@@ -188,12 +212,14 @@ export const UserTable = ({
             </div>
           </div>
         )}
+        <div className="flex items-center gap-2">
         <button 
-          onClick={onAdd}
-          className="px-4 py-2 bg-[#B54A4A] text-white rounded-lg hover:bg-[#9a3d3d] flex items-center gap-2"
-        >
-          <FaPlus /> Add User
-        </button>
+            onClick={onAdd}
+            className="px-4 py-2 bg-[#B54A4A] text-white rounded-lg hover:bg-[#9a3d3d] flex items-center gap-2"
+          >
+            <FaPlus /> Add User
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -361,6 +387,50 @@ export const UserTable = ({
               ))}
             </select>
             <span className="text-sm text-gray-700">entries per page</span>
+            {users.length > 0 && (
+              <>
+                <span className="text-gray-300 mx-1">|</span>
+                <PDFDownloadLink
+                  document={
+                    <PDFReport
+                      users={allFilteredUsersQuery?.users || []}
+                      title={showRoleColumn ? "Students Report" : "Advisers Report"}
+                      filters={{
+                        status: statusFilter,
+                        subrole: showRoleColumn
+                          ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
+                            ? "Manager"
+                            : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
+                            ? "Member"
+                            : "All"
+                          : undefined,
+                      }}
+                      isStudent={isStudent}
+                      adviserCodes={adviserCodes}
+                    />
+                  }
+                  fileName={(() => {
+                    const role = showRoleColumn ? 'Student' : 'Adviser';
+                    const filters = [`Status-${statusFilter}`, `Role-${roleFilter}`];
+                    const date = new Date();
+                    const dateTime = `${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2,'0')}${date.getDate().toString().padStart(2,'0')}_${date.getHours().toString().padStart(2,'0')}${date.getMinutes().toString().padStart(2,'0')}${date.getSeconds().toString().padStart(2,'0')}`;
+                    return `${role}Report-${filters.join('_')}-${dateTime}.pdf`;
+                  })()}
+                >
+                  {({ loading }) => {
+                    return (
+                      <span
+                        className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
+                        title="Download Report"
+                        style={{ minWidth: 90, display: 'inline-block' }}
+                      >
+                        {loading || allFilteredUsersQuery === undefined ? 'Generating...' : 'Download Report'}
+                      </span>
+                    );
+                  }}
+                </PDFDownloadLink>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">

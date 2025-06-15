@@ -129,9 +129,9 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
       }
 
       setSuccess("Password updated successfully");
-      setTimeout(() => {
-        handleClose();
-      }, 2000);
+        setTimeout(() => {
+          handleClose();
+        }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update password");
     } finally {
@@ -144,8 +144,8 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
-        <button
-          onClick={handleClose}
+          <button
+            onClick={handleClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
         >
           <FaTimes />
@@ -175,9 +175,9 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showCurrentPassword ? <FaEye /> : <FaEyeSlash />}
-                </button>
-              </div>
-            </div>
+          </button>
+        </div>
+          </div>
 
             <button
               type="submit"
