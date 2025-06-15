@@ -3,11 +3,11 @@
 import { Navbar } from "../components/navbar";
 import { use } from "react";
 
-interface ManagerHomeProps {
+interface MemberHomeProps {
     params: Promise<{ studentId: string }>
 };
 
-const ManagerHomePage = ({ params }: ManagerHomeProps) => {
+const MemberHomePage = ({ params }: MemberHomeProps) => {
     const { studentId } = use(params);
 
     return (
@@ -15,7 +15,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
             <Navbar studentId={studentId} />
             <div className="container mx-auto px-4 py-8">
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold">Welcome, Manager!</h1>
+                    <h1 className="text-3xl font-bold">Welcome, Member!</h1>
                     <p className="text-muted-foreground">This is your Home Page.</p>
                 </div>
             </div>
@@ -23,6 +23,6 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     );
 }
  
-export default ManagerHomePage;
+export default MemberHomePage;
 
  

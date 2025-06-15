@@ -15,7 +15,7 @@ const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 const ROLES = {
   STUDENT: 0,
   ADVISER: 1,
-  instructor: 2,
+  INSTRUCTOR: 2,
 } as const;
 
 type Role = typeof ROLES[keyof typeof ROLES];
@@ -34,15 +34,22 @@ function RedirectHandler() {
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user || !convexUser) return;
 
-    const { role, _id } = convexUser;
+    const { role, subrole, _id } = convexUser;
     let expectedPath = "";
 
-    if (role === ROLES.instructor) expectedPath = `/instructor/${_id}/home`;
-    else if (role === ROLES.ADVISER) expectedPath = `/adviser/${_id}/home`;
-    else if (role === ROLES.STUDENT) expectedPath = `/student/${_id}/home`;
+    if (role === ROLES.INSTRUCTOR) {
+      expectedPath = `/instructor/${_id}/home`;
+    } else if (role === ROLES.ADVISER) {
+      expectedPath = `/adviser/${_id}/home`;
+    } else if (role === ROLES.STUDENT && typeof subrole === 'number') {
+      if (subrole === 0) {
+        expectedPath = `/student/${_id}/member/home`;
+      } else if (subrole === 1) {
+        expectedPath = `/student/${_id}/manager/home`;
+      }
+    }
 
-    // Redirect to home if on root path or role root path
-    if (pathname === "/" || pathname === `/${role === ROLES.instructor ? 'instructor' : role === ROLES.ADVISER ? 'adviser' : 'student'}/${_id}`) {
+    if (pathname === "/" || pathname === `/${role === ROLES.INSTRUCTOR ? 'instructor' : role === ROLES.ADVISER ? 'adviser' : 'student'}/${_id}`) {
       router.replace(expectedPath);
     }
   }, [isLoaded, isSignedIn, user, convexUser, router, pathname]);
@@ -80,20 +87,19 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 
   // Validate role is within expected range
   const isValidRole = (role: number): role is Role => {
-    return role === ROLES.STUDENT || role === ROLES.ADVISER || role === ROLES.instructor;
+    return role === ROLES.STUDENT || role === ROLES.ADVISER || role === ROLES.INSTRUCTOR;
   };
 
   // Sanitize and validate path segments
   const sanitizePath = (path: string) => {
-    // Remove any potential path traversal attempts
     return path.replace(/\.\./g, '').replace(/\/+/g, '/');
   };
 
-  // Check if the current path matches the user's role base path
+  // Check if the current path matches the user's role and subrole
   const isAuthorizedPath = () => {
     if (!convexUser) return false;
     
-    const { role, _id } = convexUser;
+    const { role, subrole, _id } = convexUser;
     
     // Validate role
     if (!isValidRole(role)) {
@@ -101,12 +107,19 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
       return false;
     }
 
-    // Sanitize path
+    // For students, validate subrole
+    if (role === ROLES.STUDENT) {
+      // Sanitize path and check student path
+      const sanitizedPath = sanitizePath(pathname);
+      const subrolePath = subrole === 0 ? 'member' : 'manager';
+      const pathPattern = new RegExp(`^/student/${_id}/${subrolePath}/`);
+      return pathPattern.test(sanitizedPath);
+    }
+
+    // For non-students, check their respective paths
     const sanitizedPath = sanitizePath(pathname);
-    
-    const basePath = role === ROLES.instructor ? 'instructor' : role === ROLES.ADVISER ? 'adviser' : 'student';
+    const basePath = role === ROLES.INSTRUCTOR ? 'instructor' : 'adviser';
     const pathPattern = new RegExp(`^/${basePath}/${_id}/`);
-    
     return pathPattern.test(sanitizedPath);
   };
 
