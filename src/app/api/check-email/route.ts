@@ -7,6 +7,7 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 export async function POST(request: Request) {
   try {
     const { email } = await request.json();
+    const lowerEmail = email.toLowerCase();
 
     if (!email) {
       return NextResponse.json(
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     // Check if email exists in our database
-    const user = await convex.query(api.fetch.getUserByEmail, { email });
+    const user = await convex.query(api.fetch.getUserByEmail, { email: lowerEmail });
 
     return NextResponse.json({ exists: !!user });
   } catch {

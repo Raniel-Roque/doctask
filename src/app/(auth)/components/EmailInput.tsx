@@ -24,7 +24,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
   onAutocomplete 
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const sanitizedValue = sanitizeInput(e.target.value, { trim: true, removeHtml: true, escapeSpecialChars: true });
+    const sanitizedValue = sanitizeInput(e.target.value.toLowerCase(), { trim: true, removeHtml: true, escapeSpecialChars: true });
     setEmail(sanitizedValue);
     
     // If this is an autocomplete event (the input was filled by the browser)

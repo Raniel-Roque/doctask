@@ -73,12 +73,15 @@ export const AddForm = ({
         [name]: parseInt(value),
       });
     } else {
-      const sanitizedValue = sanitizeInput(value, {
-        trim: true,
-        removeHtml: true,
-        escapeSpecialChars: true,
-        maxLength: name === 'email' ? VALIDATION_RULES.email.maxLength : VALIDATION_RULES.name.maxLength
-      });
+      const sanitizedValue = sanitizeInput(
+        name === 'email' ? value.toLowerCase() : value, 
+        {
+          trim: true,
+          removeHtml: true,
+          escapeSpecialChars: true,
+          maxLength: name === 'email' ? VALIDATION_RULES.email.maxLength : VALIDATION_RULES.name.maxLength
+        }
+      );
 
       onFormDataChange({
         ...formData,
