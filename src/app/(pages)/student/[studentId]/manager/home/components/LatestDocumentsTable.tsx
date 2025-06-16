@@ -1,4 +1,4 @@
-import { FaEye, FaDownload, FaEdit } from "react-icons/fa";
+import { FaEye, FaDownload, FaEdit, FaPlus } from "react-icons/fa";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 
 interface Document {
@@ -10,6 +10,8 @@ interface Document {
     title: string;
     content: string;
     student_ids: Id<"users">[];
+    status: string;
+    last_opened?: number;
 }
 
 interface LatestDocumentsTableProps {
@@ -19,6 +21,11 @@ interface LatestDocumentsTableProps {
     currentUserId: Id<"users">;
     capstoneTitle?: string;
     grade?: number;
+    adviser?: {
+        first_name: string;
+        middle_name?: string;
+        last_name: string;
+    };
 }
 
 // Grade mapping
@@ -32,20 +39,28 @@ const GRADE_MAP: { [key: number]: string } = {
     6: "Not Accepted"
 };
 
+// Status color mapping
+const STATUS_COLORS: { [key: string]: string } = {
+    incomplete: "bg-yellow-100 text-yellow-800",
+    in_review: "bg-blue-100 text-blue-800",
+    approved: "bg-green-100 text-green-800"
+};
+
 export const LatestDocumentsTable = ({
     documents,
     status,
     hasResults,
     currentUserId,
     capstoneTitle,
-    grade
+    grade,
+    adviser
 }: LatestDocumentsTableProps) => {
     // Status options for the dropdown
     const statusOptions = [
         { value: "all", label: "All Status" },
-        { value: "incomplete", label: "Incomplete", color: "bg-yellow-100 text-yellow-800" },
-        { value: "in_review", label: "In Review", color: "bg-blue-100 text-blue-800" },
-        { value: "approved", label: "Approved", color: "bg-green-100 text-green-800" }
+        { value: "incomplete", label: "Incomplete" },
+        { value: "in_review", label: "In Review" },
+        { value: "approved", label: "Approved" }
     ];
 
     // Documents that are view/download only
@@ -59,27 +74,49 @@ export const LatestDocumentsTable = ({
 
     const displayCapstoneTitle = capstoneTitle && capstoneTitle.trim() !== '' ? capstoneTitle : 'Untitled Capstone Document';
 
+    // Format last opened time
+    const formatLastOpened = (timestamp?: number) => {
+        if (!timestamp) return "Never";
+        const date = new Date(timestamp);
+        return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    };
+
     return (
         <div>
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-semibold break-words max-w-3xl">
-                    {displayCapstoneTitle}
-                </h2>
-                <div className="flex items-center gap-4">
-                    {grade !== undefined && (
-                        <span className="text-sm font-medium text-gray-700">
-                            Grade: {GRADE_MAP[grade] || "No Grade"}
-                        </span>
-                    )}
+            <div className="flex flex-col space-y-1 mb-3">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-semibold break-words max-w-3xl">
+                        {displayCapstoneTitle}
+                    </h2>
+                    <span className="text-sm font-medium text-gray-700">
+                        Grade: {GRADE_MAP[grade ?? 0] || "No Grade"}
+                    </span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Adviser:</span>
+                        {adviser ? (
+                            <span className="text-sm text-gray-600">
+                                {adviser.first_name} {adviser.middle_name ? adviser.middle_name + ' ' : ''}{adviser.last_name}
+                            </span>
+                        ) : (
+                            <button 
+                                className="px-2.5 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
+                                disabled
+                            >
+                                <FaPlus className="w-3 h-3" />
+                                Enter adviser code
+                            </button>
+                        )}
+                    </div>
                     <select 
-                        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-2.5 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                         defaultValue="all"
                     >
                         {statusOptions.map(option => (
                             <option 
                                 key={option.value} 
                                 value={option.value}
-                                className={option.color}
                             >
                                 {option.label}
                             </option>
@@ -101,6 +138,9 @@ export const LatestDocumentsTable = ({
                                         Status
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Last Opened
+                                    </th>
+                                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
@@ -108,28 +148,28 @@ export const LatestDocumentsTable = ({
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {status === 'loading' && (
                                     <tr>
-                                        <td colSpan={3} className="px-6 pt-7 pb-1 text-center text-gray-500">
+                                        <td colSpan={4} className="px-6 pt-7 pb-1 text-center text-gray-500">
                                             Loading...
                                         </td>
                                     </tr>
                                 )}
                                 {status === 'no_group' && (
                                     <tr>
-                                        <td colSpan={3} className="px-6 pt-7 pb-1 text-center text-red-500">
+                                        <td colSpan={4} className="px-6 pt-7 pb-1 text-center text-red-500">
                                             You are not currently assigned to a group. Please contact your instructor to be assigned to a group.
                                         </td>
                                     </tr>
                                 )}
                                 {status === 'error' && (
                                     <tr>
-                                        <td colSpan={3} className="px-6 pt-7 pb-1 text-center text-red-500">
+                                        <td colSpan={4} className="px-6 pt-7 pb-1 text-center text-red-500">
                                             An error occurred while loading documents. Please try again.
                                         </td>
                                     </tr>
                                 )}
                                 {status === 'idle' && !hasResults && (
                                     <tr>
-                                        <td colSpan={3} className="px-6 pt-7 pb-1 text-center text-gray-500">
+                                        <td colSpan={4} className="px-6 pt-7 pb-1 text-center text-gray-500">
                                             No documents found.
                                         </td>
                                     </tr>
@@ -137,15 +177,18 @@ export const LatestDocumentsTable = ({
                                 {documents.map((doc) => (
                                     <tr 
                                         key={doc._id} 
-                                        className="hover:bg-gray-100 hover:border-l-4 hover:border-blue-400 transition-colors duration-150 ease-in-out cursor-pointer"
+                                        className="hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer"
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-medium text-gray-900">{doc.title}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                Incomplete
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[doc.status] || STATUS_COLORS.incomplete}`}>
+                                                {doc.status.charAt(0).toUpperCase() + doc.status.slice(1).replace('_', ' ')}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                            {formatLastOpened(doc.last_opened)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                             <div className="flex items-center justify-center gap-3">

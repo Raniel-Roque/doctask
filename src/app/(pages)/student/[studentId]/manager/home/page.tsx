@@ -43,6 +43,15 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     );
     console.log("Group details:", groupDetails);
 
+    // Fetch adviser details if we have an adviser ID
+    const adviser = useQuery(
+        api.fetch.getUserById,
+        groupDetails?.adviser_id ? {
+            id: groupDetails.adviser_id,
+        } : "skip"
+    );
+    console.log("Adviser details:", adviser);
+
     // Fetch latest documents only if we have a valid group ID
     const latestDocuments = useQuery(
         api.fetch.getLatestDocuments,
@@ -63,8 +72,8 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
             <Navbar studentId={studentId} />
             <div className="container mx-auto px-4 py-8">
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold">Welcome, {user?.first_name ?? "Manager"}!</h1>
-                    <p className="text-muted-foreground">This is your Home Page.</p>
+                    <h1 className="text-3xl font-bold">Welcome Back, {user?.first_name ?? "Manager"}!</h1>
+                    <p className="text-muted-foreground">Overview of your group&apos;s documents</p>
                 </div>
 
                 {/* Latest Documents Table */}
@@ -76,6 +85,11 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
                         currentUserId={studentId as Id<"users">}
                         capstoneTitle={groupDetails?.capstone_title ?? "Capstone Documents"}
                         grade={groupDetails?.grade}
+                        adviser={adviser ? {
+                            first_name: adviser.first_name,
+                            middle_name: adviser.middle_name,
+                            last_name: adviser.last_name
+                        } : undefined}
                     />
                 </div>
             </div>

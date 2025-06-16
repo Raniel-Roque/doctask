@@ -778,13 +778,29 @@ export const getLatestDocuments = query({
         .withIndex("by_group_part", (q) => q.eq("group_id", groupId))
         .collect();
 
+      // Get group status for all parts
+      const groupStatuses = await ctx.db
+        .query("groupStatus")
+        .withIndex("by_group_part", (q) => q.eq("group_id", groupId))
+        .collect();
+
+      // Create a map of part to status
+      const statusMap = groupStatuses.reduce((acc, status) => {
+        acc[status.part] = status;
+        return acc;
+      }, {} as Record<string, typeof groupStatuses[0]>);
+
       // Group documents by part and get the latest version for each
       const latestDocumentsByPart = allDocuments.reduce((acc, doc) => {
         if (!acc[doc.part] || acc[doc.part]._creationTime < doc._creationTime) {
-          acc[doc.part] = doc;
+          acc[doc.part] = {
+            ...doc,
+            status: statusMap[doc.part]?.status || "incomplete",
+            last_opened: statusMap[doc.part]?.last_opened
+          };
         }
         return acc;
-      }, {} as Record<string, typeof allDocuments[0]>);
+      }, {} as Record<string, typeof allDocuments[0] & { status: string; last_opened?: number }>);
 
       // Convert to array and sort by predefined order
       const documents = Object.values(latestDocumentsByPart).sort((a, b) => {
