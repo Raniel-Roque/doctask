@@ -5,6 +5,57 @@ import type { Id } from "./_generated/dataModel";
 // =========================================
 // User Queries
 // =========================================
+interface StudentGroup {
+  _id: Id<"studentsTable">;
+  _creationTime: number;
+  user_id: Id<"users">;
+  group_id: Id<"groupsTable"> | null;
+}
+
+export const getStudentGroup = query({
+  args: { 
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<StudentGroup | null> => {
+    const { userId } = args;
+
+    try {
+      // First check if there's any data in studentsTable
+      const allStudents = await ctx.db.query("studentsTable").collect();
+      console.log("All students in table:", allStudents);
+
+      // Get the student's group from studentsTable
+      const studentGroup = await ctx.db
+        .query("studentsTable")
+        .withIndex("by_user", (q) => q.eq("user_id", userId))
+        .first();
+      
+      console.log("Found student group for userId", userId, ":", studentGroup);
+      return studentGroup;
+    } catch (error) {
+      console.error("Error in getStudentGroup:", error);
+      return null;
+    }
+  },
+});
+
+export const getGroupById = query({
+  args: { 
+    groupId: v.id("groupsTable"),
+  },
+  handler: async (ctx, args) => {
+    const { groupId } = args;
+
+    try {
+      const group = await ctx.db.get(groupId);
+      return group;
+    } catch (error) {
+      console.error("Error in getGroupById:", error);
+      return null;
+    }
+  },
+});
+
 export const getUserById = query({
   args: { id: v.id("users") },
   handler: async (ctx, args) => {
@@ -683,6 +734,78 @@ export const searchGroups = query({
         totalPages: 0,
         status: 'error',
         hasResults: false
+      };
+    }
+  },
+}); 
+
+export const getLatestDocuments = query({
+  args: { 
+    groupId: v.id("groupsTable"),
+  },
+  handler: async (ctx, args) => {
+    const { groupId } = args;
+
+    // Define the order of document parts
+    const partsOrder = [
+      "title_page",
+      "acknowledgement",
+      "abstract",
+      "table_of_contents",
+      "chapter1",
+      "chapter2",
+      "chapter3",
+      "chapter4",
+      "chapter5",
+      "references",
+      "resource_person",
+      "glossary",
+      "appendix_a",
+      "appendix_b",
+      "appendix_c",
+      "appendix_d",
+      "appendix_e",
+      "appendix_f",
+      "appendix_g",
+      "appendix_h",
+      "appendix_i"
+    ];
+
+    try {
+      // Get all documents for the group
+      const allDocuments = await ctx.db
+        .query("documents")
+        .withIndex("by_group_part", (q) => q.eq("group_id", groupId))
+        .collect();
+
+      // Group documents by part and get the latest version for each
+      const latestDocumentsByPart = allDocuments.reduce((acc, doc) => {
+        if (!acc[doc.part] || acc[doc.part]._creationTime < doc._creationTime) {
+          acc[doc.part] = doc;
+        }
+        return acc;
+      }, {} as Record<string, typeof allDocuments[0]>);
+
+      // Convert to array and sort by predefined order
+      const documents = Object.values(latestDocumentsByPart).sort((a, b) => {
+        const aIndex = partsOrder.indexOf(a.part);
+        const bIndex = partsOrder.indexOf(b.part);
+        return aIndex - bIndex;
+      });
+
+      return {
+        documents,
+        status: 'idle',
+        hasResults: documents.length > 0,
+        done: true
+      };
+    } catch (error) {
+      console.error("Error fetching latest documents:", error);
+      return {
+        documents: [],
+        status: 'error',
+        hasResults: false,
+        done: true
       };
     }
   },

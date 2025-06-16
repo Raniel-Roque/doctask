@@ -67,6 +67,7 @@ interface GroupsTableProps {
   onCapstoneFilterChange: (filter: typeof CAPSTONE_FILTERS[keyof typeof CAPSTONE_FILTERS]) => void;
   onAdviserFilterChange: (filter: string) => void;
   onGradeFilterChange: (filter: typeof GRADE_FILTERS[keyof typeof GRADE_FILTERS]) => void;
+  isDeleting?: boolean;
 }
 
 const GroupsTable: React.FC<GroupsTableProps> = ({
@@ -91,6 +92,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   onCapstoneFilterChange,
   onAdviserFilterChange,
   onGradeFilterChange,
+  isDeleting = false,
 }) => {
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const [adviserFilter, setAdviserFilter] = useState<string>("");
@@ -516,9 +518,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               ))}
             </select>
             <span className="text-sm text-gray-700">entries per page</span>
-            {groups.length > 0 && (
+            {(!isDeleting && groups.length > 0 && status === 'idle') && (
               <>
-                <span className="text-gray-300 mx-1">|</span>
+              <div className="h-6 w-px bg-gray-300"></div>
                 <PDFDownloadLink
                   document={
                     <GroupPDFReport

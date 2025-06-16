@@ -36,6 +36,7 @@ interface UserTableProps {
   pageSize: number;
   onPageSizeChange: (size: number) => void;
   isStudent?: boolean;
+  isDeleting?: boolean;
 }
 
 // =========================================
@@ -68,6 +69,7 @@ export const UserTable = ({
   pageSize,
   onPageSizeChange,
   isStudent,
+  isDeleting = false,
 }: UserTableProps) => {
   const [expandedCode, setExpandedCode] = useState<{ [key: string]: boolean }>({});
   const [expandedEmail, setExpandedEmail] = useState<{ [key: string]: boolean }>({});
@@ -387,7 +389,7 @@ export const UserTable = ({
               ))}
             </select>
             <span className="text-sm text-gray-700">entries per page</span>
-            {users.length > 0 && (
+            {(!isDeleting && users.length > 0 && !isLoading) && (
               <>
                 <span className="text-gray-300 mx-1">|</span>
                 <PDFDownloadLink

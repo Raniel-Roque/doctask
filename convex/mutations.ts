@@ -259,6 +259,12 @@ export const createGroup = mutation({
         content: "",
         student_ids: [args.project_manager_id],
       });
+      await ctx.db.insert("groupStatus", {
+        group_id: groupId,
+        part,
+        status: "incomplete",
+        // last_opened is omitted on creation
+      });
     }
 
     // Update adviser's group_ids if exists
@@ -867,6 +873,15 @@ export const deleteGroup = mutation({
       .collect();
     for (const doc of docs) {
       await ctx.db.delete(doc._id);
+    }
+
+    // Delete all groupStatus entries for this group
+    const statuses = await ctx.db
+      .query("groupStatus")
+      .withIndex("by_group_part", (q) => q.eq("group_id", args.groupId))
+      .collect();
+    for (const status of statuses) {
+      await ctx.db.delete(status._id);
     }
 
     // Delete the group

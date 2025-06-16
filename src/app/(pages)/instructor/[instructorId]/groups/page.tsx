@@ -1,15 +1,14 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { User, Group } from "./components/types";
-
-// Import components
-import GroupsTable from "./components/GroupsTable";
 import AddGroupForm from "./components/AddGroupForm";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import GroupsTable from "./components/GroupsTable";
 import EditGroupForm from "./components/EditGroupForm";
 
 // Filter constants
@@ -42,6 +41,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     const [isEditingGroup, setIsEditingGroup] = useState<Group | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [networkError, setNetworkError] = useState<string | null>(null);
+    const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -55,6 +55,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     const [capstoneFilter, setCapstoneFilter] = useState<typeof CAPSTONE_FILTERS[keyof typeof CAPSTONE_FILTERS]>(CAPSTONE_FILTERS.ALL);
     const [adviserFilter, setAdviserFilter] = useState<string>("");
     const [gradeFilter, setGradeFilter] = useState<typeof GRADE_FILTERS[keyof typeof GRADE_FILTERS]>(GRADE_FILTERS.ALL);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch groups data with search and pagination
     const searchResult = useQuery(api.fetch.searchGroups, {
@@ -144,6 +145,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           instructorId: instructorId as Id<"users">,
         });
         setIsAddingGroup(false);
+        setNotification({ type: 'success', message: 'Group added successfully!' });
       } catch (error) {
         // Handle specific error cases
         if (error instanceof Error) {
@@ -162,8 +164,10 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           } else {
             setNetworkError("Failed to create group. Please try again.");
           }
+          setNotification({ type: 'error', message: error.message || 'Failed to create group.' });
         } else {
           setNetworkError("An unexpected error occurred. Please try again.");
+          setNotification({ type: 'error', message: 'An unexpected error occurred. Please try again.' });
         }
       } finally {
         setIsSubmitting(false);
@@ -182,7 +186,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
       try {
         setIsSubmitting(true);
         setNetworkError(null);
-        // Call the mutation
         await updateGroup({
           groupId: isEditingGroup._id,
           project_manager_id: formData.projectManager as Id<"users">,
@@ -193,8 +196,8 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           instructorId: instructorId as Id<"users">,
         });
         setIsEditingGroup(null);
+        setNotification({ type: 'success', message: 'Group updated successfully!' });
       } catch (error) {
-        // Handle specific error cases
         if (error instanceof Error) {
           if (error.name === 'AbortError') {
             setNetworkError("Request timed out. Please try again.");
@@ -211,8 +214,10 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           } else {
             setNetworkError("Failed to update group. Please try again.");
           }
+          setNotification({ type: 'error', message: error.message || 'Failed to update group.' });
         } else {
           setNetworkError("An unexpected error occurred. Please try again.");
+          setNotification({ type: 'error', message: 'An unexpected error occurred. Please try again.' });
         }
       } finally {
         setIsSubmitting(false);
@@ -222,14 +227,14 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     const handleDeleteGroup = async (group: Group) => {
       try {
         setIsSubmitting(true);
+        setIsDeleting(true);
         setNetworkError(null);
-        // Call the mutation
         await deleteGroup({
           groupId: group._id,
           instructorId: instructorId as Id<"users">,
         });
+        setNotification({ type: 'success', message: 'Group deleted successfully!' });
       } catch (error) {
-        // Handle specific error cases
         if (error instanceof Error) {
           if (error.name === 'AbortError') {
             setNetworkError("Request timed out. Please try again.");
@@ -242,13 +247,24 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           } else {
             setNetworkError("Failed to delete group. Please try again.");
           }
+          setNotification({ type: 'error', message: error.message || 'Failed to delete group.' });
         } else {
           setNetworkError("An unexpected error occurred. Please try again.");
+          setNotification({ type: 'error', message: 'An unexpected error occurred. Please try again.' });
         }
       } finally {
         setIsSubmitting(false);
+        setIsDeleting(false);
       }
     };
+
+    // Auto-hide notification after 4 seconds
+    useEffect(() => {
+      if (notification) {
+        const timer = setTimeout(() => setNotification(null), 4000);
+        return () => clearTimeout(timer);
+      }
+    }, [notification]);
 
     // Helper function to get valid status
     const getStatus = () => {
@@ -280,6 +296,13 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
                     <p className="text-muted-foreground">View, create, update, and delete groups.</p>
                 </div>
 
+                {/* Notification Banner */}
+                <NotificationBanner
+                  message={notification?.message || ''}
+                  type={notification?.type || 'success'}
+                  onClose={() => setNotification(null)}
+                />
+
                 {/* Groups Table */}
                 <GroupsTable
                     groups={processedGroups}
@@ -303,6 +326,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
                     onCapstoneFilterChange={handleCapstoneFilterChange}
                     onAdviserFilterChange={handleAdviserFilterChange}
                     onGradeFilterChange={handleGradeFilterChange}
+                    isDeleting={isDeleting}
                 />
 
                 {/* Add Group Form */}

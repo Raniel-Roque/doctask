@@ -658,6 +658,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}
           isStudent={false}
+          isDeleting={isDeleting}
         />
 
         {/* Add Form */}
