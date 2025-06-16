@@ -78,11 +78,14 @@ const LoginPage = () => {
       setLoading(true);
       setError("");
 
+      // Convert email to lowercase only when submitting
+      const emailToCheck = email.toLowerCase();
+
       // First check if email exists in our database
       const response = await fetch("/api/check-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: emailToCheck }),
       });
 
       const data = await response.json();
@@ -96,7 +99,7 @@ const LoginPage = () => {
       const userRes = await fetch("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email: emailToCheck })
       });
 
       if (!userRes.ok) {
@@ -112,7 +115,7 @@ const LoginPage = () => {
         // If email is not verified, send verification code
         const result = await signIn.create({
           strategy: "email_code",
-          identifier: email,
+          identifier: emailToCheck,
         });
 
         if (result.status === "needs_first_factor") {

@@ -24,12 +24,13 @@ const EmailInput: React.FC<EmailInputProps> = ({
   onAutocomplete 
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const sanitizedValue = sanitizeInput(e.target.value.toLowerCase(), { trim: true, removeHtml: true, escapeSpecialChars: true });
+    // Only sanitize HTML and special chars, but preserve case
+    const sanitizedValue = sanitizeInput(e.target.value, { trim: true, removeHtml: true, escapeSpecialChars: true, preserveCase: true });
     setEmail(sanitizedValue);
     
     // If this is an autocomplete event (the input was filled by the browser)
     if (e.nativeEvent instanceof InputEvent && e.nativeEvent.inputType === "insertReplacementText") {
-      onAutocomplete?.(sanitizedValue);
+      onAutocomplete?.(sanitizedValue.toLowerCase());
     }
   };
 

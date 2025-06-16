@@ -9,6 +9,7 @@ interface SanitizeInputProps {
     escapeSpecialChars?: boolean;
     maxLength?: number;
     allowedPattern?: RegExp;
+    preserveCase?: boolean;
   };
 }
 
@@ -26,7 +27,8 @@ export const sanitizeInput = (value: string, options: SanitizeInputProps['option
     removeHtml = true,
     escapeSpecialChars = true,
     maxLength,
-    allowedPattern
+    allowedPattern,
+    preserveCase = true
   } = options;
 
   let sanitizedValue = value;
@@ -58,6 +60,11 @@ export const sanitizeInput = (value: string, options: SanitizeInputProps['option
   // Apply pattern matching if specified
   if (allowedPattern && !allowedPattern.test(sanitizedValue)) {
     sanitizedValue = '';
+  }
+
+  // Preserve case if enabled
+  if (!preserveCase) {
+    sanitizedValue = sanitizedValue.toLowerCase();
   }
 
   return sanitizedValue;
