@@ -14,6 +14,8 @@ interface ConvexBackup {
     students: unknown[];
     advisers: unknown[];
     logs: unknown[];
+    documents: unknown[];
+    groupStatus: unknown[];
   };
 }
 
@@ -28,7 +30,7 @@ function validateBackupFile(file: unknown): file is ConvexBackup {
   }
 
   // Validate each table exists and has data
-  const requiredTables = ['users', 'groups', 'students', 'advisers', 'logs'];
+  const requiredTables = ['users', 'groups', 'students', 'advisers', 'logs', 'documents', 'groupStatus'];
   for (const table of requiredTables) {
     if (!backup.tables[table as keyof typeof backup.tables] || 
         !Array.isArray(backup.tables[table as keyof typeof backup.tables])) {
@@ -959,6 +961,8 @@ export const downloadConvexBackup = mutation({
     const students = await ctx.db.query("studentsTable").collect();
     const advisers = await ctx.db.query("advisersTable").collect();
     const logs = await ctx.db.query("instructorLogs").collect();
+    const documents = await ctx.db.query("documents").collect();
+    const groupStatus = await ctx.db.query("groupStatus").collect();
 
     // Create backup object with timestamp
     const backup: ConvexBackup = {
@@ -969,7 +973,9 @@ export const downloadConvexBackup = mutation({
         groups,
         students,
         advisers,
-        logs
+        logs,
+        documents,
+        groupStatus
       }
     };
 

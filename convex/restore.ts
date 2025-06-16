@@ -54,6 +54,28 @@ export const deleteAllUsers = mutation({
   },
 });
 
+export const deleteAllDocuments = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const documents = await ctx.db.query("documents").collect();
+    for (const doc of documents) {
+      await ctx.db.delete(doc._id);
+    }
+    return { success: true };
+  },
+});
+
+export const deleteAllGroupStatus = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const statuses = await ctx.db.query("groupStatus").collect();
+    for (const status of statuses) {
+      await ctx.db.delete(status._id);
+    }
+    return { success: true };
+  },
+});
+
 // =========================================
 // RESTORE OPERATIONS
 // =========================================
@@ -134,6 +156,48 @@ export const restoreAdviserCode = mutation({
       code: args.code,
       group_ids: args.group_ids || [],
       requests_group_ids: args.requests_group_ids || [],
+    });
+
+    return { success: true };
+  },
+});
+
+export const restoreDocument = mutation({
+  args: {
+    group_id: v.id("groupsTable"),
+    part: v.string(),
+    room_id: v.string(),
+    title: v.string(),
+    content: v.string(),
+    student_ids: v.array(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("documents", {
+      group_id: args.group_id,
+      part: args.part,
+      room_id: args.room_id,
+      title: args.title,
+      content: args.content,
+      student_ids: args.student_ids,
+    });
+
+    return { success: true };
+  },
+});
+
+export const restoreGroupStatus = mutation({
+  args: {
+    group_id: v.id("groupsTable"),
+    part: v.string(),
+    status: v.string(),
+    last_opened: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("groupStatus", {
+      group_id: args.group_id,
+      part: args.part,
+      status: args.status,
+      last_opened: args.last_opened,
     });
 
     return { success: true };

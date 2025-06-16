@@ -52,6 +52,12 @@ export async function POST(request: Request) {
     // Delete groups
     await convex.mutation(api.restore.deleteAllGroups);
     
+    // Delete documents
+    await convex.mutation(api.restore.deleteAllDocuments);
+
+    // Delete group status
+    await convex.mutation(api.restore.deleteAllGroupStatus);
+    
     // Delete users (except instructor)
     await convex.mutation(api.restore.deleteAllUsers, { instructorId });
     
@@ -193,6 +199,31 @@ export async function POST(request: Request) {
         adviser_id: newAdviserId,
         code: adviser.code,
         group_ids: newGroupIds,
+      });
+    }
+
+    // Restore documents
+    for (const doc of backup.tables.documents) {
+      const newGroupId = oldGroupIdToNewGroupId.get(doc.group_id);
+      const newStudentIds = doc.student_ids.map((id: string) => oldUserIdToNewUserId.get(id)).filter(Boolean);
+      await convex.mutation(api.restore.restoreDocument, {
+        group_id: newGroupId,
+        part: doc.part,
+        room_id: doc.room_id,
+        title: doc.title,
+        content: doc.content,
+        student_ids: newStudentIds,
+      });
+    }
+
+    // Restore group status
+    for (const status of backup.tables.groupStatus) {
+      const newGroupId = oldGroupIdToNewGroupId.get(status.group_id);
+      await convex.mutation(api.restore.restoreGroupStatus, {
+        group_id: newGroupId,
+        part: status.part,
+        status: status.status,
+        last_opened: status.last_opened,
       });
     }
 
