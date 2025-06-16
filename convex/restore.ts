@@ -189,7 +189,7 @@ export const restoreGroupStatus = mutation({
   args: {
     group_id: v.id("groupsTable"),
     part: v.string(),
-    status: v.string(),
+    status: v.number(),
     last_opened: v.optional(v.number()),
   },
   handler: async (ctx, args) => {

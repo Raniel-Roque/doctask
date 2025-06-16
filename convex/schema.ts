@@ -155,7 +155,7 @@ export default defineSchema({
   groupStatus: defineTable({
     group_id: v.id("groupsTable"),
     part: v.string(), // e.g., "chapter1", "appendix_a", etc.
-    status: v.string(), // e.g., "incomplete", "in_review", "approved"
+    status: v.number(), // 0 = incomplete, 1 = in_review, 2 = approved
     last_opened: v.optional(v.number()), // timestamp (ms since epoch), optional
   })
   .index("by_group_part", ["group_id", "part"]),

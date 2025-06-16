@@ -20,19 +20,15 @@ interface StudentGroup {
 const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     const { studentId } = use(params);
 
-    console.log("Current studentId:", studentId);
-
     // Fetch user data
     const user = useQuery(api.fetch.getUserById, {
         id: studentId as Id<"users">,
     });
-    console.log("User data:", user);
 
     // Fetch student's group from studentsTable
     const studentGroup = useQuery(api.fetch.getStudentGroup, {
         userId: studentId as Id<"users">,
     }) as StudentGroup | null;
-    console.log("Student group data:", studentGroup);
 
     // Fetch group details if we have a group ID
     const groupDetails = useQuery(
@@ -41,7 +37,6 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
             groupId: studentGroup.group_id,
         } : "skip"
     );
-    console.log("Group details:", groupDetails);
 
     // Fetch adviser details if we have an adviser ID
     const adviser = useQuery(
@@ -50,7 +45,6 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
             id: groupDetails.adviser_id,
         } : "skip"
     );
-    console.log("Adviser details:", adviser);
 
     // Fetch latest documents only if we have a valid group ID
     const latestDocuments = useQuery(
@@ -59,13 +53,11 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
             groupId: studentGroup.group_id,
         } : "skip"
     );
-    console.log("Latest documents:", latestDocuments);
 
     // Determine loading state - only check latestDocuments if we have a group
     const isLoading = user === undefined || 
                      studentGroup === undefined || 
                      (studentGroup?.group_id && (latestDocuments === undefined || !latestDocuments.done));
-    console.log("Loading state:", isLoading);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -81,7 +73,6 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
                     <LatestDocumentsTable 
                         documents={latestDocuments?.documents ?? []}
                         status={isLoading ? 'loading' : (!studentGroup?.group_id ? 'no_group' : 'idle')}
-                        hasResults={(latestDocuments?.documents?.length ?? 0) > 0}
                         currentUserId={studentId as Id<"users">}
                         capstoneTitle={groupDetails?.capstone_title ?? "Capstone Documents"}
                         grade={groupDetails?.grade}

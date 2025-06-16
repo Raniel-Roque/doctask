@@ -20,20 +20,14 @@ export const getStudentGroup = query({
     const { userId } = args;
 
     try {
-      // First check if there's any data in studentsTable
-      const allStudents = await ctx.db.query("studentsTable").collect();
-      console.log("All students in table:", allStudents);
-
       // Get the student's group from studentsTable
       const studentGroup = await ctx.db
         .query("studentsTable")
         .withIndex("by_user", (q) => q.eq("user_id", userId))
         .first();
       
-      console.log("Found student group for userId", userId, ":", studentGroup);
       return studentGroup;
-    } catch (error) {
-      console.error("Error in getStudentGroup:", error);
+    } catch {
       return null;
     }
   },
@@ -49,8 +43,7 @@ export const getGroupById = query({
     try {
       const group = await ctx.db.get(groupId);
       return group;
-    } catch (error) {
-      console.error("Error in getGroupById:", error);
+    } catch {
       return null;
     }
   },
@@ -739,90 +732,107 @@ export const searchGroups = query({
   },
 }); 
 
+interface DocumentWithStatus {
+    _id: Id<"documents">;
+    _creationTime: number;
+    group_id: Id<"groupsTable">;
+    part: string;
+    room_id: string;
+    title: string;
+    content: string;
+    student_ids: Id<"users">[];
+    status: number;
+    last_opened?: number;
+}
+
 export const getLatestDocuments = query({
-  args: { 
-    groupId: v.id("groupsTable"),
-  },
-  handler: async (ctx, args) => {
-    const { groupId } = args;
+    args: {
+        groupId: v.id("groupsTable"),
+    },
+    handler: async (ctx, args) => {
+        const { groupId } = args;
 
-    // Define the order of document parts
-    const partsOrder = [
-      "title_page",
-      "acknowledgement",
-      "abstract",
-      "table_of_contents",
-      "chapter1",
-      "chapter2",
-      "chapter3",
-      "chapter4",
-      "chapter5",
-      "references",
-      "resource_person",
-      "glossary",
-      "appendix_a",
-      "appendix_b",
-      "appendix_c",
-      "appendix_d",
-      "appendix_e",
-      "appendix_f",
-      "appendix_g",
-      "appendix_h",
-      "appendix_i"
-    ];
+        // Define the order of document parts
+        const partsOrder = [
+            "title_page",
+            "acknowledgement",
+            "abstract",
+            "table_of_contents",
+            "chapter1",
+            "chapter2",
+            "chapter3",
+            "chapter4",
+            "chapter5",
+            "references",
+            "resource_person",
+            "glossary",
+            "appendix_a",
+            "appendix_b",
+            "appendix_c",
+            "appendix_d",
+            "appendix_e",
+            "appendix_f",
+            "appendix_g",
+            "appendix_h",
+            "appendix_i"
+        ];
 
-    try {
-      // Get all documents for the group
-      const allDocuments = await ctx.db
-        .query("documents")
-        .withIndex("by_group_part", (q) => q.eq("group_id", groupId))
-        .collect();
+        try {
+            // Get all documents for the group
+            const documents = await ctx.db
+                .query("documents")
+                .withIndex("by_group_part", (q) => q.eq("group_id", groupId))
+                .collect();
 
-      // Get group status for all parts
-      const groupStatuses = await ctx.db
-        .query("groupStatus")
-        .withIndex("by_group_part", (q) => q.eq("group_id", groupId))
-        .collect();
+            // Get group statuses
+            const groupStatuses = await ctx.db
+                .query("groupStatus")
+                .withIndex("by_group_part", (q) => q.eq("group_id", groupId))
+                .collect();
 
-      // Create a map of part to status
-      const statusMap = groupStatuses.reduce((acc, status) => {
-        acc[status.part] = status;
-        return acc;
-      }, {} as Record<string, typeof groupStatuses[0]>);
+            // Create a map of part to status and last_opened
+            const statusMap = new Map<string, { status: number; last_opened?: number }>();
+            for (const status of groupStatuses) {
+                statusMap.set(status.part, {
+                    status: status.status,
+                    last_opened: status.last_opened
+                });
+            }
 
-      // Group documents by part and get the latest version for each
-      const latestDocumentsByPart = allDocuments.reduce((acc, doc) => {
-        if (!acc[doc.part] || acc[doc.part]._creationTime < doc._creationTime) {
-          acc[doc.part] = {
-            ...doc,
-            status: statusMap[doc.part]?.status || "incomplete",
-            last_opened: statusMap[doc.part]?.last_opened
-          };
+            // Group documents by part and get the latest version of each
+            const latestDocuments = new Map<string, DocumentWithStatus>();
+            for (const doc of documents) {
+                const existingDoc = latestDocuments.get(doc.part);
+                if (!existingDoc || doc._creationTime > existingDoc._creationTime) {
+                    const statusInfo = statusMap.get(doc.part);
+                    latestDocuments.set(doc.part, {
+                        ...doc,
+                        status: statusInfo?.status ?? 0, // Default to 0 (incomplete) if no status found
+                        last_opened: statusInfo?.last_opened
+                    });
+                }
+            }
+
+            // Convert to array and sort by predefined order
+            const sortedDocuments = Array.from(latestDocuments.values()).sort((a, b) => {
+                const aIndex = partsOrder.indexOf(a.part);
+                const bIndex = partsOrder.indexOf(b.part);
+                return aIndex - bIndex;
+            });
+
+            return {
+                documents: sortedDocuments,
+                status: 'idle',
+                hasResults: sortedDocuments.length > 0,
+                done: true
+            };
+        } catch {
+            return {
+                documents: [],
+                status: 'error',
+                hasResults: false,
+                done: true
+            };
         }
-        return acc;
-      }, {} as Record<string, typeof allDocuments[0] & { status: string; last_opened?: number }>);
-
-      // Convert to array and sort by predefined order
-      const documents = Object.values(latestDocumentsByPart).sort((a, b) => {
-        const aIndex = partsOrder.indexOf(a.part);
-        const bIndex = partsOrder.indexOf(b.part);
-        return aIndex - bIndex;
-      });
-
-      return {
-        documents,
-        status: 'idle',
-        hasResults: documents.length > 0,
-        done: true
-      };
-    } catch (error) {
-      console.error("Error fetching latest documents:", error);
-      return {
-        documents: [],
-        status: 'error',
-        hasResults: false,
-        done: true
-      };
-    }
-  },
+    },
 }); 

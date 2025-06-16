@@ -1,5 +1,6 @@
 import { FaEye, FaDownload, FaEdit, FaPlus } from "react-icons/fa";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
+import { useState } from "react";
 
 interface Document {
     _id: Id<"documents">;
@@ -10,14 +11,13 @@ interface Document {
     title: string;
     content: string;
     student_ids: Id<"users">[];
-    status: string;
+    status: number;
     last_opened?: number;
 }
 
 interface LatestDocumentsTableProps {
     documents: Document[];
     status: 'loading' | 'error' | 'idle' | 'no_group';
-    hasResults: boolean;
     currentUserId: Id<"users">;
     capstoneTitle?: string;
     grade?: number;
@@ -40,27 +40,42 @@ const GRADE_MAP: { [key: number]: string } = {
 };
 
 // Status color mapping
-const STATUS_COLORS: { [key: string]: string } = {
-    incomplete: "bg-yellow-100 text-yellow-800",
-    in_review: "bg-blue-100 text-blue-800",
-    approved: "bg-green-100 text-green-800"
+const STATUS_COLORS: { [key: number]: string } = {
+    0: "bg-yellow-100 text-yellow-800",
+    1: "bg-blue-100 text-blue-800",
+    2: "bg-green-100 text-green-800"
+};
+
+// Status label mapping
+const STATUS_LABELS: { [key: number]: string } = {
+    0: "Incomplete",
+    1: "In Review",
+    2: "Approved"
 };
 
 export const LatestDocumentsTable = ({
     documents,
     status,
-    hasResults,
     currentUserId,
     capstoneTitle,
     grade,
     adviser
 }: LatestDocumentsTableProps) => {
+    // Add state for status filter
+    const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
+    // Filter documents based on selected status
+    const filteredDocuments = documents.filter(doc => {
+        if (selectedStatus === "all") return true;
+        return doc.status === parseInt(selectedStatus);
+    });
+
     // Status options for the dropdown
     const statusOptions = [
         { value: "all", label: "All Status" },
-        { value: "incomplete", label: "Incomplete" },
-        { value: "in_review", label: "In Review" },
-        { value: "approved", label: "Approved" }
+        { value: "0", label: "Incomplete" },
+        { value: "1", label: "In Review" },
+        { value: "2", label: "Approved" }
     ];
 
     // Documents that are view/download only
@@ -85,10 +100,10 @@ export const LatestDocumentsTable = ({
         <div>
             <div className="flex flex-col space-y-1 mb-3">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-semibold break-words max-w-3xl">
-                        {displayCapstoneTitle}
-                    </h2>
-                    <span className="text-sm font-medium text-gray-700">
+                <h2 className="text-2xl font-semibold break-words max-w-3xl">
+                    {displayCapstoneTitle}
+                </h2>
+                        <span className="text-sm font-medium text-gray-700">
                         Grade: {GRADE_MAP[grade ?? 0] || "No Grade"}
                     </span>
                 </div>
@@ -98,7 +113,7 @@ export const LatestDocumentsTable = ({
                         {adviser ? (
                             <span className="text-sm text-gray-600">
                                 {adviser.first_name} {adviser.middle_name ? adviser.middle_name + ' ' : ''}{adviser.last_name}
-                            </span>
+                        </span>
                         ) : (
                             <button 
                                 className="px-2.5 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
@@ -107,11 +122,12 @@ export const LatestDocumentsTable = ({
                                 <FaPlus className="w-3 h-3" />
                                 Enter adviser code
                             </button>
-                        )}
+                    )}
                     </div>
                     <select 
                         className="px-2.5 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                        defaultValue="all"
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
                     >
                         {statusOptions.map(option => (
                             <option 
@@ -127,8 +143,8 @@ export const LatestDocumentsTable = ({
             
             <div className="bg-white rounded-lg shadow-md">
                 <div className="p-6">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
+                    <div className="overflow-x-auto min-w-full">
+                        <table className="w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -145,7 +161,7 @@ export const LatestDocumentsTable = ({
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-white divide-y divide-gray-200 min-h-[80px]">
                                 {status === 'loading' && (
                                     <tr>
                                         <td colSpan={4} className="px-6 pt-7 pb-1 text-center text-gray-500">
@@ -167,14 +183,21 @@ export const LatestDocumentsTable = ({
                                         </td>
                                     </tr>
                                 )}
-                                {status === 'idle' && !hasResults && (
+                                {status === 'idle' && Array.isArray(documents) && documents.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 pt-7 pb-1 text-center text-gray-500">
+                                            No documents available.
+                                        </td>
+                                    </tr>
+                                )}
+                                {status === 'idle' && Array.isArray(documents) && documents.length > 0 && filteredDocuments.length === 0 && (
                                     <tr>
                                         <td colSpan={4} className="px-6 pt-7 pb-1 text-center text-gray-500">
                                             No documents found.
                                         </td>
                                     </tr>
                                 )}
-                                {documents.map((doc) => (
+                                {filteredDocuments.map((doc) => (
                                     <tr 
                                         key={doc._id} 
                                         className="hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer"
@@ -183,8 +206,8 @@ export const LatestDocumentsTable = ({
                                             <div className="text-sm font-medium text-gray-900">{doc.title}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[doc.status] || STATUS_COLORS.incomplete}`}>
-                                                {doc.status.charAt(0).toUpperCase() + doc.status.slice(1).replace('_', ' ')}
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[doc.status] || STATUS_COLORS[0]}`}>
+                                                {STATUS_LABELS[doc.status] || STATUS_LABELS[0]}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">

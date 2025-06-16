@@ -264,7 +264,7 @@ export const createGroup = mutation({
       await ctx.db.insert("groupStatus", {
         group_id: groupId,
         part,
-        status: "incomplete",
+        status: 0, // 0 = incomplete
         // last_opened is omitted on creation
       });
     }
