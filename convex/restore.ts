@@ -131,14 +131,40 @@ export const restoreStudentEntry = mutation({
   args: {
     user_id: v.id("users"),
     group_id: v.union(v.id("groupsTable"), v.null()),
+    gender: v.optional(v.number()),
+    dateOfBirth: v.optional(v.string()),
+    placeOfBirth: v.optional(v.string()),
+    nationality: v.optional(v.string()),
+    civilStatus: v.optional(v.number()),
+    religion: v.optional(v.string()),
+    homeAddress: v.optional(v.string()),
+    contact: v.optional(v.string()),
+    tertiaryDegree: v.optional(v.string()),
+    tertiarySchool: v.optional(v.string()),
+    secondarySchool: v.optional(v.string()),
+    secondaryAddress: v.optional(v.string()),
+    primarySchool: v.optional(v.string()),
+    primaryAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Create student entry directly without any additional logic
     await ctx.db.insert("studentsTable", {
       user_id: args.user_id,
       group_id: args.group_id,
+      gender: args.gender,
+      dateOfBirth: args.dateOfBirth,
+      placeOfBirth: args.placeOfBirth,
+      nationality: args.nationality,
+      civilStatus: args.civilStatus,
+      religion: args.religion,
+      homeAddress: args.homeAddress,
+      contact: args.contact,
+      tertiaryDegree: args.tertiaryDegree,
+      tertiarySchool: args.tertiarySchool,
+      secondarySchool: args.secondarySchool,
+      secondaryAddress: args.secondaryAddress,
+      primarySchool: args.primarySchool,
+      primaryAddress: args.primaryAddress,
     });
-
     return { success: true };
   },
 });

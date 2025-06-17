@@ -16,6 +16,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({ user, userData, 
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 mt-4">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Primary Information</h2>
       <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
         {/* Profile Picture Section */}
         {user && (

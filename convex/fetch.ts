@@ -1,32 +1,21 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Id, Doc } from "./_generated/dataModel";
 
 // =========================================
 // User Queries
 // =========================================
-interface StudentGroup {
-  _id: Id<"studentsTable">;
-  _creationTime: number;
-  user_id: Id<"users">;
-  group_id: Id<"groupsTable"> | null;
-}
-
 export const getStudentGroup = query({
   args: { 
     userId: v.id("users"),
   },
-  handler: async (ctx, args): Promise<StudentGroup | null> => {
-    const { userId } = args;
-
+  handler: async (ctx, args): Promise<Doc<"studentsTable"> | null> => {
     try {
-      // Get the student's group from studentsTable
-      const studentGroup = await ctx.db
+      const studentDoc = await ctx.db
         .query("studentsTable")
-        .withIndex("by_user", (q) => q.eq("user_id", userId))
+        .withIndex("by_user", (q) => q.eq("user_id", args.userId))
         .first();
-      
-      return studentGroup;
+      return studentDoc;
     } catch {
       return null;
     }

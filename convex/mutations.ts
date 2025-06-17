@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { generateUniqueAdviserCode } from "./utils/adviserCode";
 import { logCreateUser, logUpdateUser, logDeleteUser, logResetPassword, logCreateGroup, logUpdateGroup, logDeleteGroup, logLockAccount } from "./utils/log";
 import { Id } from "./_generated/dataModel";
+import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 // Backup types and validation
 interface ConvexBackup {
@@ -121,6 +122,20 @@ export const createUser = mutation({
         await ctx.db.insert("studentsTable", {
           user_id: userId,
           group_id: null, // No group assigned yet
+          gender: undefined,
+          dateOfBirth: undefined,
+          placeOfBirth: undefined,
+          nationality: undefined,
+          civilStatus: undefined,
+          religion: undefined,
+          homeAddress: undefined,
+          contact: undefined,
+          tertiaryDegree: undefined,
+          tertiarySchool: undefined,
+          secondarySchool: undefined,
+          secondaryAddress: undefined,
+          primarySchool: undefined,
+          primaryAddress: undefined,
         });
       }
 
@@ -224,6 +239,20 @@ export const createGroup = mutation({
         await ctx.db.insert("studentsTable", {
           user_id: memberId,
           group_id: groupId,
+          gender: undefined,
+          dateOfBirth: undefined,
+          placeOfBirth: undefined,
+          nationality: undefined,
+          civilStatus: undefined,
+          religion: undefined,
+          homeAddress: undefined,
+          contact: undefined,
+          tertiaryDegree: undefined,
+          tertiarySchool: undefined,
+          secondarySchool: undefined,
+          secondaryAddress: undefined,
+          primarySchool: undefined,
+          primaryAddress: undefined,
         });
       }
     }
@@ -395,16 +424,7 @@ export const updateUser = mutation({
       }
     }
 
-    const updates: {
-      first_name: string;
-      last_name: string;
-      email: string;
-      middle_name?: string | undefined;
-      email_verified?: boolean;
-      clerk_id?: string;
-      subrole?: number;
-      role?: number;
-    } = {
+    const updates: Record<string, unknown> = {
       first_name: args.first_name,
       last_name: args.last_name,
       email: args.email,
@@ -550,6 +570,20 @@ export const updateGroup = mutation({
           await ctx.db.insert("studentsTable", {
             user_id: memberId,
             group_id: args.groupId,
+            gender: undefined,
+            dateOfBirth: undefined,
+            placeOfBirth: undefined,
+            nationality: undefined,
+            civilStatus: undefined,
+            religion: undefined,
+            homeAddress: undefined,
+            contact: undefined,
+            tertiaryDegree: undefined,
+            tertiarySchool: undefined,
+            secondarySchool: undefined,
+            secondaryAddress: undefined,
+            primarySchool: undefined,
+            primaryAddress: undefined,
           });
         }
       }
@@ -682,6 +716,69 @@ export const updateEmailStatus = mutation({
       });
     }
 
+    return { success: true };
+  },
+});
+
+export const updateStudentProfile = mutation({
+  args: {
+    userId: v.id("users"),
+    section: v.string(), // "secondary" or "education"
+    gender: v.optional(v.number()),
+    dateOfBirth: v.optional(v.string()),
+    placeOfBirth: v.optional(v.string()),
+    nationality: v.optional(v.string()),
+    civilStatus: v.optional(v.number()),
+    religion: v.optional(v.string()),
+    homeAddress: v.optional(v.string()),
+    contact: v.optional(v.string()),
+    tertiaryDegree: v.optional(v.string()),
+    tertiarySchool: v.optional(v.string()),
+    secondarySchool: v.optional(v.string()),
+    secondaryAddress: v.optional(v.string()),
+    primarySchool: v.optional(v.string()),
+    primaryAddress: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Find the student row
+    const student = await ctx.db
+      .query("studentsTable")
+      .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+      .first();
+    if (!student) return { success: false, message: "Student not found" };
+
+    // Sanitize and validate
+    const sanitize = (val: string | undefined) =>
+      sanitizeInput(val || "", { trim: true, removeHtml: true, escapeSpecialChars: true, maxLength: 255 });
+
+    const updates: Record<string, unknown> = {};
+    if (args.section === "secondary") {
+      if (args.gender !== undefined) updates.gender = args.gender;
+      if (args.dateOfBirth !== undefined) updates.dateOfBirth = args.dateOfBirth === "" ? undefined : sanitize(args.dateOfBirth);
+      if (args.placeOfBirth !== undefined) updates.placeOfBirth = args.placeOfBirth === "" ? undefined : sanitize(args.placeOfBirth);
+      if (args.nationality !== undefined) updates.nationality = args.nationality === "" ? undefined : sanitize(args.nationality);
+      if (args.civilStatus !== undefined) updates.civilStatus = args.civilStatus;
+      if (args.religion !== undefined) updates.religion = args.religion === "" ? undefined : sanitize(args.religion);
+      if (args.homeAddress !== undefined) updates.homeAddress = args.homeAddress === "" ? undefined : sanitize(args.homeAddress);
+      if (args.contact !== undefined) {
+        const contact = args.contact.replace(/[^0-9]/g, "");
+        if (contact.length !== 0 && contact.length !== 11) {
+          return { success: false, message: "Contact number must be 11 digits (Philippines)." };
+        }
+        updates.contact = contact === "" ? undefined : contact;
+      }
+    } else if (args.section === "education") {
+      if (args.tertiaryDegree !== undefined) updates.tertiaryDegree = args.tertiaryDegree === "" ? undefined : sanitize(args.tertiaryDegree);
+      if (args.tertiarySchool !== undefined) updates.tertiarySchool = args.tertiarySchool === "" ? undefined : sanitize(args.tertiarySchool);
+      if (args.secondarySchool !== undefined) updates.secondarySchool = args.secondarySchool === "" ? undefined : sanitize(args.secondarySchool);
+      if (args.secondaryAddress !== undefined) updates.secondaryAddress = args.secondaryAddress === "" ? undefined : sanitize(args.secondaryAddress);
+      if (args.primarySchool !== undefined) updates.primarySchool = args.primarySchool === "" ? undefined : sanitize(args.primarySchool);
+      if (args.primaryAddress !== undefined) updates.primaryAddress = args.primaryAddress === "" ? undefined : sanitize(args.primaryAddress);
+    }
+    if (Object.keys(updates).length === 0) {
+      return { success: false, message: "No changes to save." };
+    }
+    await ctx.db.patch(student._id, updates);
     return { success: true };
   },
 });

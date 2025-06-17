@@ -69,6 +69,22 @@ export default defineSchema({
     // Foreign Keys
     user_id: v.id("users"), // Reference to user table
     group_id: v.union(v.id("groupsTable"), v.null()), // Reference to group table or null
+
+    // Secondary Profile Fields
+    gender: v.optional(v.number()), // 0 = Male, 1 = Female, 2 = Other
+    dateOfBirth: v.optional(v.string()),
+    placeOfBirth: v.optional(v.string()),
+    nationality: v.optional(v.string()),
+    civilStatus: v.optional(v.number()), // 0 = Single, 1 = Married, 2 = Divorced, 3 = Widowed
+    religion: v.optional(v.string()),
+    homeAddress: v.optional(v.string()),
+    contact: v.optional(v.string()),
+    tertiaryDegree: v.optional(v.string()),
+    tertiarySchool: v.optional(v.string()),
+    secondarySchool: v.optional(v.string()),
+    secondaryAddress: v.optional(v.string()),
+    primarySchool: v.optional(v.string()),
+    primaryAddress: v.optional(v.string()),
   })
   .index("by_user", ["user_id"])
   .index("by_group", ["group_id"]),

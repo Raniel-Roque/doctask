@@ -7,6 +7,7 @@ import { useState } from "react";
 import 'cropperjs/dist/cropper.css';
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
+import { SecondaryProfile } from "@/app/(pages)/components/SecondaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
@@ -23,11 +24,13 @@ const ManagerProfilePage = ({ params }: ManagerProfilePageProps) => {
 
     // Fetch user data from Convex
     const userData = useQuery(api.fetch.getUserById, { id: studentId as Id<"users"> });
+    // Fetch student secondary profile data
+    const studentProfile = useQuery(api.fetch.getStudentGroup, { userId: studentId as Id<"users"> });
 
     return ( 
         <div className="min-h-screen bg-gray-50">
             <Navbar studentId={studentId} />
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-4 pt-8">
                 <div className="max-w-4xl mx-auto">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Profile Information</h1>
@@ -39,6 +42,10 @@ const ManagerProfilePage = ({ params }: ManagerProfilePageProps) => {
                         onSuccess={setSuccessMessage}
                         onError={msg => setNotification({ message: msg, type: 'error' })}
                     />
+                    {/* Secondary Profile Section */}
+                    <div className="mb-4">
+                        <SecondaryProfile userData={studentProfile || undefined} />
+                    </div>
                 </div>
             </div>
             {/* Success/Error Messages */}
