@@ -10,6 +10,7 @@ import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
+import { SecondaryProfile } from "@/app/(pages)/components/SecondaryProfile";
 
 interface MemberProfilePageProps {
     params: Promise<{ studentId: string }>
@@ -23,6 +24,8 @@ const MemberProfilePage = ({ params }: MemberProfilePageProps) => {
 
     // Fetch user data from Convex
     const userData = useQuery(api.fetch.getUserById, { id: studentId as Id<"users"> });
+    // Fetch student secondary profile data
+    const studentProfile = useQuery(api.fetch.getStudentGroup, { userId: studentId as Id<"users"> });
 
     return ( 
         <div className="min-h-screen bg-gray-50">
@@ -39,6 +42,10 @@ const MemberProfilePage = ({ params }: MemberProfilePageProps) => {
                         onSuccess={setSuccessMessage}
                         onError={msg => setNotification({ message: msg, type: 'error' })}
                     />
+                    {/* Secondary Profile Section */}
+                    <div className="mb-4">
+                        <SecondaryProfile userData={studentProfile || undefined} />
+                    </div>
                 </div>
             </div>
             {/* Success/Error Messages */}
