@@ -40,10 +40,27 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
                      (studentGroup?.group_id && (latestDocuments === undefined || !latestDocuments.done));
 
     // Adviser UI logic for member
-    const isLoadingAdviser = groupDetails === undefined || requestedAdviser === undefined;
+    const isLoadingAdviser = groupDetails === undefined || 
+                            (groupDetails?.adviser_id ? adviser === undefined : 
+                             groupDetails?.requested_adviser ? requestedAdviser === undefined : false);
     let adviserObj = undefined;
+
+    // Debug logs
+    console.log('Member Page Debug:', {
+        groupDetails,
+        adviser,
+        requestedAdviser,
+        isLoadingAdviser
+    });
+
     if (!isLoadingAdviser) {
-        if (groupDetails && groupDetails.requested_adviser && !groupDetails.adviser_id && requestedAdviser && requestedAdviser.first_name) {
+        if (groupDetails?.adviser_id && adviser?.first_name) {
+            adviserObj = {
+                first_name: adviser.first_name,
+                middle_name: adviser.middle_name,
+                last_name: adviser.last_name
+            };
+        } else if (groupDetails?.requested_adviser && !groupDetails.adviser_id && requestedAdviser?.first_name) {
             adviserObj = {
                 first_name: requestedAdviser.first_name,
                 middle_name: requestedAdviser.middle_name,
@@ -51,16 +68,11 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
                 pending: true,
                 pendingName: `${requestedAdviser.first_name} ${requestedAdviser.last_name}`,
             };
-        } else if (groupDetails && groupDetails.adviser_id && adviser && adviser.first_name) {
-            adviserObj = {
-                first_name: adviser.first_name,
-                middle_name: adviser.middle_name,
-                last_name: adviser.last_name
-            };
-        } else if (groupDetails && groupDetails.adviser_id === undefined) {
-            adviserObj = { first_name: '', last_name: '', pending: false };
         }
     }
+
+    // Debug log for final adviserObj
+    console.log('Final adviserObj:', adviserObj);
 
     return (
         <div className="min-h-screen bg-gray-50">
