@@ -1104,9 +1104,12 @@ export const acceptGroupRequest = mutation({
       throw new Error("Group is not in pending requests");
     }
 
-    // Update the group's adviser_id
+    // Update the group's adviser_id to requested_adviser and clear requested_adviser
+    const group = await ctx.db.get(args.groupId);
+    if (!group) throw new Error("Group not found");
     await ctx.db.patch(args.groupId, {
-      adviser_id: args.adviserId
+      adviser_id: group.requested_adviser,
+      requested_adviser: undefined,
     });
 
     // Update adviser's records
@@ -1144,6 +1147,14 @@ export const rejectGroupRequest = mutation({
     await ctx.db.patch(adviserCode._id, {
       requests_group_ids: adviserCode.requests_group_ids.filter(id => id !== args.groupId)
     });
+
+    // Clear requested_adviser on the group if it matches this adviser
+    const group = await ctx.db.get(args.groupId);
+    if (group && group.requested_adviser === args.adviserId) {
+      await ctx.db.patch(args.groupId, {
+        requested_adviser: undefined,
+      });
+    }
 
     return { success: true };
   },
@@ -1197,6 +1208,10 @@ export const requestAdviserCode = mutation({
         requests_group_ids: [...requests, args.groupId],
       });
     }
+    // Set requested_adviser on the group
+    await ctx.db.patch(args.groupId, {
+      requested_adviser: adviser.adviser_id,
+    });
     return { success: true };
   },
 });
@@ -1216,6 +1231,13 @@ export const cancelAdviserRequest = mutation({
     await ctx.db.patch(adviser._id, {
       requests_group_ids: requests.filter((id) => id !== args.groupId),
     });
+    // Also clear requested_adviser on the group if it matches this adviser
+    const group = await ctx.db.get(args.groupId);
+    if (group && group.requested_adviser === adviser.adviser_id) {
+      await ctx.db.patch(args.groupId, {
+        requested_adviser: undefined,
+      });
+    }
     return { success: true };
   },
 });

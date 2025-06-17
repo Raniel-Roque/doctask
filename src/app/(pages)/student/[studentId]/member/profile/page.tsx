@@ -10,7 +10,7 @@ import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
-import { SecondaryProfile } from "@/app/(pages)/components/SecondaryProfile";
+import { SecondaryProfile } from "../../components/SecondaryProfile";
 
 interface MemberProfilePageProps {
     params: Promise<{ studentId: string }>

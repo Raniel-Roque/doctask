@@ -5,11 +5,11 @@ import { Navbar } from "../components/navbar";
 import { api } from "../../../../../../../convex/_generated/api";
 import { useQuery, useMutation, useConvex } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
-import { LatestDocumentsTable } from "./components/LatestDocumentsTable";
 import { AdviserCodePopup } from "./components/AdviserCodePopup";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import React from "react";
 import { CancelAdviserRequestPopup } from "./components/CancelAdviserRequestPopup";
+import { LatestDocumentsTable } from "../../components/LatestDocumentsTable";
 
 interface ManagerHomeProps {
     params: Promise<{ studentId: string }>
@@ -29,9 +29,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' }>({ message: '', type: 'success' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [popupError, setPopupError] = useState<string | null>(null);
-    const [pendingAdviserName, setPendingAdviserName] = useState<string | null>(null);
     const [pendingAdviserCode, setPendingAdviserCode] = useState<string | null>(null);
-    const [pending, setPending] = useState(false);
     const adviserCodeInputRef = useRef<() => void>(() => {});
     const [showCancelPopup, setShowCancelPopup] = useState(false);
 
@@ -50,6 +48,10 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
         api.fetch.getLatestDocuments,
         studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip"
     );
+    const requestedAdviser = useQuery(
+        api.fetch.getUserById,
+        groupDetails?.requested_adviser ? { id: groupDetails.requested_adviser } : "skip"
+    );
 
     // Mutations
     const requestAdviserCode = useMutation(api.mutations.requestAdviserCode);
@@ -63,8 +65,6 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
 
     useEffect(() => {
         if (groupDetails?.adviser_id) {
-            setPending(false);
-            setPendingAdviserName(null);
             setPendingAdviserCode(null);
         }
     }, [groupDetails?.adviser_id]);
@@ -95,9 +95,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
                 return;
             }
             await requestAdviserCode({ adviserCode: code, groupId: studentGroup!.group_id! });
-            setPendingAdviserName(`${result.user.first_name} ${result.user.last_name}`);
             setPendingAdviserCode(code);
-            setPending(true);
             setShowAdviserPopup(false);
             setNotification({ message: `Request sent to ${result.user.first_name} ${result.user.last_name}.`, type: 'success' });
             if (adviserCodeInputRef.current) adviserCodeInputRef.current(); // clear input
@@ -111,30 +109,37 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
 
     // Determine adviser object for table
     let adviserObj: { first_name: string; middle_name?: string; last_name: string; pending?: boolean; pendingName?: string; onCancel?: () => void } | undefined = undefined;
-    if (pending && pendingAdviserName) {
-        adviserObj = {
-            first_name: '',
-            last_name: '',
-            pending: true,
-            pendingName: pendingAdviserName,
-            onCancel: () => setShowCancelPopup(true)
-        };
-    } else if (adviser && adviser.first_name) {
+    if (groupDetails && groupDetails.adviser_id && adviser && adviser.first_name) {
         adviserObj = {
             first_name: adviser.first_name,
             middle_name: adviser.middle_name,
             last_name: adviser.last_name
         };
+    } else if (groupDetails && groupDetails.requested_adviser && !groupDetails.adviser_id && requestedAdviser && requestedAdviser.first_name) {
+        adviserObj = {
+            first_name: requestedAdviser.first_name,
+            middle_name: requestedAdviser.middle_name,
+            last_name: requestedAdviser.last_name,
+            pending: true,
+            pendingName: `${requestedAdviser.first_name} ${requestedAdviser.last_name}`,
+            onCancel: () => setShowCancelPopup(true)
+        };
     }
 
+    // Always get the adviser code for the pending request
+    const pendingAdviserId = groupDetails?.requested_adviser;
+    const pendingAdviserCodeObj = useQuery(
+        api.fetch.getAdviserCode,
+        pendingAdviserId ? { adviserId: pendingAdviserId } : "skip"
+    );
+    const effectivePendingAdviserCode = pendingAdviserCode || pendingAdviserCodeObj?.code;
+
     const handleConfirmCancelAdviserRequest = async () => {
-        if (!pendingAdviserCode || !studentGroup?.group_id) return;
+        if (!effectivePendingAdviserCode || !studentGroup?.group_id) return;
         setIsSubmitting(true);
         try {
-            await cancelAdviserRequest({ adviserCode: pendingAdviserCode, groupId: studentGroup.group_id });
-            setPendingAdviserName(null);
+            await cancelAdviserRequest({ adviserCode: effectivePendingAdviserCode, groupId: studentGroup.group_id });
             setPendingAdviserCode(null);
-            setPending(false);
             setNotification({ message: 'Adviser request cancelled.', type: 'success' });
         } catch (err: unknown) {
             const error = err as Error;
@@ -181,6 +186,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
                         adviser={adviserObj}
                         onShowAdviserPopup={handleShowAdviserPopup}
                         isSubmitting={isSubmitting}
+                        mode="manager"
                     />
                 </div>
                 <CancelAdviserRequestPopup

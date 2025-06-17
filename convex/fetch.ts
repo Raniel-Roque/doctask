@@ -28,10 +28,9 @@ export const getGroupById = query({
   },
   handler: async (ctx, args) => {
     const { groupId } = args;
-
     try {
       const group = await ctx.db.get(groupId);
-      return group;
+      return group; // This already includes requested_adviser if present
     } catch {
       return null;
     }

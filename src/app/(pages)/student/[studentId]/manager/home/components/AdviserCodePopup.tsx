@@ -84,7 +84,7 @@ export const AdviserCodePopup: React.FC<AdviserCodePopupProps> = ({
             autoFocus
             disabled={isSubmitting}
           />
-          <div className="flex justify-end gap-4 mt-8">
+          <div className="flex justify-end gap-4 mt-4">
             <button
               type="button"
               onClick={onClose}

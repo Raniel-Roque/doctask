@@ -1,5 +1,5 @@
 import { FaEye, FaDownload, FaEdit, FaPlus } from "react-icons/fa";
-import { Id } from "../../../../../../../../convex/_generated/dataModel";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useState } from "react";
 
 interface Document {
@@ -33,6 +33,7 @@ interface LatestDocumentsTableProps {
     adviser?: AdviserObj;
     onShowAdviserPopup: () => void;
     isSubmitting: boolean;
+    mode: 'manager' | 'member';
 }
 
 // Grade mapping
@@ -68,7 +69,8 @@ export const LatestDocumentsTable = ({
     grade,
     adviser,
     onShowAdviserPopup,
-    isSubmitting
+    isSubmitting,
+    mode
 }: LatestDocumentsTableProps) => {
     // Add state for status filter
     const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -81,10 +83,10 @@ export const LatestDocumentsTable = ({
 
     // Status options for the dropdown
     const statusOptions = [
-        { value: "all", label: "All Status" },
-        { value: "0", label: "Incomplete" },
-        { value: "1", label: "In Review" },
-        { value: "2", label: "Approved" }
+        { value: "all", label: "STATUS" },
+        { value: "0", label: "INCOMPLETE" },
+        { value: "1", label: "IN REVIEW" },
+        { value: "2", label: "APPROVED" }
     ];
 
     // Documents that are view/download only
@@ -107,88 +109,132 @@ export const LatestDocumentsTable = ({
 
     // Adviser UI logic
     let adviserUI = null;
-    if (adviser?.pending && adviser.pendingName) {
-        adviserUI = (
-            <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Adviser: Pending Approval from {adviser.pendingName}</span>
-                <button
-                    className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-                    onClick={adviser.onCancel}
-                    disabled={isSubmitting}
-                >
-                    Cancel
-                </button>
-            </div>
-        );
-    } else if (adviser && adviser.first_name) {
-        adviserUI = (
-            <span className="text-sm text-gray-600">
-                Adviser: {adviser.first_name} {adviser.middle_name ? adviser.middle_name + ' ' : ''}{adviser.last_name}
-            </span>
-        );
-    } else {
-        adviserUI = (
-            <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Adviser:</span>
-                <button
-                    className="px-2.5 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
-                    onClick={onShowAdviserPopup}
-                    disabled={isSubmitting}
-                >
-                    <FaPlus className="w-3 h-3" /> Enter adviser code
-                </button>
-            </div>
-        );
+    if (mode === 'manager') {
+        if (adviser?.pending && adviser.pendingName) {
+            adviserUI = (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Adviser: Pending Approval from {adviser.pendingName}</span>
+                    <button
+                        className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                        onClick={() => adviser.onCancel && adviser.onCancel()}
+                        disabled={isSubmitting}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            );
+        } else if (adviser && adviser.first_name) {
+            adviserUI = (
+                <span className="text-sm text-gray-600">
+                    Adviser: {adviser.first_name} {adviser.middle_name ? adviser.middle_name + ' ' : ''}{adviser.last_name}
+                </span>
+            );
+        } else {
+            adviserUI = (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Adviser:</span>
+                    <button
+                        className="px-2.5 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
+                        onClick={onShowAdviserPopup}
+                        disabled={isSubmitting}
+                    >
+                        <FaPlus className="w-3 h-3" /> Enter adviser code
+                    </button>
+                </div>
+            );
+        }
+    } else if (mode === 'member') {
+        if (adviser?.pending && adviser.pendingName) {
+            adviserUI = (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Adviser: Pending Approval from {adviser.pendingName}</span>
+                </div>
+            );
+        } else if (adviser && adviser.first_name) {
+            adviserUI = (
+                <span className="text-sm text-gray-600">
+                    Adviser: {adviser.first_name} {adviser.middle_name ? adviser.middle_name + ' ' : ''}{adviser.last_name}
+                </span>
+            );
+        } else {
+            adviserUI = (
+                <span className="text-sm text-gray-600">Adviser: None</span>
+            );
+        }
     }
 
     return (
         <div>
-            <div className="flex flex-col space-y-1 mb-3">
-                <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-semibold break-words max-w-3xl">
+            {/* Capstone/Adviser/Grade and Progress/Controls Container */}
+            <div className="bg-white rounded-lg shadow-md p-8 mb-8 border border-gray-100">
+                <div className="mb-2">
+                    <h2 className="text-2xl font-bold text-gray-900 break-words max-w-3xl tracking-tight">
                         {displayCapstoneTitle}
                     </h2>
-                    <span className="text-sm font-medium text-gray-700">
-                        Grade: {GRADE_MAP[grade ?? 0] || "No Grade"}
-                    </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         {adviserUI}
                     </div>
-                    <select 
-                        className="px-2.5 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                        value={selectedStatus}
-                        onChange={(e) => setSelectedStatus(e.target.value)}
+                    <span className="text-sm font-normal text-gray-700 bg-transparent">
+                        Grade: {GRADE_MAP[grade ?? 0] || "No Grade"}
+                    </span>
+                </div>
+
+                <div className="border-b border-gray-200 mb-5" />
+
+                {/* Progress Bar Row */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+                        <span className="text-sm text-gray-600">0%</span>
+                    </div>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div className="bg-gray-500 h-3 rounded-full transition-all duration-300" style={{ width: "0%" }}></div>
+                        </div>
+                    </div>
+                    <button 
+                        className="text-gray-600 hover:text-gray-800 transition-colors p-2 border border-gray-200 rounded-full shadow-sm bg-white"
+                        title="Download all documents"
                     >
-                        {statusOptions.map(option => (
-                            <option 
-                                key={option.value} 
-                                value={option.value}
-                            >
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
+                        <FaDownload className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
-            
-            <div className="bg-white rounded-lg shadow-md">
+            {/* End Capstone/Adviser/Grade and Progress/Controls Container */}
+
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100">
                 <div className="p-6">
                     <div className="overflow-x-auto min-w-full">
                         <table className="w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                                         Document
                                     </th>
-                                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status
+                                    <th scope="col" className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider relative">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <select 
+                                                className="ml-2 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
+                                                value={selectedStatus}
+                                                onChange={(e) => setSelectedStatus(e.target.value)}
+                                            >
+                                                {statusOptions.map(option => (
+                                                    <option 
+                                                        key={option.value} 
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </th>
-                                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th scope="col" className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                                         Last Opened
                                     </th>
-                                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th scope="col" className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>

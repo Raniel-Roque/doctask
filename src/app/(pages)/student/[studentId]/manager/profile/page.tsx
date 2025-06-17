@@ -7,10 +7,10 @@ import { useState } from "react";
 import 'cropperjs/dist/cropper.css';
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
-import { SecondaryProfile } from "@/app/(pages)/components/SecondaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
+import { SecondaryProfile } from "../../components/SecondaryProfile";
 
 interface ManagerProfilePageProps {
     params: Promise<{ studentId: string }>

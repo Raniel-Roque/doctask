@@ -45,6 +45,7 @@ export default defineSchema({
     project_manager_id: v.id("users"), // Reference to user with role 0 and subrole 1
     member_ids: v.array(v.id("users")), // Array of user IDs with role 0 and subrole 0
     adviser_id: v.optional(v.id("users")),
+    requested_adviser: v.optional(v.id("users")), // Adviser requested but not yet assigned
   })
   .index("by_project_manager", ["project_manager_id"])
   .index("by_adviser", ["adviser_id"])

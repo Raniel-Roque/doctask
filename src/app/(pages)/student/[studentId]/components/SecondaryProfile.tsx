@@ -1,11 +1,11 @@
 import React from "react";
 import { ChevronDown } from "lucide-react";
 import { FaSave, FaSpinner } from "react-icons/fa";
-import { NotificationBanner } from "./NotificationBanner";
+import { NotificationBanner } from "../../../components/NotificationBanner";
 import { useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "../../../../../../convex/_generated/api";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
-import type { Doc, Id } from "../../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../../../../convex/_generated/dataModel";
 
 interface SecondaryProfileProps {
   userData?: Doc<"studentsTable">;

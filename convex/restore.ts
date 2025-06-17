@@ -112,6 +112,7 @@ export const restoreGroup = mutation({
     project_manager_id: v.id("users"),
     member_ids: v.array(v.id("users")),
     adviser_id: v.optional(v.id("users")),
+    requested_adviser: v.optional(v.id("users")),
     capstone_title: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -120,6 +121,7 @@ export const restoreGroup = mutation({
       project_manager_id: args.project_manager_id,
       member_ids: args.member_ids,
       adviser_id: args.adviser_id,
+      requested_adviser: args.requested_adviser,
       capstone_title: args.capstone_title,
     });
 
