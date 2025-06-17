@@ -15,17 +15,24 @@ interface Document {
     last_opened?: number;
 }
 
+interface AdviserObj {
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+    pending?: boolean;
+    pendingName?: string;
+    onCancel?: () => void;
+}
+
 interface LatestDocumentsTableProps {
     documents: Document[];
     status: 'loading' | 'error' | 'idle' | 'no_group';
     currentUserId: Id<"users">;
     capstoneTitle?: string;
     grade?: number;
-    adviser?: {
-        first_name: string;
-        middle_name?: string;
-        last_name: string;
-    };
+    adviser?: AdviserObj;
+    onShowAdviserPopup: () => void;
+    isSubmitting: boolean;
 }
 
 // Grade mapping
@@ -59,7 +66,9 @@ export const LatestDocumentsTable = ({
     currentUserId,
     capstoneTitle,
     grade,
-    adviser
+    adviser,
+    onShowAdviserPopup,
+    isSubmitting
 }: LatestDocumentsTableProps) => {
     // Add state for status filter
     const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -96,33 +105,56 @@ export const LatestDocumentsTable = ({
         return date.toLocaleDateString() + " " + date.toLocaleTimeString();
     };
 
+    // Adviser UI logic
+    let adviserUI = null;
+    if (adviser?.pending && adviser.pendingName) {
+        adviserUI = (
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Adviser: Pending Approval from {adviser.pendingName}</span>
+                <button
+                    className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                    onClick={adviser.onCancel}
+                    disabled={isSubmitting}
+                >
+                    Cancel
+                </button>
+            </div>
+        );
+    } else if (adviser && adviser.first_name) {
+        adviserUI = (
+            <span className="text-sm text-gray-600">
+                Adviser: {adviser.first_name} {adviser.middle_name ? adviser.middle_name + ' ' : ''}{adviser.last_name}
+            </span>
+        );
+    } else {
+        adviserUI = (
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Adviser:</span>
+                <button
+                    className="px-2.5 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
+                    onClick={onShowAdviserPopup}
+                    disabled={isSubmitting}
+                >
+                    <FaPlus className="w-3 h-3" /> Enter adviser code
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div>
             <div className="flex flex-col space-y-1 mb-3">
                 <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-semibold break-words max-w-3xl">
-                    {displayCapstoneTitle}
-                </h2>
-                        <span className="text-sm font-medium text-gray-700">
+                    <h2 className="text-2xl font-semibold break-words max-w-3xl">
+                        {displayCapstoneTitle}
+                    </h2>
+                    <span className="text-sm font-medium text-gray-700">
                         Grade: {GRADE_MAP[grade ?? 0] || "No Grade"}
                     </span>
                 </div>
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Adviser:</span>
-                        {adviser ? (
-                            <span className="text-sm text-gray-600">
-                                {adviser.first_name} {adviser.middle_name ? adviser.middle_name + ' ' : ''}{adviser.last_name}
-                        </span>
-                        ) : (
-                            <button 
-                                className="px-2.5 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
-                                disabled
-                            >
-                                <FaPlus className="w-3 h-3" />
-                                Enter adviser code
-                            </button>
-                    )}
+                        {adviserUI}
                     </div>
                     <select 
                         className="px-2.5 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"

@@ -1,11 +1,15 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useRef, useEffect } from "react";
 import { Navbar } from "../components/navbar";
 import { api } from "../../../../../../../convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation, useConvex } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { LatestDocumentsTable } from "./components/LatestDocumentsTable";
+import { AdviserCodePopup } from "./components/AdviserCodePopup";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import React from "react";
+import { CancelAdviserRequestPopup } from "./components/CancelAdviserRequestPopup";
 
 interface ManagerHomeProps {
     params: Promise<{ studentId: string }>
@@ -20,44 +24,126 @@ interface StudentGroup {
 const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     const { studentId } = use(params);
 
-    // Fetch user data
-    const user = useQuery(api.fetch.getUserById, {
-        id: studentId as Id<"users">,
-    });
+    // UI State
+    const [showAdviserPopup, setShowAdviserPopup] = useState(false);
+    const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' }>({ message: '', type: 'success' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [popupError, setPopupError] = useState<string | null>(null);
+    const [pendingAdviserName, setPendingAdviserName] = useState<string | null>(null);
+    const [pendingAdviserCode, setPendingAdviserCode] = useState<string | null>(null);
+    const [pending, setPending] = useState(false);
+    const adviserCodeInputRef = useRef<() => void>(() => {});
+    const [showCancelPopup, setShowCancelPopup] = useState(false);
 
-    // Fetch student's group from studentsTable
-    const studentGroup = useQuery(api.fetch.getStudentGroup, {
-        userId: studentId as Id<"users">,
-    }) as StudentGroup | null;
-
-    // Fetch group details if we have a group ID
+    // Convex
+    const user = useQuery(api.fetch.getUserById, { id: studentId as Id<"users"> });
+    const studentGroup = useQuery(api.fetch.getStudentGroup, { userId: studentId as Id<"users"> }) as StudentGroup | null;
     const groupDetails = useQuery(
         api.fetch.getGroupById,
-        studentGroup?.group_id ? {
-            groupId: studentGroup.group_id,
-        } : "skip"
+        studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip"
     );
-
-    // Fetch adviser details if we have an adviser ID
     const adviser = useQuery(
         api.fetch.getUserById,
-        groupDetails?.adviser_id ? {
-            id: groupDetails.adviser_id,
-        } : "skip"
+        groupDetails?.adviser_id ? { id: groupDetails.adviser_id } : "skip"
     );
-
-    // Fetch latest documents only if we have a valid group ID
     const latestDocuments = useQuery(
         api.fetch.getLatestDocuments,
-        studentGroup?.group_id ? {
-            groupId: studentGroup.group_id,
-        } : "skip"
+        studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip"
     );
 
-    // Determine loading state - only check latestDocuments if we have a group
+    // Mutations
+    const requestAdviserCode = useMutation(api.mutations.requestAdviserCode);
+    const cancelAdviserRequest = useMutation(api.mutations.cancelAdviserRequest);
+    const convex = useConvex();
+
+    // Determine loading state
     const isLoading = user === undefined || 
                      studentGroup === undefined || 
                      (studentGroup?.group_id && (latestDocuments === undefined || !latestDocuments.done));
+
+    useEffect(() => {
+        if (groupDetails?.adviser_id) {
+            setPending(false);
+            setPendingAdviserName(null);
+            setPendingAdviserCode(null);
+        }
+    }, [groupDetails?.adviser_id]);
+
+    // Handler for opening the popup
+    const handleShowAdviserPopup = () => {
+        if (adviserCodeInputRef.current) adviserCodeInputRef.current(); // clear input
+        setShowAdviserPopup(true);
+        setPopupError(null);
+    };
+
+    // Handler for closing the popup
+    const handleCloseAdviserPopup = () => {
+        if (adviserCodeInputRef.current) adviserCodeInputRef.current(); // clear input
+        setShowAdviserPopup(false);
+        setPopupError(null);
+    };
+
+    // Handler for submitting adviser code
+    const handleAdviserCodeSubmit = async (code: string) => {
+        setIsSubmitting(true);
+        setPopupError(null);
+        try {
+            const result = await convex.query(api.fetch.getAdviserByCode, { code });
+            if (!result || !result.adviser || !result.user) {
+                setPopupError("Adviser code not found.");
+                setIsSubmitting(false);
+                return;
+            }
+            await requestAdviserCode({ adviserCode: code, groupId: studentGroup!.group_id! });
+            setPendingAdviserName(`${result.user.first_name} ${result.user.last_name}`);
+            setPendingAdviserCode(code);
+            setPending(true);
+            setShowAdviserPopup(false);
+            setNotification({ message: `Request sent to ${result.user.first_name} ${result.user.last_name}.`, type: 'success' });
+            if (adviserCodeInputRef.current) adviserCodeInputRef.current(); // clear input
+        } catch (err: unknown) {
+            const error = err as Error;
+            setPopupError(error.message || 'Failed to request adviser.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Determine adviser object for table
+    let adviserObj: { first_name: string; middle_name?: string; last_name: string; pending?: boolean; pendingName?: string; onCancel?: () => void } | undefined = undefined;
+    if (pending && pendingAdviserName) {
+        adviserObj = {
+            first_name: '',
+            last_name: '',
+            pending: true,
+            pendingName: pendingAdviserName,
+            onCancel: () => setShowCancelPopup(true)
+        };
+    } else if (adviser && adviser.first_name) {
+        adviserObj = {
+            first_name: adviser.first_name,
+            middle_name: adviser.middle_name,
+            last_name: adviser.last_name
+        };
+    }
+
+    const handleConfirmCancelAdviserRequest = async () => {
+        if (!pendingAdviserCode || !studentGroup?.group_id) return;
+        setIsSubmitting(true);
+        try {
+            await cancelAdviserRequest({ adviserCode: pendingAdviserCode, groupId: studentGroup.group_id });
+            setPendingAdviserName(null);
+            setPendingAdviserCode(null);
+            setPending(false);
+            setNotification({ message: 'Adviser request cancelled.', type: 'success' });
+        } catch (err: unknown) {
+            const error = err as Error;
+            setNotification({ message: error.message || 'Failed to cancel request.', type: 'error' });
+        } finally {
+            setIsSubmitting(false);
+            setShowCancelPopup(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -67,7 +153,23 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
                     <h1 className="text-3xl font-bold">Welcome Back, {user?.first_name ?? "Manager"}!</h1>
                     <p className="text-muted-foreground">Overview of your group&apos;s documents</p>
                 </div>
-
+                {/* Adviser code popup */}
+                <AdviserCodePopup
+                    isOpen={showAdviserPopup}
+                    onClose={handleCloseAdviserPopup}
+                    onSubmit={handleAdviserCodeSubmit}
+                    isSubmitting={isSubmitting}
+                    error={popupError}
+                    clearInputRef={adviserCodeInputRef}
+                />
+                {/* Notification banner */}
+                {notification.message && (
+                    <NotificationBanner
+                        message={notification.message}
+                        type={notification.type}
+                        onClose={() => setNotification({ message: '', type: 'success' })}
+                    />
+                )}
                 {/* Latest Documents Table */}
                 <div className="container mx-auto px-4 pb-8">
                     <LatestDocumentsTable 
@@ -76,17 +178,21 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
                         currentUserId={studentId as Id<"users">}
                         capstoneTitle={groupDetails?.capstone_title ?? "Capstone Documents"}
                         grade={groupDetails?.grade}
-                        adviser={adviser ? {
-                            first_name: adviser.first_name,
-                            middle_name: adviser.middle_name,
-                            last_name: adviser.last_name
-                        } : undefined}
+                        adviser={adviserObj}
+                        onShowAdviserPopup={handleShowAdviserPopup}
+                        isSubmitting={isSubmitting}
                     />
                 </div>
+                <CancelAdviserRequestPopup
+                    isOpen={showCancelPopup}
+                    onClose={() => setShowCancelPopup(false)}
+                    onConfirm={handleConfirmCancelAdviserRequest}
+                    isSubmitting={isSubmitting}
+                />
             </div>
         </div>
     );
-}
+};
  
 export default ManagerHomePage;
 

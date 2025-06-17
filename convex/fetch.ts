@@ -171,6 +171,23 @@ export const getAdviserCode = query({
   },
 });
 
+export const getAdviserByCode = query({
+  args: { code: v.string() },
+  handler: async (ctx, args) => {
+    const adviser = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .first();
+    if (!adviser) return null;
+    // Also fetch the user details
+    const user = await ctx.db.get(adviser.adviser_id);
+    return {
+      adviser,
+      user,
+    };
+  },
+});
+
 export const getLogs = query({
   args: {
     searchTerm: v.string(),

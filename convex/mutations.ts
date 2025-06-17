@@ -1081,3 +1081,44 @@ export const logLockAccountMutation = mutation({
     );
   },
 });
+
+export const requestAdviserCode = mutation({
+  args: {
+    adviserCode: v.string(),
+    groupId: v.id("groupsTable"),
+  },
+  handler: async (ctx, args) => {
+    const adviser = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_code", (q) => q.eq("code", args.adviserCode))
+      .first();
+    if (!adviser) throw new Error("Adviser code not found");
+    // Add groupId to requests_group_ids if not already present
+    const requests = adviser.requests_group_ids || [];
+    if (!requests.includes(args.groupId)) {
+      await ctx.db.patch(adviser._id, {
+        requests_group_ids: [...requests, args.groupId],
+      });
+    }
+    return { success: true };
+  },
+});
+
+export const cancelAdviserRequest = mutation({
+  args: {
+    adviserCode: v.string(),
+    groupId: v.id("groupsTable"),
+  },
+  handler: async (ctx, args) => {
+    const adviser = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_code", (q) => q.eq("code", args.adviserCode))
+      .first();
+    if (!adviser) throw new Error("Adviser code not found");
+    const requests = adviser.requests_group_ids || [];
+    await ctx.db.patch(adviser._id, {
+      requests_group_ids: requests.filter((id) => id !== args.groupId),
+    });
+    return { success: true };
+  },
+});
