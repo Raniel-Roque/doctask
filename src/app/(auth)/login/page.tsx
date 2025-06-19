@@ -181,6 +181,7 @@ const LoginPage = () => {
             });
             if (result.status === "complete") {
               await setActive({ session: result.createdSessionId });
+              localStorage.setItem("lastActivityTimestamp", Date.now().toString());
               return; // Success, user will be redirected
             } else {
               setError("Incorrect password. Please try again.");
@@ -258,6 +259,7 @@ const LoginPage = () => {
         // Sign out to clear the session before moving to password step
         setError(""); // Clear any errors
         await signOut();
+        localStorage.setItem("lastActivityTimestamp", Date.now().toString());
       } else {
         setError("Invalid code. Please try again.");
       }
@@ -283,6 +285,7 @@ const LoginPage = () => {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
+        localStorage.setItem("lastActivityTimestamp", Date.now().toString());
       } else {
         setError("Incorrect password. Please try again.");
       }
@@ -623,6 +626,7 @@ const LoginPage = () => {
                         }
                         await signOut();
                         router.push("/login");
+                        localStorage.setItem("lastActivityTimestamp", Date.now().toString());
                       } else {
                         setError("Failed to reset password. Please try again.");
                       }
