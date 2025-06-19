@@ -277,25 +277,31 @@ export const TaskAssignmentTable = ({
         return (
             <div className="flex justify-center w-full">
                 <div className="flex flex-wrap items-center gap-2">
-                    {assignedMembers.map((member, index) => (
-                        <span
-                            key={index}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
-                        >
-                            {member}
-                            {mode === 'manager' && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeMemberFromChapter(chapter, member);
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800"
-                                >
-                                    <FaTimes className="w-3 h-3" />
-                                </button>
-                            )}
-                        </span>
-                    ))}
+                    {assignedMembers.length > 0 ? (
+                        assignedMembers.map((member, index) => (
+                            <span
+                                key={index}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                            >
+                                {member}
+                                {mode === 'manager' && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeMemberFromChapter(chapter, member);
+                                        }}
+                                        className="text-blue-600 hover:text-blue-800"
+                                    >
+                                        <FaTimes className="w-3 h-3" />
+                                    </button>
+                                )}
+                            </span>
+                        ))
+                    ) : (
+                        mode === 'member' && (
+                            <span className="text-gray-400 text-xs">No members assigned</span>
+                        )
+                    )}
                     {mode === 'manager' && !allAssigned && (
                         <div className="relative">
                             <button
