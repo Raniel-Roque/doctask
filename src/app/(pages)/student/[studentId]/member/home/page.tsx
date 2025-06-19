@@ -45,14 +45,6 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
                              groupDetails?.requested_adviser ? requestedAdviser === undefined : false);
     let adviserObj = undefined;
 
-    // Debug logs
-    console.log('Member Page Debug:', {
-        groupDetails,
-        adviser,
-        requestedAdviser,
-        isLoadingAdviser
-    });
-
     if (!isLoadingAdviser) {
         if (groupDetails?.adviser_id && adviser?.first_name) {
             adviserObj = {
@@ -70,9 +62,6 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
             };
         }
     }
-
-    // Debug log for final adviserObj
-    console.log('Final adviserObj:', adviserObj);
 
     return (
         <div className="min-h-screen bg-gray-50">
