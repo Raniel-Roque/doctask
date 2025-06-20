@@ -154,28 +154,64 @@ export default defineSchema({
   // Documents Table (Normalized Versioning)
   // =========================================
 
-  //To version use filters of group_id, part, and creation time (desc)
+  //To version use filters of group_id, chapter, and creation time (desc)
   documents: defineTable({
     group_id: v.id("groupsTable"),
-    part: v.string(), // e.g., "chapter1", "appendix_a", etc.
+    chapter: v.string(), // e.g., "chapter_1", "acknowledgment", etc.
     room_id: v.string(),
     title: v.string(),
     content: v.string(),
-    student_ids: v.array(v.id("users")), // students assigned to this version
   })
-    .index("by_group_part", ["group_id", "part"])
+    .index("by_group_chapter", ["group_id", "chapter"])
     .index("by_room", ["room_id"]),
 
   // =========================================
-  // Group Status Table
+  // Task Assignments Table (Member/Manager Communication)
+  // =========================================
+  taskAssignments: defineTable({
+    // Group and Task Information
+    group_id: v.id("groupsTable"),
+    chapter: v.string(), // e.g., "chapter_1", "acknowledgment", etc.
+    section: v.string(), // e.g., "1.1 Project Context", "acknowledgment", etc.
+    title: v.string(), // Display title for the task
+    
+    // Task Status and Assignment (for member/manager communication)
+    task_status: v.number(), // 0 = incomplete, 1 = completed
+    assigned_student_ids: v.array(v.id("users")), // Array of student IDs assigned to this task
+  })
+  .index("by_group", ["group_id"])
+  .index("by_chapter", ["chapter"])
+  .index("by_task_status", ["task_status"])
+  .index("by_group_chapter", ["group_id", "chapter"])
+  .index("by_group_task_status", ["group_id", "task_status"]),
+
+  // =========================================
+  // Document Status Table (Instructor/Manager Review Process)
+  // =========================================
+  documentStatus: defineTable({
+    group_id: v.id("groupsTable"),
+    document_part: v.string(), // e.g., "chapter1", "appendix_a", etc.
+    review_status: v.number(), // 0 = not_submitted, 1 = submitted, 2 = under_review, 3 = approved, 4 = rejected
+    review_notes: v.optional(v.string()), // Feedback from reviewer
+    last_modified: v.optional(v.number()), // timestamp (ms since epoch), optional
+  })
+  .index("by_group", ["group_id"])
+  .index("by_document", ["document_part"])
+  .index("by_review_status", ["review_status"])
+  .index("by_group_document", ["group_id", "document_part"])
+  .index("by_group_review_status", ["group_id", "review_status"]),
+
+  // =========================================
+  // Group Status Table (Legacy - can be deprecated)
   // =========================================
   groupStatus: defineTable({
     group_id: v.id("groupsTable"),
     part: v.string(), // e.g., "chapter1", "appendix_a", etc.
-    status: v.number(), // 0 = incomplete, 1 = in_review, 2 = approved
-    last_opened: v.optional(v.number()), // timestamp (ms since epoch), optional
+    status: v.number(), // 0 = incomplete, 1 = completed, 2 = in_review, 3 = approved
+    last_modified: v.optional(v.number()), // timestamp (ms since epoch), optional
   })
-  .index("by_group_part", ["group_id", "part"]),
+  .index("by_group_part", ["group_id", "part"])
+  .index("by_group_status", ["group_id", "status"]),
 });
 
 

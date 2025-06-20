@@ -741,13 +741,13 @@ interface DocumentWithStatus {
     _id: Id<"documents">;
     _creationTime: number;
     group_id: Id<"groupsTable">;
-    part: string;
+    chapter: string;
     room_id: string;
     title: string;
     content: string;
     student_ids: Id<"users">[];
-    status: number;
-    last_opened?: number;
+    status: number; // This now represents review_status from documentStatus table
+    last_modified?: number; // This comes from documentStatus.last_modified
 }
 
 export const getLatestDocuments = query({
@@ -757,20 +757,18 @@ export const getLatestDocuments = query({
     handler: async (ctx, args) => {
         const { groupId } = args;
 
-        // Define the order of document parts
-        const partsOrder = [
+        // Define the order of document chapters
+        const CHAPTER_ORDER = [
             "title_page",
-            "acknowledgement",
+            "acknowledgment",
             "abstract",
             "table_of_contents",
-            "chapter1",
-            "chapter2",
-            "chapter3",
-            "chapter4",
-            "chapter5",
+            "chapter_1",
+            "chapter_2",
+            "chapter_3",
+            "chapter_4",
+            "chapter_5",
             "references",
-            "resource_person",
-            "glossary",
             "appendix_a",
             "appendix_b",
             "appendix_c",
@@ -779,64 +777,425 @@ export const getLatestDocuments = query({
             "appendix_f",
             "appendix_g",
             "appendix_h",
-            "appendix_i"
+            "appendix_i",
         ];
 
         try {
-            // Get all documents for the group
-            const documents = await ctx.db
-                .query("documents")
-                .withIndex("by_group_part", (q) => q.eq("group_id", groupId))
-                .collect();
-
-            // Get group statuses
-            const groupStatuses = await ctx.db
-                .query("groupStatus")
-                .withIndex("by_group_part", (q) => q.eq("group_id", groupId))
-                .collect();
-
-            // Create a map of part to status and last_opened
-            const statusMap = new Map<string, { status: number; last_opened?: number }>();
-            for (const status of groupStatuses) {
-                statusMap.set(status.part, {
-                    status: status.status,
-                    last_opened: status.last_opened
-                });
+            // Get the group to access member information
+            const group = await ctx.db.get(groupId);
+            if (!group) {
+                return { documents: [], done: true };
             }
 
-            // Group documents by part and get the latest version of each
-            const latestDocuments = new Map<string, DocumentWithStatus>();
-            for (const doc of documents) {
-                const existingDoc = latestDocuments.get(doc.part);
-                if (!existingDoc || doc._creationTime > existingDoc._creationTime) {
-                    const statusInfo = statusMap.get(doc.part);
-                    latestDocuments.set(doc.part, {
-                        ...doc,
-                        status: statusInfo?.status ?? 0, // Default to 0 (incomplete) if no status found
-                        last_opened: statusInfo?.last_opened
-                    });
+            const allStudentIds = [group.project_manager_id, ...group.member_ids];
+
+            // 1. Fetch all documents for the group
+            const allDocs = await ctx.db
+                .query("documents")
+                .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
+                .collect();
+
+            // 2. Fetch all review statuses for the group
+            const allStatuses = await ctx.db
+                .query("documentStatus")
+                .withIndex("by_group_document", (q) => q.eq("group_id", groupId))
+                .collect();
+
+            // Create a map for quick status lookup
+            const statusMap = new Map(allStatuses.map(s => [s.document_part, s]));
+
+            // 3. Get the latest version of each document part
+            const latestDocsMap = new Map<string, Doc<"documents">>();
+            for (const doc of allDocs) {
+                const existing = latestDocsMap.get(doc.chapter);
+                if (!existing || doc._creationTime > existing._creationTime) {
+                    latestDocsMap.set(doc.chapter, doc);
                 }
             }
 
-            // Convert to array and sort by predefined order
-            const sortedDocuments = Array.from(latestDocuments.values()).sort((a, b) => {
-                const aIndex = partsOrder.indexOf(a.part);
-                const bIndex = partsOrder.indexOf(b.part);
-                return aIndex - bIndex;
+            // 4. Combine documents with their review status
+            const documentsWithStatus: DocumentWithStatus[] = Array.from(latestDocsMap.values()).map(doc => {
+                const statusInfo = statusMap.get(doc.chapter);
+                return {
+                    ...doc,
+                    student_ids: allStudentIds, // Attach the student IDs
+                    status: statusInfo?.review_status ?? 0, // Default to 0 (Not Submitted)
+                    last_modified: statusInfo?.last_modified,
+                };
             });
 
-            return {
-                documents: sortedDocuments,
-                status: 'idle',
-                hasResults: sortedDocuments.length > 0,
-                done: true
-            };
+            // 5. Sort the documents according to CHAPTER_ORDER
+            documentsWithStatus.sort((a, b) => {
+                const indexA = CHAPTER_ORDER.indexOf(a.chapter);
+                const indexB = CHAPTER_ORDER.indexOf(b.chapter);
+                
+                // Handle cases where a chapter might not be in the order array
+                if (indexA === -1 && indexB === -1) return a.chapter.localeCompare(b.chapter);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                
+                return indexA - indexB;
+            });
+
+            return { documents: documentsWithStatus, done: true };
         } catch {
             return {
                 documents: [],
                 status: 'error',
                 hasResults: false,
                 done: true
+            };
+        }
+    },
+});
+
+// =========================================
+// Task Assignment Queries
+// =========================================
+
+export const getTaskAssignments = query({
+    args: {
+        groupId: v.id("groupsTable"),
+    },
+    handler: async (ctx, args) => {
+        const { groupId } = args;
+
+        try {
+            // Get the group to access member information
+            const group = await ctx.db.get(groupId);
+            if (!group) {
+                return {
+                    tasks: [],
+                    groupMembers: [],
+                    status: 'error',
+                    hasResults: false
+                };
+            }
+
+            // Get all task assignments for the group
+            const taskAssignments = await ctx.db
+                .query("taskAssignments")
+                .withIndex("by_group", (q) => q.eq("group_id", groupId))
+                .collect();
+
+            // Get all users for name lookups
+            const users = await ctx.db.query("users").collect();
+
+            // Get group members (project manager + members)
+            const allMemberIds = [group.project_manager_id, ...group.member_ids];
+            const groupMembers = allMemberIds
+                .map(id => users.find(u => u._id === id))
+                .filter((u): u is NonNullable<typeof u> => u !== undefined)
+                .map(user => ({
+                    _id: user._id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    email: user.email,
+                    isProjectManager: user._id === group.project_manager_id
+                }));
+
+            // Enhance task assignments with user information
+            const enhancedTasks = taskAssignments.map(task => {
+                const assignedUsers = task.assigned_student_ids
+                    .map(id => users.find(u => u._id === id))
+                    .filter((u): u is NonNullable<typeof u> => u !== undefined)
+                    .map(user => ({
+                        _id: user._id,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        email: user.email
+                    }));
+
+                return {
+                    ...task,
+                    assignedUsers
+                };
+            });
+
+            return {
+                tasks: enhancedTasks,
+                groupMembers,
+                status: 'idle',
+                hasResults: enhancedTasks.length > 0
+            };
+        } catch {
+            return {
+                tasks: [],
+                groupMembers: [],
+                status: 'error',
+                hasResults: false
+            };
+        }
+    },
+});
+
+export const getGroupMembersForTaskAssignment = query({
+    args: {
+        groupId: v.id("groupsTable"),
+    },
+    handler: async (ctx, args) => {
+        const { groupId } = args;
+
+        try {
+            // Get the group to access member information
+            const group = await ctx.db.get(groupId);
+            if (!group) {
+                return {
+                    groupMembers: [],
+                    status: 'error',
+                    hasResults: false
+                };
+            }
+
+            // Get all users for name lookups
+            const users = await ctx.db.query("users").collect();
+
+            // Get group members (project manager + members)
+            const allMemberIds = [group.project_manager_id, ...group.member_ids];
+            const groupMembers = allMemberIds
+                .map(id => users.find(u => u._id === id))
+                .filter((u): u is NonNullable<typeof u> => u !== undefined)
+                .map(user => ({
+                    _id: user._id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    email: user.email,
+                    isProjectManager: user._id === group.project_manager_id
+                }));
+
+            return {
+                groupMembers,
+                status: 'idle',
+                hasResults: groupMembers.length > 0
+            };
+        } catch {
+            return {
+                groupMembers: [],
+                status: 'error',
+                hasResults: false
+            };
+        }
+    },
+});
+
+export const getTaskAssignmentsByChapter = query({
+    args: {
+        groupId: v.id("groupsTable"),
+        chapter: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const { groupId, chapter } = args;
+
+        try {
+            // Get the group to access member information
+            const group = await ctx.db.get(groupId);
+            if (!group) {
+                return {
+                    tasks: [],
+                    groupMembers: [],
+                    status: 'error',
+                    hasResults: false
+                };
+            }
+
+            // Get task assignments for specific chapter
+            const taskAssignments = await ctx.db
+                .query("taskAssignments")
+                .withIndex("by_group_chapter", (q) => 
+                    q.eq("group_id", groupId).eq("chapter", chapter)
+                )
+                .collect();
+
+            // Get all users for name lookups
+            const users = await ctx.db.query("users").collect();
+
+            // Get group members (project manager + members)
+            const allMemberIds = [group.project_manager_id, ...group.member_ids];
+            const groupMembers = allMemberIds
+                .map(id => users.find(u => u._id === id))
+                .filter((u): u is NonNullable<typeof u> => u !== undefined)
+                .map(user => ({
+                    _id: user._id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    email: user.email,
+                    isProjectManager: user._id === group.project_manager_id
+                }));
+
+            // Enhance task assignments with user information
+            const enhancedTasks = taskAssignments.map(task => {
+                const assignedUsers = task.assigned_student_ids
+                    .map(id => users.find(u => u._id === id))
+                    .filter((u): u is NonNullable<typeof u> => u !== undefined)
+                    .map(user => ({
+                        _id: user._id,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        email: user.email
+                    }));
+
+                return {
+                    ...task,
+                    assignedUsers
+                };
+            });
+
+            return {
+                tasks: enhancedTasks,
+                groupMembers,
+                status: 'idle',
+                hasResults: enhancedTasks.length > 0
+            };
+        } catch {
+            return {
+                tasks: [],
+                groupMembers: [],
+                status: 'error',
+                hasResults: false
+            };
+        }
+    },
+});
+
+export const getTaskAssignmentsByStatus = query({
+    args: {
+        groupId: v.id("groupsTable"),
+        taskStatus: v.number(), // 0 = incomplete, 1 = completed
+    },
+    handler: async (ctx, args) => {
+        const { groupId, taskStatus } = args;
+
+        try {
+            // Get the group to access member information
+            const group = await ctx.db.get(groupId);
+            if (!group) {
+                return {
+                    tasks: [],
+                    groupMembers: [],
+                    status: 'error',
+                    hasResults: false
+                };
+            }
+
+            // Get task assignments by status
+            const taskAssignments = await ctx.db
+                .query("taskAssignments")
+                .withIndex("by_group_task_status", (q) => 
+                    q.eq("group_id", groupId).eq("task_status", taskStatus)
+                )
+                .collect();
+
+            // Get all users for name lookups
+            const users = await ctx.db.query("users").collect();
+
+            // Get group members (project manager + members)
+            const allMemberIds = [group.project_manager_id, ...group.member_ids];
+            const groupMembers = allMemberIds
+                .map(id => users.find(u => u._id === id))
+                .filter((u): u is NonNullable<typeof u> => u !== undefined)
+                .map(user => ({
+                    _id: user._id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    email: user.email,
+                    isProjectManager: user._id === group.project_manager_id
+                }));
+
+            // Enhance task assignments with user information
+            const enhancedTasks = taskAssignments.map(task => {
+                const assignedUsers = task.assigned_student_ids
+                    .map(id => users.find(u => u._id === id))
+                    .filter((u): u is NonNullable<typeof u> => u !== undefined)
+                    .map(user => ({
+                        _id: user._id,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        email: user.email
+                    }));
+
+                return {
+                    ...task,
+                    assignedUsers
+                };
+            });
+
+            return {
+                tasks: enhancedTasks,
+                groupMembers,
+                status: 'idle',
+                hasResults: enhancedTasks.length > 0
+            };
+        } catch {
+            return {
+                tasks: [],
+                groupMembers: [],
+                status: 'error',
+                hasResults: false
+            };
+        }
+    },
+});
+
+// =========================================
+// Document Status Queries
+// =========================================
+
+export const getDocumentStatuses = query({
+    args: {
+        groupId: v.id("groupsTable"),
+    },
+    handler: async (ctx, args) => {
+        const { groupId } = args;
+
+        try {
+            // Get all document statuses for the group
+            const documentStatuses = await ctx.db
+                .query("documentStatus")
+                .withIndex("by_group", (q) => q.eq("group_id", groupId))
+                .collect();
+
+            return {
+                documentStatuses,
+                status: 'idle',
+                hasResults: documentStatuses.length > 0
+            };
+        } catch {
+            return {
+                documentStatuses: [],
+                status: 'error',
+                hasResults: false
+            };
+        }
+    },
+});
+
+export const getDocumentStatusByPart = query({
+    args: {
+        groupId: v.id("groupsTable"),
+        documentPart: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const { groupId, documentPart } = args;
+
+        try {
+            // Get document status for specific part
+            const documentStatus = await ctx.db
+                .query("documentStatus")
+                .withIndex("by_group_document", (q) => 
+                    q.eq("group_id", groupId).eq("document_part", documentPart)
+                )
+                .first();
+
+            return {
+                documentStatus,
+                status: 'idle',
+                hasResults: !!documentStatus
+            };
+        } catch {
+            return {
+                documentStatus: null,
+                status: 'error',
+                hasResults: false
             };
         }
     },

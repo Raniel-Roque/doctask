@@ -1,15 +1,24 @@
-import { FaEye, FaEdit, FaCheck, FaPlus, FaTimes, FaDownload } from "react-icons/fa";
+import { FaEye, FaEdit, FaCheck, FaPlus, FaTimes, FaDownload, FaChevronDown } from "react-icons/fa";
 import { useState, useRef, useEffect } from "react";
 import React from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 
 interface Task {
-    _id: string;
-    title: string;
+    _id: Id<"taskAssignments">;
+    group_id: Id<"groupsTable">;
     chapter: string;
     section: string;
-    status: 'incomplete' | 'completed';
-    assignedTo: string[];
-    lastModified?: number;
+    title: string;
+    task_status: number; // 0 = incomplete, 1 = completed (for member/manager communication)
+    assigned_student_ids: Id<"users">[];
+    assignedUsers?: Array<{
+        _id: Id<"users">;
+        first_name: string;
+        last_name: string;
+        email: string;
+    }>;
 }
 
 interface TaskAssignmentTableProps {
@@ -17,25 +26,30 @@ interface TaskAssignmentTableProps {
     status: 'loading' | 'error' | 'idle' | 'no_group';
     currentUserId: string;
     mode: 'manager' | 'member';
+    groupMembers?: Array<{
+        _id: Id<"users">;
+        first_name: string;
+        last_name: string;
+        email: string;
+        isProjectManager: boolean;
+    }>;
+    onStatusChange?: (taskId: string, newStatus: number) => void;
 }
 
-// Status color mapping
-const STATUS_COLORS: { [key: string]: string } = {
-    incomplete: "bg-yellow-100 text-yellow-800",
-    completed: "bg-green-100 text-green-800"
+// Status color mapping for task_status (member/manager communication)
+const STATUS_COLORS: { [key: number]: string } = {
+    0: "bg-yellow-100 text-yellow-800",  // incomplete
+    1: "bg-green-100 text-green-800"     // completed
 };
 
-// Status label mapping
-const STATUS_LABELS: { [key: string]: string } = {
-    incomplete: "Incomplete",
-    completed: "Completed"
+// Status label mapping for task_status
+const STATUS_LABELS: { [key: number]: string } = {
+    0: "Incomplete",
+    1: "Completed"
 };
 
-// Available members for assignment
-const AVAILABLE_MEMBERS = ["User1", "User2", "User3"];
-
-// All documents (excluding title page, appendix a, and appendix d)
-const ALL_DOCUMENTS = [
+// Define the proper chapter order for sorting
+const CHAPTER_ORDER = [
     "acknowledgment",
     "abstract",
     "table_of_contents",
@@ -54,49 +68,32 @@ const ALL_DOCUMENTS = [
     "appendix_i",
 ];
 
-// Chapter 1 sections
-const CHAPTER_1_SECTIONS = [
-    "1.1 Project Context",
-    "1.2 Purpose and Description", 
-    "1.3 Objectives",
-    "1.4 Scope and Limitations"
-];
-
-// Chapter 3 sections
-const CHAPTER_3_SECTIONS = [
-    "3.1 Development",
-    "3.2 Implementation"
-];
-
-// Chapter 4 sections
-const CHAPTER_4_SECTIONS = [
-    "4.1 Methodology",
-    "4.2 Environment",
-    "4.3 Requirements Specifications",
-    "4.4 Design",
-    "4.5 Development",
-    "4.6 Verification, Validation, Testing",
-    "4.7 Implementation Plan",
-    "4.8 Installation Processes"
-];
-
 export const TaskAssignmentTable = ({
     tasks,
     status,
     currentUserId,
-    mode
+    mode,
+    groupMembers,
+    onStatusChange
 }: TaskAssignmentTableProps) => {
+    // Add Convex mutations
+    const updateTaskStatus = useMutation(api.mutations.updateTaskStatus);
+    const updateTaskAssignment = useMutation(api.mutations.updateTaskAssignment);
+    
     // Add state for status filter and expanded chapters
     const [selectedStatus, setSelectedStatus] = useState<string>("all");
     const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
     
-    // Add state for member assignments
-    const [memberAssignments, setMemberAssignments] = useState<Record<string, string[]>>({});
+    // Add state for member selector UI
     const [showMemberSelector, setShowMemberSelector] = useState<string | null>(null);
     // Add search state per chapter
     const [search, setSearch] = useState<Record<string, string>>({});
     const searchInputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    
+    // Add loading states
+    const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+    const [updatingAssignment, setUpdatingAssignment] = useState<string | null>(null);
 
     useEffect(() => {
         if (showMemberSelector && searchInputRef.current) {
@@ -123,15 +120,15 @@ export const TaskAssignmentTable = ({
 
     // Filter tasks based on selected status
     const filteredTasks = tasks.filter(task => {
-        const statusMatch = selectedStatus === "all" || task.status === selectedStatus;
+        const statusMatch = selectedStatus === "all" || task.task_status === parseInt(selectedStatus);
         return statusMatch;
     });
 
     // Status options for the dropdown
     const statusOptions = [
         { value: "all", label: "STATUS" },
-        { value: "incomplete", label: "INCOMPLETE" },
-        { value: "completed", label: "COMPLETED" }
+        { value: "0", label: "INCOMPLETE" },
+        { value: "1", label: "COMPLETED" }
     ];
 
     // Toggle chapter expansion
@@ -145,95 +142,78 @@ export const TaskAssignmentTable = ({
         setExpandedChapters(newExpanded);
     };
 
-    // Get available members for a specific chapter (excluding already assigned ones)
-    const getAvailableMembers = (chapter: string) => {
-        const assignedMembers = memberAssignments[chapter] || [];
-        return AVAILABLE_MEMBERS.filter(member => !assignedMembers.includes(member));
+    // Get available members for a specific task (excluding already assigned ones and the project manager)
+    const getAvailableMembers = (taskId: Id<"taskAssignments">) => {
+        const assignedMembers = tasks.find(t => t._id === taskId)?.assigned_student_ids || [];
+        return groupMembers?.filter(member => 
+            !assignedMembers.includes(member._id) && !member.isProjectManager
+        ) || [];
     };
 
-    // Add member to chapter
-    const addMemberToChapter = (chapter: string, member: string) => {
-        setMemberAssignments(prev => ({
-            ...prev,
-            [chapter]: [...(prev[chapter] || []), member]
-        }));
-    };
-
-    // Remove member from chapter
-    const removeMemberFromChapter = (chapter: string, member: string) => {
-        setMemberAssignments(prev => ({
-            ...prev,
-            [chapter]: (prev[chapter] || []).filter(m => m !== member)
-        }));
-    };
-
-    // Generate tasks for all documents
-    const generateTasks = () => {
-        const allTasks: Task[] = [];
-        
-        // Generate regular documents
-        ALL_DOCUMENTS.forEach((document, index) => {
-            if (document === "chapter_1") {
-                // Generate Chapter 1 with subparts
-                CHAPTER_1_SECTIONS.forEach((section, sectionIndex) => {
-                    allTasks.push({
-                        _id: `chapter1-${sectionIndex}`,
-                        title: section,
-                        chapter: "chapter_1",
-                        section: section,
-                        status: 'incomplete',
-                        assignedTo: [],
-                        lastModified: undefined
-                    });
-                });
-            } else if (document === "chapter_3") {
-                // Generate Chapter 3 with subparts
-                CHAPTER_3_SECTIONS.forEach((section, sectionIndex) => {
-                    allTasks.push({
-                        _id: `chapter3-${sectionIndex}`,
-                        title: section,
-                        chapter: "chapter_3",
-                        section: section,
-                        status: 'incomplete',
-                        assignedTo: [],
-                        lastModified: undefined
-                    });
-                });
-            } else if (document === "chapter_4") {
-                // Generate Chapter 4 with subparts
-                CHAPTER_4_SECTIONS.forEach((section, sectionIndex) => {
-                    allTasks.push({
-                        _id: `chapter4-${sectionIndex}`,
-                        title: section,
-                        chapter: "chapter_4",
-                        section: section,
-                        status: 'incomplete',
-                        assignedTo: [],
-                        lastModified: undefined
-                    });
-                });
-            } else {
-                // Generate regular documents
-                allTasks.push({
-                    _id: `${document}-${index}`,
-                    title: document.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                    chapter: document,
-                    section: document,
-                    status: 'incomplete',
-                    assignedTo: [],
-                    lastModified: undefined
-                });
+    // Add member to task
+    const addMemberToTask = async (taskId: Id<"taskAssignments">, memberId: Id<"users">) => {
+        try {
+            setUpdatingAssignment(taskId);
+            
+            // Find the task
+            const task = tasks.find(t => t._id === taskId);
+            if (!task) {
+                console.error("Task not found:", taskId);
+                return;
             }
-        });
 
-        return allTasks;
+            // Get current assignments and add the new member
+            const currentAssignments = task.assigned_student_ids || [];
+            const newAssignments = [...currentAssignments, memberId];
+
+            // Call the Convex mutation
+            await updateTaskAssignment({
+                taskId: task._id,
+                assignedStudentIds: newAssignments,
+                userId: currentUserId as Id<"users">
+            });
+            
+        } catch (error) {
+            console.error("Failed to add member to task:", error);
+            // You might want to show a toast notification here
+        } finally {
+            setUpdatingAssignment(null);
+        }
     };
 
-    // Use generated tasks if no tasks provided
-    const displayTasks = tasks.length > 0 ? filteredTasks : generateTasks();
+    // Remove member from task
+    const removeMemberFromTask = async (taskId: Id<"taskAssignments">, memberId: Id<"users">) => {
+        try {
+            setUpdatingAssignment(taskId);
+            
+            // Find the task
+            const task = tasks.find(t => t._id === taskId);
+            if (!task) {
+                console.error("Task not found:", taskId);
+                return;
+            }
+            
+            // Get current assignments and remove the member
+            const currentAssignments = task.assigned_student_ids || [];
+            const newAssignments = currentAssignments.filter(id => id !== memberId);
+            
+            // Call the Convex mutation
+            await updateTaskAssignment({
+                taskId: task._id,
+                assignedStudentIds: newAssignments,
+                userId: currentUserId as Id<"users">
+            });
+            
+        } catch (error) {
+            console.error("Failed to remove member from task:", error);
+            // You might want to show a toast notification here
+        } finally {
+            setUpdatingAssignment(null);
+        }
+    };
 
     // Group tasks by chapter
-    const groupedTasks = displayTasks.reduce((acc, task) => {
+    const groupedTasks = filteredTasks.reduce((acc, task) => {
         const chapter = task.chapter;
         if (!acc[chapter]) {
             acc[chapter] = [];
@@ -242,61 +222,123 @@ export const TaskAssignmentTable = ({
         return acc;
     }, {} as Record<string, Task[]>);
 
+    // Create sorted grouped tasks to maintain the correct chapter order
+    const sortedGroupedTasks = Object.fromEntries(
+        CHAPTER_ORDER
+            .filter(chapter => groupedTasks[chapter]) // Only include chapters that have tasks
+            .map(chapter => [chapter, groupedTasks[chapter]])
+    );
+
     // Check if user can edit the task
     const canEditTask = (task: Task) => {
         if (mode === 'manager') return true;
-        return task.assignedTo.includes(currentUserId);
+        return task.assigned_student_ids.includes(currentUserId as Id<"users">);
+    };
+
+    // Check if user can Edit Document status
+    const canEditTaskStatus = (task: Task) => {
+        if (mode === 'manager') return true;
+        return task.assigned_student_ids.includes(currentUserId as Id<"users">);
     };
 
     // Check if chapter has subparts
     const hasSubparts = (chapter: string) => {
-        return chapter === "chapter_1" || chapter === "chapter_3" || chapter === "chapter_4";
+        const chapterTasks = sortedGroupedTasks[chapter] || [];
+        return chapterTasks.length > 1;
     };
 
-    // Get assigned members for a chapter
-    const getAssignedMembers = (chapter: string) => {
-        return memberAssignments[chapter] || [];
+    // Get chapter status based on subparts completion
+    const getChapterStatus = (chapter: string, chapterTasks: Task[]) => {
+        if (!hasSubparts(chapter)) {
+            // For regular documents, return the task's status
+            return chapterTasks[0]?.task_status || 0;
+        }
+        
+        // For chapters with subparts, check if all subparts are completed
+        const allCompleted = chapterTasks.every(task => task.task_status === 1);
+        return allCompleted ? 1 : 0;
+    };
+
+    // Handle status change
+    const handleStatusChange = async (taskId: string, newStatus: number) => {
+        try {
+            setUpdatingStatus(taskId);
+            
+            // Call the Convex mutation
+            await updateTaskStatus({
+                taskId: taskId as Id<"taskAssignments">,
+                newStatus,
+                userId: currentUserId as Id<"users">
+            });
+            
+            // Call the parent callback if provided
+            if (onStatusChange) {
+                onStatusChange(taskId, newStatus);
+            }
+        } catch (error) {
+            console.error("Failed to update task status:", error);
+            // You might want to show a toast notification here
+        } finally {
+            setUpdatingStatus(null);
+        }
     };
 
     // Helper to get merged, deduped, sorted members from all subparts
     const getMergedSubpartMembers = (chapter: string, chapterTasks: Task[]) => {
-        const allMembers = chapterTasks.flatMap(task => getAssignedMembers(task._id));
-        return Array.from(new Set(allMembers)).sort();
+        const allMemberIds = chapterTasks.flatMap(task => task.assigned_student_ids);
+        const uniqueMemberIds = Array.from(new Set(allMemberIds));
+        
+        // Convert member IDs to member objects
+        return uniqueMemberIds.map(memberId => {
+            return groupMembers?.find(m => m._id === memberId);
+        }).filter(Boolean) as { _id: Id<"users">, first_name: string, last_name: string }[];
     };
 
     // Render member assignment UI
-    const renderMemberAssignment = (chapter: string) => {
-        const assignedMembers = [...getAssignedMembers(chapter)].sort();
-        const availableMembers = getAvailableMembers(chapter);
+    const renderMemberAssignment = (task: Task) => {
+        const assignedMemberIds = task.assigned_student_ids.sort();
+        const availableMembers = getAvailableMembers(task._id);
         const allAssigned = availableMembers.length === 0;
-        const searchValue = search[chapter] || "";
+        const searchValue = search[task._id] || "";
         const filteredMembers = availableMembers.filter(member =>
-            member.toLowerCase().includes(searchValue.toLowerCase())
+            `${member.first_name} ${member.last_name}`.toLowerCase().includes(searchValue.toLowerCase())
         );
+        const isLoading = updatingAssignment === task._id;
 
         return (
             <div className="flex justify-center w-full">
                 <div className="flex flex-wrap items-center gap-2">
-                    {assignedMembers.length > 0 ? (
-                        assignedMembers.map((member, index) => (
+                    {assignedMemberIds.length > 0 ? (
+                        assignedMemberIds.map((memberId) => {
+                            const member = groupMembers?.find(m => m._id === memberId);
+                            if (!member) return null;
+
+                            const isCurrentUser = memberId === currentUserId;
+                            const pillColor = mode === 'member' && isCurrentUser 
+                                ? "bg-purple-200 text-purple-900" 
+                                : "bg-blue-100 text-blue-800";
+                            
+                            return (
                             <span
-                                key={index}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                                    key={memberId}
+                                className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${pillColor}`}
                             >
-                                {member}
+                                    {member.first_name} {member.last_name}
                                 {mode === 'manager' && (
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            removeMemberFromChapter(chapter, member);
+                                                removeMemberFromTask(task._id, memberId);
                                         }}
-                                        className="text-blue-600 hover:text-blue-800"
+                                            disabled={isLoading}
+                                            className={`text-blue-600 hover:text-blue-800 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         <FaTimes className="w-3 h-3" />
                                     </button>
                                 )}
                             </span>
-                        ))
+                            );
+                        })
                     ) : (
                         mode === 'member' && (
                             <span className="text-gray-400 text-xs">No members assigned</span>
@@ -307,36 +349,41 @@ export const TaskAssignmentTable = ({
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setShowMemberSelector(chapter);
-                                    setSearch(prev => ({ ...prev, [chapter]: "" }));
+                                    setShowMemberSelector(task._id);
+                                    setSearch(prev => ({ ...prev, [task._id]: "" }));
                                 }}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors"
+                                disabled={isLoading}
+                                className={`inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <FaPlus className="w-3 h-3" />
                                 Add Member
                             </button>
-                            {showMemberSelector === chapter && (
+                            {showMemberSelector === task._id && (
                                 <div ref={dropdownRef} className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-[180px] p-2">
                                     <input
                                         ref={searchInputRef}
                                         type="text"
                                         value={searchValue}
-                                        onChange={e => setSearch(prev => ({ ...prev, [chapter]: e.target.value }))}
+                                        onChange={e => setSearch(prev => ({ ...prev, [task._id]: e.target.value }))}
                                         placeholder="Search members..."
                                         className="w-full mb-2 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
                                     />
                                     {filteredMembers.length > 0 ? (
                                         filteredMembers.map((member) => (
                                             <button
-                                                key={member}
+                                                key={member._id}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    addMemberToChapter(chapter, member);
+                                                    addMemberToTask(task._id, member._id);
                                                     setShowMemberSelector(null);
                                                 }}
-                                                className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md"
+                                                disabled={isLoading}
+                                                className={`block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
-                                                {member}
+                                                {member.first_name} {member.last_name}
+                                                {member.isProjectManager && (
+                                                    <span className="text-xs text-gray-500 ml-1">(Manager)</span>
+                                                )}
                                             </button>
                                         ))
                                     ) : (
@@ -346,7 +393,51 @@ export const TaskAssignmentTable = ({
                             )}
                         </div>
                     )}
+                    {isLoading && (
+                        <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-xs text-gray-500">Updating...</span>
+                        </div>
+                    )}
                 </div>
+            </div>
+        );
+    };
+
+    // Render status dropdown
+    const renderStatusDropdown = (task: Task) => {
+        const canEdit = canEditTaskStatus(task);
+        const currentStatus = task.task_status;
+        const isLoading = updatingStatus === task._id;
+        
+        if (!canEdit) {
+            // Show read-only status badge
+            return (
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[currentStatus] || STATUS_COLORS[0]}`}>
+                    {STATUS_LABELS[currentStatus] || STATUS_LABELS[0]}
+                </span>
+            );
+        }
+        
+        // Show editable dropdown with chevron
+        return (
+            <div className="relative inline-block">
+                <select
+                    value={currentStatus}
+                    onChange={(e) => handleStatusChange(task._id, parseInt(e.target.value))}
+                    disabled={isLoading}
+                    className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${STATUS_COLORS[currentStatus] || STATUS_COLORS[0]} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <option value={0} className="bg-yellow-100 text-yellow-800">Incomplete</option>
+                    <option value={1} className="bg-green-100 text-green-800">Completed</option>
+                </select>
+                <FaChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs pointer-events-none" />
+                {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
+                        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                )}
             </div>
         );
     };
@@ -410,7 +501,7 @@ export const TaskAssignmentTable = ({
                                         </td>
                                     </tr>
                                 )}
-                                {status === 'idle' && Array.isArray(tasks) && tasks.length === 0 && displayTasks.length === 0 && (
+                                {status === 'idle' && Array.isArray(tasks) && tasks.length === 0 && (
                                     <tr>
                                         <td colSpan={4} className="px-6 pt-7 pb-1 text-center text-gray-500">
                                             No tasks available.
@@ -424,12 +515,16 @@ export const TaskAssignmentTable = ({
                                         </td>
                                     </tr>
                                 )}
-                                {Object.entries(groupedTasks).map(([chapter, chapterTasks]) => (
+                                {status === 'idle' && Object.keys(sortedGroupedTasks)
+                                    .map((chapter) => {
+                                        const chapterTasks = sortedGroupedTasks[chapter] || [];
+                                        return (
                                     <React.Fragment key={chapter}>
                                         {hasSubparts(chapter) ? (
                                             <>
                                                 {/* Main chapter header: whole row clickable for collapse/expand */}
                                                 <tr
+                                                            key={`${chapter}-header`}
                                                     className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer"
                                                     onClick={() => toggleChapter(chapter)}
                                                 >
@@ -444,52 +539,58 @@ export const TaskAssignmentTable = ({
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS.incomplete}`}>
-                                                            {STATUS_LABELS.incomplete}
+                                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[getChapterStatus(chapter, chapterTasks)] || STATUS_COLORS[0]}`}>
+                                                                    {STATUS_LABELS[getChapterStatus(chapter, chapterTasks)] || STATUS_LABELS[0]}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                                                         <div className="flex flex-wrap justify-center gap-2">
                                                             {getMergedSubpartMembers(chapter, chapterTasks).length > 0 ? (
-                                                                getMergedSubpartMembers(chapter, chapterTasks).map((member, idx) => (
-                                                                    <span
-                                                                        key={idx}
-                                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
-                                                                    >
-                                                                        {member}
-                                                                    </span>
-                                                                ))
-                                                            ) : (
-                                                                <span className="text-gray-400 text-xs">No members assigned</span>
-                                                            )}
-                                                        </div>
-                                                    </td>
+                                                                        getMergedSubpartMembers(chapter, chapterTasks).map((member) => {
+                                                                            const isCurrentUser = member._id === currentUserId;
+                                                                            const pillColor = mode === 'member' && isCurrentUser 
+                                                                                ? "bg-purple-200 text-purple-900" 
+                                                                                : "bg-blue-100 text-blue-800";
+                                                                            return (
+                                                                                <span
+                                                                                    key={member._id}
+                                                                                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${pillColor}`}
+                                                                                >
+                                                                                    {member.first_name} {member.last_name}
+                                                                                </span>
+                                                                            );
+                                                                        })
+                                                                    ) : (
+                                                                        <span className="text-gray-400 text-xs">No members assigned</span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                                         <div className="flex items-center justify-center gap-3">
                                                             <button 
                                                                 className="text-blue-600 hover:text-blue-800 transition-colors"
-                                                                title="View Task"
+                                                                title="View Document"
                                                             >
                                                                 <FaEye className="w-5 h-5" />
                                                             </button>
                                                             <button 
                                                                 className="text-download-600 hover:text-download-800 transition-colors"
-                                                                title="Download Task"
+                                                                title="Download Document"
                                                             >
                                                                 <FaDownload className="w-5 h-5" />
                                                             </button>
                                                             {canEditTask(chapterTasks[0]) && (
                                                                 <button 
                                                                     className="text-purple-600 hover:text-purple-800 transition-colors"
-                                                                    title="Edit Task"
+                                                                    title="Edit Document"
                                                                 >
                                                                     <FaEdit className="w-5 h-5" />
                                                                 </button>
                                                             )}
-                                                            {mode === 'manager' && (
+                                                            {mode === 'manager' && getChapterStatus(chapter, chapterTasks) === 1 && (
                                                                 <button 
                                                                     className="text-green-600 hover:text-green-800 transition-colors"
-                                                                    title="Submit Task"
+                                                                    title="Submit Document"
                                                                 >
                                                                     <FaCheck className="w-5 h-5" />
                                                                 </button>
@@ -499,17 +600,15 @@ export const TaskAssignmentTable = ({
                                                 </tr>
                                                 {/* Subparts rows: show member assignment UI for each subpart */}
                                                 {expandedChapters.has(chapter) && chapterTasks.map((task) => (
-                                                    <tr key={task._id} className="hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer">
+                                                            <tr key={`${task._id}-subpart`} className="hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer">
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="text-sm font-medium text-gray-900 ml-6">○ {task.title}</div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[task.status] || STATUS_COLORS.incomplete}`}>
-                                                                {STATUS_LABELS[task.status] || STATUS_LABELS.incomplete}
-                                                            </span>
+                                                                    {renderStatusDropdown(task)}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                                            {renderMemberAssignment(task._id)}
+                                                                    {renderMemberAssignment(task)}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                                             {/* No actions for subparts */}
@@ -519,46 +618,44 @@ export const TaskAssignmentTable = ({
                                             </>
                                         ) : (
                                             // Regular document header row (not expandable, with actions)
-                                            <tr key={chapterTasks[0]._id} className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 ease-in-out">
+                                                    <tr key={`${chapterTasks[0]._id}-regular`} className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 ease-in-out">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm font-semibold text-gray-900">
                                                         {chapterTasks[0].title}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[chapterTasks[0].status] || STATUS_COLORS.incomplete}`}>
-                                                        {STATUS_LABELS[chapterTasks[0].status] || STATUS_LABELS.incomplete}
-                                                    </span>
+                                                            {renderStatusDropdown(chapterTasks[0])}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                                    {renderMemberAssignment(chapter)}
+                                                            {renderMemberAssignment(chapterTasks[0])}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                                     <div className="flex items-center justify-center gap-3">
                                                         <button 
                                                             className="text-blue-600 hover:text-blue-800 transition-colors"
-                                                            title="View Task"
+                                                            title="View Document"
                                                         >
                                                             <FaEye className="w-5 h-5" />
                                                         </button>
                                                         <button 
                                                             className="text-download-600 hover:text-download-800 transition-colors"
-                                                            title="Download Task"
+                                                            title="Download Document"
                                                         >
                                                             <FaDownload className="w-5 h-5" />
                                                         </button>
                                                         {canEditTask(chapterTasks[0]) && (
                                                             <button 
                                                                 className="text-purple-600 hover:text-purple-800 transition-colors"
-                                                                title="Edit Task"
+                                                                title="Edit Document"
                                                             >
                                                                 <FaEdit className="w-5 h-5" />
                                                             </button>
                                                         )}
-                                                        {mode === 'manager' && (
+                                                        {mode === 'manager' && chapterTasks[0].task_status === 1 && (
                                                             <button 
                                                                 className="text-green-600 hover:text-green-800 transition-colors"
-                                                                title="Submit Task"
+                                                                title="Submit Document"
                                                             >
                                                                 <FaCheck className="w-5 h-5" />
                                                             </button>
@@ -568,7 +665,8 @@ export const TaskAssignmentTable = ({
                                             </tr>
                                         )}
                                     </React.Fragment>
-                                ))}
+                                        );
+                                    })}
                             </tbody>
                         </table>
                     </div>

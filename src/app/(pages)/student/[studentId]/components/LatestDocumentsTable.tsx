@@ -12,7 +12,7 @@ interface Document {
     content: string;
     student_ids: Id<"users">[];
     status: number;
-    last_opened?: number;
+    last_modified?: number;
 }
 
 interface AdviserObj {
@@ -47,18 +47,20 @@ const GRADE_MAP: { [key: number]: string } = {
     6: "Not Accepted"
 };
 
-// Status color mapping
+// Status color mapping for review_status (instructor/manager review process)
 const STATUS_COLORS: { [key: number]: string } = {
-    0: "bg-yellow-100 text-yellow-800",
-    1: "bg-blue-100 text-blue-800",
-    2: "bg-green-100 text-green-800"
+    0: "bg-gray-100 text-gray-800",    // not_submitted
+    1: "bg-yellow-100 text-yellow-800", // in_review
+    2: "bg-green-100 text-green-800",   // approved
+    3: "bg-red-100 text-red-800"        // rejected
 };
 
-// Status label mapping
+// Status label mapping for review_status
 const STATUS_LABELS: { [key: number]: string } = {
-    0: "Incomplete",
+    0: "Not Submitted",
     1: "In Review",
-    2: "Approved"
+    2: "Approved",
+    3: "Rejected"
 };
 
 export const LatestDocumentsTable = ({
@@ -75,19 +77,20 @@ export const LatestDocumentsTable = ({
     // Add state for status filter
     const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
+    // Status options for the dropdown
+    const statusOptions = [
+        { value: "all", label: "STATUS" },
+        { value: "0", label: "NOT SUBMITTED" },
+        { value: "1", label: "IN REVIEW" },
+        { value: "2", label: "APPROVED" },
+        { value: "3", label: "REJECTED" }
+    ];
+
     // Filter documents based on selected status
     const filteredDocuments = documents.filter(doc => {
         if (selectedStatus === "all") return true;
         return doc.status === parseInt(selectedStatus);
     });
-
-    // Status options for the dropdown
-    const statusOptions = [
-        { value: "all", label: "STATUS" },
-        { value: "0", label: "INCOMPLETE" },
-        { value: "1", label: "IN REVIEW" },
-        { value: "2", label: "APPROVED" }
-    ];
 
     // Documents that are view/download only
     const viewOnlyDocuments = ["title_page", "appendix_a", "appendix_d"];
@@ -100,8 +103,8 @@ export const LatestDocumentsTable = ({
 
     const displayCapstoneTitle = capstoneTitle && capstoneTitle.trim() !== '' ? capstoneTitle : 'Untitled Capstone Document';
 
-    // Format last opened time
-    const formatLastOpened = (timestamp?: number) => {
+    // Format last modified time
+    const formatLastModified = (timestamp?: number) => {
         if (!timestamp) return "Never";
         const date = new Date(timestamp);
         return date.toLocaleDateString() + " " + date.toLocaleTimeString();
@@ -167,6 +170,12 @@ export const LatestDocumentsTable = ({
         <div>
             {/* Capstone/Adviser/Grade and Progress/Controls Container */}
             <div className="bg-white rounded-lg shadow-md p-8 mb-8 border border-gray-100">
+                {status === 'no_group' ? (
+                    <div className="text-center text-red-500 py-8">
+                        You are not currently assigned to a group. Please contact your instructor to be assigned to a group.
+                    </div>
+                ) : (
+                    <>
                 <div className="mb-2">
                     <h2 className="text-2xl font-bold text-gray-900 break-words max-w-3xl tracking-tight">
                         {displayCapstoneTitle}
@@ -201,6 +210,8 @@ export const LatestDocumentsTable = ({
                         <FaDownload className="w-5 h-5" />
                     </button>
                 </div>
+                    </>
+                )}
             </div>
             {/* End Capstone/Adviser/Grade and Progress/Controls Container */}
 
@@ -232,7 +243,7 @@ export const LatestDocumentsTable = ({
                                         </div>
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                                        Last Opened
+                                        Last Modified
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                                         Actions
@@ -289,7 +300,7 @@ export const LatestDocumentsTable = ({
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                            {formatLastOpened(doc.last_opened)}
+                                            {formatLastModified(doc.last_modified)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                             <div className="flex items-center justify-center gap-3">

@@ -58,6 +58,12 @@ export async function POST(request: Request) {
     // Delete group status
     await convex.mutation(api.restore.deleteAllGroupStatus);
     
+    // Delete task assignments
+    await convex.mutation(api.restore.deleteAllTaskAssignments);
+    
+    // Delete document status
+    await convex.mutation(api.restore.deleteAllDocumentStatus);
+    
     // Delete users (except instructor)
     await convex.mutation(api.restore.deleteAllUsers, { instructorId });
     
@@ -223,7 +229,33 @@ export async function POST(request: Request) {
         group_id: newGroupId,
         part: status.part,
         status: status.status,
-        last_opened: status.last_opened,
+        last_modified: status.last_modified,
+      });
+    }
+
+    // Restore task assignments
+    for (const assignment of backup.tables.taskAssignments) {
+      const newGroupId = oldGroupIdToNewGroupId.get(assignment.group_id);
+      const newAssignedStudentIds = assignment.assigned_student_ids.map((id: string) => oldUserIdToNewUserId.get(id)).filter(Boolean);
+      await convex.mutation(api.restore.restoreTaskAssignment, {
+        group_id: newGroupId,
+        chapter: assignment.chapter,
+        section: assignment.section,
+        title: assignment.title,
+        task_status: assignment.task_status,
+        assigned_student_ids: newAssignedStudentIds,
+      });
+    }
+
+    // Restore document status
+    for (const status of backup.tables.documentStatus) {
+      const newGroupId = oldGroupIdToNewGroupId.get(status.group_id);
+      await convex.mutation(api.restore.restoreDocumentStatus, {
+        group_id: newGroupId,
+        document_part: status.document_part,
+        review_status: status.review_status,
+        review_notes: status.review_notes,
+        last_modified: status.last_modified,
       });
     }
 

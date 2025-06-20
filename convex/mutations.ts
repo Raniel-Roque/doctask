@@ -17,6 +17,8 @@ interface ConvexBackup {
     logs: unknown[];
     documents: unknown[];
     groupStatus: unknown[];
+    taskAssignments: unknown[];
+    documentStatus: unknown[];
   };
 }
 
@@ -31,7 +33,7 @@ function validateBackupFile(file: unknown): file is ConvexBackup {
   }
 
   // Validate each table exists and has data
-  const requiredTables = ['users', 'groups', 'students', 'advisers', 'logs', 'documents', 'groupStatus'];
+  const requiredTables = ['users', 'groups', 'students', 'advisers', 'logs', 'documents', 'groupStatus', 'taskAssignments', 'documentStatus'];
   for (const table of requiredTables) {
     if (!backup.tables[table as keyof typeof backup.tables] || 
         !Array.isArray(backup.tables[table as keyof typeof backup.tables])) {
@@ -257,20 +259,18 @@ export const createGroup = mutation({
       }
     }
 
-    // Create initial documents for all parts
-    const partsAndTitles: [string, string][] = [
+    // Create documents for all parts
+    const partsAndTitles = [
       ["title_page", "Title Page"],
-      ["acknowledgement", "Acknowledgement"],
+      ["acknowledgment", "Acknowledgement"],
       ["abstract", "Abstract"],
       ["table_of_contents", "Table of Contents"],
-      ["chapter1", "Chapter 1"],
-      ["chapter2", "Chapter 2"],
-      ["chapter3", "Chapter 3"],
-      ["chapter4", "Chapter 4"],
-      ["chapter5", "Chapter 5"],
+      ["chapter_1", "Chapter 1"],
+      ["chapter_2", "Chapter 2"],
+      ["chapter_3", "Chapter 3"],
+      ["chapter_4", "Chapter 4"],
+      ["chapter_5", "Chapter 5"],
       ["references", "References"],
-      ["resource_person", "Resource Person"],
-      ["glossary", "Glossary"],
       ["appendix_a", "Appendix A"],
       ["appendix_b", "Appendix B"],
       ["appendix_c", "Appendix C"],
@@ -281,20 +281,91 @@ export const createGroup = mutation({
       ["appendix_h", "Appendix H"],
       ["appendix_i", "Appendix I"],
     ];
-    for (const [part, title] of partsAndTitles) {
+    for (const [chapter, title] of partsAndTitles) {
       await ctx.db.insert("documents", {
         group_id: groupId,
-        part,
+        chapter,
         room_id: "",
         title,
         content: "",
-        student_ids: [args.project_manager_id],
       });
       await ctx.db.insert("groupStatus", {
         group_id: groupId,
-        part,
+        part: chapter,
         status: 0, // 0 = incomplete
         // last_opened is omitted on creation
+      });
+    }
+
+    // Create task assignments for all documents and subparts
+    const taskAssignments: Array<{
+      chapter: string;
+      section: string;
+      title: string;
+    }> = [
+      // Regular documents
+      { chapter: "acknowledgment", section: "acknowledgment", title: "Acknowledgement" },
+      { chapter: "abstract", section: "abstract", title: "Abstract" },
+      { chapter: "table_of_contents", section: "table_of_contents", title: "Table of Contents" },
+      { chapter: "chapter_2", section: "chapter_2", title: "Chapter 2" },
+      { chapter: "chapter_5", section: "chapter_5", title: "Chapter 5" },
+      { chapter: "references", section: "references", title: "References" },
+      { chapter: "appendix_b", section: "appendix_b", title: "Appendix B" },
+      { chapter: "appendix_c", section: "appendix_c", title: "Appendix C" },
+      { chapter: "appendix_e", section: "appendix_e", title: "Appendix E" },
+      { chapter: "appendix_f", section: "appendix_f", title: "Appendix F" },
+      { chapter: "appendix_g", section: "appendix_g", title: "Appendix G" },
+      { chapter: "appendix_h", section: "appendix_h", title: "Appendix H" },
+      { chapter: "appendix_i", section: "appendix_i", title: "Appendix I" },
+      
+      // Chapter 1 subparts
+      { chapter: "chapter_1", section: "1.1 Project Context", title: "1.1 Project Context" },
+      { chapter: "chapter_1", section: "1.2 Purpose and Description", title: "1.2 Purpose and Description" },
+      { chapter: "chapter_1", section: "1.3 Objectives", title: "1.3 Objectives" },
+      { chapter: "chapter_1", section: "1.4 Scope and Limitations", title: "1.4 Scope and Limitations" },
+      
+      // Chapter 3 subparts
+      { chapter: "chapter_3", section: "3.1 Development", title: "3.1 Development" },
+      { chapter: "chapter_3", section: "3.2 Implementation", title: "3.2 Implementation" },
+      
+      // Chapter 4 subparts
+      { chapter: "chapter_4", section: "4.1 Methodology", title: "4.1 Methodology" },
+      { chapter: "chapter_4", section: "4.2 Environment", title: "4.2 Environment" },
+      { chapter: "chapter_4", section: "4.3 Requirements Specifications", title: "4.3 Requirements Specifications" },
+      { chapter: "chapter_4", section: "4.4 Design", title: "4.4 Design" },
+      { chapter: "chapter_4", section: "4.5 Development", title: "4.5 Development" },
+      { chapter: "chapter_4", section: "4.6 Verification, Validation, Testing", title: "4.6 Verification, Validation, Testing" },
+      { chapter: "chapter_4", section: "4.7 Implementation Plan", title: "4.7 Implementation Plan" },
+      { chapter: "chapter_4", section: "4.8 Installation Processes", title: "4.8 Installation Processes" },
+    ];
+
+    for (const task of taskAssignments) {
+      await ctx.db.insert("taskAssignments", {
+        group_id: groupId,
+        chapter: task.chapter,
+        section: task.section,
+        title: task.title,
+        task_status: 0, // 0 = incomplete
+        assigned_student_ids: [],
+      });
+    }
+
+    // Create document status entries for all documents
+    const documentParts = [
+      "title_page", "acknowledgment", "abstract", "table_of_contents",
+      "chapter_1", "chapter_2", "chapter_3", "chapter_4", "chapter_5",
+      "references",
+      "appendix_a", "appendix_b", "appendix_c", "appendix_d",
+      "appendix_e", "appendix_f", "appendix_g", "appendix_h", "appendix_i"
+    ];
+
+    for (const documentPart of documentParts) {
+      await ctx.db.insert("documentStatus", {
+        group_id: groupId,
+        document_part: documentPart,
+        review_status: 0, // 0 = not_submitted
+        review_notes: undefined,
+        last_modified: undefined,
       });
     }
 
@@ -412,10 +483,37 @@ export const updateUser = mutation({
           // Delete all documents associated with this group
           const docs = await ctx.db
             .query("documents")
-            .withIndex("by_group_part", (q) => q.eq("group_id", group._id))
+            .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
             .collect();
           for (const doc of docs) {
             await ctx.db.delete(doc._id);
+          }
+          
+          // Delete all task assignments associated with this group
+          const taskAssignments = await ctx.db
+            .query("taskAssignments")
+            .withIndex("by_group", (q) => q.eq("group_id", group._id))
+            .collect();
+          for (const task of taskAssignments) {
+            await ctx.db.delete(task._id);
+          }
+          
+          // Delete all document status entries associated with this group
+          const documentStatuses = await ctx.db
+            .query("documentStatus")
+            .withIndex("by_group", (q) => q.eq("group_id", group._id))
+            .collect();
+          for (const status of documentStatuses) {
+            await ctx.db.delete(status._id);
+          }
+          
+          // Delete all groupStatus entries for this group
+          const statuses = await ctx.db
+            .query("groupStatus")
+            .withIndex("by_group_part", (q) => q.eq("group_id", group._id))
+            .collect();
+          for (const status of statuses) {
+            await ctx.db.delete(status._id);
           }
           
           // Delete the group
@@ -968,16 +1066,34 @@ export const deleteGroup = mutation({
     // Delete all documents associated with this group
     const docs = await ctx.db
       .query("documents")
-      .withIndex("by_group_part", (q) => q.eq("group_id", args.groupId))
+      .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
       .collect();
     for (const doc of docs) {
       await ctx.db.delete(doc._id);
     }
 
+    // Delete all task assignments associated with this group
+    const taskAssignments = await ctx.db
+      .query("taskAssignments")
+      .withIndex("by_group", (q) => q.eq("group_id", group._id))
+      .collect();
+    for (const task of taskAssignments) {
+      await ctx.db.delete(task._id);
+    }
+
+    // Delete all document status entries associated with this group
+    const documentStatuses = await ctx.db
+      .query("documentStatus")
+      .withIndex("by_group", (q) => q.eq("group_id", group._id))
+      .collect();
+    for (const status of documentStatuses) {
+      await ctx.db.delete(status._id);
+    }
+
     // Delete all groupStatus entries for this group
     const statuses = await ctx.db
       .query("groupStatus")
-      .withIndex("by_group_part", (q) => q.eq("group_id", args.groupId))
+      .withIndex("by_group_part", (q) => q.eq("group_id", group._id))
       .collect();
     for (const status of statuses) {
       await ctx.db.delete(status._id);
@@ -1060,6 +1176,8 @@ export const downloadConvexBackup = mutation({
     const logs = await ctx.db.query("instructorLogs").collect();
     const documents = await ctx.db.query("documents").collect();
     const groupStatus = await ctx.db.query("groupStatus").collect();
+    const taskAssignments = await ctx.db.query("taskAssignments").collect();
+    const documentStatus = await ctx.db.query("documentStatus").collect();
 
     // Create backup object with timestamp
     const backup: ConvexBackup = {
@@ -1072,7 +1190,9 @@ export const downloadConvexBackup = mutation({
         advisers,
         logs,
         documents,
-        groupStatus
+        groupStatus,
+        taskAssignments,
+        documentStatus
       }
     };
 
@@ -1238,6 +1358,126 @@ export const cancelAdviserRequest = mutation({
         requested_adviser: undefined,
       });
     }
+    return { success: true };
+  },
+});
+
+// =========================================
+// TASK ASSIGNMENT OPERATIONS
+// =========================================
+
+export const updateTaskStatus = mutation({
+  args: {
+    taskId: v.id("taskAssignments"),
+    newStatus: v.number(), // 0 = incomplete, 1 = completed
+    userId: v.id("users"), // User making the change
+  },
+  handler: async (ctx, args) => {
+    // Get the task
+    const task = await ctx.db.get(args.taskId);
+    if (!task) throw new Error("Task not found");
+
+    // Get the user making the change
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+
+    // Check if user has permission to update this task
+    // Managers can update any task, members can only update tasks they're assigned to
+    const isManager = user.subrole === 1;
+    const isAssigned = task.assigned_student_ids.includes(args.userId);
+    
+    if (!isManager && !isAssigned) {
+      throw new Error("You don't have permission to update this task");
+    }
+
+    // Update the task status
+    await ctx.db.patch(args.taskId, {
+      task_status: args.newStatus,
+    });
+
+    return { success: true };
+  },
+});
+
+export const updateTaskAssignment = mutation({
+  args: {
+    taskId: v.id("taskAssignments"),
+    assignedStudentIds: v.array(v.id("users")),
+    userId: v.id("users"), // User making the change (should be manager)
+  },
+  handler: async (ctx, args) => {
+    // Get the task
+    const task = await ctx.db.get(args.taskId);
+    if (!task) throw new Error("Task not found");
+
+    // Get the user making the change
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+
+    // Only managers can assign tasks
+    if (user.subrole !== 1) {
+      throw new Error("Only managers can assign tasks");
+    }
+
+    // Verify all assigned students are valid
+    for (const studentId of args.assignedStudentIds) {
+      const student = await ctx.db.get(studentId);
+      if (!student || student.role !== 0) {
+        throw new Error("Invalid student ID");
+      }
+    }
+
+    // Update the task assignment
+    await ctx.db.patch(args.taskId, {
+      assigned_student_ids: args.assignedStudentIds,
+    });
+
+    return { success: true };
+  },
+});
+
+// =========================================
+// DOCUMENT STATUS OPERATIONS
+// =========================================
+
+export const updateDocumentStatus = mutation({
+  args: {
+    groupId: v.id("groupsTable"),
+    documentPart: v.string(),
+    reviewStatus: v.number(), // 0 = not_submitted, 1 = submitted, 2 = under_review, 3 = approved, 4 = rejected
+    reviewNotes: v.optional(v.string()),
+    userId: v.id("users"), // User making the change
+  },
+  handler: async (ctx, args) => {
+    // Get the document status entry
+    const documentStatus = await ctx.db
+      .query("documentStatus")
+      .withIndex("by_group_document", (q) => 
+        q.eq("group_id", args.groupId).eq("document_part", args.documentPart)
+      )
+      .first();
+    
+    if (!documentStatus) throw new Error("Document status not found");
+
+    // Get the user making the change
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+
+    // Check permissions - managers and instructors can update document status
+    const isManager = user.subrole === 1;
+    const isInstructor = user.role === 2;
+    
+    if (!isManager && !isInstructor) {
+      throw new Error("You don't have permission to update document status");
+    }
+
+    // Update the document status
+    await ctx.db.patch(documentStatus._id, {
+      review_status: args.reviewStatus,
+      review_notes: args.reviewNotes,
+      last_modified: Date.now(),
+    });
+
     return { success: true };
   },
 });

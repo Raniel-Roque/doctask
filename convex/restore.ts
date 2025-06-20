@@ -76,6 +76,28 @@ export const deleteAllGroupStatus = mutation({
   },
 });
 
+export const deleteAllTaskAssignments = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const assignments = await ctx.db.query("taskAssignments").collect();
+    for (const assignment of assignments) {
+      await ctx.db.delete(assignment._id);
+    }
+    return { success: true };
+  },
+});
+
+export const deleteAllDocumentStatus = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const statuses = await ctx.db.query("documentStatus").collect();
+    for (const status of statuses) {
+      await ctx.db.delete(status._id);
+    }
+    return { success: true };
+  },
+});
+
 // =========================================
 // RESTORE OPERATIONS
 // =========================================
@@ -218,14 +240,58 @@ export const restoreGroupStatus = mutation({
     group_id: v.id("groupsTable"),
     part: v.string(),
     status: v.number(),
-    last_opened: v.optional(v.number()),
+    last_modified: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("groupStatus", {
       group_id: args.group_id,
       part: args.part,
       status: args.status,
-      last_opened: args.last_opened,
+      last_modified: args.last_modified,
+    });
+
+    return { success: true };
+  },
+});
+
+export const restoreTaskAssignment = mutation({
+  args: {
+    group_id: v.id("groupsTable"),
+    chapter: v.string(),
+    section: v.string(),
+    title: v.string(),
+    task_status: v.number(),
+    assigned_student_ids: v.array(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("taskAssignments", {
+      group_id: args.group_id,
+      chapter: args.chapter,
+      section: args.section,
+      title: args.title,
+      task_status: args.task_status,
+      assigned_student_ids: args.assigned_student_ids,
+    });
+
+    return { success: true };
+  },
+});
+
+export const restoreDocumentStatus = mutation({
+  args: {
+    group_id: v.id("groupsTable"),
+    document_part: v.string(),
+    review_status: v.number(),
+    review_notes: v.optional(v.string()),
+    last_modified: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("documentStatus", {
+      group_id: args.group_id,
+      document_part: args.document_part,
+      review_status: args.review_status,
+      review_notes: args.review_notes,
+      last_modified: args.last_modified,
     });
 
     return { success: true };
