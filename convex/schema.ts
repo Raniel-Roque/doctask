@@ -200,18 +200,6 @@ export default defineSchema({
   .index("by_review_status", ["review_status"])
   .index("by_group_document", ["group_id", "document_part"])
   .index("by_group_review_status", ["group_id", "review_status"]),
-
-  // =========================================
-  // Group Status Table (Legacy - can be deprecated)
-  // =========================================
-  groupStatus: defineTable({
-    group_id: v.id("groupsTable"),
-    part: v.string(), // e.g., "chapter1", "appendix_a", etc.
-    status: v.number(), // 0 = incomplete, 1 = completed, 2 = in_review, 3 = approved
-    last_modified: v.optional(v.number()), // timestamp (ms since epoch), optional
-  })
-  .index("by_group_part", ["group_id", "part"])
-  .index("by_group_status", ["group_id", "status"]),
 });
 
 

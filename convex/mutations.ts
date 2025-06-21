@@ -16,7 +16,6 @@ interface ConvexBackup {
     advisers: unknown[];
     logs: unknown[];
     documents: unknown[];
-    groupStatus: unknown[];
     taskAssignments: unknown[];
     documentStatus: unknown[];
   };
@@ -33,7 +32,7 @@ function validateBackupFile(file: unknown): file is ConvexBackup {
   }
 
   // Validate each table exists and has data
-  const requiredTables = ['users', 'groups', 'students', 'advisers', 'logs', 'documents', 'groupStatus', 'taskAssignments', 'documentStatus'];
+  const requiredTables = ['users', 'groups', 'students', 'advisers', 'logs', 'documents', 'taskAssignments', 'documentStatus'];
   for (const table of requiredTables) {
     if (!backup.tables[table as keyof typeof backup.tables] || 
         !Array.isArray(backup.tables[table as keyof typeof backup.tables])) {
@@ -289,12 +288,6 @@ export const createGroup = mutation({
         title,
         content: "",
       });
-      await ctx.db.insert("groupStatus", {
-        group_id: groupId,
-        part: chapter,
-        status: 0, // 0 = incomplete
-        // last_opened is omitted on creation
-      });
     }
 
     // Create task assignments for all documents and subparts
@@ -504,15 +497,6 @@ export const updateUser = mutation({
             .withIndex("by_group", (q) => q.eq("group_id", group._id))
             .collect();
           for (const status of documentStatuses) {
-            await ctx.db.delete(status._id);
-          }
-          
-          // Delete all groupStatus entries for this group
-          const statuses = await ctx.db
-            .query("groupStatus")
-            .withIndex("by_group_part", (q) => q.eq("group_id", group._id))
-            .collect();
-          for (const status of statuses) {
             await ctx.db.delete(status._id);
           }
           
@@ -1090,15 +1074,6 @@ export const deleteGroup = mutation({
       await ctx.db.delete(status._id);
     }
 
-    // Delete all groupStatus entries for this group
-    const statuses = await ctx.db
-      .query("groupStatus")
-      .withIndex("by_group_part", (q) => q.eq("group_id", group._id))
-      .collect();
-    for (const status of statuses) {
-      await ctx.db.delete(status._id);
-    }
-
     // Delete the group
     await ctx.db.delete(args.groupId);
 
@@ -1175,7 +1150,6 @@ export const downloadConvexBackup = mutation({
     const advisers = await ctx.db.query("advisersTable").collect();
     const logs = await ctx.db.query("instructorLogs").collect();
     const documents = await ctx.db.query("documents").collect();
-    const groupStatus = await ctx.db.query("groupStatus").collect();
     const taskAssignments = await ctx.db.query("taskAssignments").collect();
     const documentStatus = await ctx.db.query("documentStatus").collect();
 
@@ -1190,7 +1164,6 @@ export const downloadConvexBackup = mutation({
         advisers,
         logs,
         documents,
-        groupStatus,
         taskAssignments,
         documentStatus
       }

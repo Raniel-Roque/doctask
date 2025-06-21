@@ -55,9 +55,6 @@ export async function POST(request: Request) {
     // Delete documents
     await convex.mutation(api.restore.deleteAllDocuments);
 
-    // Delete group status
-    await convex.mutation(api.restore.deleteAllGroupStatus);
-    
     // Delete task assignments
     await convex.mutation(api.restore.deleteAllTaskAssignments);
     
@@ -211,24 +208,23 @@ export async function POST(request: Request) {
     // Restore documents
     for (const doc of backup.tables.documents) {
       const newGroupId = oldGroupIdToNewGroupId.get(doc.group_id);
-      const newStudentIds = doc.student_ids.map((id: string) => oldUserIdToNewUserId.get(id)).filter(Boolean);
       await convex.mutation(api.restore.restoreDocument, {
         group_id: newGroupId,
-        part: doc.part,
+        chapter: doc.chapter,
         room_id: doc.room_id,
         title: doc.title,
         content: doc.content,
-        student_ids: newStudentIds,
       });
     }
 
-    // Restore group status
-    for (const status of backup.tables.groupStatus) {
+    // Restore document status
+    for (const status of backup.tables.documentStatus) {
       const newGroupId = oldGroupIdToNewGroupId.get(status.group_id);
-      await convex.mutation(api.restore.restoreGroupStatus, {
+      await convex.mutation(api.restore.restoreDocumentStatus, {
         group_id: newGroupId,
-        part: status.part,
-        status: status.status,
+        document_part: status.document_part,
+        review_status: status.review_status,
+        review_notes: status.review_notes,
         last_modified: status.last_modified,
       });
     }
@@ -244,18 +240,6 @@ export async function POST(request: Request) {
         title: assignment.title,
         task_status: assignment.task_status,
         assigned_student_ids: newAssignedStudentIds,
-      });
-    }
-
-    // Restore document status
-    for (const status of backup.tables.documentStatus) {
-      const newGroupId = oldGroupIdToNewGroupId.get(status.group_id);
-      await convex.mutation(api.restore.restoreDocumentStatus, {
-        group_id: newGroupId,
-        document_part: status.document_part,
-        review_status: status.review_status,
-        review_notes: status.review_notes,
-        last_modified: status.last_modified,
       });
     }
 

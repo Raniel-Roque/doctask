@@ -65,17 +65,6 @@ export const deleteAllDocuments = mutation({
   },
 });
 
-export const deleteAllGroupStatus = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const statuses = await ctx.db.query("groupStatus").collect();
-    for (const status of statuses) {
-      await ctx.db.delete(status._id);
-    }
-    return { success: true };
-  },
-});
-
 export const deleteAllTaskAssignments = mutation({
   args: {},
   handler: async (ctx) => {
@@ -215,39 +204,18 @@ export const restoreAdviserCode = mutation({
 export const restoreDocument = mutation({
   args: {
     group_id: v.id("groupsTable"),
-    part: v.string(),
+    chapter: v.string(),
     room_id: v.string(),
     title: v.string(),
     content: v.string(),
-    student_ids: v.array(v.id("users")),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("documents", {
       group_id: args.group_id,
-      part: args.part,
+      chapter: args.chapter,
       room_id: args.room_id,
       title: args.title,
       content: args.content,
-      student_ids: args.student_ids,
-    });
-
-    return { success: true };
-  },
-});
-
-export const restoreGroupStatus = mutation({
-  args: {
-    group_id: v.id("groupsTable"),
-    part: v.string(),
-    status: v.number(),
-    last_modified: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.insert("groupStatus", {
-      group_id: args.group_id,
-      part: args.part,
-      status: args.status,
-      last_modified: args.last_modified,
     });
 
     return { success: true };
