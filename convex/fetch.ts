@@ -359,26 +359,41 @@ export const getPendingGroupIdsForAdviser = query({
 
       // Apply search if searchTerm is provided
       if (searchTerm.trim()) {
-        const searchTerms = searchTerm.toLowerCase().split(" ").filter(term => term.length > 0);
+        // Use Convex search functionality for capstone titles
+        const capstoneResults = await ctx.db
+            .query("groupsTable")
+            .withSearchIndex("search_by_capstone_title", (q) => 
+                q.search("capstone_title", searchTerm)
+            )
+            .collect();
         
-        filteredGroups = filteredGroups.filter(group => {
-          const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
-          const groupName = projectManager ? `${projectManager.last_name} et al`.toLowerCase() : "";
-          const capstoneTitle = (group.capstone_title || "").toLowerCase();
-          const members = group.member_ids
-            .map(id => users.find(u => u._id === id))
-            .filter((u): u is NonNullable<typeof u> => u !== undefined);
-
-          const memberNames = members.map(m => 
-            `${m.first_name} ${m.last_name}`.toLowerCase()
-          ).join(" ");
-
-          return searchTerms.every(term =>
-            groupName.includes(term) ||
-            capstoneTitle.includes(term) ||
-            memberNames.includes(term)
-          );
+        // Filter capstone results to only include groups assigned to this adviser
+        const capstoneFiltered = capstoneResults.filter(group => 
+            adviser.group_ids?.includes(group._id)
+        );
+        
+        // Also search by project manager names
+        const allGroups = await ctx.db.query("groupsTable").collect();
+        const users = await ctx.db.query("users").collect();
+        
+        const managerFiltered = allGroups.filter(group => {
+            if (!adviser.group_ids?.includes(group._id)) return false;
+            
+            const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
+            if (!projectManager) return false;
+            
+            const managerName = `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
+            const groupName = `${projectManager.last_name} et al`.toLowerCase();
+            
+            return managerName.includes(searchTerm.toLowerCase()) || 
+                   groupName.includes(searchTerm.toLowerCase());
         });
+        
+        // Combine and deduplicate results
+        const combinedResults = [...capstoneFiltered, ...managerFiltered];
+        filteredGroups = combinedResults.filter((group, index, self) => 
+            index === self.findIndex(g => g._id === group._id)
+        );
       }
 
       // Apply sorting
@@ -1194,6 +1209,299 @@ export const getDocumentStatusByPart = query({
         } catch {
             return {
                 documentStatus: null,
+                status: 'error',
+                hasResults: false
+            };
+        }
+    },
+});
+
+// =========================================
+// Adviser Documents Queries
+// =========================================
+
+interface AdviserDocumentWithStatus {
+    _id: Id<"documents">;
+    _creationTime: number;
+    group_id: Id<"groupsTable">;
+    chapter: string;
+    room_id: string;
+    title: string;
+    content: string;
+    status: number; // This represents review_status from documentStatus table
+    last_modified?: number; // This comes from documentStatus.last_modified
+}
+
+interface AdviserGroupWithDocuments {
+    _id: Id<"groupsTable">;
+    capstone_title?: string;
+    project_manager_id: Id<"users">;
+    member_ids: Id<"users">[];
+    adviser_id?: Id<"users">;
+    requested_adviser?: Id<"users">;
+    grade?: number;
+    name?: string;
+    projectManager?: {
+        _id: Id<"users">;
+        first_name: string;
+        middle_name?: string;
+        last_name: string;
+    };
+    members?: Array<{
+        _id: Id<"users">;
+        first_name: string;
+        middle_name?: string;
+        last_name: string;
+    }>;
+    adviser?: {
+        _id: Id<"users">;
+        first_name: string;
+        middle_name?: string;
+        last_name: string;
+    };
+    documents: AdviserDocumentWithStatus[];
+    documentCount: number;
+}
+
+export const getAdviserDocuments = query({
+    args: {
+        adviserId: v.id("users"),
+        searchTerm: v.string(),
+        pageSize: v.optional(v.number()),
+        pageNumber: v.optional(v.number()),
+        sortField: v.optional(v.string()),
+        sortDirection: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const { adviserId, searchTerm, pageSize = 5, pageNumber = 1, sortField, sortDirection } = args;
+        const skip = (pageNumber - 1) * pageSize;
+
+        try {
+            // Get the adviser's assigned groups
+            const adviser = await ctx.db
+                .query("advisersTable")
+                .withIndex("by_adviser", (q) => q.eq("adviser_id", adviserId))
+                .first();
+
+            if (!adviser?.group_ids || adviser.group_ids.length === 0) {
+                return {
+                    groups: [],
+                    totalCount: 0,
+                    totalPages: 0,
+                    status: 'idle',
+                    hasResults: false
+                };
+            }
+
+            // Get all groups assigned to this adviser
+            const groups = await ctx.db.query("groupsTable").collect();
+            const users = await ctx.db.query("users").collect();
+
+            // Filter groups to only include those assigned to this adviser
+            let filteredGroups = groups.filter(group => 
+                adviser.group_ids?.includes(group._id)
+            );
+
+            // Apply search if searchTerm is provided
+            if (searchTerm.trim()) {
+                // Use Convex search functionality for capstone titles
+                const capstoneResults = await ctx.db
+                    .query("groupsTable")
+                    .withSearchIndex("search_by_capstone_title", (q) => 
+                        q.search("capstone_title", searchTerm)
+                    )
+                    .collect();
+                
+                // Filter capstone results to only include groups assigned to this adviser
+                const capstoneFiltered = capstoneResults.filter(group => 
+                    adviser.group_ids?.includes(group._id)
+                );
+                
+                // Also search by project manager names
+                const allGroups = await ctx.db.query("groupsTable").collect();
+                const users = await ctx.db.query("users").collect();
+                
+                const managerFiltered = allGroups.filter(group => {
+                    if (!adviser.group_ids?.includes(group._id)) return false;
+                    
+                    const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
+                    if (!projectManager) return false;
+                    
+                    const managerName = `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
+                    const groupName = `${projectManager.last_name} et al`.toLowerCase();
+                    
+                    return managerName.includes(searchTerm.toLowerCase()) || 
+                           groupName.includes(searchTerm.toLowerCase());
+                });
+                
+                // Combine and deduplicate results
+                const combinedResults = [...capstoneFiltered, ...managerFiltered];
+                filteredGroups = combinedResults.filter((group, index, self) => 
+                    index === self.findIndex(g => g._id === group._id)
+                );
+            }
+
+            // Apply sorting
+            if (sortField && sortDirection) {
+                filteredGroups.sort((a, b) => {
+                    let comparison = 0;
+                    switch (sortField) {
+                        case "name":
+                            const aManager = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
+                            const bManager = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
+                            const aName = aManager ? `${aManager.last_name} et al` : "";
+                            const bName = bManager ? `${bManager.last_name} et al` : "";
+                            comparison = aName.localeCompare(bName);
+                            break;
+                        case "capstoneTitle":
+                            comparison = (a.capstone_title || "").localeCompare(b.capstone_title || "");
+                            break;
+                        case "projectManager":
+                            const aPM = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
+                            const bPM = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
+                            const aPMName = aPM ? `${aPM.last_name} ${aPM.first_name}` : "";
+                            const bPMName = bPM ? `${bPM.last_name} ${bPM.first_name}` : "";
+                            comparison = aPMName.localeCompare(bPMName);
+                            break;
+                        case "documentCount":
+                            // We'll calculate this after processing documents
+                            comparison = 0;
+                            break;
+                    }
+                    return sortDirection === "asc" ? comparison : -comparison;
+                });
+            }
+
+            // Process groups to include documents and user information
+            const processedGroups: AdviserGroupWithDocuments[] = [];
+
+            for (const group of filteredGroups) {
+                // Get all documents for this group
+                const allDocs = await ctx.db
+                    .query("documents")
+                    .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
+                    .collect();
+
+                // Get all review statuses for this group
+                const allStatuses = await ctx.db
+                    .query("documentStatus")
+                    .withIndex("by_group_document", (q) => q.eq("group_id", group._id))
+                    .collect();
+
+                // Create a map for quick status lookup
+                const statusMap = new Map(allStatuses.map(s => [s.document_part, s]));
+
+                // Get the latest version of each document part
+                const latestDocsMap = new Map<string, Doc<"documents">>();
+                for (const doc of allDocs) {
+                    const existing = latestDocsMap.get(doc.chapter);
+                    if (!existing || doc._creationTime > existing._creationTime) {
+                        latestDocsMap.set(doc.chapter, doc);
+                    }
+                }
+
+                // Define the order of document chapters (excluding title_page, appendix_a, appendix_d)
+                const CHAPTER_ORDER = [
+                    "acknowledgment",
+                    "abstract",
+                    "table_of_contents",
+                    "chapter_1",
+                    "chapter_2",
+                    "chapter_3",
+                    "chapter_4",
+                    "chapter_5",
+                    "references",
+                    "appendix_b",
+                    "appendix_c",
+                    "appendix_e",
+                    "appendix_f",
+                    "appendix_g",
+                    "appendix_h",
+                    "appendix_i",
+                ];
+
+                // Combine documents with their review status
+                const documentsWithStatus: AdviserDocumentWithStatus[] = Array.from(latestDocsMap.values())
+                    .filter(doc => !["title_page", "appendix_a", "appendix_d"].includes(doc.chapter))
+                    .map(doc => {
+                        const statusInfo = statusMap.get(doc.chapter);
+                        return {
+                            ...doc,
+                            status: statusInfo?.review_status ?? 0, // Default to 0 (Not Submitted)
+                            last_modified: statusInfo?.last_modified,
+                        };
+                    });
+
+                // Sort the documents according to CHAPTER_ORDER
+                documentsWithStatus.sort((a, b) => {
+                    const indexA = CHAPTER_ORDER.indexOf(a.chapter);
+                    const indexB = CHAPTER_ORDER.indexOf(b.chapter);
+                    
+                    // Handle cases where a chapter might not be in the order array
+                    if (indexA === -1 && indexB === -1) return a.chapter.localeCompare(b.chapter);
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    
+                    return indexA - indexB;
+                });
+
+                // Get user information
+                const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
+                const adviser = group.adviser_id ? users.find(u => u._id === group.adviser_id) : null;
+                const members = group.member_ids
+                    .map(id => users.find(u => u._id === id))
+                    .filter((u): u is NonNullable<typeof u> => u !== undefined);
+
+                processedGroups.push({
+                    ...group,
+                    name: projectManager ? `${projectManager.last_name} et al` : "Unknown Group",
+                    projectManager: projectManager ? {
+                        _id: projectManager._id,
+                        first_name: projectManager.first_name,
+                        middle_name: projectManager.middle_name,
+                        last_name: projectManager.last_name,
+                    } : undefined,
+                    adviser: adviser ? {
+                        _id: adviser._id,
+                        first_name: adviser.first_name,
+                        middle_name: adviser.middle_name,
+                        last_name: adviser.last_name,
+                    } : undefined,
+                    members: members.map(member => ({
+                        _id: member._id,
+                        first_name: member.first_name,
+                        middle_name: member.middle_name,
+                        last_name: member.last_name,
+                    })),
+                    documents: documentsWithStatus,
+                    documentCount: documentsWithStatus.length,
+                });
+            }
+
+            // Apply document count sorting if needed
+            if (sortField === "documentCount" && sortDirection) {
+                processedGroups.sort((a, b) => {
+                    const comparison = a.documentCount - b.documentCount;
+                    return sortDirection === "asc" ? comparison : -comparison;
+                });
+            }
+
+            // Apply pagination
+            const totalCount = processedGroups.length;
+            const paginatedResults = processedGroups.slice(skip, skip + pageSize);
+
+            return {
+                groups: paginatedResults,
+                totalCount,
+                totalPages: Math.ceil(totalCount / pageSize),
+                status: 'idle',
+                hasResults: paginatedResults.length > 0
+            };
+        } catch {
+            return {
+                groups: [],
+                totalCount: 0,
+                totalPages: 0,
                 status: 'error',
                 hasResults: false
             };

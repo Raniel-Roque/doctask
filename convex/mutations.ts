@@ -1417,40 +1417,56 @@ export const updateDocumentStatus = mutation({
   args: {
     groupId: v.id("groupsTable"),
     documentPart: v.string(),
-    reviewStatus: v.number(), // 0 = not_submitted, 1 = submitted, 2 = under_review, 3 = approved, 4 = rejected
-    reviewNotes: v.optional(v.string()),
-    userId: v.id("users"), // User making the change
+    newStatus: v.number(), // 0 = not_submitted, 1 = submitted, 2 = approved, 3 = rejected
+    userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    // Get the document status entry
-    const documentStatus = await ctx.db
-      .query("documentStatus")
-      .withIndex("by_group_document", (q) => 
-        q.eq("group_id", args.groupId).eq("document_part", args.documentPart)
-      )
-      .first();
-    
-    if (!documentStatus) throw new Error("Document status not found");
+    const { groupId, documentPart, newStatus, userId } = args;
 
-    // Get the user making the change
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error("User not found");
+    try {
+      // Check if the user is an adviser
+      const user = await ctx.db.get(userId);
+      if (!user || user.role !== 1) {
+        throw new Error("Only advisers can update document status");
+      }
 
-    // Check permissions - managers and instructors can update document status
-    const isManager = user.subrole === 1;
-    const isInstructor = user.role === 2;
-    
-    if (!isManager && !isInstructor) {
-      throw new Error("You don't have permission to update document status");
+      // Check if the adviser is assigned to this group
+      const adviser = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", userId))
+        .first();
+
+      if (!adviser?.group_ids?.includes(groupId)) {
+        throw new Error("Adviser is not assigned to this group");
+      }
+
+      // Check if document status already exists
+      const existingStatus = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) => 
+          q.eq("group_id", groupId).eq("document_part", documentPart)
+        )
+        .first();
+
+      if (existingStatus) {
+        // Update existing status
+        await ctx.db.patch(existingStatus._id, {
+          review_status: newStatus,
+        });
+      } else {
+        // Create new status entry
+        await ctx.db.insert("documentStatus", {
+          group_id: groupId,
+          document_part: documentPart,
+          review_status: newStatus,
+          last_modified: Date.now(),
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating document status:", error);
+      throw error;
     }
-
-    // Update the document status
-    await ctx.db.patch(documentStatus._id, {
-      review_status: args.reviewStatus,
-      review_notes: args.reviewNotes,
-      last_modified: Date.now(),
-    });
-
-    return { success: true };
   },
 });

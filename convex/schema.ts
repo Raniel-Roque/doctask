@@ -191,7 +191,7 @@ export default defineSchema({
   documentStatus: defineTable({
     group_id: v.id("groupsTable"),
     document_part: v.string(), // e.g., "chapter1", "appendix_a", etc.
-    review_status: v.number(), // 0 = not_submitted, 1 = submitted, 2 = under_review, 3 = approved, 4 = rejected
+    review_status: v.number(), // 0 = not_submitted, 1 = submitted, 2 = approved, 3 = rejected
     review_notes: v.optional(v.string()), // Feedback from reviewer
     last_modified: v.optional(v.number()), // timestamp (ms since epoch), optional
   })
