@@ -21,7 +21,7 @@ function generateCodeSegment(length: number): string {
  * Generates a complete adviser code in the format XXXX-XXXX-XXXX
  */
 export function generateAdviserCode(): string {
-  const segments = Array.from({ length: CODE_SEGMENTS }, () => 
+  const segments = Array.from({ length: CODE_SEGMENTS }, () =>
     generateCodeSegment(CODE_LENGTH)
   );
   return segments.join("-");
@@ -31,29 +31,33 @@ export function generateAdviserCode(): string {
  * Validates if a code matches the required format
  */
 export function validateAdviserCode(code: string): boolean {
-  const codeRegex = new RegExp(`^[A-Z]{${CODE_LENGTH}}-[A-Z]{${CODE_LENGTH}}-[A-Z]{${CODE_LENGTH}}$`);
+  const codeRegex = new RegExp(
+    `^[A-Z]{${CODE_LENGTH}}-[A-Z]{${CODE_LENGTH}}-[A-Z]{${CODE_LENGTH}}$`
+  );
   return codeRegex.test(code);
 }
 
 /**
  * Generates a unique adviser code that doesn't exist in the database
  */
-export async function generateUniqueAdviserCode(ctx: { db: DatabaseReader }): Promise<string> {
+export async function generateUniqueAdviserCode(ctx: {
+  db: DatabaseReader;
+}): Promise<string> {
   let code: string;
   let isUnique = false;
-  
+
   while (!isUnique) {
     code = generateAdviserCode();
     const existingCode = await ctx.db
       .query("advisersTable")
       .withIndex("by_code", (q) => q.eq("code", code))
       .first();
-    
+
     if (!existingCode) {
       isUnique = true;
       return code;
     }
   }
-  
+
   throw new Error("Failed to generate unique code after multiple attempts");
-} 
+}

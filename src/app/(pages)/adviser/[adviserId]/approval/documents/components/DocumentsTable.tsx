@@ -136,9 +136,6 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
       if (onStatusChange) {
         onStatusChange(documentId, newStatus);
       }
-    } catch (error) {
-      console.error("Failed to update document status:", error);
-      // You might want to show a toast notification here
     } finally {
       setUpdatingStatus(null);
     }

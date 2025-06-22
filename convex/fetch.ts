@@ -6,7 +6,7 @@ import type { Id, Doc } from "./_generated/dataModel";
 // User Queries
 // =========================================
 export const getStudentGroup = query({
-  args: { 
+  args: {
     userId: v.id("users"),
   },
   handler: async (ctx, args): Promise<Doc<"studentsTable"> | null> => {
@@ -23,7 +23,7 @@ export const getStudentGroup = query({
 });
 
 export const getGroupById = query({
-  args: { 
+  args: {
     groupId: v.id("groupsTable"),
   },
   handler: async (ctx, args) => {
@@ -56,7 +56,7 @@ export const getUserByClerkId = query({
 });
 
 export const getAdvisers = query({
-  args: { 
+  args: {
     pageSize: v.optional(v.number()),
     pageNumber: v.optional(v.number()),
   },
@@ -69,24 +69,24 @@ export const getAdvisers = query({
       .filter((q) => q.eq(q.field("role"), 1))
       .order("desc")
       .collect()
-      .then(results => results.slice(skip, skip + pageSize));
+      .then((results) => results.slice(skip, skip + pageSize));
 
     const totalCount = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("role"), 1))
       .collect()
-      .then(results => results.length);
+      .then((results) => results.length);
 
     return {
       users,
       totalCount,
-      totalPages: Math.ceil(totalCount / pageSize)
+      totalPages: Math.ceil(totalCount / pageSize),
     };
   },
 });
 
 export const getStudents = query({
-  args: { 
+  args: {
     pageSize: v.optional(v.number()),
     pageNumber: v.optional(v.number()),
   },
@@ -99,18 +99,18 @@ export const getStudents = query({
       .filter((q) => q.eq(q.field("role"), 0))
       .order("desc")
       .collect()
-      .then(results => results.slice(skip, skip + pageSize));
+      .then((results) => results.slice(skip, skip + pageSize));
 
     const totalCount = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("role"), 0))
       .collect()
-      .then(results => results.length);
+      .then((results) => results.length);
 
     return {
       users,
       totalCount,
-      totalPages: Math.ceil(totalCount / pageSize)
+      totalPages: Math.ceil(totalCount / pageSize),
     };
   },
 });
@@ -137,14 +137,15 @@ interface AdviserCode {
 
 export const getAdviserCodes = query({
   handler: async (ctx) => {
-    const codes = await ctx.db
-      .query("advisersTable")
-      .collect();
+    const codes = await ctx.db.query("advisersTable").collect();
     // Convert array to object with adviser_id as key
-    return codes.reduce((acc, code) => {
-      acc[code.adviser_id] = code;
-      return acc;
-    }, {} as Record<string, AdviserCode>);
+    return codes.reduce(
+      (acc, code) => {
+        acc[code.adviser_id] = code;
+        return acc;
+      },
+      {} as Record<string, AdviserCode>
+    );
   },
 });
 
@@ -189,7 +190,17 @@ export const getLogs = query({
     endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { searchTerm, pageSize = 5, pageNumber = 1, sortField, sortDirection, actionFilter, entityTypeFilter, startDate, endDate } = args;
+    const {
+      searchTerm,
+      pageSize = 5,
+      pageNumber = 1,
+      sortField,
+      sortDirection,
+      actionFilter,
+      entityTypeFilter,
+      startDate,
+      endDate,
+    } = args;
     const skip = (pageNumber - 1) * pageSize;
 
     try {
@@ -198,39 +209,49 @@ export const getLogs = query({
 
       // Apply search filters if searchTerm is provided
       if (searchTerm.trim()) {
-        const searchTerms = searchTerm.toLowerCase().split(" ").filter(term => term.length > 0);
-        
-        logs = logs.filter(log => {
-          const instructorName = `${log.instructor_first_name || ''} ${log.instructor_middle_name || ''} ${log.instructor_last_name || ''}`.toLowerCase();
-          const affectedEntityName = `${log.affected_entity_first_name || ''} ${log.affected_entity_middle_name || ''} ${log.affected_entity_last_name || ''}`.toLowerCase();
-          const instructorId = log.instructor_id.toString().toLowerCase();
-          const affectedEntityId = log.affected_entity_id.toString().toLowerCase();
+        const searchTerms = searchTerm
+          .toLowerCase()
+          .split(" ")
+          .filter((term) => term.length > 0);
 
-          return searchTerms.every(term =>
-            instructorName.includes(term) ||
-            affectedEntityName.includes(term) ||
-            instructorId.includes(term) ||
-            affectedEntityId.includes(term)
+        logs = logs.filter((log) => {
+          const instructorName =
+            `${log.instructor_first_name || ""} ${log.instructor_middle_name || ""} ${log.instructor_last_name || ""}`.toLowerCase();
+          const affectedEntityName =
+            `${log.affected_entity_first_name || ""} ${log.affected_entity_middle_name || ""} ${log.affected_entity_last_name || ""}`.toLowerCase();
+          const instructorId = log.instructor_id.toString().toLowerCase();
+          const affectedEntityId = log.affected_entity_id
+            .toString()
+            .toLowerCase();
+
+          return searchTerms.every(
+            (term) =>
+              instructorName.includes(term) ||
+              affectedEntityName.includes(term) ||
+              instructorId.includes(term) ||
+              affectedEntityId.includes(term)
           );
         });
       }
 
       // Apply action filter
       if (actionFilter && actionFilter !== "All Actions") {
-        logs = logs.filter(log => log.action === actionFilter);
+        logs = logs.filter((log) => log.action === actionFilter);
       }
 
       // Apply entity type filter
       if (entityTypeFilter && entityTypeFilter !== "All Entities") {
-        logs = logs.filter(log => log.affected_entity_type === entityTypeFilter);
+        logs = logs.filter(
+          (log) => log.affected_entity_type === entityTypeFilter
+        );
       }
 
       // Apply date range filter
       if (startDate) {
-        logs = logs.filter(log => log._creationTime >= startDate);
+        logs = logs.filter((log) => log._creationTime >= startDate);
       }
       if (endDate) {
-        logs = logs.filter(log => log._creationTime <= endDate);
+        logs = logs.filter((log) => log._creationTime <= endDate);
       }
 
       // Sort the results
@@ -242,13 +263,13 @@ export const getLogs = query({
               comparison = a._creationTime - b._creationTime;
               break;
             case "instructor":
-              const aInstructor = `${a.instructor_last_name || ''} ${a.instructor_first_name || ''}`;
-              const bInstructor = `${b.instructor_last_name || ''} ${b.instructor_first_name || ''}`;
+              const aInstructor = `${a.instructor_last_name || ""} ${a.instructor_first_name || ""}`;
+              const bInstructor = `${b.instructor_last_name || ""} ${b.instructor_first_name || ""}`;
               comparison = aInstructor.localeCompare(bInstructor);
               break;
             case "affectedEntity":
-              const aEntity = `${a.affected_entity_last_name || ''} ${a.affected_entity_first_name || ''}`;
-              const bEntity = `${b.affected_entity_last_name || ''} ${b.affected_entity_first_name || ''}`;
+              const aEntity = `${a.affected_entity_last_name || ""} ${a.affected_entity_first_name || ""}`;
+              const bEntity = `${b.affected_entity_last_name || ""} ${b.affected_entity_first_name || ""}`;
               comparison = aEntity.localeCompare(bEntity);
               break;
             case "action":
@@ -267,23 +288,23 @@ export const getLogs = query({
         logs: paginatedResults,
         totalCount,
         totalPages: Math.ceil(totalCount / pageSize),
-        status: 'idle',
-        hasResults: paginatedResults.length > 0
+        status: "idle",
+        hasResults: paginatedResults.length > 0,
       };
     } catch {
       return {
         logs: [],
         totalCount: 0,
         totalPages: 0,
-        status: 'error',
-        hasResults: false
+        status: "error",
+        hasResults: false,
       };
     }
   },
 });
 
 export const getGroups = query({
-  args: { 
+  args: {
     pageSize: v.optional(v.number()),
     pageNumber: v.optional(v.number()),
   },
@@ -294,32 +315,30 @@ export const getGroups = query({
     const groups = await ctx.db
       .query("groupsTable")
       .collect()
-      .then(results => results.slice(skip, skip + pageSize));
+      .then((results) => results.slice(skip, skip + pageSize));
 
     const totalCount = await ctx.db
       .query("groupsTable")
       .collect()
-      .then(results => results.length);
+      .then((results) => results.length);
 
     return {
       groups,
       totalCount,
-      totalPages: Math.ceil(totalCount / pageSize)
+      totalPages: Math.ceil(totalCount / pageSize),
     };
   },
 });
 
 export const getUsers = query({
   handler: async (ctx) => {
-    const users = await ctx.db
-      .query("users")
-      .collect();
+    const users = await ctx.db.query("users").collect();
     return users;
   },
 });
 
 export const getPendingGroupIdsForAdviser = query({
-  args: { 
+  args: {
     adviserId: v.id("users"),
     searchTerm: v.string(),
     pageSize: v.optional(v.number()),
@@ -328,7 +347,14 @@ export const getPendingGroupIdsForAdviser = query({
     sortDirection: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { adviserId, searchTerm, pageSize = 5, pageNumber = 1, sortField, sortDirection } = args;
+    const {
+      adviserId,
+      searchTerm,
+      pageSize = 5,
+      pageNumber = 1,
+      sortField,
+      sortDirection,
+    } = args;
     const skip = (pageNumber - 1) * pageSize;
 
     try {
@@ -343,8 +369,8 @@ export const getPendingGroupIdsForAdviser = query({
           groups: [],
           totalCount: 0,
           totalPages: 0,
-          status: 'idle',
-          hasResults: false
+          status: "idle",
+          hasResults: false,
         };
       }
 
@@ -353,7 +379,7 @@ export const getPendingGroupIdsForAdviser = query({
       const users = await ctx.db.query("users").collect();
 
       // Filter groups to only include pending ones
-      let filteredGroups = groups.filter(group => 
+      let filteredGroups = groups.filter((group) =>
         adviser.requests_group_ids?.includes(group._id)
       );
 
@@ -361,38 +387,44 @@ export const getPendingGroupIdsForAdviser = query({
       if (searchTerm.trim()) {
         // Use Convex search functionality for capstone titles
         const capstoneResults = await ctx.db
-            .query("groupsTable")
-            .withSearchIndex("search_by_capstone_title", (q) => 
-                q.search("capstone_title", searchTerm)
-            )
-            .collect();
-        
+          .query("groupsTable")
+          .withSearchIndex("search_by_capstone_title", (q) =>
+            q.search("capstone_title", searchTerm)
+          )
+          .collect();
+
         // Filter capstone results to only include groups assigned to this adviser
-        const capstoneFiltered = capstoneResults.filter(group => 
-            adviser.group_ids?.includes(group._id)
+        const capstoneFiltered = capstoneResults.filter((group) =>
+          adviser.group_ids?.includes(group._id)
         );
-        
+
         // Also search by project manager names
         const allGroups = await ctx.db.query("groupsTable").collect();
         const users = await ctx.db.query("users").collect();
-        
-        const managerFiltered = allGroups.filter(group => {
-            if (!adviser.group_ids?.includes(group._id)) return false;
-            
-            const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
-            if (!projectManager) return false;
-            
-            const managerName = `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
-            const groupName = `${projectManager.last_name} et al`.toLowerCase();
-            
-            return managerName.includes(searchTerm.toLowerCase()) || 
-                   groupName.includes(searchTerm.toLowerCase());
+
+        const managerFiltered = allGroups.filter((group) => {
+          if (!adviser.group_ids?.includes(group._id)) return false;
+
+          const projectManager = group.project_manager_id
+            ? users.find((u) => u._id === group.project_manager_id)
+            : null;
+          if (!projectManager) return false;
+
+          const managerName =
+            `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
+          const groupName = `${projectManager.last_name} et al`.toLowerCase();
+
+          return (
+            managerName.includes(searchTerm.toLowerCase()) ||
+            groupName.includes(searchTerm.toLowerCase())
+          );
         });
-        
+
         // Combine and deduplicate results
         const combinedResults = [...capstoneFiltered, ...managerFiltered];
-        filteredGroups = combinedResults.filter((group, index, self) => 
-            index === self.findIndex(g => g._id === group._id)
+        filteredGroups = combinedResults.filter(
+          (group, index, self) =>
+            index === self.findIndex((g) => g._id === group._id)
         );
       }
 
@@ -402,18 +434,28 @@ export const getPendingGroupIdsForAdviser = query({
           let comparison = 0;
           switch (sortField) {
             case "name":
-              const aManager = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
-              const bManager = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
+              const aManager = a.project_manager_id
+                ? users.find((u) => u._id === a.project_manager_id)
+                : null;
+              const bManager = b.project_manager_id
+                ? users.find((u) => u._id === b.project_manager_id)
+                : null;
               const aName = aManager ? `${aManager.last_name} et al` : "";
               const bName = bManager ? `${bManager.last_name} et al` : "";
               comparison = aName.localeCompare(bName);
               break;
             case "capstoneTitle":
-              comparison = (a.capstone_title || "").localeCompare(b.capstone_title || "");
+              comparison = (a.capstone_title || "").localeCompare(
+                b.capstone_title || ""
+              );
               break;
             case "projectManager":
-              const aPM = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
-              const bPM = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
+              const aPM = a.project_manager_id
+                ? users.find((u) => u._id === a.project_manager_id)
+                : null;
+              const bPM = b.project_manager_id
+                ? users.find((u) => u._id === b.project_manager_id)
+                : null;
               const aPMName = aPM ? `${aPM.last_name} ${aPM.first_name}` : "";
               const bPMName = bPM ? `${bPM.last_name} ${bPM.first_name}` : "";
               comparison = aPMName.localeCompare(bPMName);
@@ -424,14 +466,18 @@ export const getPendingGroupIdsForAdviser = query({
       }
 
       // Process groups to include user information
-      const processedGroups = filteredGroups.map(group => {
-        const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
+      const processedGroups = filteredGroups.map((group) => {
+        const projectManager = group.project_manager_id
+          ? users.find((u) => u._id === group.project_manager_id)
+          : null;
         return {
           ...group,
-          name: projectManager ? `${projectManager.last_name} et al` : "Unknown Group",
+          name: projectManager
+            ? `${projectManager.last_name} et al`
+            : "Unknown Group",
           projectManager,
           members: group.member_ids
-            .map(id => users.find(u => u._id === id))
+            .map((id) => users.find((u) => u._id === id))
             .filter((u): u is NonNullable<typeof u> => u !== undefined),
         };
       });
@@ -444,16 +490,16 @@ export const getPendingGroupIdsForAdviser = query({
         groups: paginatedResults,
         totalCount,
         totalPages: Math.ceil(totalCount / pageSize),
-        status: 'idle',
-        hasResults: paginatedResults.length > 0
+        status: "idle",
+        hasResults: paginatedResults.length > 0,
       };
     } catch {
       return {
         groups: [],
         totalCount: 0,
         totalPages: 0,
-        status: 'error',
-        hasResults: false
+        status: "error",
+        hasResults: false,
       };
     }
   },
@@ -472,7 +518,16 @@ export const searchUsers = query({
   },
   handler: async (ctx, args) => {
     try {
-      const { searchTerm, role, emailVerified, subrole, pageSize = 5, pageNumber = 1, sortField, sortDirection } = args;
+      const {
+        searchTerm,
+        role,
+        emailVerified,
+        subrole,
+        pageSize = 5,
+        pageNumber = 1,
+        sortField,
+        sortDirection,
+      } = args;
       const skip = (pageNumber - 1) * pageSize;
 
       // If search term is empty, use a regular query instead of search
@@ -482,12 +537,12 @@ export const searchUsers = query({
           .query("users")
           .filter((q) => {
             const roleFilter = q.eq(q.field("role"), role);
-            const emailVerifiedFilter = emailVerified !== undefined 
-              ? q.eq(q.field("email_verified"), emailVerified)
-              : null;
-            const subroleFilter = subrole !== undefined
-              ? q.eq(q.field("subrole"), subrole)
-              : null;
+            const emailVerifiedFilter =
+              emailVerified !== undefined
+                ? q.eq(q.field("email_verified"), emailVerified)
+                : null;
+            const subroleFilter =
+              subrole !== undefined ? q.eq(q.field("subrole"), subrole) : null;
 
             // Combine all filters
             let finalFilter = roleFilter;
@@ -501,38 +556,39 @@ export const searchUsers = query({
           })
           .collect();
       } else {
-      // Search in both first name and last name
-      const firstNameResults = await ctx.db
-        .query("users")
-        .withSearchIndex("search_by_first_name", (q) => {
-          let searchQuery = q.search("first_name", searchTerm);
+        // Search in both first name and last name
+        const firstNameResults = await ctx.db
+          .query("users")
+          .withSearchIndex("search_by_first_name", (q) => {
+            let searchQuery = q.search("first_name", searchTerm);
             if (emailVerified !== undefined) {
               searchQuery = searchQuery.eq("email_verified", emailVerified);
             }
             if (subrole !== undefined) {
               searchQuery = searchQuery.eq("subrole", subrole);
             }
-          return searchQuery.eq("role", role);
-        })
+            return searchQuery.eq("role", role);
+          })
           .collect();
 
-      const lastNameResults = await ctx.db
-        .query("users")
-        .withSearchIndex("search_by_last_name", (q) => {
-          let searchQuery = q.search("last_name", searchTerm);
+        const lastNameResults = await ctx.db
+          .query("users")
+          .withSearchIndex("search_by_last_name", (q) => {
+            let searchQuery = q.search("last_name", searchTerm);
             if (emailVerified !== undefined) {
               searchQuery = searchQuery.eq("email_verified", emailVerified);
             }
             if (subrole !== undefined) {
               searchQuery = searchQuery.eq("subrole", subrole);
             }
-          return searchQuery.eq("role", role);
-        })
+            return searchQuery.eq("role", role);
+          })
           .collect();
 
-      // Combine and deduplicate results
-        results = [...firstNameResults, ...lastNameResults].filter((user, index, self) =>
-          index === self.findIndex((u) => u._id === user._id)
+        // Combine and deduplicate results
+        results = [...firstNameResults, ...lastNameResults].filter(
+          (user, index, self) =>
+            index === self.findIndex((u) => u._id === user._id)
         );
       }
 
@@ -565,22 +621,22 @@ export const searchUsers = query({
       const paginatedResults = results.slice(skip, skip + pageSize);
 
       // Simplify status to just loading or idle
-      const status = 'idle';
+      const status = "idle";
 
       return {
         users: paginatedResults,
         totalCount,
         totalPages: Math.ceil(totalCount / pageSize),
         status,
-        hasResults: paginatedResults.length > 0
+        hasResults: paginatedResults.length > 0,
       };
     } catch {
       return {
         users: [],
         totalCount: 0,
         totalPages: 0,
-        status: 'error',
-        hasResults: false
+        status: "error",
+        hasResults: false,
       };
     }
   },
@@ -598,7 +654,16 @@ export const searchGroups = query({
     gradeFilter: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { searchTerm, pageSize = 5, pageNumber = 1, sortField, sortDirection, capstoneFilter, adviserFilter, gradeFilter } = args;
+    const {
+      searchTerm,
+      pageSize = 5,
+      pageNumber = 1,
+      sortField,
+      sortDirection,
+      capstoneFilter,
+      adviserFilter,
+      gradeFilter,
+    } = args;
     const skip = (pageNumber - 1) * pageSize;
 
     try {
@@ -610,53 +675,74 @@ export const searchGroups = query({
 
       // Apply search filters if searchTerm is provided
       if (searchTerm.trim()) {
-        const searchTerms = searchTerm.toLowerCase().split(" ").filter(term => term.length > 0);
-        
-        groups = groups.filter(group => {
-          const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
-          const groupName = projectManager ? `${projectManager.last_name} et al`.toLowerCase() : "";
+        const searchTerms = searchTerm
+          .toLowerCase()
+          .split(" ")
+          .filter((term) => term.length > 0);
+
+        groups = groups.filter((group) => {
+          const projectManager = group.project_manager_id
+            ? users.find((u) => u._id === group.project_manager_id)
+            : null;
+          const groupName = projectManager
+            ? `${projectManager.last_name} et al`.toLowerCase()
+            : "";
           const capstoneTitle = (group.capstone_title || "").toLowerCase();
-          const adviser = group.adviser_id ? users.find(u => u._id === group.adviser_id) : null;
+          const adviser = group.adviser_id
+            ? users.find((u) => u._id === group.adviser_id)
+            : null;
           const members = group.member_ids
-            .map(id => users.find(u => u._id === id))
+            .map((id) => users.find((u) => u._id === id))
             .filter((u): u is NonNullable<typeof u> => u !== undefined);
 
-          const projectManagerName = projectManager ? `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase() : "";
-          const adviserName = adviser ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + ' ' : ''}${adviser.last_name}`.toLowerCase() : "";
-          const memberNames = members.map(m => `${m.first_name} ${m.last_name}`.toLowerCase());
+          const projectManagerName = projectManager
+            ? `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase()
+            : "";
+          const adviserName = adviser
+            ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`.toLowerCase()
+            : "";
+          const memberNames = members.map((m) =>
+            `${m.first_name} ${m.last_name}`.toLowerCase()
+          );
 
-          return searchTerms.every(term =>
-            groupName.includes(term) ||
-            capstoneTitle.includes(term) ||
-            projectManagerName.includes(term) ||
-            adviserName.includes(term) ||
-            memberNames.some(name => name.includes(term))
+          return searchTerms.every(
+            (term) =>
+              groupName.includes(term) ||
+              capstoneTitle.includes(term) ||
+              projectManagerName.includes(term) ||
+              adviserName.includes(term) ||
+              memberNames.some((name) => name.includes(term))
           );
         });
       }
 
       // Apply capstone filter
       if (capstoneFilter && capstoneFilter !== "All Capstone Titles") {
-        groups = groups.filter(group => {
+        groups = groups.filter((group) => {
           if (capstoneFilter === "With Capstone Title") {
             return !!group.capstone_title;
           } else if (capstoneFilter === "Without Capstone Title") {
             return !group.capstone_title;
           }
           // Match specific capstone title (case-insensitive)
-          return (group.capstone_title || "").toLowerCase() === capstoneFilter.toLowerCase();
+          return (
+            (group.capstone_title || "").toLowerCase() ===
+            capstoneFilter.toLowerCase()
+          );
         });
       }
 
       // Apply adviser filter
       if (adviserFilter && adviserFilter !== "All Advisers") {
-        groups = groups.filter(group => {
-          const adviser = group.adviser_id ? users.find(u => u._id === group.adviser_id) : null;
+        groups = groups.filter((group) => {
+          const adviser = group.adviser_id
+            ? users.find((u) => u._id === group.adviser_id)
+            : null;
           if (adviserFilter === "No Adviser") {
             return !adviser;
           }
           const adviserName = adviser
-            ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + ' ' : ''}${adviser.last_name}`.toLowerCase()
+            ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`.toLowerCase()
             : "";
           return adviserName === adviserFilter.toLowerCase();
         });
@@ -665,9 +751,9 @@ export const searchGroups = query({
       // Grade label to number mapping
       const GRADE_LABEL_TO_NUMBER: { [key: string]: number } = {
         "No Grade": 0,
-        "Approved": 1,
+        Approved: 1,
         "Approved With Revisions": 2,
-        "Disapproved": 3,
+        Disapproved: 3,
         "Accepted With Revisions": 4,
         "Reoral Defense": 5,
         "Not Accepted": 6,
@@ -675,7 +761,7 @@ export const searchGroups = query({
 
       // Apply grade filter
       if (gradeFilter && gradeFilter.toLowerCase() !== "all grades") {
-        groups = groups.filter(group => {
+        groups = groups.filter((group) => {
           const grade = group.grade;
           if (gradeFilter.toLowerCase() === "no grade") {
             return grade === undefined || grade === null || grade === 0;
@@ -691,18 +777,28 @@ export const searchGroups = query({
           let comparison = 0;
           switch (sortField) {
             case "name":
-              const aManager = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
-              const bManager = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
+              const aManager = a.project_manager_id
+                ? users.find((u) => u._id === a.project_manager_id)
+                : null;
+              const bManager = b.project_manager_id
+                ? users.find((u) => u._id === b.project_manager_id)
+                : null;
               const aName = aManager ? `${aManager.last_name} et al` : "";
               const bName = bManager ? `${bManager.last_name} et al` : "";
               comparison = aName.localeCompare(bName);
               break;
             case "capstoneTitle":
-              comparison = (a.capstone_title || "").localeCompare(b.capstone_title || "");
+              comparison = (a.capstone_title || "").localeCompare(
+                b.capstone_title || ""
+              );
               break;
             case "projectManager":
-              const aPM = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
-              const bPM = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
+              const aPM = a.project_manager_id
+                ? users.find((u) => u._id === a.project_manager_id)
+                : null;
+              const bPM = b.project_manager_id
+                ? users.find((u) => u._id === b.project_manager_id)
+                : null;
               const aPMName = aPM ? `${aPM.last_name} ${aPM.first_name}` : "";
               const bPMName = bPM ? `${bPM.last_name} ${bPM.first_name}` : "";
               comparison = aPMName.localeCompare(bPMName);
@@ -716,15 +812,21 @@ export const searchGroups = query({
       }
 
       // Process groups to include user information
-      const processedGroups = groups.map(group => {
-        const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
+      const processedGroups = groups.map((group) => {
+        const projectManager = group.project_manager_id
+          ? users.find((u) => u._id === group.project_manager_id)
+          : null;
         return {
           ...group,
-          name: projectManager ? `${projectManager.last_name} et al` : "Unknown Group",
+          name: projectManager
+            ? `${projectManager.last_name} et al`
+            : "Unknown Group",
           projectManager,
-          adviser: group.adviser_id ? users.find(u => u._id === group.adviser_id) : undefined,
+          adviser: group.adviser_id
+            ? users.find((u) => u._id === group.adviser_id)
+            : undefined,
           members: group.member_ids
-            .map(id => users.find(u => u._id === id))
+            .map((id) => users.find((u) => u._id === id))
             .filter((u): u is NonNullable<typeof u> => u !== undefined),
         };
       });
@@ -737,131 +839,134 @@ export const searchGroups = query({
         groups: paginatedResults,
         totalCount,
         totalPages: Math.ceil(totalCount / pageSize),
-        status: 'idle',
-        hasResults: paginatedResults.length > 0
+        status: "idle",
+        hasResults: paginatedResults.length > 0,
       };
     } catch {
       return {
         groups: [],
         totalCount: 0,
         totalPages: 0,
-        status: 'error',
-        hasResults: false
+        status: "error",
+        hasResults: false,
       };
     }
   },
-}); 
+});
 
 interface DocumentWithStatus {
-    _id: Id<"documents">;
-    _creationTime: number;
-    group_id: Id<"groupsTable">;
-    chapter: string;
-    room_id: string;
-    title: string;
-    content: string;
-    student_ids: Id<"users">[];
-    status: number; // This now represents review_status from documentStatus table
-    last_modified?: number; // This comes from documentStatus.last_modified
+  _id: Id<"documents">;
+  _creationTime: number;
+  group_id: Id<"groupsTable">;
+  chapter: string;
+  room_id: string;
+  title: string;
+  content: string;
+  student_ids: Id<"users">[];
+  status: number; // This now represents review_status from documentStatus table
+  last_modified?: number; // This comes from documentStatus.last_modified
 }
 
 export const getLatestDocuments = query({
-    args: {
-        groupId: v.id("groupsTable"),
-    },
-    handler: async (ctx, args) => {
-        const { groupId } = args;
+  args: {
+    groupId: v.id("groupsTable"),
+  },
+  handler: async (ctx, args) => {
+    const { groupId } = args;
 
-        // Define the order of document chapters
-        const CHAPTER_ORDER = [
-            "title_page",
-            "acknowledgment",
-            "abstract",
-            "table_of_contents",
-            "chapter_1",
-            "chapter_2",
-            "chapter_3",
-            "chapter_4",
-            "chapter_5",
-            "references",
-            "appendix_a",
-            "appendix_b",
-            "appendix_c",
-            "appendix_d",
-            "appendix_e",
-            "appendix_f",
-            "appendix_g",
-            "appendix_h",
-            "appendix_i",
-        ];
+    // Define the order of document chapters
+    const CHAPTER_ORDER = [
+      "title_page",
+      "acknowledgment",
+      "abstract",
+      "table_of_contents",
+      "chapter_1",
+      "chapter_2",
+      "chapter_3",
+      "chapter_4",
+      "chapter_5",
+      "references",
+      "appendix_a",
+      "appendix_b",
+      "appendix_c",
+      "appendix_d",
+      "appendix_e",
+      "appendix_f",
+      "appendix_g",
+      "appendix_h",
+      "appendix_i",
+    ];
 
-        try {
-            // Get the group to access member information
-            const group = await ctx.db.get(groupId);
-            if (!group) {
-                return { documents: [], done: true };
-            }
+    try {
+      // Get the group to access member information
+      const group = await ctx.db.get(groupId);
+      if (!group) {
+        return { documents: [], done: true };
+      }
 
-            const allStudentIds = [group.project_manager_id, ...group.member_ids];
+      const allStudentIds = [group.project_manager_id, ...group.member_ids];
 
-            // 1. Fetch all documents for the group
-            const allDocs = await ctx.db
-                .query("documents")
-                .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
-                .collect();
+      // 1. Fetch all documents for the group
+      const allDocs = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
+        .collect();
 
-            // 2. Fetch all review statuses for the group
-            const allStatuses = await ctx.db
-                .query("documentStatus")
-                .withIndex("by_group_document", (q) => q.eq("group_id", groupId))
-                .collect();
+      // 2. Fetch all review statuses for the group
+      const allStatuses = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) => q.eq("group_id", groupId))
+        .collect();
 
-            // Create a map for quick status lookup
-            const statusMap = new Map(allStatuses.map(s => [s.document_part, s]));
+      // Create a map for quick status lookup
+      const statusMap = new Map(allStatuses.map((s) => [s.document_part, s]));
 
-            // 3. Get the latest version of each document part
-            const latestDocsMap = new Map<string, Doc<"documents">>();
-            for (const doc of allDocs) {
-                const existing = latestDocsMap.get(doc.chapter);
-                if (!existing || doc._creationTime > existing._creationTime) {
-                    latestDocsMap.set(doc.chapter, doc);
-                }
-            }
-
-            // 4. Combine documents with their review status
-            const documentsWithStatus: DocumentWithStatus[] = Array.from(latestDocsMap.values()).map(doc => {
-                const statusInfo = statusMap.get(doc.chapter);
-                return {
-                    ...doc,
-                    student_ids: allStudentIds, // Attach the student IDs
-                    status: statusInfo?.review_status ?? 0, // Default to 0 (Not Submitted)
-                    last_modified: statusInfo?.last_modified,
-                };
-            });
-
-            // 5. Sort the documents according to CHAPTER_ORDER
-            documentsWithStatus.sort((a, b) => {
-                const indexA = CHAPTER_ORDER.indexOf(a.chapter);
-                const indexB = CHAPTER_ORDER.indexOf(b.chapter);
-                
-                // Handle cases where a chapter might not be in the order array
-                if (indexA === -1 && indexB === -1) return a.chapter.localeCompare(b.chapter);
-                if (indexA === -1) return 1;
-                if (indexB === -1) return -1;
-                
-                return indexA - indexB;
-            });
-
-            return { documents: documentsWithStatus, done: true };
-        } catch {
-            return {
-                documents: [],
-                status: 'error',
-                hasResults: false,
-                done: true
-            };
+      // 3. Get the latest version of each document part
+      const latestDocsMap = new Map<string, Doc<"documents">>();
+      for (const doc of allDocs) {
+        const existing = latestDocsMap.get(doc.chapter);
+        if (!existing || doc._creationTime > existing._creationTime) {
+          latestDocsMap.set(doc.chapter, doc);
         }
-    },
+      }
+
+      // 4. Combine documents with their review status
+      const documentsWithStatus: DocumentWithStatus[] = Array.from(
+        latestDocsMap.values()
+      ).map((doc) => {
+        const statusInfo = statusMap.get(doc.chapter);
+        return {
+          ...doc,
+          student_ids: allStudentIds, // Attach the student IDs
+          status: statusInfo?.review_status ?? 0, // Default to 0 (Not Submitted)
+          last_modified: statusInfo?.last_modified,
+        };
+      });
+
+      // 5. Sort the documents according to CHAPTER_ORDER
+      documentsWithStatus.sort((a, b) => {
+        const indexA = CHAPTER_ORDER.indexOf(a.chapter);
+        const indexB = CHAPTER_ORDER.indexOf(b.chapter);
+
+        // Handle cases where a chapter might not be in the order array
+        if (indexA === -1 && indexB === -1)
+          return a.chapter.localeCompare(b.chapter);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+
+        return indexA - indexB;
+      });
+
+      return { documents: documentsWithStatus, done: true };
+    } catch {
+      return {
+        documents: [],
+        status: "error",
+        hasResults: false,
+        done: true,
+      };
+    }
+  },
 });
 
 // =========================================
@@ -869,79 +974,80 @@ export const getLatestDocuments = query({
 // =========================================
 
 export const getTaskAssignments = query({
-    args: {
-        groupId: v.id("groupsTable"),
-    },
-    handler: async (ctx, args) => {
-        const { groupId } = args;
+  args: {
+    groupId: v.id("groupsTable"),
+  },
+  handler: async (ctx, args) => {
+    const { groupId } = args;
 
-        try {
-            // Get the group to access member information
-            const group = await ctx.db.get(groupId);
-            if (!group) {
-                return {
-                    tasks: [],
-                    groupMembers: [],
-                    status: 'error',
-                    hasResults: false
-                };
-            }
+    try {
+      // Get the group to access member information
+      const group = await ctx.db.get(groupId);
+      if (!group) {
+        return {
+          tasks: [],
+          groupMembers: [],
+          status: "error",
+          hasResults: false,
+        };
+      }
 
-            // Get all task assignments for the group
-            const taskAssignments = await ctx.db
-                .query("taskAssignments")
-                .withIndex("by_group", (q) => q.eq("group_id", groupId))
-                .collect();
+      // Get all task assignments for the group
+      const taskAssignments = await ctx.db
+        .query("taskAssignments")
+        .withIndex("by_group", (q) => q.eq("group_id", groupId))
+        .collect();
 
-            // Get all users for name lookups
-            const users = await ctx.db.query("users").collect();
+      // Get all users for name lookups
+      const users = await ctx.db.query("users").collect();
 
-            // Get group members (project manager + members)
-            const allMemberIds = [group.project_manager_id, ...group.member_ids];
-            const groupMembers = allMemberIds
-                .map(id => users.find(u => u._id === id))
-                .filter((u): u is NonNullable<typeof u> => u !== undefined)
-                .map(user => ({
-                    _id: user._id,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    email: user.email,
-                    isProjectManager: user._id === group.project_manager_id
-                }));
+      // Get group members (project manager + members)
+      const allMemberIds = [group.project_manager_id, ...group.member_ids];
+      const groupMembers = allMemberIds
+        .map((id) => users.find((u) => u._id === id))
+        .filter((u): u is NonNullable<typeof u> => u !== undefined)
+        .map((user) => ({
+          _id: user._id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          clerk_id: user.clerk_id,
+          isProjectManager: user._id === group.project_manager_id,
+        }));
 
-            // Enhance task assignments with user information
-            const enhancedTasks = taskAssignments.map(task => {
-                const assignedUsers = task.assigned_student_ids
-                    .map(id => users.find(u => u._id === id))
-                    .filter((u): u is NonNullable<typeof u> => u !== undefined)
-                    .map(user => ({
-                        _id: user._id,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        email: user.email
-                    }));
+      // Enhance task assignments with user information
+      const enhancedTasks = taskAssignments.map((task) => {
+        const assignedUsers = task.assigned_student_ids
+          .map((id) => users.find((u) => u._id === id))
+          .filter((u): u is NonNullable<typeof u> => u !== undefined)
+          .map((user) => ({
+            _id: user._id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+          }));
 
-                return {
-                    ...task,
-                    assignedUsers
-                };
-            });
+        return {
+          ...task,
+          assignedUsers,
+        };
+      });
 
-            return {
-                tasks: enhancedTasks,
-                groupMembers,
-                status: 'idle',
-                hasResults: enhancedTasks.length > 0
-            };
-        } catch {
-            return {
-                tasks: [],
-                groupMembers: [],
-                status: 'error',
-                hasResults: false
-            };
-        }
-    },
+      return {
+        tasks: enhancedTasks,
+        groupMembers,
+        status: "idle",
+        hasResults: enhancedTasks.length > 0,
+      };
+    } catch {
+      return {
+        tasks: [],
+        groupMembers: [],
+        status: "error",
+        hasResults: false,
+      };
+    }
+  },
 });
 
 // =========================================
@@ -949,292 +1055,331 @@ export const getTaskAssignments = query({
 // =========================================
 
 interface AdviserDocumentWithStatus {
-    _id: Id<"documents">;
-    _creationTime: number;
-    group_id: Id<"groupsTable">;
-    chapter: string;
-    room_id: string;
-    title: string;
-    content: string;
-    status: number; // This represents review_status from documentStatus table
-    last_modified?: number; // This comes from documentStatus.last_modified
+  _id: Id<"documents">;
+  _creationTime: number;
+  group_id: Id<"groupsTable">;
+  chapter: string;
+  room_id: string;
+  title: string;
+  content: string;
+  status: number; // This represents review_status from documentStatus table
+  last_modified?: number; // This comes from documentStatus.last_modified
 }
 
 interface AdviserGroupWithDocuments {
-    _id: Id<"groupsTable">;
-    capstone_title?: string;
-    project_manager_id: Id<"users">;
-    member_ids: Id<"users">[];
-    adviser_id?: Id<"users">;
-    requested_adviser?: Id<"users">;
-    grade?: number;
-    name?: string;
-    projectManager?: {
-        _id: Id<"users">;
-        first_name: string;
-        middle_name?: string;
-        last_name: string;
-    };
-    members?: Array<{
-        _id: Id<"users">;
-        first_name: string;
-        middle_name?: string;
-        last_name: string;
-    }>;
-    adviser?: {
-        _id: Id<"users">;
-        first_name: string;
-        middle_name?: string;
-        last_name: string;
-    };
-    documents: AdviserDocumentWithStatus[];
-    documentCount: number;
+  _id: Id<"groupsTable">;
+  capstone_title?: string;
+  project_manager_id: Id<"users">;
+  member_ids: Id<"users">[];
+  adviser_id?: Id<"users">;
+  requested_adviser?: Id<"users">;
+  grade?: number;
+  name?: string;
+  projectManager?: {
+    _id: Id<"users">;
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+  };
+  members?: Array<{
+    _id: Id<"users">;
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+  }>;
+  adviser?: {
+    _id: Id<"users">;
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+  };
+  documents: AdviserDocumentWithStatus[];
+  documentCount: number;
 }
 
 export const getAdviserDocuments = query({
-    args: {
-        adviserId: v.id("users"),
-        searchTerm: v.string(),
-        pageSize: v.optional(v.number()),
-        pageNumber: v.optional(v.number()),
-        sortField: v.optional(v.string()),
-        sortDirection: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const { adviserId, searchTerm, pageSize = 5, pageNumber = 1, sortField, sortDirection } = args;
-        const skip = (pageNumber - 1) * pageSize;
+  args: {
+    adviserId: v.id("users"),
+    searchTerm: v.string(),
+    pageSize: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
+    sortField: v.optional(v.string()),
+    sortDirection: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const {
+      adviserId,
+      searchTerm,
+      pageSize = 5,
+      pageNumber = 1,
+      sortField,
+      sortDirection,
+    } = args;
+    const skip = (pageNumber - 1) * pageSize;
 
-        try {
-            // Get the adviser's assigned groups
-            const adviser = await ctx.db
-                .query("advisersTable")
-                .withIndex("by_adviser", (q) => q.eq("adviser_id", adviserId))
-                .first();
+    try {
+      // Get the adviser's assigned groups
+      const adviser = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", adviserId))
+        .first();
 
-            if (!adviser?.group_ids || adviser.group_ids.length === 0) {
-                return {
-                    groups: [],
-                    totalCount: 0,
-                    totalPages: 0,
-                    status: 'idle',
-                    hasResults: false
-                };
-            }
+      if (!adviser?.group_ids || adviser.group_ids.length === 0) {
+        return {
+          groups: [],
+          totalCount: 0,
+          totalPages: 0,
+          status: "idle",
+          hasResults: false,
+        };
+      }
 
-            // Get all groups assigned to this adviser
-            const groups = await ctx.db.query("groupsTable").collect();
-            const users = await ctx.db.query("users").collect();
+      // Get all groups assigned to this adviser
+      const groups = await ctx.db.query("groupsTable").collect();
+      const users = await ctx.db.query("users").collect();
 
-            // Filter groups to only include those assigned to this adviser
-            let filteredGroups = groups.filter(group => 
-                adviser.group_ids?.includes(group._id)
-            );
+      // Filter groups to only include those assigned to this adviser
+      let filteredGroups = groups.filter((group) =>
+        adviser.group_ids?.includes(group._id)
+      );
 
-            // Apply search if searchTerm is provided
-            if (searchTerm.trim()) {
-                // Use Convex search functionality for capstone titles
-                const capstoneResults = await ctx.db
-                    .query("groupsTable")
-                    .withSearchIndex("search_by_capstone_title", (q) => 
-                        q.search("capstone_title", searchTerm)
-                    )
-                    .collect();
-                
-                // Filter capstone results to only include groups assigned to this adviser
-                const capstoneFiltered = capstoneResults.filter(group => 
-                    adviser.group_ids?.includes(group._id)
-                );
-                
-                // Also search by project manager names
-                const allGroups = await ctx.db.query("groupsTable").collect();
-                const users = await ctx.db.query("users").collect();
-                
-                const managerFiltered = allGroups.filter(group => {
-                    if (!adviser.group_ids?.includes(group._id)) return false;
-                    
-                    const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
-                    if (!projectManager) return false;
-                    
-                    const managerName = `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
-                    const groupName = `${projectManager.last_name} et al`.toLowerCase();
-                    
-                    return managerName.includes(searchTerm.toLowerCase()) || 
-                           groupName.includes(searchTerm.toLowerCase());
-                });
-                
-                // Combine and deduplicate results
-                const combinedResults = [...capstoneFiltered, ...managerFiltered];
-                filteredGroups = combinedResults.filter((group, index, self) => 
-                    index === self.findIndex(g => g._id === group._id)
-                );
-            }
+      // Apply search if searchTerm is provided
+      if (searchTerm.trim()) {
+        // Use Convex search functionality for capstone titles
+        const capstoneResults = await ctx.db
+          .query("groupsTable")
+          .withSearchIndex("search_by_capstone_title", (q) =>
+            q.search("capstone_title", searchTerm)
+          )
+          .collect();
 
-            // Apply sorting
-            if (sortField && sortDirection) {
-                filteredGroups.sort((a, b) => {
-                    let comparison = 0;
-                    switch (sortField) {
-                        case "name":
-                            const aManager = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
-                            const bManager = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
-                            const aName = aManager ? `${aManager.last_name} et al` : "";
-                            const bName = bManager ? `${bManager.last_name} et al` : "";
-                            comparison = aName.localeCompare(bName);
-                            break;
-                        case "capstoneTitle":
-                            comparison = (a.capstone_title || "").localeCompare(b.capstone_title || "");
-                            break;
-                        case "projectManager":
-                            const aPM = a.project_manager_id ? users.find(u => u._id === a.project_manager_id) : null;
-                            const bPM = b.project_manager_id ? users.find(u => u._id === b.project_manager_id) : null;
-                            const aPMName = aPM ? `${aPM.last_name} ${aPM.first_name}` : "";
-                            const bPMName = bPM ? `${bPM.last_name} ${bPM.first_name}` : "";
-                            comparison = aPMName.localeCompare(bPMName);
-                            break;
-                        case "documentCount":
-                            // We'll calculate this after processing documents
-                            comparison = 0;
-                            break;
-                    }
-                    return sortDirection === "asc" ? comparison : -comparison;
-                });
-            }
+        // Filter capstone results to only include groups assigned to this adviser
+        const capstoneFiltered = capstoneResults.filter((group) =>
+          adviser.group_ids?.includes(group._id)
+        );
 
-            // Process groups to include documents and user information
-            const processedGroups: AdviserGroupWithDocuments[] = [];
+        // Also search by project manager names
+        const allGroups = await ctx.db.query("groupsTable").collect();
+        const users = await ctx.db.query("users").collect();
 
-            for (const group of filteredGroups) {
-                // Get all documents for this group
-                const allDocs = await ctx.db
-                    .query("documents")
-                    .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
-                    .collect();
+        const managerFiltered = allGroups.filter((group) => {
+          if (!adviser.group_ids?.includes(group._id)) return false;
 
-                // Get all review statuses for this group
-                const allStatuses = await ctx.db
-                    .query("documentStatus")
-                    .withIndex("by_group_document", (q) => q.eq("group_id", group._id))
-                    .collect();
+          const projectManager = group.project_manager_id
+            ? users.find((u) => u._id === group.project_manager_id)
+            : null;
+          if (!projectManager) return false;
 
-                // Create a map for quick status lookup
-                const statusMap = new Map(allStatuses.map(s => [s.document_part, s]));
+          const managerName =
+            `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
+          const groupName = `${projectManager.last_name} et al`.toLowerCase();
 
-                // Get the latest version of each document part
-                const latestDocsMap = new Map<string, Doc<"documents">>();
-                for (const doc of allDocs) {
-                    const existing = latestDocsMap.get(doc.chapter);
-                    if (!existing || doc._creationTime > existing._creationTime) {
-                        latestDocsMap.set(doc.chapter, doc);
-                    }
-                }
+          return (
+            managerName.includes(searchTerm.toLowerCase()) ||
+            groupName.includes(searchTerm.toLowerCase())
+          );
+        });
 
-                // Define the order of document chapters (excluding title_page, appendix_a, appendix_d)
-                const CHAPTER_ORDER = [
-                    "acknowledgment",
-                    "abstract",
-                    "table_of_contents",
-                    "chapter_1",
-                    "chapter_2",
-                    "chapter_3",
-                    "chapter_4",
-                    "chapter_5",
-                    "references",
-                    "appendix_b",
-                    "appendix_c",
-                    "appendix_e",
-                    "appendix_f",
-                    "appendix_g",
-                    "appendix_h",
-                    "appendix_i",
-                ];
+        // Combine and deduplicate results
+        const combinedResults = [...capstoneFiltered, ...managerFiltered];
+        filteredGroups = combinedResults.filter(
+          (group, index, self) =>
+            index === self.findIndex((g) => g._id === group._id)
+        );
+      }
 
-                // Combine documents with their review status
-                const documentsWithStatus: AdviserDocumentWithStatus[] = Array.from(latestDocsMap.values())
-                    .filter(doc => !["title_page", "appendix_a", "appendix_d"].includes(doc.chapter))
-                    .map(doc => {
-                        const statusInfo = statusMap.get(doc.chapter);
-                        return {
-                            ...doc,
-                            status: statusInfo?.review_status ?? 0, // Default to 0 (Not Submitted)
-                            last_modified: statusInfo?.last_modified,
-                        };
-                    });
+      // Apply sorting
+      if (sortField && sortDirection) {
+        filteredGroups.sort((a, b) => {
+          let comparison = 0;
+          switch (sortField) {
+            case "name":
+              const aManager = a.project_manager_id
+                ? users.find((u) => u._id === a.project_manager_id)
+                : null;
+              const bManager = b.project_manager_id
+                ? users.find((u) => u._id === b.project_manager_id)
+                : null;
+              const aName = aManager ? `${aManager.last_name} et al` : "";
+              const bName = bManager ? `${bManager.last_name} et al` : "";
+              comparison = aName.localeCompare(bName);
+              break;
+            case "capstoneTitle":
+              comparison = (a.capstone_title || "").localeCompare(
+                b.capstone_title || ""
+              );
+              break;
+            case "projectManager":
+              const aPM = a.project_manager_id
+                ? users.find((u) => u._id === a.project_manager_id)
+                : null;
+              const bPM = b.project_manager_id
+                ? users.find((u) => u._id === b.project_manager_id)
+                : null;
+              const aPMName = aPM ? `${aPM.last_name} ${aPM.first_name}` : "";
+              const bPMName = bPM ? `${bPM.last_name} ${bPM.first_name}` : "";
+              comparison = aPMName.localeCompare(bPMName);
+              break;
+            case "documentCount":
+              // We'll calculate this after processing documents
+              comparison = 0;
+              break;
+          }
+          return sortDirection === "asc" ? comparison : -comparison;
+        });
+      }
 
-                // Sort the documents according to CHAPTER_ORDER
-                documentsWithStatus.sort((a, b) => {
-                    const indexA = CHAPTER_ORDER.indexOf(a.chapter);
-                    const indexB = CHAPTER_ORDER.indexOf(b.chapter);
-                    
-                    // Handle cases where a chapter might not be in the order array
-                    if (indexA === -1 && indexB === -1) return a.chapter.localeCompare(b.chapter);
-                    if (indexA === -1) return 1;
-                    if (indexB === -1) return -1;
-                    
-                    return indexA - indexB;
-                });
+      // Process groups to include documents and user information
+      const processedGroups: AdviserGroupWithDocuments[] = [];
 
-                // Get user information
-                const projectManager = group.project_manager_id ? users.find(u => u._id === group.project_manager_id) : null;
-                const adviser = group.adviser_id ? users.find(u => u._id === group.adviser_id) : null;
-                const members = group.member_ids
-                    .map(id => users.find(u => u._id === id))
-                    .filter((u): u is NonNullable<typeof u> => u !== undefined);
+      for (const group of filteredGroups) {
+        // Get all documents for this group
+        const allDocs = await ctx.db
+          .query("documents")
+          .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
+          .collect();
 
-                processedGroups.push({
-                    ...group,
-                    name: projectManager ? `${projectManager.last_name} et al` : "Unknown Group",
-                    projectManager: projectManager ? {
-                        _id: projectManager._id,
-                        first_name: projectManager.first_name,
-                        middle_name: projectManager.middle_name,
-                        last_name: projectManager.last_name,
-                    } : undefined,
-                    adviser: adviser ? {
-                        _id: adviser._id,
-                        first_name: adviser.first_name,
-                        middle_name: adviser.middle_name,
-                        last_name: adviser.last_name,
-                    } : undefined,
-                    members: members.map(member => ({
-                        _id: member._id,
-                        first_name: member.first_name,
-                        middle_name: member.middle_name,
-                        last_name: member.last_name,
-                    })),
-                    documents: documentsWithStatus,
-                    documentCount: documentsWithStatus.length,
-                });
-            }
+        // Get all review statuses for this group
+        const allStatuses = await ctx.db
+          .query("documentStatus")
+          .withIndex("by_group_document", (q) => q.eq("group_id", group._id))
+          .collect();
 
-            // Apply document count sorting if needed
-            if (sortField === "documentCount" && sortDirection) {
-                processedGroups.sort((a, b) => {
-                    const comparison = a.documentCount - b.documentCount;
-                    return sortDirection === "asc" ? comparison : -comparison;
-                });
-            }
+        // Create a map for quick status lookup
+        const statusMap = new Map(allStatuses.map((s) => [s.document_part, s]));
 
-            // Apply pagination
-            const totalCount = processedGroups.length;
-            const paginatedResults = processedGroups.slice(skip, skip + pageSize);
-
-            return {
-                groups: paginatedResults,
-                totalCount,
-                totalPages: Math.ceil(totalCount / pageSize),
-                status: 'idle',
-                hasResults: paginatedResults.length > 0
-            };
-        } catch {
-            return {
-                groups: [],
-                totalCount: 0,
-                totalPages: 0,
-                status: 'error',
-                hasResults: false
-            };
+        // Get the latest version of each document part
+        const latestDocsMap = new Map<string, Doc<"documents">>();
+        for (const doc of allDocs) {
+          const existing = latestDocsMap.get(doc.chapter);
+          if (!existing || doc._creationTime > existing._creationTime) {
+            latestDocsMap.set(doc.chapter, doc);
+          }
         }
-    },
+
+        // Define the order of document chapters (excluding title_page, appendix_a, appendix_d)
+        const CHAPTER_ORDER = [
+          "acknowledgment",
+          "abstract",
+          "table_of_contents",
+          "chapter_1",
+          "chapter_2",
+          "chapter_3",
+          "chapter_4",
+          "chapter_5",
+          "references",
+          "appendix_b",
+          "appendix_c",
+          "appendix_e",
+          "appendix_f",
+          "appendix_g",
+          "appendix_h",
+          "appendix_i",
+        ];
+
+        // Combine documents with their review status
+        const documentsWithStatus: AdviserDocumentWithStatus[] = Array.from(
+          latestDocsMap.values()
+        )
+          .filter(
+            (doc) =>
+              !["title_page", "appendix_a", "appendix_d"].includes(doc.chapter)
+          )
+          .map((doc) => {
+            const statusInfo = statusMap.get(doc.chapter);
+            return {
+              ...doc,
+              status: statusInfo?.review_status ?? 0, // Default to 0 (Not Submitted)
+              last_modified: statusInfo?.last_modified,
+            };
+          });
+
+        // Sort the documents according to CHAPTER_ORDER
+        documentsWithStatus.sort((a, b) => {
+          const indexA = CHAPTER_ORDER.indexOf(a.chapter);
+          const indexB = CHAPTER_ORDER.indexOf(b.chapter);
+
+          // Handle cases where a chapter might not be in the order array
+          if (indexA === -1 && indexB === -1)
+            return a.chapter.localeCompare(b.chapter);
+          if (indexA === -1) return 1;
+          if (indexB === -1) return -1;
+
+          return indexA - indexB;
+        });
+
+        // Get user information
+        const projectManager = group.project_manager_id
+          ? users.find((u) => u._id === group.project_manager_id)
+          : null;
+        const adviser = group.adviser_id
+          ? users.find((u) => u._id === group.adviser_id)
+          : null;
+        const members = group.member_ids
+          .map((id) => users.find((u) => u._id === id))
+          .filter((u): u is NonNullable<typeof u> => u !== undefined);
+
+        processedGroups.push({
+          ...group,
+          name: projectManager
+            ? `${projectManager.last_name} et al`
+            : "Unknown Group",
+          projectManager: projectManager
+            ? {
+                _id: projectManager._id,
+                first_name: projectManager.first_name,
+                middle_name: projectManager.middle_name,
+                last_name: projectManager.last_name,
+              }
+            : undefined,
+          adviser: adviser
+            ? {
+                _id: adviser._id,
+                first_name: adviser.first_name,
+                middle_name: adviser.middle_name,
+                last_name: adviser.last_name,
+              }
+            : undefined,
+          members: members.map((member) => ({
+            _id: member._id,
+            first_name: member.first_name,
+            middle_name: member.middle_name,
+            last_name: member.last_name,
+          })),
+          documents: documentsWithStatus,
+          documentCount: documentsWithStatus.length,
+        });
+      }
+
+      // Apply document count sorting if needed
+      if (sortField === "documentCount" && sortDirection) {
+        processedGroups.sort((a, b) => {
+          const comparison = a.documentCount - b.documentCount;
+          return sortDirection === "asc" ? comparison : -comparison;
+        });
+      }
+
+      // Apply pagination
+      const totalCount = processedGroups.length;
+      const paginatedResults = processedGroups.slice(skip, skip + pageSize);
+
+      return {
+        groups: paginatedResults,
+        totalCount,
+        totalPages: Math.ceil(totalCount / pageSize),
+        status: "idle",
+        hasResults: paginatedResults.length > 0,
+      };
+    } catch {
+      return {
+        groups: [],
+        totalCount: 0,
+        totalPages: 0,
+        status: "error",
+        hasResults: false,
+      };
+    }
+  },
 });
 
 export const getHandledGroupsWithProgress = query({
@@ -1256,38 +1401,41 @@ export const getHandledGroupsWithProgress = query({
     if (groupIds.length === 0) {
       return { groups: [], projectManagers: [] };
     }
-    
+
     // Fetch all groups handled by the adviser
-    const groups = await Promise.all(
-      groupIds.map(id => ctx.db.get(id))
+    const groups = await Promise.all(groupIds.map((id) => ctx.db.get(id)));
+
+    const validGroups = groups.filter(
+      (group): group is NonNullable<typeof group> => group !== null
     );
-    
-    const validGroups = groups.filter((group): group is NonNullable<typeof group> => group !== null);
 
     // Fetch all document statuses for these groups
     const allDocumentStatuses = await Promise.all(
-        validGroups.map(group => 
-            ctx.db.query("documentStatus")
-               .withIndex("by_group", q => q.eq("group_id", group._id))
-               .collect()
-        )
+      validGroups.map((group) =>
+        ctx.db
+          .query("documentStatus")
+          .withIndex("by_group", (q) => q.eq("group_id", group._id))
+          .collect()
+      )
     );
 
     // Fetch all project managers for these groups
-    const projectManagerIds = validGroups.map(g => g.project_manager_id);
+    const projectManagerIds = validGroups.map((g) => g.project_manager_id);
     const projectManagers = await Promise.all(
-      projectManagerIds.map(id => ctx.db.get(id))
+      projectManagerIds.map((id) => ctx.db.get(id))
     );
-    const validProjectManagers = projectManagers.filter((pm): pm is NonNullable<typeof pm> => pm !== null);
+    const validProjectManagers = projectManagers.filter(
+      (pm): pm is NonNullable<typeof pm> => pm !== null
+    );
 
     const groupsWithProgress = validGroups.map((group, index) => ({
       ...group,
       documentStatuses: allDocumentStatuses[index] || [],
     }));
 
-    return { 
+    return {
       groups: groupsWithProgress,
       projectManagers: validProjectManagers,
     };
-  }
-}); 
+  },
+});

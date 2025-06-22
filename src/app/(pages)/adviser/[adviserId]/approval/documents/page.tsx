@@ -49,14 +49,6 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
         setCurrentPage(1);
     };
 
-    const handleStatusChange = (documentId: string, newStatus: number) => {
-        // In a real implementation, you would call a mutation here
-        console.log(`Document ${documentId} status changed to ${newStatus}`);
-        
-        // For now, we'll just log the change since this is mock data
-        // In production, you would update the database and refresh the data
-    };
-
     // Handle loading and error states
     if (!result) {
         return (
@@ -103,7 +95,6 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
                         onPageSizeChange={handlePageSizeChange}
                         status="loading"
                         hasResults={false}
-                        onStatusChange={handleStatusChange}
                         currentUserId={adviserId as Id<"users">}
                     />
                 </div>
@@ -155,7 +146,6 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
                     onPageSizeChange={handlePageSizeChange}
                     status={result.status as 'idle' | 'loading' | 'error'}
                     hasResults={result.hasResults}
-                    onStatusChange={handleStatusChange}
                     currentUserId={adviserId as Id<"users">}
                 />
             </div>

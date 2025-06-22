@@ -7,7 +7,7 @@ const LOG_ACTIONS = {
   DELETE: "Delete",
   RESET_PASSWORD: "Reset Password",
   LOCK_ACCOUNT: "Lock Account",
-  UNLOCK_ACCOUNT: "Unlock Account"
+  UNLOCK_ACCOUNT: "Unlock Account",
 } as const;
 
 interface UserInfo {
@@ -18,8 +18,8 @@ interface UserInfo {
 }
 
 export async function logCreateUser(
-  ctx: MutationCtx, 
-  instructorId: Id<"users">, 
+  ctx: MutationCtx,
+  instructorId: Id<"users">,
   affectedEntityId: Id<"users">,
   userInfo: UserInfo,
   instructorInfo: UserInfo
@@ -37,14 +37,14 @@ export async function logCreateUser(
     affected_entity_last_name: userInfo.last_name,
     affected_entity_email: userInfo.email,
     action: LOG_ACTIONS.CREATE,
-    details: "Created User"
+    details: "Created User",
   });
 }
 
 export async function logUpdateUser(
-  ctx: MutationCtx, 
-  instructorId: Id<"users">, 
-  affectedEntityId: Id<"users">, 
+  ctx: MutationCtx,
+  instructorId: Id<"users">,
+  affectedEntityId: Id<"users">,
   details: string,
   userInfo: UserInfo,
   instructorInfo: UserInfo
@@ -62,13 +62,13 @@ export async function logUpdateUser(
     affected_entity_last_name: userInfo.last_name,
     affected_entity_email: userInfo.email,
     action: LOG_ACTIONS.EDIT,
-    details: details
+    details: details,
   });
 }
 
 export async function logDeleteUser(
-  ctx: MutationCtx, 
-  instructorId: Id<"users">, 
+  ctx: MutationCtx,
+  instructorId: Id<"users">,
   affectedEntityId: Id<"users">,
   userInfo: UserInfo,
   instructorInfo: UserInfo
@@ -86,13 +86,13 @@ export async function logDeleteUser(
     affected_entity_last_name: userInfo.last_name,
     affected_entity_email: userInfo.email,
     action: LOG_ACTIONS.DELETE,
-    details: "Deleted User"
+    details: "Deleted User",
   });
 }
 
 export async function logResetPassword(
-  ctx: MutationCtx, 
-  instructorId: Id<"users">, 
+  ctx: MutationCtx,
+  instructorId: Id<"users">,
   affectedEntityId: Id<"users">,
   affectedUserInfo: UserInfo,
   instructorInfo: UserInfo
@@ -110,13 +110,13 @@ export async function logResetPassword(
     affected_entity_last_name: affectedUserInfo.last_name,
     affected_entity_email: affectedUserInfo.email,
     action: LOG_ACTIONS.RESET_PASSWORD,
-    details: "Reset Password"
+    details: "Reset Password",
   });
 }
 
 export async function logCreateGroup(
-  ctx: MutationCtx, 
-  instructorId: Id<"users">, 
+  ctx: MutationCtx,
+  instructorId: Id<"users">,
   affectedEntityId: Id<"groupsTable">,
   instructorInfo: UserInfo,
   projectManagerInfo: UserInfo
@@ -134,14 +134,14 @@ export async function logCreateGroup(
     affected_entity_last_name: projectManagerInfo.last_name,
     affected_entity_email: projectManagerInfo.email,
     action: LOG_ACTIONS.CREATE,
-    details: "Created Group"
+    details: "Created Group",
   });
 }
 
 export async function logUpdateGroup(
-  ctx: MutationCtx, 
-  instructorId: Id<"users">, 
-  affectedEntityId: Id<"groupsTable">, 
+  ctx: MutationCtx,
+  instructorId: Id<"users">,
+  affectedEntityId: Id<"groupsTable">,
   details: string,
   instructorInfo: UserInfo,
   projectManagerInfo: UserInfo
@@ -159,13 +159,13 @@ export async function logUpdateGroup(
     affected_entity_last_name: projectManagerInfo.last_name,
     affected_entity_email: projectManagerInfo.email,
     action: LOG_ACTIONS.EDIT,
-    details
+    details,
   });
 }
 
 export async function logDeleteGroup(
-  ctx: MutationCtx, 
-  instructorId: Id<"users">, 
+  ctx: MutationCtx,
+  instructorId: Id<"users">,
   affectedEntityId: Id<"groupsTable">,
   instructorInfo: UserInfo,
   projectManagerInfo: UserInfo
@@ -183,15 +183,15 @@ export async function logDeleteGroup(
     affected_entity_last_name: projectManagerInfo.last_name,
     affected_entity_email: projectManagerInfo.email,
     action: LOG_ACTIONS.DELETE,
-    details: "Deleted Group"
+    details: "Deleted Group",
   });
 }
 
 export async function logLockAccount(
-  ctx: MutationCtx, 
-  instructorId: Id<"users">, 
+  ctx: MutationCtx,
+  instructorId: Id<"users">,
   affectedEntityId: Id<"users">,
-  action: 'lock' | 'unlock',
+  action: "lock" | "unlock",
   affectedUserInfo: UserInfo,
   instructorInfo: UserInfo
 ) {
@@ -207,7 +207,8 @@ export async function logLockAccount(
     affected_entity_middle_name: affectedUserInfo.middle_name,
     affected_entity_last_name: affectedUserInfo.last_name,
     affected_entity_email: affectedUserInfo.email,
-    action: action === 'lock' ? LOG_ACTIONS.LOCK_ACCOUNT : LOG_ACTIONS.UNLOCK_ACCOUNT,
-    details: action === 'lock' ? "Locked Account" : "Unlocked Account"
+    action:
+      action === "lock" ? LOG_ACTIONS.LOCK_ACCOUNT : LOG_ACTIONS.UNLOCK_ACCOUNT,
+    details: action === "lock" ? "Locked Account" : "Unlocked Account",
   });
 }

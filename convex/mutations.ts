@@ -1,7 +1,16 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { generateUniqueAdviserCode } from "./utils/adviserCode";
-import { logCreateUser, logUpdateUser, logDeleteUser, logResetPassword, logCreateGroup, logUpdateGroup, logDeleteGroup, logLockAccount } from "./utils/log";
+import {
+  logCreateUser,
+  logUpdateUser,
+  logDeleteUser,
+  logResetPassword,
+  logCreateGroup,
+  logUpdateGroup,
+  logDeleteGroup,
+  logLockAccount,
+} from "./utils/log";
 import { Id } from "./_generated/dataModel";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
@@ -22,7 +31,7 @@ interface ConvexBackup {
 }
 
 function validateBackupFile(file: unknown): file is ConvexBackup {
-  if (!file || typeof file !== 'object') {
+  if (!file || typeof file !== "object") {
     throw new Error("Invalid backup file format");
   }
 
@@ -32,10 +41,21 @@ function validateBackupFile(file: unknown): file is ConvexBackup {
   }
 
   // Validate each table exists and has data
-  const requiredTables = ['users', 'groups', 'students', 'advisers', 'logs', 'documents', 'taskAssignments', 'documentStatus'];
+  const requiredTables = [
+    "users",
+    "groups",
+    "students",
+    "advisers",
+    "logs",
+    "documents",
+    "taskAssignments",
+    "documentStatus",
+  ];
   for (const table of requiredTables) {
-    if (!backup.tables[table as keyof typeof backup.tables] || 
-        !Array.isArray(backup.tables[table as keyof typeof backup.tables])) {
+    if (
+      !backup.tables[table as keyof typeof backup.tables] ||
+      !Array.isArray(backup.tables[table as keyof typeof backup.tables])
+    ) {
       throw new Error(`Backup file is missing or has invalid ${table} table`);
     }
   }
@@ -47,7 +67,7 @@ function validateBackupFile(file: unknown): file is ConvexBackup {
     group_ids?: string[];
     requests_group_ids?: string[];
   }>;
-  
+
   for (const adviser of advisers) {
     if (!adviser.adviser_id || !adviser.code) {
       throw new Error("Adviser record is missing required fields");
@@ -72,7 +92,10 @@ export const createUser = mutation({
     subrole: v.optional(v.number()),
     clerk_id: v.string(),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; userId: Id<"users"> }> => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; userId: Id<"users"> }> => {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(args.email)) {
@@ -102,7 +125,9 @@ export const createUser = mutation({
 
     if (existingUserByEmail) {
       // If user exists with this email but different clerk_id, something is wrong
-      throw new Error("Email already registered with a different account. Please contact support.");
+      throw new Error(
+        "Email already registered with a different account. Please contact support."
+      );
     }
 
     try {
@@ -151,17 +176,23 @@ export const createUser = mutation({
       }
 
       // Log the user creation with user info
-      await logCreateUser(ctx, args.instructorId, userId, {
-        first_name: args.first_name,
-        middle_name: args.middle_name,
-        last_name: args.last_name,
-        email: args.email
-      }, {
-        first_name: instructor.first_name,
-        middle_name: instructor.middle_name,
-        last_name: instructor.last_name,
-        email: instructor.email
-      });
+      await logCreateUser(
+        ctx,
+        args.instructorId,
+        userId,
+        {
+          first_name: args.first_name,
+          middle_name: args.middle_name,
+          last_name: args.last_name,
+          email: args.email,
+        },
+        {
+          first_name: instructor.first_name,
+          middle_name: instructor.middle_name,
+          last_name: instructor.last_name,
+          email: instructor.email,
+        }
+      );
       return { success: true, userId };
     } catch (error) {
       throw error; // Re-throw the original error
@@ -267,9 +298,17 @@ export const createGroup = mutation({
       title: string;
     }> = [
       // Regular documents
-      { chapter: "acknowledgment", section: "acknowledgment", title: "Acknowledgement" },
+      {
+        chapter: "acknowledgment",
+        section: "acknowledgment",
+        title: "Acknowledgement",
+      },
       { chapter: "abstract", section: "abstract", title: "Abstract" },
-      { chapter: "table_of_contents", section: "table_of_contents", title: "Table of Contents" },
+      {
+        chapter: "table_of_contents",
+        section: "table_of_contents",
+        title: "Table of Contents",
+      },
       { chapter: "chapter_2", section: "chapter_2", title: "Chapter 2" },
       { chapter: "chapter_5", section: "chapter_5", title: "Chapter 5" },
       { chapter: "references", section: "references", title: "References" },
@@ -280,26 +319,78 @@ export const createGroup = mutation({
       { chapter: "appendix_g", section: "appendix_g", title: "Appendix G" },
       { chapter: "appendix_h", section: "appendix_h", title: "Appendix H" },
       { chapter: "appendix_i", section: "appendix_i", title: "Appendix I" },
-      
+
       // Chapter 1 subparts
-      { chapter: "chapter_1", section: "1.1 Project Context", title: "1.1 Project Context" },
-      { chapter: "chapter_1", section: "1.2 Purpose and Description", title: "1.2 Purpose and Description" },
-      { chapter: "chapter_1", section: "1.3 Objectives", title: "1.3 Objectives" },
-      { chapter: "chapter_1", section: "1.4 Scope and Limitations", title: "1.4 Scope and Limitations" },
-      
+      {
+        chapter: "chapter_1",
+        section: "1.1 Project Context",
+        title: "1.1 Project Context",
+      },
+      {
+        chapter: "chapter_1",
+        section: "1.2 Purpose and Description",
+        title: "1.2 Purpose and Description",
+      },
+      {
+        chapter: "chapter_1",
+        section: "1.3 Objectives",
+        title: "1.3 Objectives",
+      },
+      {
+        chapter: "chapter_1",
+        section: "1.4 Scope and Limitations",
+        title: "1.4 Scope and Limitations",
+      },
+
       // Chapter 3 subparts
-      { chapter: "chapter_3", section: "3.1 Development", title: "3.1 Development" },
-      { chapter: "chapter_3", section: "3.2 Implementation", title: "3.2 Implementation" },
-      
+      {
+        chapter: "chapter_3",
+        section: "3.1 Development",
+        title: "3.1 Development",
+      },
+      {
+        chapter: "chapter_3",
+        section: "3.2 Implementation",
+        title: "3.2 Implementation",
+      },
+
       // Chapter 4 subparts
-      { chapter: "chapter_4", section: "4.1 Methodology", title: "4.1 Methodology" },
-      { chapter: "chapter_4", section: "4.2 Environment", title: "4.2 Environment" },
-      { chapter: "chapter_4", section: "4.3 Requirements Specifications", title: "4.3 Requirements Specifications" },
+      {
+        chapter: "chapter_4",
+        section: "4.1 Methodology",
+        title: "4.1 Methodology",
+      },
+      {
+        chapter: "chapter_4",
+        section: "4.2 Environment",
+        title: "4.2 Environment",
+      },
+      {
+        chapter: "chapter_4",
+        section: "4.3 Requirements Specifications",
+        title: "4.3 Requirements Specifications",
+      },
       { chapter: "chapter_4", section: "4.4 Design", title: "4.4 Design" },
-      { chapter: "chapter_4", section: "4.5 Development", title: "4.5 Development" },
-      { chapter: "chapter_4", section: "4.6 Verification, Validation, Testing", title: "4.6 Verification, Validation, Testing" },
-      { chapter: "chapter_4", section: "4.7 Implementation Plan", title: "4.7 Implementation Plan" },
-      { chapter: "chapter_4", section: "4.8 Installation Processes", title: "4.8 Installation Processes" },
+      {
+        chapter: "chapter_4",
+        section: "4.5 Development",
+        title: "4.5 Development",
+      },
+      {
+        chapter: "chapter_4",
+        section: "4.6 Verification, Validation, Testing",
+        title: "4.6 Verification, Validation, Testing",
+      },
+      {
+        chapter: "chapter_4",
+        section: "4.7 Implementation Plan",
+        title: "4.7 Implementation Plan",
+      },
+      {
+        chapter: "chapter_4",
+        section: "4.8 Installation Processes",
+        title: "4.8 Installation Processes",
+      },
     ];
 
     for (const task of taskAssignments) {
@@ -315,16 +406,32 @@ export const createGroup = mutation({
 
     // Create document status entries for all documents
     const documentParts = [
-      "title_page", "acknowledgment", "abstract", "table_of_contents",
-      "chapter_1", "chapter_2", "chapter_3", "chapter_4", "chapter_5",
+      "title_page",
+      "acknowledgment",
+      "abstract",
+      "table_of_contents",
+      "chapter_1",
+      "chapter_2",
+      "chapter_3",
+      "chapter_4",
+      "chapter_5",
       "references",
-      "appendix_a", "appendix_b", "appendix_c", "appendix_d",
-      "appendix_e", "appendix_f", "appendix_g", "appendix_h", "appendix_i"
+      "appendix_a",
+      "appendix_b",
+      "appendix_c",
+      "appendix_d",
+      "appendix_e",
+      "appendix_f",
+      "appendix_g",
+      "appendix_h",
+      "appendix_i",
     ];
 
     for (const documentPart of documentParts) {
-      const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(documentPart);
-      
+      const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
+        documentPart
+      );
+
       await ctx.db.insert("documentStatus", {
         group_id: groupId,
         document_part: documentPart,
@@ -348,17 +455,23 @@ export const createGroup = mutation({
     }
 
     // Log the group creation with instructor and project manager info
-    await logCreateGroup(ctx, args.instructorId, groupId, {
-      first_name: instructor.first_name,
-      middle_name: instructor.middle_name,
-      last_name: instructor.last_name,
-      email: instructor.email
-    }, {
-      first_name: project_manager.first_name,
-      middle_name: project_manager.middle_name,
-      last_name: project_manager.last_name,
-      email: project_manager.email
-    });
+    await logCreateGroup(
+      ctx,
+      args.instructorId,
+      groupId,
+      {
+        first_name: instructor.first_name,
+        middle_name: instructor.middle_name,
+        last_name: instructor.last_name,
+        email: instructor.email,
+      },
+      {
+        first_name: project_manager.first_name,
+        middle_name: project_manager.middle_name,
+        last_name: project_manager.last_name,
+        email: project_manager.email,
+      }
+    );
 
     return { success: true, groupId };
   },
@@ -395,56 +508,62 @@ export const updateUser = mutation({
           .query("studentsTable")
           .withIndex("by_user", (q) => q.eq("user_id", args.userId))
           .collect();
-        
+
         for (const membership of existingMemberships) {
           // Update studentsTable to set group_id to null
           await ctx.db.patch(membership._id, { group_id: null });
-          
+
           // Update the group's member_ids if group_id exists
           if (membership.group_id) {
             const group = await ctx.db.get(membership.group_id);
             if (group) {
               await ctx.db.patch(group._id, {
-                member_ids: group.member_ids.filter(id => id !== args.userId)
+                member_ids: group.member_ids.filter((id) => id !== args.userId),
               });
             }
           }
         }
       }
-      
+
       // If demoting from manager (subrole 1 -> 0)
       if (user.subrole === 1 && args.subrole === 0) {
         // Find groups where user is project manager
         const managedGroups = await ctx.db
           .query("groupsTable")
-          .withIndex("by_project_manager", (q) => q.eq("project_manager_id", args.userId))
+          .withIndex("by_project_manager", (q) =>
+            q.eq("project_manager_id", args.userId)
+          )
           .collect();
-        
+
         for (const group of managedGroups) {
           // Update all members' group_id to null in studentsTable
           const memberships = await ctx.db
             .query("studentsTable")
             .withIndex("by_group", (q) => q.eq("group_id", group._id))
             .collect();
-          
+
           for (const membership of memberships) {
             await ctx.db.patch(membership._id, { group_id: null });
           }
-          
+
           // Update adviser's group_ids if exists
           if (group.adviser_id) {
             const adviserCode = await ctx.db
               .query("advisersTable")
-              .withIndex("by_adviser", (q) => q.eq("adviser_id", group.adviser_id!))
+              .withIndex("by_adviser", (q) =>
+                q.eq("adviser_id", group.adviser_id!)
+              )
               .first();
-            
+
             if (adviserCode) {
               await ctx.db.patch(adviserCode._id, {
-                group_ids: (adviserCode.group_ids || []).filter(id => id !== group._id)
+                group_ids: (adviserCode.group_ids || []).filter(
+                  (id) => id !== group._id
+                ),
               });
             }
           }
-          
+
           // Delete all documents associated with this group
           const docs = await ctx.db
             .query("documents")
@@ -453,7 +572,7 @@ export const updateUser = mutation({
           for (const doc of docs) {
             await ctx.db.delete(doc._id);
           }
-          
+
           // Delete all task assignments associated with this group
           const taskAssignments = await ctx.db
             .query("taskAssignments")
@@ -462,7 +581,7 @@ export const updateUser = mutation({
           for (const task of taskAssignments) {
             await ctx.db.delete(task._id);
           }
-          
+
           // Delete all document status entries associated with this group
           const documentStatuses = await ctx.db
             .query("documentStatus")
@@ -471,7 +590,7 @@ export const updateUser = mutation({
           for (const status of documentStatuses) {
             await ctx.db.delete(status._id);
           }
-          
+
           // Delete the group
           await ctx.db.delete(group._id);
         }
@@ -506,8 +625,8 @@ export const updateUser = mutation({
       changes.push(`First Name: ${user.first_name} → ${args.first_name}`);
     }
     if (args.middle_name !== user.middle_name) {
-      const oldMiddleName = user.middle_name || 'none';
-      const newMiddleName = args.middle_name || 'none';
+      const oldMiddleName = user.middle_name || "none";
+      const newMiddleName = args.middle_name || "none";
       if (oldMiddleName !== newMiddleName) {
         changes.push(`Middle Name: ${oldMiddleName} → ${newMiddleName}`);
       }
@@ -519,28 +638,47 @@ export const updateUser = mutation({
       changes.push(`Email: ${user.email} → ${args.email}`);
     }
     if (args.subrole !== undefined && args.subrole !== user.subrole) {
-      const oldRole = user.subrole === 0 ? 'Member' : user.subrole === 1 ? 'Manager' : 'None';
-      const newRole = args.subrole === 0 ? 'Member' : args.subrole === 1 ? 'Manager' : 'None';
+      const oldRole =
+        user.subrole === 0 ? "Member" : user.subrole === 1 ? "Manager" : "None";
+      const newRole =
+        args.subrole === 0 ? "Member" : args.subrole === 1 ? "Manager" : "None";
       changes.push(`Role: ${oldRole} → ${newRole}`);
     }
     if (args.role !== undefined && args.role !== user.role) {
-      const oldRole = user.role === 0 ? 'Student' : user.role === 1 ? 'Adviser' : 'Instructor';
-      const newRole = args.role === 0 ? 'Student' : args.role === 1 ? 'Adviser' : 'Instructor';
+      const oldRole =
+        user.role === 0
+          ? "Student"
+          : user.role === 1
+            ? "Adviser"
+            : "Instructor";
+      const newRole =
+        args.role === 0
+          ? "Student"
+          : args.role === 1
+            ? "Adviser"
+            : "Instructor";
       changes.push(`User Type: ${oldRole} → ${newRole}`);
     }
     // Only log if there are actual changes
     if (changes.length > 0) {
-      await logUpdateUser(ctx, args.instructorId, args.userId, changes.join("\n"), {
-        first_name: args.first_name,
-        middle_name: args.middle_name,
-        last_name: args.last_name,
-        email: args.email
-      }, {
-        first_name: instructor.first_name,
-        middle_name: instructor.middle_name,
-        last_name: instructor.last_name,
-        email: instructor.email
-      });
+      await logUpdateUser(
+        ctx,
+        args.instructorId,
+        args.userId,
+        changes.join("\n"),
+        {
+          first_name: args.first_name,
+          middle_name: args.middle_name,
+          last_name: args.last_name,
+          email: args.email,
+        },
+        {
+          first_name: instructor.first_name,
+          middle_name: instructor.middle_name,
+          last_name: instructor.last_name,
+          email: instructor.email,
+        }
+      );
     }
     return { success: true };
   },
@@ -630,7 +768,9 @@ export const updateGroup = mutation({
           .first();
         if (oldAdviserCode) {
           await ctx.db.patch(oldAdviserCode._id, {
-            group_ids: (oldAdviserCode.group_ids || []).filter(id => id !== args.groupId),
+            group_ids: (oldAdviserCode.group_ids || []).filter(
+              (id) => id !== args.groupId
+            ),
           });
         }
       }
@@ -663,31 +803,41 @@ export const updateGroup = mutation({
 
     // Check capstone title changes
     if (args.capstone_title !== group.capstone_title) {
-      changes.push(`Capstone Title: ${group.capstone_title || 'None'} → ${args.capstone_title}`);
+      changes.push(
+        `Capstone Title: ${group.capstone_title || "None"} → ${args.capstone_title}`
+      );
     }
 
     // Check member changes
-    const removedMembers = oldMembers.filter(id => !newMembers.includes(id));
-    const addedMembers = newMembers.filter(id => !oldMembers.includes(id));
-    
+    const removedMembers = oldMembers.filter((id) => !newMembers.includes(id));
+    const addedMembers = newMembers.filter((id) => !oldMembers.includes(id));
+
     if (removedMembers.length > 0) {
-      changes.push(`Members: Removed ${removedMembers.length} Member${removedMembers.length > 1 ? 's' : ''}`);
+      changes.push(
+        `Members: Removed ${removedMembers.length} Member${removedMembers.length > 1 ? "s" : ""}`
+      );
     }
     if (addedMembers.length > 0) {
-      changes.push(`Members: Added ${addedMembers.length} Member${addedMembers.length > 1 ? 's' : ''}`);
+      changes.push(
+        `Members: Added ${addedMembers.length} Member${addedMembers.length > 1 ? "s" : ""}`
+      );
     }
 
     // Check adviser changes
     if (!group.adviser_id && args.adviser_id) {
       const newAdviser = await ctx.db.get(args.adviser_id);
       if (newAdviser) {
-        changes.push(`Adviser: None -> ${newAdviser.first_name} ${newAdviser.last_name}`);
+        changes.push(
+          `Adviser: None -> ${newAdviser.first_name} ${newAdviser.last_name}`
+        );
       }
     } else if (group.adviser_id && !args.adviser_id) {
       if (group.adviser_id !== undefined) {
         const oldAdviser = await ctx.db.get(group.adviser_id);
         if (oldAdviser) {
-          changes.push(`Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> Removed`);
+          changes.push(
+            `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> Removed`
+          );
         }
       }
     } else if (
@@ -698,35 +848,45 @@ export const updateGroup = mutation({
       const oldAdviser = await ctx.db.get(group.adviser_id);
       const newAdviser = await ctx.db.get(args.adviser_id);
       if (oldAdviser && newAdviser) {
-        changes.push(`Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> ${newAdviser.first_name} ${newAdviser.last_name}`);
+        changes.push(
+          `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> ${newAdviser.first_name} ${newAdviser.last_name}`
+        );
       }
     }
 
     // Check grade changes
     if (args.grade !== group.grade) {
       const gradeMap: Record<number, string> = {
-        0: 'No Grade',
-        1: 'Failed',
-        2: 'Redefense',
-        3: 'Passed',
+        0: "No Grade",
+        1: "Failed",
+        2: "Redefense",
+        3: "Passed",
       };
-      const oldGrade = group.grade !== undefined ? gradeMap[group.grade] : 'None';
+      const oldGrade =
+        group.grade !== undefined ? gradeMap[group.grade] : "None";
       const newGrade = gradeMap[args.grade];
       changes.push(`Grade: ${oldGrade} → ${newGrade}`);
     }
 
     // Log the update with instructor and project manager info
-    await logUpdateGroup(ctx, args.instructorId, args.groupId, changes.join("\n"), {
-      first_name: instructor.first_name,
-      middle_name: instructor.middle_name,
-      last_name: instructor.last_name,
-      email: instructor.email
-    }, {
-      first_name: project_manager.first_name,
-      middle_name: project_manager.middle_name,
-      last_name: project_manager.last_name,
-      email: project_manager.email
-    });
+    await logUpdateGroup(
+      ctx,
+      args.instructorId,
+      args.groupId,
+      changes.join("\n"),
+      {
+        first_name: instructor.first_name,
+        middle_name: instructor.middle_name,
+        last_name: instructor.last_name,
+        email: instructor.email,
+      },
+      {
+        first_name: project_manager.first_name,
+        middle_name: project_manager.middle_name,
+        last_name: project_manager.last_name,
+        email: project_manager.email,
+      }
+    );
 
     return { success: true };
   },
@@ -743,7 +903,7 @@ export const updateEmailStatus = mutation({
     // Only update if email is not already verified
     if (!user.email_verified) {
       await ctx.db.patch(args.userId, {
-        email_verified: true
+        email_verified: true,
       });
     }
 
@@ -780,31 +940,72 @@ export const updateStudentProfile = mutation({
 
     // Sanitize and validate
     const sanitize = (val: string | undefined) =>
-      sanitizeInput(val || "", { trim: true, removeHtml: true, escapeSpecialChars: true, maxLength: 255 });
+      sanitizeInput(val || "", {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength: 255,
+      });
 
     const updates: Record<string, unknown> = {};
     if (args.section === "secondary") {
       if (args.gender !== undefined) updates.gender = args.gender;
-      if (args.dateOfBirth !== undefined) updates.dateOfBirth = args.dateOfBirth === "" ? undefined : sanitize(args.dateOfBirth);
-      if (args.placeOfBirth !== undefined) updates.placeOfBirth = args.placeOfBirth === "" ? undefined : sanitize(args.placeOfBirth);
-      if (args.nationality !== undefined) updates.nationality = args.nationality === "" ? undefined : sanitize(args.nationality);
-      if (args.civilStatus !== undefined) updates.civilStatus = args.civilStatus;
-      if (args.religion !== undefined) updates.religion = args.religion === "" ? undefined : sanitize(args.religion);
-      if (args.homeAddress !== undefined) updates.homeAddress = args.homeAddress === "" ? undefined : sanitize(args.homeAddress);
+      if (args.dateOfBirth !== undefined)
+        updates.dateOfBirth =
+          args.dateOfBirth === "" ? undefined : sanitize(args.dateOfBirth);
+      if (args.placeOfBirth !== undefined)
+        updates.placeOfBirth =
+          args.placeOfBirth === "" ? undefined : sanitize(args.placeOfBirth);
+      if (args.nationality !== undefined)
+        updates.nationality =
+          args.nationality === "" ? undefined : sanitize(args.nationality);
+      if (args.civilStatus !== undefined)
+        updates.civilStatus = args.civilStatus;
+      if (args.religion !== undefined)
+        updates.religion =
+          args.religion === "" ? undefined : sanitize(args.religion);
+      if (args.homeAddress !== undefined)
+        updates.homeAddress =
+          args.homeAddress === "" ? undefined : sanitize(args.homeAddress);
       if (args.contact !== undefined) {
         const contact = args.contact.replace(/[^0-9]/g, "");
         if (contact.length !== 0 && contact.length !== 11) {
-          return { success: false, message: "Contact number must be 11 digits (Philippines)." };
+          return {
+            success: false,
+            message: "Contact number must be 11 digits (Philippines).",
+          };
         }
         updates.contact = contact === "" ? undefined : contact;
       }
     } else if (args.section === "education") {
-      if (args.tertiaryDegree !== undefined) updates.tertiaryDegree = args.tertiaryDegree === "" ? undefined : sanitize(args.tertiaryDegree);
-      if (args.tertiarySchool !== undefined) updates.tertiarySchool = args.tertiarySchool === "" ? undefined : sanitize(args.tertiarySchool);
-      if (args.secondarySchool !== undefined) updates.secondarySchool = args.secondarySchool === "" ? undefined : sanitize(args.secondarySchool);
-      if (args.secondaryAddress !== undefined) updates.secondaryAddress = args.secondaryAddress === "" ? undefined : sanitize(args.secondaryAddress);
-      if (args.primarySchool !== undefined) updates.primarySchool = args.primarySchool === "" ? undefined : sanitize(args.primarySchool);
-      if (args.primaryAddress !== undefined) updates.primaryAddress = args.primaryAddress === "" ? undefined : sanitize(args.primaryAddress);
+      if (args.tertiaryDegree !== undefined)
+        updates.tertiaryDegree =
+          args.tertiaryDegree === ""
+            ? undefined
+            : sanitize(args.tertiaryDegree);
+      if (args.tertiarySchool !== undefined)
+        updates.tertiarySchool =
+          args.tertiarySchool === ""
+            ? undefined
+            : sanitize(args.tertiarySchool);
+      if (args.secondarySchool !== undefined)
+        updates.secondarySchool =
+          args.secondarySchool === ""
+            ? undefined
+            : sanitize(args.secondarySchool);
+      if (args.secondaryAddress !== undefined)
+        updates.secondaryAddress =
+          args.secondaryAddress === ""
+            ? undefined
+            : sanitize(args.secondaryAddress);
+      if (args.primarySchool !== undefined)
+        updates.primarySchool =
+          args.primarySchool === "" ? undefined : sanitize(args.primarySchool);
+      if (args.primaryAddress !== undefined)
+        updates.primaryAddress =
+          args.primaryAddress === ""
+            ? undefined
+            : sanitize(args.primaryAddress);
     }
     if (Object.keys(updates).length === 0) {
       return { success: false, message: "No changes to save." };
@@ -835,7 +1036,7 @@ export const deleteUser = mutation({
       first_name: user.first_name,
       middle_name: user.middle_name,
       last_name: user.last_name,
-      email: user.email
+      email: user.email,
     };
 
     // Student (member)
@@ -851,7 +1052,7 @@ export const deleteUser = mutation({
           const group = await ctx.db.get(studentEntry.group_id);
           if (group) {
             await ctx.db.patch(group._id, {
-              member_ids: group.member_ids.filter(id => id !== args.userId)
+              member_ids: group.member_ids.filter((id) => id !== args.userId),
             });
           }
         }
@@ -864,7 +1065,9 @@ export const deleteUser = mutation({
       // For each group where user is project_manager_id
       const managedGroups = await ctx.db
         .query("groupsTable")
-        .withIndex("by_project_manager", (q) => q.eq("project_manager_id", args.userId))
+        .withIndex("by_project_manager", (q) =>
+          q.eq("project_manager_id", args.userId)
+        )
         .collect();
       for (const group of managedGroups) {
         // For each member, set their studentsTable group_id to null
@@ -881,11 +1084,15 @@ export const deleteUser = mutation({
         if (group.adviser_id) {
           const adviserCode = await ctx.db
             .query("advisersTable")
-            .withIndex("by_adviser", (q) => q.eq("adviser_id", group.adviser_id!))
+            .withIndex("by_adviser", (q) =>
+              q.eq("adviser_id", group.adviser_id!)
+            )
             .first();
           if (adviserCode) {
             await ctx.db.patch(adviserCode._id, {
-              group_ids: (adviserCode.group_ids || []).filter(id => id !== group._id)
+              group_ids: (adviserCode.group_ids || []).filter(
+                (id) => id !== group._id
+              ),
             });
           }
         }
@@ -930,7 +1137,7 @@ export const deleteUser = mutation({
       first_name: instructor.first_name,
       middle_name: instructor.middle_name,
       last_name: instructor.last_name,
-      email: instructor.email
+      email: instructor.email,
     });
 
     return { success: true };
@@ -972,7 +1179,9 @@ export const deleteGroup = mutation({
         .first();
       if (adviserCode) {
         await ctx.db.patch(adviserCode._id, {
-          group_ids: (adviserCode.group_ids || []).filter(id => id !== args.groupId)
+          group_ids: (adviserCode.group_ids || []).filter(
+            (id) => id !== args.groupId
+          ),
         });
       }
     }
@@ -1008,17 +1217,23 @@ export const deleteGroup = mutation({
     await ctx.db.delete(args.groupId);
 
     // Log the deletion with instructor and project manager info
-    await logDeleteGroup(ctx, args.instructorId, args.groupId, {
-      first_name: instructor.first_name,
-      middle_name: instructor.middle_name,
-      last_name: instructor.last_name,
-      email: instructor.email
-    }, {
-      first_name: project_manager.first_name,
-      middle_name: project_manager.middle_name,
-      last_name: project_manager.last_name,
-      email: project_manager.email
-    });
+    await logDeleteGroup(
+      ctx,
+      args.instructorId,
+      args.groupId,
+      {
+        first_name: instructor.first_name,
+        middle_name: instructor.middle_name,
+        last_name: instructor.last_name,
+        email: instructor.email,
+      },
+      {
+        first_name: project_manager.first_name,
+        middle_name: project_manager.middle_name,
+        last_name: project_manager.last_name,
+        email: project_manager.email,
+      }
+    );
 
     return { success: true };
   },
@@ -1048,13 +1263,13 @@ export const resetPassword = mutation({
         first_name: user.first_name,
         middle_name: user.middle_name,
         last_name: user.last_name,
-        email: user.email
+        email: user.email,
       },
       {
         first_name: instructor.first_name,
         middle_name: instructor.middle_name,
         last_name: instructor.last_name,
-        email: instructor.email
+        email: instructor.email,
       }
     );
     return { success: true };
@@ -1095,8 +1310,8 @@ export const downloadConvexBackup = mutation({
         logs,
         documents,
         taskAssignments,
-        documentStatus
-      }
+        documentStatus,
+      },
     };
 
     // Validate the backup before returning
@@ -1137,8 +1352,10 @@ export const acceptGroupRequest = mutation({
 
     // Update adviser's records
     await ctx.db.patch(adviserCode._id, {
-      requests_group_ids: adviserCode.requests_group_ids.filter(id => id !== args.groupId),
-      group_ids: [...(adviserCode.group_ids || []), args.groupId]
+      requests_group_ids: adviserCode.requests_group_ids.filter(
+        (id) => id !== args.groupId
+      ),
+      group_ids: [...(adviserCode.group_ids || []), args.groupId],
     });
 
     return { success: true };
@@ -1168,7 +1385,9 @@ export const rejectGroupRequest = mutation({
 
     // Remove the group from requests_group_ids
     await ctx.db.patch(adviserCode._id, {
-      requests_group_ids: adviserCode.requests_group_ids.filter(id => id !== args.groupId)
+      requests_group_ids: adviserCode.requests_group_ids.filter(
+        (id) => id !== args.groupId
+      ),
     });
 
     // Clear requested_adviser on the group if it matches this adviser
@@ -1288,7 +1507,7 @@ export const updateTaskStatus = mutation({
     // Managers can update any task, members can only update tasks they're assigned to
     const isManager = user.subrole === 1;
     const isAssigned = task.assigned_student_ids.includes(args.userId);
-    
+
     if (!isManager && !isAssigned) {
       throw new Error("You don't have permission to update this task");
     }
@@ -1373,7 +1592,7 @@ export const updateDocumentStatus = mutation({
       // Check if document status already exists
       const existingStatus = await ctx.db
         .query("documentStatus")
-        .withIndex("by_group_document", (q) => 
+        .withIndex("by_group_document", (q) =>
           q.eq("group_id", groupId).eq("document_part", documentPart)
         )
         .first();
@@ -1395,7 +1614,6 @@ export const updateDocumentStatus = mutation({
 
       return { success: true };
     } catch (error) {
-      console.error("Error updating document status:", error);
       throw error;
     }
   },

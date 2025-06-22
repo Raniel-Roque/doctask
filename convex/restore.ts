@@ -264,4 +264,4 @@ export const restoreDocumentStatus = mutation({
 
     return { success: true };
   },
-}); 
+});
