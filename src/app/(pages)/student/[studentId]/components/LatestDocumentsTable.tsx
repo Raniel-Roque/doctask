@@ -1,4 +1,4 @@
-import { FaEye, FaDownload, FaEdit, FaPlus } from "react-icons/fa";
+import { FaEye, FaDownload, FaEdit, FaPlus, FaCheck, FaTimes } from "react-icons/fa";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useState } from "react";
 
@@ -6,13 +6,29 @@ interface Document {
     _id: Id<"documents">;
     _creationTime: number;
     group_id: Id<"groupsTable">;
-    part: string;
+    chapter: string;
     room_id: string;
     title: string;
     content: string;
     student_ids: Id<"users">[];
     status: number;
     last_modified?: number;
+}
+
+interface Task {
+    _id: Id<"taskAssignments">;
+    group_id: Id<"groupsTable">;
+    chapter: string;
+    section: string;
+    title: string;
+    task_status: number; // 0 = incomplete, 1 = completed (for member/manager communication)
+    assigned_student_ids: Id<"users">[];
+    assignedUsers?: Array<{
+        _id: Id<"users">;
+        first_name: string;
+        last_name: string;
+        email: string;
+    }>;
 }
 
 interface AdviserObj {
@@ -34,6 +50,7 @@ interface LatestDocumentsTableProps {
     onShowAdviserPopup: () => void;
     isSubmitting: boolean;
     mode: 'manager' | 'member';
+    tasks?: Task[];
 }
 
 // Grade mapping
@@ -63,6 +80,26 @@ const STATUS_LABELS: { [key: number]: string } = {
     3: "Rejected"
 };
 
+// Define the proper chapter order for sorting
+const CHAPTER_ORDER = [
+    "acknowledgment",
+    "abstract",
+    "table_of_contents",
+    "chapter_1",
+    "chapter_2",
+    "chapter_3", 
+    "chapter_4",
+    "chapter_5",
+    "references",
+    "appendix_b",
+    "appendix_c",
+    "appendix_e",
+    "appendix_f",
+    "appendix_g",
+    "appendix_h",
+    "appendix_i",
+];
+
 export const LatestDocumentsTable = ({
     documents,
     status,
@@ -72,10 +109,18 @@ export const LatestDocumentsTable = ({
     adviser,
     onShowAdviserPopup,
     isSubmitting,
-    mode
+    mode,
+    tasks = []
 }: LatestDocumentsTableProps) => {
     // Add state for status filter
     const [selectedStatus, setSelectedStatus] = useState<string>("all");
+    
+    // Add state for advanced details dropdown
+    const [openDetails, setOpenDetails] = useState<'documents' | 'tasks' | null>(null);
+
+    const handleToggleDetails = (detailType: 'documents' | 'tasks') => {
+        setOpenDetails(prev => (prev === detailType ? null : detailType));
+    };
 
     // Status options for the dropdown
     const statusOptions = [
@@ -97,7 +142,7 @@ export const LatestDocumentsTable = ({
 
     // Check if user can edit the document
     const canEditDocument = (doc: Document) => {
-        if (viewOnlyDocuments.includes(doc.part)) return false;
+        if (viewOnlyDocuments.includes(doc.chapter)) return false;
         return doc.student_ids.includes(currentUserId);
     };
 
@@ -110,7 +155,75 @@ export const LatestDocumentsTable = ({
         return date.toLocaleDateString() + " " + date.toLocaleTimeString();
     };
 
-    // Adviser UI logic
+    // --- Progress Bar Logic ---
+    const totalDocuments = documents.length;
+    const statusCounts = {
+        approved: documents.filter(d => d.status === 2).length,
+        rejected: documents.filter(d => d.status === 3).length,
+        in_review: documents.filter(d => d.status === 1).length,
+        not_submitted: documents.filter(d => d.status === 0).length,
+    };
+
+    const progress = {
+        approved: totalDocuments > 0 ? (statusCounts.approved / totalDocuments) * 100 : 0,
+        rejected: totalDocuments > 0 ? (statusCounts.rejected / totalDocuments) * 100 : 0,
+        in_review: totalDocuments > 0 ? (statusCounts.in_review / totalDocuments) * 100 : 0,
+        not_submitted: totalDocuments > 0 ? (statusCounts.not_submitted / totalDocuments) * 100 : 0,
+    };
+
+    const taskProgress = {
+        completed: tasks.filter(task => task.task_status === 1).length,
+        total: tasks.length,
+        percentage: tasks.length > 0 ? (tasks.filter(task => task.task_status === 1).length / tasks.length) * 100 : 0,
+    };
+
+    return (
+        <div>
+            {/* Merged Capstone/Adviser/Progress Container */}
+            <div className="bg-white rounded-lg shadow-md p-8 mb-8 border border-gray-100">
+                {status === 'loading' ? (
+                    <div className="animate-pulse">
+                        <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="flex items-center justify-between mb-4 mt-4">
+                            <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                            <div className="flex items-center gap-4">
+                                <div className="h-6 bg-gray-200 rounded w-24"></div>
+                                <div className="h-9 w-9 bg-gray-200 rounded-full"></div>
+                            </div>
+                        </div>
+                        <div className="border-b border-gray-200 mb-5" />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                                </div>
+                                <div className="h-3 bg-gray-200 rounded-full"></div>
+                            </div>
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                                </div>
+                                <div className="h-3 bg-gray-200 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                ) : status === 'no_group' ? (
+                    <div className="text-center text-red-500 py-8">
+                        You are not currently assigned to a group. Please contact your instructor to be assigned to a group.
+                    </div>
+                ) : (
+                    <>
+                        {/* Capstone Title, Adviser, and Grade */}
+                        <div className="mb-1">
+                            <h2 className="text-2xl font-bold text-gray-900 break-words max-w-3xl tracking-tight">
+                                {displayCapstoneTitle}
+                            </h2>
+                        </div>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                {(() => {
     let adviserUI = null;
     if (mode === 'manager') {
         if (adviser?.pending && adviser.pendingName) {
@@ -165,55 +278,169 @@ export const LatestDocumentsTable = ({
             );
         }
     }
-
-    return (
-        <div>
-            {/* Capstone/Adviser/Grade and Progress/Controls Container */}
-            <div className="bg-white rounded-lg shadow-md p-8 mb-8 border border-gray-100">
-                {status === 'no_group' ? (
-                    <div className="text-center text-red-500 py-8">
-                        You are not currently assigned to a group. Please contact your instructor to be assigned to a group.
+                                    return adviserUI;
+                                })()}
                     </div>
-                ) : (
-                    <>
-                <div className="mb-2">
-                    <h2 className="text-2xl font-bold text-gray-900 break-words max-w-3xl tracking-tight">
-                        {displayCapstoneTitle}
-                    </h2>
-                </div>
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                        {adviserUI}
-                    </div>
+                            <div className="flex items-center gap-4">
                     <span className="text-sm font-normal text-gray-700 bg-transparent">
                         Grade: {GRADE_MAP[grade ?? 0] || "No Grade"}
                     </span>
+                                <button 
+                                    className="text-gray-600 hover:text-gray-800 transition-colors p-2 border border-gray-200 rounded-full shadow-sm bg-white"
+                                    title="Download all documents"
+                                >
+                                    <FaDownload className="w-5 h-5" />
+                                </button>
+                            </div>
                 </div>
 
                 <div className="border-b border-gray-200 mb-5" />
 
-                {/* Progress Bar Row */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1">
+                        {/* Combined Progress Section */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                            {/* Documentation Progress */}
+                            <div>
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-                        <span className="text-sm text-gray-600">0%</span>
+                                    <span className="text-sm font-medium text-gray-700">Documentation Progress</span>
+                                    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-gray-500 justify-end">
+                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500"></span>Approved</div>
+                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500"></span>Rejected</div>
+                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-400"></span>In Review</div>
+                                        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-300"></span>Not Submitted</div>
+                                    </div>
                     </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div className="bg-gray-500 h-3 rounded-full transition-all duration-300" style={{ width: "0%" }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
+                            <div className="bg-green-500 h-3 transition-all duration-300" style={{ width: `${progress.approved}%` }}></div>
+                            <div className="bg-red-500 h-3 transition-all duration-300" style={{ width: `${progress.rejected}%` }}></div>
+                            <div className="bg-yellow-400 h-3 transition-all duration-300" style={{ width: `${progress.in_review}%` }}></div>
+                            <div className="bg-gray-300 h-3 transition-all duration-300" style={{ width: `${progress.not_submitted}%` }}></div>
                         </div>
+                                <div className="mt-2 flex justify-end">
+                                    <button
+                                        onClick={() => handleToggleDetails('documents')}
+                                        className="text-xs text-gray-500 hover:text-gray-700"
+                                    >
+                                        {openDetails === 'documents' ? 'Hide Details' : 'Show Details'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Tasks Progress */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-gray-700">Tasks Progress</span>
+                                    <span className="text-sm font-semibold text-gray-900">
+                                        {taskProgress.completed} / {taskProgress.total} Completed
+                                    </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-3">
+                                    <div 
+                                        className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300 ease-in-out"
+                                        style={{ width: `${taskProgress.percentage}%` }}
+                                    ></div>
                     </div>
+                                <div className="mt-2 flex justify-end">
                     <button 
-                        className="text-gray-600 hover:text-gray-800 transition-colors p-2 border border-gray-200 rounded-full shadow-sm bg-white"
-                        title="Download all documents"
+                                        onClick={() => handleToggleDetails('tasks')}
+                                        className="text-xs text-gray-500 hover:text-gray-700"
                     >
-                        <FaDownload className="w-5 h-5" />
+                                        {openDetails === 'tasks' ? 'Hide Details' : 'Show Details'}
                     </button>
                 </div>
+                            </div>
+                        </div>
+                        
+                        {/* Advanced Details for Documents */}
+                        {openDetails === 'documents' && (
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <h4 className="text-base font-semibold text-gray-800 mb-4">Documentation Stats</h4>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                        <p className="text-sm font-medium text-green-800">Approved</p>
+                                        <p className="text-2xl font-bold text-green-600">{statusCounts.approved}</p>
+                                    </div>
+                                     <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <p className="text-sm font-medium text-red-800">Rejected</p>
+                                        <p className="text-2xl font-bold text-red-600">{statusCounts.rejected}</p>
+                                    </div>
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                        <p className="text-sm font-medium text-yellow-800">In Review</p>
+                                        <p className="text-2xl font-bold text-yellow-600">{statusCounts.in_review}</p>
+                                    </div>
+                                    <div className="bg-gray-100 border border-gray-200 rounded-lg p-3">
+                                        <p className="text-sm font-medium text-gray-800">Not Submitted</p>
+                                        <p className="text-2xl font-bold text-gray-600">{statusCounts.not_submitted}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Advanced Details for Tasks */}
+                        {openDetails === 'tasks' && (
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <h4 className="text-base font-semibold text-gray-800 mb-4">Tasks Stats</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-green-800">Completed</p>
+                                                <p className="text-2xl font-bold text-green-600">{taskProgress.completed}</p>
+                                            </div>
+                                            <div className="bg-green-100 p-2 rounded-full">
+                                                <FaCheck className="w-4 h-4 text-green-600" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-yellow-800">Incomplete</p>
+                                                <p className="text-2xl font-bold text-yellow-600">{tasks.length - taskProgress.completed}</p>
+                                            </div>
+                                            <div className="bg-yellow-100 p-2 rounded-full">
+                                                <FaTimes className="w-4 h-4 text-yellow-600" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h4 className="text-base font-semibold text-gray-800 mb-4 mt-6">Task Progress by Chapter</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    {CHAPTER_ORDER.map(chapter => {
+                                        const chapterTasks = tasks.filter(task => task.chapter === chapter);
+                                        if (chapterTasks.length === 0) return null;
+                                        const completedTasks = chapterTasks.filter(task => task.task_status === 1).length;
+                                        const totalTasks = chapterTasks.length;
+                                        const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+                                        return (
+                                            <div key={chapter} className="bg-gray-50 rounded-lg p-3">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs font-medium text-gray-700 capitalize">
+                                                        {chapter.replace(/_/g, ' ')}
+                                                    </span>
+                                                    <span className="text-xs font-semibold text-gray-900">
+                                                        {completedTasks}/{totalTasks}
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                    <div 
+                                                        className={`h-2 rounded-full transition-all duration-300 ease-in-out ${
+                                                            progressPercentage === 100 ? 'bg-green-500' : 
+                                                            progressPercentage > 50 ? 'bg-blue-500' : 'bg-yellow-500'
+                                                        }`}
+                                                        style={{ width: `${progressPercentage}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
-            {/* End Capstone/Adviser/Grade and Progress/Controls Container */}
+            {/* End Merged Container */}
 
             <div className="bg-white rounded-xl shadow-lg border border-gray-100">
                 <div className="p-6">

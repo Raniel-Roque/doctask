@@ -1,12 +1,13 @@
 import { FaSort, FaSortUp, FaSortDown, FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { Users } from "lucide-react";
 import Link from "next/link";
-import { Id } from "../../../../../../../convex/_generated/dataModel";
+import { Id, Doc } from "../../../../../../../convex/_generated/dataModel";
 
 interface Group {
     _id: Id<"groupsTable">;
     project_manager_id: Id<"users">;
     capstone_title?: string;
+    documentStatuses: Doc<"documentStatus">[];
 }
 
 interface User {
@@ -132,27 +133,28 @@ export const HandledGroupsTable = ({
                                         </div>
                                     </th>
                                     <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600">Progress</th>
+                                    <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600">Pending Review</th>
                                     <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {status === 'loading' && (
                                     <tr>
-                                        <td colSpan={4} className="pt-7 pb-1 text-center text-gray-500">
+                                        <td colSpan={5} className="pt-7 pb-1 text-center text-gray-500">
                                             Loading...
                                         </td>
                                     </tr>
                                 )}
                                 {status === 'error' && (
                                     <tr>
-                                        <td colSpan={4} className="pt-7 pb-1 text-center text-red-500">
+                                        <td colSpan={5} className="pt-7 pb-1 text-center text-red-500">
                                             An error occurred while loading groups. Please try again.
                                         </td>
                                     </tr>
                                 )}
                                 {status === 'idle' && !hasResults && (
                                     <tr>
-                                        <td colSpan={4} className="pt-7 pb-1 text-center text-gray-500">
+                                        <td colSpan={5} className="pt-7 pb-1 text-center text-gray-500">
                                             No groups handled at this time. Check group requests to start handling groups.
                                         </td>
                                     </tr>
@@ -164,6 +166,23 @@ export const HandledGroupsTable = ({
                                     const groupName = projectManager 
                                         ? `${projectManager.last_name} et al`
                                         : "Unnamed Group";
+
+                                    const totalDocuments = group.documentStatuses.length;
+                                    const statusCounts = {
+                                        approved: group.documentStatuses.filter(d => d.review_status === 2).length,
+                                        rejected: group.documentStatuses.filter(d => d.review_status === 3).length,
+                                        in_review: group.documentStatuses.filter(d => d.review_status === 1).length,
+                                        not_submitted: group.documentStatuses.filter(d => d.review_status === 0).length,
+                                    };
+
+                                    const progress = {
+                                        approved: totalDocuments > 0 ? (statusCounts.approved / totalDocuments) * 100 : 0,
+                                        rejected: totalDocuments > 0 ? (statusCounts.rejected / totalDocuments) * 100 : 0,
+                                        in_review: totalDocuments > 0 ? (statusCounts.in_review / totalDocuments) * 100 : 0,
+                                        not_submitted: totalDocuments > 0 ? (statusCounts.not_submitted / totalDocuments) * 100 : 0,
+                                    };
+
+                                    const approvedPercentage = Math.round(progress.approved);
                                     
                                     return (
                                         <tr key={group._id} className="border-b hover:bg-gray-50">
@@ -171,11 +190,17 @@ export const HandledGroupsTable = ({
                                             <td className="py-3 px-4">{group.capstone_title || "No title yet"}</td>
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <div className="w-full max-w-[200px] bg-gray-200 rounded-full h-2.5">
-                                                        <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: "0%" }}></div>
+                                                    <div className="w-full max-w-[200px] bg-gray-200 rounded-full h-2.5 flex overflow-hidden">
+                                                        <div className="bg-green-500 h-2.5" style={{ width: `${progress.approved}%` }}></div>
+                                                        <div className="bg-red-500 h-2.5" style={{ width: `${progress.rejected}%` }}></div>
+                                                        <div className="bg-yellow-400 h-2.5" style={{ width: `${progress.in_review}%` }}></div>
+                                                        <div className="bg-gray-300 h-2.5" style={{ width: `${progress.not_submitted}%` }}></div>
                                                     </div>
-                                                    <span className="text-sm text-gray-600">0%</span>
+                                                    <span className="text-sm text-gray-600">{approvedPercentage}%</span>
                                                 </div>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span>{statusCounts.in_review}</span>
                                             </td>
                                             <td className="py-3 px-4 text-center">
                                                 <button className="text-blue-600 hover:text-blue-800">

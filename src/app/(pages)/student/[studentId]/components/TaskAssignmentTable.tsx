@@ -366,7 +366,7 @@ export const TaskAssignmentTable = ({
                                         value={searchValue}
                                         onChange={e => setSearch(prev => ({ ...prev, [task._id]: e.target.value }))}
                                         placeholder="Search members..."
-                                        className="w-full mb-2 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
+                                        className="w-full mb-2 px-2 py-1 text-xs border rounded bg-white text-gray-700 shadow-sm"
                                     />
                                     {filteredMembers.length > 0 ? (
                                         filteredMembers.map((member) => (
@@ -456,7 +456,7 @@ export const TaskAssignmentTable = ({
                                     <th scope="col" className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider relative">
                                         <div className="flex items-center justify-center gap-2">
                                             <select 
-                                                className="ml-2 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
+                                                className="ml-2 px-2 py-1 text-xs border rounded bg-white text-gray-700 shadow-sm"
                                                 value={selectedStatus}
                                                 onChange={(e) => setSelectedStatus(e.target.value)}
                                             >

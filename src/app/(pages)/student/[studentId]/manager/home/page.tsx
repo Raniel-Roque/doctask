@@ -52,6 +52,10 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
         api.fetch.getUserById,
         groupDetails?.requested_adviser ? { id: groupDetails.requested_adviser } : "skip"
     );
+    const taskAssignments = useQuery(
+        api.fetch.getTaskAssignments,
+        studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip"
+    );
 
     // Mutations
     const requestAdviserCode = useMutation(api.mutations.requestAdviserCode);
@@ -61,7 +65,11 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     // Determine loading state
     const isLoading = user === undefined || 
                      studentGroup === undefined || 
-                     (studentGroup?.group_id && (latestDocuments === undefined || !latestDocuments.done));
+                     groupDetails === undefined ||
+                     (studentGroup?.group_id && latestDocuments === undefined) ||
+                     (studentGroup?.group_id && taskAssignments === undefined) ||
+                     (groupDetails?.adviser_id && adviser === undefined) ||
+                     (groupDetails?.requested_adviser && requestedAdviser === undefined);
 
     useEffect(() => {
         if (groupDetails?.adviser_id) {
@@ -187,6 +195,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
                         onShowAdviserPopup={handleShowAdviserPopup}
                         isSubmitting={isSubmitting}
                         mode="manager"
+                        tasks={taskAssignments?.tasks ?? []}
                     />
                 </div>
                 <CancelAdviserRequestPopup

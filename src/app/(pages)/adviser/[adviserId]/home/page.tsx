@@ -26,23 +26,16 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
         id: adviserId as Id<"users">,
     });
 
-    // Fetch adviser's groups
     const adviserCode = useQuery(api.fetch.getAdviserCode, {
         adviserId: adviserId as Id<"users">,
     });
 
-    // Fetch all groups to filter by adviser's group_ids
-    const allGroupsResult = useQuery(api.fetch.getGroups, {}) || { groups: [] };
-    const allGroups = allGroupsResult.groups || [];
-    const adviserGroups = allGroups.filter(group => 
-        adviserCode?.group_ids?.includes(group._id) ?? false
-    );
+    const handledGroupsData = useQuery(api.fetch.getHandledGroupsWithProgress, {
+        adviserId: adviserId as Id<"users">
+    });
 
-    // Fetch all users to get project manager names
-    const allUsers = useQuery(api.fetch.getUsers) || [];
-    const projectManagers = allUsers?.filter(user => 
-        adviserGroups.some(group => group.project_manager_id === user._id)
-    ) || [];
+    const adviserGroups = handledGroupsData?.groups || [];
+    const projectManagers = handledGroupsData?.projectManagers || [];
 
     const handleSort = (field: typeof sortField) => {
         if (field === sortField) {
@@ -163,7 +156,7 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
                     pageSize={pageSize}
                     onPageChange={handlePageChange}
                     onPageSizeChange={handlePageSizeChange}
-                    status={allGroups === undefined ? 'loading' : 'idle'}
+                    status={handledGroupsData === undefined ? 'loading' : 'idle'}
                     hasResults={paginatedGroups.length > 0}
                 />
             </div>

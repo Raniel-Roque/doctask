@@ -33,11 +33,19 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
         api.fetch.getUserById,
         groupDetails?.requested_adviser ? { id: groupDetails.requested_adviser } : "skip"
     );
+    const taskAssignments = useQuery(
+        api.fetch.getTaskAssignments,
+        studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip"
+    );
 
     // Determine loading state
     const isLoading = user === undefined || 
                      studentGroup === undefined || 
-                     (studentGroup?.group_id && (latestDocuments === undefined || !latestDocuments.done));
+                     groupDetails === undefined ||
+                     (studentGroup?.group_id && latestDocuments === undefined) ||
+                     (studentGroup?.group_id && taskAssignments === undefined) ||
+                     (groupDetails?.adviser_id && adviser === undefined) ||
+                     (groupDetails?.requested_adviser && requestedAdviser === undefined);
 
     // Adviser UI logic for member
     const isLoadingAdviser = groupDetails === undefined || 
@@ -83,6 +91,7 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
                         onShowAdviserPopup={() => {}} // No popup for member
                         isSubmitting={false}
                         mode="member"
+                        tasks={taskAssignments?.tasks ?? []}
                     />
                 </div>
             </div>

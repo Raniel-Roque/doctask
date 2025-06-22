@@ -169,36 +169,6 @@ export const createUser = mutation({
   },
 });
 
-export const createAdviserCode = mutation({
-  args: {
-    adviserId: v.id("users"),
-    instructorId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    // Verify the user is an adviser
-    const adviser = await ctx.db.get(args.adviserId);
-    if (!adviser) throw new Error("Adviser not found");
-    if (adviser.role !== 1) throw new Error("User is not an adviser");
-    // Check if adviser already has a code
-    const existingCode = await ctx.db
-      .query("advisersTable")
-      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
-      .first();
-    if (existingCode) {
-      throw new Error("Adviser already has a code");
-    }
-    // Generate unique code
-    const code = await generateUniqueAdviserCode(ctx);
-    // Create adviser code record
-    await ctx.db.insert("advisersTable", {
-      adviser_id: args.adviserId,
-      code,
-      group_ids: [],
-    });
-    return { success: true, code };
-  },
-});
-
 export const createGroup = mutation({
   args: {
     project_manager_id: v.id("users"),
@@ -353,10 +323,12 @@ export const createGroup = mutation({
     ];
 
     for (const documentPart of documentParts) {
+      const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(documentPart);
+      
       await ctx.db.insert("documentStatus", {
         group_id: groupId,
         document_part: documentPart,
-        review_status: 0, // 0 = not_submitted
+        review_status: isPreApproved ? 2 : 0, // 2 = approved, 0 = not_submitted
         review_notes: undefined,
         last_modified: undefined,
       });
@@ -570,29 +542,6 @@ export const updateUser = mutation({
         email: instructor.email
       });
     }
-    return { success: true };
-  },
-});
-
-export const updateAdviserGroups = mutation({
-  args: {
-    adviserId: v.id("users"),
-    groupIds: v.array(v.id("groupsTable")),
-    instructorId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    // Verify the adviser code exists
-    const adviserCode = await ctx.db
-      .query("advisersTable")
-      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
-      .first();
-    if (!adviserCode) {
-      throw new Error("Adviser code not found");
-    }
-    // Update the groups
-    await ctx.db.patch(adviserCode._id, {
-      group_ids: args.groupIds,
-    });
     return { success: true };
   },
 });
@@ -984,25 +933,6 @@ export const deleteUser = mutation({
       email: instructor.email
     });
 
-    return { success: true };
-  },
-});
-
-export const deleteAdviserCode = mutation({
-  args: {
-    adviserId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    // Get the adviser code
-    const adviserCode = await ctx.db
-      .query("advisersTable")
-      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
-      .first();
-    if (!adviserCode) {
-      return { success: true }; // No code to delete
-    }
-    // Delete the adviser code
-    await ctx.db.delete(adviserCode._id);
     return { success: true };
   },
 });

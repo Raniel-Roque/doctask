@@ -944,278 +944,6 @@ export const getTaskAssignments = query({
     },
 });
 
-export const getGroupMembersForTaskAssignment = query({
-    args: {
-        groupId: v.id("groupsTable"),
-    },
-    handler: async (ctx, args) => {
-        const { groupId } = args;
-
-        try {
-            // Get the group to access member information
-            const group = await ctx.db.get(groupId);
-            if (!group) {
-                return {
-                    groupMembers: [],
-                    status: 'error',
-                    hasResults: false
-                };
-            }
-
-            // Get all users for name lookups
-            const users = await ctx.db.query("users").collect();
-
-            // Get group members (project manager + members)
-            const allMemberIds = [group.project_manager_id, ...group.member_ids];
-            const groupMembers = allMemberIds
-                .map(id => users.find(u => u._id === id))
-                .filter((u): u is NonNullable<typeof u> => u !== undefined)
-                .map(user => ({
-                    _id: user._id,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    email: user.email,
-                    isProjectManager: user._id === group.project_manager_id
-                }));
-
-            return {
-                groupMembers,
-                status: 'idle',
-                hasResults: groupMembers.length > 0
-            };
-        } catch {
-            return {
-                groupMembers: [],
-                status: 'error',
-                hasResults: false
-            };
-        }
-    },
-});
-
-export const getTaskAssignmentsByChapter = query({
-    args: {
-        groupId: v.id("groupsTable"),
-        chapter: v.string(),
-    },
-    handler: async (ctx, args) => {
-        const { groupId, chapter } = args;
-
-        try {
-            // Get the group to access member information
-            const group = await ctx.db.get(groupId);
-            if (!group) {
-                return {
-                    tasks: [],
-                    groupMembers: [],
-                    status: 'error',
-                    hasResults: false
-                };
-            }
-
-            // Get task assignments for specific chapter
-            const taskAssignments = await ctx.db
-                .query("taskAssignments")
-                .withIndex("by_group_chapter", (q) => 
-                    q.eq("group_id", groupId).eq("chapter", chapter)
-                )
-                .collect();
-
-            // Get all users for name lookups
-            const users = await ctx.db.query("users").collect();
-
-            // Get group members (project manager + members)
-            const allMemberIds = [group.project_manager_id, ...group.member_ids];
-            const groupMembers = allMemberIds
-                .map(id => users.find(u => u._id === id))
-                .filter((u): u is NonNullable<typeof u> => u !== undefined)
-                .map(user => ({
-                    _id: user._id,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    email: user.email,
-                    isProjectManager: user._id === group.project_manager_id
-                }));
-
-            // Enhance task assignments with user information
-            const enhancedTasks = taskAssignments.map(task => {
-                const assignedUsers = task.assigned_student_ids
-                    .map(id => users.find(u => u._id === id))
-                    .filter((u): u is NonNullable<typeof u> => u !== undefined)
-                    .map(user => ({
-                        _id: user._id,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        email: user.email
-                    }));
-
-                return {
-                    ...task,
-                    assignedUsers
-                };
-            });
-
-            return {
-                tasks: enhancedTasks,
-                groupMembers,
-                status: 'idle',
-                hasResults: enhancedTasks.length > 0
-            };
-        } catch {
-            return {
-                tasks: [],
-                groupMembers: [],
-                status: 'error',
-                hasResults: false
-            };
-        }
-    },
-});
-
-export const getTaskAssignmentsByStatus = query({
-    args: {
-        groupId: v.id("groupsTable"),
-        taskStatus: v.number(), // 0 = incomplete, 1 = completed
-    },
-    handler: async (ctx, args) => {
-        const { groupId, taskStatus } = args;
-
-        try {
-            // Get the group to access member information
-            const group = await ctx.db.get(groupId);
-            if (!group) {
-                return {
-                    tasks: [],
-                    groupMembers: [],
-                    status: 'error',
-                    hasResults: false
-                };
-            }
-
-            // Get task assignments by status
-            const taskAssignments = await ctx.db
-                .query("taskAssignments")
-                .withIndex("by_group_task_status", (q) => 
-                    q.eq("group_id", groupId).eq("task_status", taskStatus)
-                )
-                .collect();
-
-            // Get all users for name lookups
-            const users = await ctx.db.query("users").collect();
-
-            // Get group members (project manager + members)
-            const allMemberIds = [group.project_manager_id, ...group.member_ids];
-            const groupMembers = allMemberIds
-                .map(id => users.find(u => u._id === id))
-                .filter((u): u is NonNullable<typeof u> => u !== undefined)
-                .map(user => ({
-                    _id: user._id,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    email: user.email,
-                    isProjectManager: user._id === group.project_manager_id
-                }));
-
-            // Enhance task assignments with user information
-            const enhancedTasks = taskAssignments.map(task => {
-                const assignedUsers = task.assigned_student_ids
-                    .map(id => users.find(u => u._id === id))
-                    .filter((u): u is NonNullable<typeof u> => u !== undefined)
-                    .map(user => ({
-                        _id: user._id,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        email: user.email
-                    }));
-
-                return {
-                    ...task,
-                    assignedUsers
-                };
-            });
-
-            return {
-                tasks: enhancedTasks,
-                groupMembers,
-                status: 'idle',
-                hasResults: enhancedTasks.length > 0
-            };
-        } catch {
-            return {
-                tasks: [],
-                groupMembers: [],
-                status: 'error',
-                hasResults: false
-            };
-        }
-    },
-});
-
-// =========================================
-// Document Status Queries
-// =========================================
-
-export const getDocumentStatuses = query({
-    args: {
-        groupId: v.id("groupsTable"),
-    },
-    handler: async (ctx, args) => {
-        const { groupId } = args;
-
-        try {
-            // Get all document statuses for the group
-            const documentStatuses = await ctx.db
-                .query("documentStatus")
-                .withIndex("by_group", (q) => q.eq("group_id", groupId))
-                .collect();
-
-            return {
-                documentStatuses,
-                status: 'idle',
-                hasResults: documentStatuses.length > 0
-            };
-        } catch {
-            return {
-                documentStatuses: [],
-                status: 'error',
-                hasResults: false
-            };
-        }
-    },
-});
-
-export const getDocumentStatusByPart = query({
-    args: {
-        groupId: v.id("groupsTable"),
-        documentPart: v.string(),
-    },
-    handler: async (ctx, args) => {
-        const { groupId, documentPart } = args;
-
-        try {
-            // Get document status for specific part
-            const documentStatus = await ctx.db
-                .query("documentStatus")
-                .withIndex("by_group_document", (q) => 
-                    q.eq("group_id", groupId).eq("document_part", documentPart)
-                )
-                .first();
-
-            return {
-                documentStatus,
-                status: 'idle',
-                hasResults: !!documentStatus
-            };
-        } catch {
-            return {
-                documentStatus: null,
-                status: 'error',
-                hasResults: false
-            };
-        }
-    },
-});
-
 // =========================================
 // Adviser Documents Queries
 // =========================================
@@ -1507,4 +1235,59 @@ export const getAdviserDocuments = query({
             };
         }
     },
+});
+
+export const getHandledGroupsWithProgress = query({
+  args: {
+    adviserId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Get adviser and their group IDs
+    const adviser = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+
+    if (!adviser) {
+      return { groups: [], projectManagers: [] };
+    }
+
+    const groupIds = adviser.group_ids || [];
+    if (groupIds.length === 0) {
+      return { groups: [], projectManagers: [] };
+    }
+    
+    // Fetch all groups handled by the adviser
+    const groups = await Promise.all(
+      groupIds.map(id => ctx.db.get(id))
+    );
+    
+    const validGroups = groups.filter((group): group is NonNullable<typeof group> => group !== null);
+
+    // Fetch all document statuses for these groups
+    const allDocumentStatuses = await Promise.all(
+        validGroups.map(group => 
+            ctx.db.query("documentStatus")
+               .withIndex("by_group", q => q.eq("group_id", group._id))
+               .collect()
+        )
+    );
+
+    // Fetch all project managers for these groups
+    const projectManagerIds = validGroups.map(g => g.project_manager_id);
+    const projectManagers = await Promise.all(
+      projectManagerIds.map(id => ctx.db.get(id))
+    );
+    const validProjectManagers = projectManagers.filter((pm): pm is NonNullable<typeof pm> => pm !== null);
+
+    const groupsWithProgress = validGroups.map((group, index) => ({
+      ...group,
+      documentStatuses: allDocumentStatuses[index] || [],
+    }));
+
+    return { 
+      groups: groupsWithProgress,
+      projectManagers: validProjectManagers,
+    };
+  }
 }); 
