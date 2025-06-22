@@ -20,11 +20,14 @@ export const LogoutConfirmation = ({
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex items-center gap-3 mb-4">
           <FaSignOutAlt size={24} color="#B54A4A" />
-          <h2 className="text-xl font-semibold text-gray-900">Confirm Logout</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Confirm Logout
+          </h2>
         </div>
-        
+
         <p className="text-gray-600 mb-6">
-          Are you sure you want to log out? You will need to log in again to access your account.
+          Are you sure you want to log out? You will need to log in again to
+          access your account.
         </p>
 
         <div className="flex justify-end gap-3">
@@ -59,4 +62,4 @@ export const LogoutConfirmation = ({
       </div>
     </div>
   );
-}; 
+};

@@ -16,7 +16,7 @@ export const AdviserCodePopup: React.FC<AdviserCodePopupProps> = ({
   onSubmit,
   isSubmitting = false,
   error = null,
-  clearInputRef
+  clearInputRef,
 }) => {
   const [code, setCode] = useState("");
 
@@ -70,7 +70,10 @@ export const AdviserCodePopup: React.FC<AdviserCodePopupProps> = ({
 
         {/* Input */}
         <form onSubmit={handleSubmit}>
-          <label htmlFor="adviser-code" className="block text-gray-700 mb-2 font-medium">
+          <label
+            htmlFor="adviser-code"
+            className="block text-gray-700 mb-2 font-medium"
+          >
             Adviser Code
           </label>
           <input
@@ -107,4 +110,4 @@ export const AdviserCodePopup: React.FC<AdviserCodePopupProps> = ({
       </div>
     </div>
   );
-}; 
+};

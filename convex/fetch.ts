@@ -144,7 +144,7 @@ export const getAdviserCodes = query({
         acc[code.adviser_id] = code;
         return acc;
       },
-      {} as Record<string, AdviserCode>
+      {} as Record<string, AdviserCode>,
     );
   },
 });
@@ -229,7 +229,7 @@ export const getLogs = query({
               instructorName.includes(term) ||
               affectedEntityName.includes(term) ||
               instructorId.includes(term) ||
-              affectedEntityId.includes(term)
+              affectedEntityId.includes(term),
           );
         });
       }
@@ -242,7 +242,7 @@ export const getLogs = query({
       // Apply entity type filter
       if (entityTypeFilter && entityTypeFilter !== "All Entities") {
         logs = logs.filter(
-          (log) => log.affected_entity_type === entityTypeFilter
+          (log) => log.affected_entity_type === entityTypeFilter,
         );
       }
 
@@ -380,7 +380,7 @@ export const getPendingGroupIdsForAdviser = query({
 
       // Filter groups to only include pending ones
       let filteredGroups = groups.filter((group) =>
-        adviser.requests_group_ids?.includes(group._id)
+        adviser.requests_group_ids?.includes(group._id),
       );
 
       // Apply search if searchTerm is provided
@@ -389,13 +389,13 @@ export const getPendingGroupIdsForAdviser = query({
         const capstoneResults = await ctx.db
           .query("groupsTable")
           .withSearchIndex("search_by_capstone_title", (q) =>
-            q.search("capstone_title", searchTerm)
+            q.search("capstone_title", searchTerm),
           )
           .collect();
 
         // Filter capstone results to only include groups assigned to this adviser
         const capstoneFiltered = capstoneResults.filter((group) =>
-          adviser.group_ids?.includes(group._id)
+          adviser.group_ids?.includes(group._id),
         );
 
         // Also search by project manager names
@@ -424,7 +424,7 @@ export const getPendingGroupIdsForAdviser = query({
         const combinedResults = [...capstoneFiltered, ...managerFiltered];
         filteredGroups = combinedResults.filter(
           (group, index, self) =>
-            index === self.findIndex((g) => g._id === group._id)
+            index === self.findIndex((g) => g._id === group._id),
         );
       }
 
@@ -446,7 +446,7 @@ export const getPendingGroupIdsForAdviser = query({
               break;
             case "capstoneTitle":
               comparison = (a.capstone_title || "").localeCompare(
-                b.capstone_title || ""
+                b.capstone_title || "",
               );
               break;
             case "projectManager":
@@ -588,7 +588,7 @@ export const searchUsers = query({
         // Combine and deduplicate results
         results = [...firstNameResults, ...lastNameResults].filter(
           (user, index, self) =>
-            index === self.findIndex((u) => u._id === user._id)
+            index === self.findIndex((u) => u._id === user._id),
         );
       }
 
@@ -702,7 +702,7 @@ export const searchGroups = query({
             ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`.toLowerCase()
             : "";
           const memberNames = members.map((m) =>
-            `${m.first_name} ${m.last_name}`.toLowerCase()
+            `${m.first_name} ${m.last_name}`.toLowerCase(),
           );
 
           return searchTerms.every(
@@ -711,7 +711,7 @@ export const searchGroups = query({
               capstoneTitle.includes(term) ||
               projectManagerName.includes(term) ||
               adviserName.includes(term) ||
-              memberNames.some((name) => name.includes(term))
+              memberNames.some((name) => name.includes(term)),
           );
         });
       }
@@ -789,7 +789,7 @@ export const searchGroups = query({
               break;
             case "capstoneTitle":
               comparison = (a.capstone_title || "").localeCompare(
-                b.capstone_title || ""
+                b.capstone_title || "",
               );
               break;
             case "projectManager":
@@ -932,7 +932,7 @@ export const getLatestDocuments = query({
 
       // 4. Combine documents with their review status
       const documentsWithStatus: DocumentWithStatus[] = Array.from(
-        latestDocsMap.values()
+        latestDocsMap.values(),
       ).map((doc) => {
         const statusInfo = statusMap.get(doc.chapter);
         return {
@@ -1140,7 +1140,7 @@ export const getAdviserDocuments = query({
 
       // Filter groups to only include those assigned to this adviser
       let filteredGroups = groups.filter((group) =>
-        adviser.group_ids?.includes(group._id)
+        adviser.group_ids?.includes(group._id),
       );
 
       // Apply search if searchTerm is provided
@@ -1149,13 +1149,13 @@ export const getAdviserDocuments = query({
         const capstoneResults = await ctx.db
           .query("groupsTable")
           .withSearchIndex("search_by_capstone_title", (q) =>
-            q.search("capstone_title", searchTerm)
+            q.search("capstone_title", searchTerm),
           )
           .collect();
 
         // Filter capstone results to only include groups assigned to this adviser
         const capstoneFiltered = capstoneResults.filter((group) =>
-          adviser.group_ids?.includes(group._id)
+          adviser.group_ids?.includes(group._id),
         );
 
         // Also search by project manager names
@@ -1184,7 +1184,7 @@ export const getAdviserDocuments = query({
         const combinedResults = [...capstoneFiltered, ...managerFiltered];
         filteredGroups = combinedResults.filter(
           (group, index, self) =>
-            index === self.findIndex((g) => g._id === group._id)
+            index === self.findIndex((g) => g._id === group._id),
         );
       }
 
@@ -1206,7 +1206,7 @@ export const getAdviserDocuments = query({
               break;
             case "capstoneTitle":
               comparison = (a.capstone_title || "").localeCompare(
-                b.capstone_title || ""
+                b.capstone_title || "",
               );
               break;
             case "projectManager":
@@ -1279,11 +1279,11 @@ export const getAdviserDocuments = query({
 
         // Combine documents with their review status
         const documentsWithStatus: AdviserDocumentWithStatus[] = Array.from(
-          latestDocsMap.values()
+          latestDocsMap.values(),
         )
           .filter(
             (doc) =>
-              !["title_page", "appendix_a", "appendix_d"].includes(doc.chapter)
+              !["title_page", "appendix_a", "appendix_d"].includes(doc.chapter),
           )
           .map((doc) => {
             const statusInfo = statusMap.get(doc.chapter);
@@ -1406,7 +1406,7 @@ export const getHandledGroupsWithProgress = query({
     const groups = await Promise.all(groupIds.map((id) => ctx.db.get(id)));
 
     const validGroups = groups.filter(
-      (group): group is NonNullable<typeof group> => group !== null
+      (group): group is NonNullable<typeof group> => group !== null,
     );
 
     // Fetch all document statuses for these groups
@@ -1415,17 +1415,17 @@ export const getHandledGroupsWithProgress = query({
         ctx.db
           .query("documentStatus")
           .withIndex("by_group", (q) => q.eq("group_id", group._id))
-          .collect()
-      )
+          .collect(),
+      ),
     );
 
     // Fetch all project managers for these groups
     const projectManagerIds = validGroups.map((g) => g.project_manager_id);
     const projectManagers = await Promise.all(
-      projectManagerIds.map((id) => ctx.db.get(id))
+      projectManagerIds.map((id) => ctx.db.get(id)),
     );
     const validProjectManagers = projectManagers.filter(
-      (pm): pm is NonNullable<typeof pm> => pm !== null
+      (pm): pm is NonNullable<typeof pm> => pm !== null,
     );
 
     const groupsWithProgress = validGroups.map((group, index) => ({

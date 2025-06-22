@@ -1,23 +1,33 @@
 "use client";
 
-import React, { useState } from 'react';
-import { FaChevronLeft, FaChevronRight, FaChevronDown, FaEye, FaStickyNote } from "react-icons/fa";
-import { User, Group, Document } from './types';
+import React, { useState } from "react";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaChevronDown,
+  FaEye,
+  FaStickyNote,
+} from "react-icons/fa";
+import { User, Group, Document } from "./types";
 import { useMutation } from "convex/react";
-import { Id } from '../../../../../../../../convex/_generated/dataModel';
-import { api } from '../../../../../../../../convex/_generated/api';
+import { Id } from "../../../../../../../../convex/_generated/dataModel";
+import { api } from "../../../../../../../../convex/_generated/api";
 
 interface DocumentsTableProps {
   groups: Group[];
-  onSort: (field: "name" | "capstoneTitle" | "projectManager" | "documentCount") => void;
-  getSortIcon: (field: "name" | "capstoneTitle" | "projectManager" | "documentCount") => React.ReactNode;
+  onSort: (
+    field: "name" | "capstoneTitle" | "projectManager" | "documentCount",
+  ) => void;
+  getSortIcon: (
+    field: "name" | "capstoneTitle" | "projectManager" | "documentCount",
+  ) => React.ReactNode;
   currentPage: number;
   totalPages: number;
   totalCount: number;
   pageSize: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
-  status: 'idle' | 'loading' | 'error';
+  status: "idle" | "loading" | "error";
   hasResults: boolean;
   onStatusChange?: (documentId: string, newStatus: number) => void;
   currentUserId: Id<"users">;
@@ -50,21 +60,21 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   };
 
   const getFullName = (user: User) => {
-    return `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`;
+    return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
   };
 
   const getStatusColor = (status: number) => {
     switch (status) {
       case 0: // not_submitted
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
       case 1: // submitted
-        return 'bg-yellow-100 text-yellow-800';
+        return "bg-yellow-100 text-yellow-800";
       case 2: // approved
-        return 'bg-green-100 text-green-800';
+        return "bg-green-100 text-green-800";
       case 3: // rejected
-        return 'bg-red-100 text-red-800';
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -74,7 +84,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     { value: "0", label: "NOT SUBMITTED" },
     { value: "1", label: "SUBMITTED" },
     { value: "2", label: "APPROVED" },
-    { value: "3", label: "REJECTED" }
+    { value: "3", label: "REJECTED" },
   ];
 
   // Documents that should be excluded from the table
@@ -82,19 +92,21 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 
   // Get all documents except excluded ones
   const getAllDocuments = (documents: Document[]) => {
-    return documents.filter(doc => !excludedDocuments.includes(doc.chapter));
+    return documents.filter((doc) => !excludedDocuments.includes(doc.chapter));
   };
 
   // Get submitted documents only (status = 1)
   const getSubmittedDocuments = (documents: Document[]) => {
-    return documents.filter(doc => !excludedDocuments.includes(doc.chapter) && doc.status === 1);
+    return documents.filter(
+      (doc) => !excludedDocuments.includes(doc.chapter) && doc.status === 1,
+    );
   };
 
   // Filter documents based on selected status
   const filterDocumentsByStatus = (documents: Document[]) => {
     const allDocs = getAllDocuments(documents);
     if (selectedStatus === "all") return allDocs;
-    return allDocs.filter(doc => doc.status === parseInt(selectedStatus));
+    return allDocs.filter((doc) => doc.status === parseInt(selectedStatus));
   };
 
   // Check if adviser can change document status
@@ -106,24 +118,24 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   const handleStatusChange = async (documentId: string, newStatus: number) => {
     try {
       setUpdatingStatus(documentId);
-      
+
       // Find the document to get its chapter and group info
       let targetDoc: Document | null = null;
       let targetGroup: Group | null = null;
-      
+
       for (const group of groups) {
-        const doc = group.documents.find(d => d._id === documentId);
+        const doc = group.documents.find((d) => d._id === documentId);
         if (doc) {
           targetDoc = doc;
           targetGroup = group;
           break;
         }
       }
-      
+
       if (!targetDoc || !targetGroup) {
         throw new Error("Document not found");
       }
-      
+
       // Call the Convex mutation
       await updateDocumentStatus({
         groupId: targetGroup._id as Id<"groupsTable">,
@@ -131,7 +143,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
         newStatus,
         userId: currentUserId,
       });
-      
+
       // Call the parent callback if provided
       if (onStatusChange) {
         onStatusChange(documentId, newStatus);
@@ -148,8 +160,8 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-[#B54A4A] text-white">
               <tr>
-                <th 
-                  scope="col" 
+                <th
+                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
                   onClick={() => onSort("name")}
                 >
@@ -158,8 +170,8 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                     <span className="ml-1">{getSortIcon("name")}</span>
                   </div>
                 </th>
-                <th 
-                  scope="col" 
+                <th
+                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
                   onClick={() => onSort("capstoneTitle")}
                 >
@@ -168,18 +180,20 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                     <span className="ml-1">{getSortIcon("capstoneTitle")}</span>
                   </div>
                 </th>
-                <th 
-                  scope="col" 
+                <th
+                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
                   onClick={() => onSort("projectManager")}
                 >
                   <div className="flex items-center justify-center">
                     Project Manager
-                    <span className="ml-1">{getSortIcon("projectManager")}</span>
+                    <span className="ml-1">
+                      {getSortIcon("projectManager")}
+                    </span>
                   </div>
                 </th>
-                <th 
-                  scope="col" 
+                <th
+                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
                   onClick={() => onSort("documentCount")}
                 >
@@ -188,29 +202,41 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                     <span className="ml-1">{getSortIcon("documentCount")}</span>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+                >
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {status === 'loading' && (
+              {status === "loading" && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
                     Loading...
                   </td>
                 </tr>
               )}
-              {status === 'error' && (
+              {status === "error" && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-red-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-center text-red-500"
+                  >
                     An error occurred while loading documents. Please try again.
                   </td>
                 </tr>
               )}
-              {status === 'idle' && !hasResults && (
+              {status === "idle" && !hasResults && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
                     No documents available at this time.
                   </td>
                 </tr>
@@ -220,17 +246,21 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                   {/* Main Group Row */}
                   <tr className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {group.name || '-'}
+                      {group.name || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {group.capstone_title || '-'}
+                      {group.capstone_title || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {group.projectManager ? getFullName(group.projectManager) : '-'}
+                      {group.projectManager
+                        ? getFullName(group.projectManager)
+                        : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center justify-center">
-                        <span className="font-medium">{getSubmittedDocuments(group.documents || []).length}</span>
+                        <span className="font-medium">
+                          {getSubmittedDocuments(group.documents || []).length}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -238,20 +268,21 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                         <button
                           onClick={() => toggleExpand(group._id)}
                           className="px-3 py-1.5 text-sm bg-[#B54A4A] text-white rounded-md hover:bg-[#A03A3A] focus:outline-none focus:ring-2 focus:ring-[#B54A4A] focus:ring-offset-2 transition-colors"
-                          disabled={getAllDocuments(group.documents || []).length === 0}
+                          disabled={
+                            getAllDocuments(group.documents || []).length === 0
+                          }
                         >
                           View Documents
                         </button>
                       </div>
                     </td>
                   </tr>
-                  
+
                   {/* Expanded Documents Row */}
                   {expandedGroupId === group._id && (
                     <tr>
                       <td colSpan={5} className="px-4 pb-4 pt-0 bg-gray-50">
                         <div className="bg-white rounded-b-lg shadow-md border-x border-b border-gray-200 p-6">
-                          
                           <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-100">
@@ -261,14 +292,16 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                   </th>
                                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     <div className="flex items-center justify-center gap-2">
-                                      <select 
+                                      <select
                                         className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
                                         value={selectedStatus}
-                                        onChange={(e) => setSelectedStatus(e.target.value)}
+                                        onChange={(e) =>
+                                          setSelectedStatus(e.target.value)
+                                        }
                                       >
-                                        {statusOptions.map(option => (
-                                          <option 
-                                            key={option.value} 
+                                        {statusOptions.map((option) => (
+                                          <option
+                                            key={option.value}
                                             value={option.value}
                                           >
                                             {option.label}
@@ -283,29 +316,72 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
-                                {filterDocumentsByStatus(group.documents || []).length > 0 ? (
-                                  filterDocumentsByStatus(group.documents || []).map((doc) => (
-                                    <tr key={doc._id} className="hover:bg-gray-50">
+                                {filterDocumentsByStatus(group.documents || [])
+                                  .length > 0 ? (
+                                  filterDocumentsByStatus(
+                                    group.documents || [],
+                                  ).map((doc) => (
+                                    <tr
+                                      key={doc._id}
+                                      className="hover:bg-gray-50"
+                                    >
                                       <td className="px-4 py-3 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">{doc.title}</div>
+                                        <div className="text-sm font-medium text-gray-900">
+                                          {doc.title}
+                                        </div>
                                       </td>
                                       <td className="px-4 py-3 whitespace-nowrap text-center">
                                         {canChangeStatus(doc) ? (
                                           <div className="relative inline-block">
                                             <select
                                               value={doc.status}
-                                              onChange={(e) => handleStatusChange(doc._id, parseInt(e.target.value))}
-                                              disabled={updatingStatus === doc._id}
-                                              className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${getStatusColor(doc.status)} ${updatingStatus === doc._id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                              onClick={(e) => e.stopPropagation()}
+                                              onChange={(e) =>
+                                                handleStatusChange(
+                                                  doc._id,
+                                                  parseInt(e.target.value),
+                                                )
+                                              }
+                                              disabled={
+                                                updatingStatus === doc._id
+                                              }
+                                              className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${getStatusColor(doc.status)} ${updatingStatus === doc._id ? "opacity-50 cursor-not-allowed" : ""}`}
+                                              onClick={(e) =>
+                                                e.stopPropagation()
+                                              }
                                             >
-                                              <option value={doc.status} disabled className={doc.status === 1 ? 'hidden' : ''}>
-                                                {doc.status === 1 ? 'Submitted' : 
-                                                 doc.status === 2 ? 'Approved' :
-                                                 doc.status === 3 ? 'Rejected' : 'Unknown'}
+                                              <option
+                                                value={doc.status}
+                                                disabled
+                                                className={
+                                                  doc.status === 1
+                                                    ? "hidden"
+                                                    : ""
+                                                }
+                                              >
+                                                {doc.status === 1
+                                                  ? "Submitted"
+                                                  : doc.status === 2
+                                                    ? "Approved"
+                                                    : doc.status === 3
+                                                      ? "Rejected"
+                                                      : "Unknown"}
                                               </option>
-                                              {doc.status !== 2 && <option value={2} className="bg-green-100 text-green-800">Approved</option>}
-                                              {doc.status !== 3 && <option value={3} className="bg-red-100 text-red-800">Rejected</option>}
+                                              {doc.status !== 2 && (
+                                                <option
+                                                  value={2}
+                                                  className="bg-green-100 text-green-800"
+                                                >
+                                                  Approved
+                                                </option>
+                                              )}
+                                              {doc.status !== 3 && (
+                                                <option
+                                                  value={3}
+                                                  className="bg-red-100 text-red-800"
+                                                >
+                                                  Rejected
+                                                </option>
+                                              )}
                                             </select>
                                             <FaChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs pointer-events-none" />
                                             {updatingStatus === doc._id && (
@@ -315,23 +391,30 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                             )}
                                           </div>
                                         ) : (
-                                          <span className={`px-2 py-1 text-xs inline-flex items-center rounded-full ${getStatusColor(doc.status)}`}>
-                                            {doc.status === 0 ? 'Not Submitted' : 
-                                             doc.status === 1 ? 'Submitted' :
-                                             doc.status === 2 ? 'Approved' :
-                                             doc.status === 3 ? 'Rejected' : 'Unknown'}
+                                          <span
+                                            className={`px-2 py-1 text-xs inline-flex items-center rounded-full ${getStatusColor(doc.status)}`}
+                                          >
+                                            {doc.status === 0
+                                              ? "Not Submitted"
+                                              : doc.status === 1
+                                                ? "Submitted"
+                                                : doc.status === 2
+                                                  ? "Approved"
+                                                  : doc.status === 3
+                                                    ? "Rejected"
+                                                    : "Unknown"}
                                           </span>
                                         )}
                                       </td>
                                       <td className="px-4 py-3 whitespace-nowrap text-center">
                                         <div className="flex items-center justify-center gap-2">
-                                          <button 
+                                          <button
                                             className="text-blue-600 hover:text-blue-800 transition-colors p-1"
                                             title="View Document"
                                           >
                                             <FaEye className="w-4 h-4" />
                                           </button>
-                                          <button 
+                                          <button
                                             className="text-green-600 hover:text-green-800 transition-colors p-1"
                                             title="Add/Edit Notes"
                                           >
@@ -343,7 +426,10 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                   ))
                                 ) : (
                                   <tr>
-                                    <td colSpan={3} className="text-center px-6 py-4 text-gray-500">
+                                    <td
+                                      colSpan={3}
+                                      className="text-center px-6 py-4 text-gray-500"
+                                    >
                                       {selectedStatus !== "all"
                                         ? "No documents match the selected filter."
                                         : "This group has no documents to display."}
@@ -367,17 +453,17 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
         <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
           <div className="flex items-center gap-4">
             <p className="text-sm text-gray-700">
-              Showing{' '}
+              Showing{" "}
               <span className="font-medium">
                 {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
               </span>
-              {' - '}
+              {" - "}
               <span className="font-medium">
                 {Math.min(currentPage * pageSize, totalCount)}
               </span>
-              {' of '}
+              {" of "}
               <span className="font-medium">{totalCount}</span>
-              {' entries'}
+              {" entries"}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
             <div className="flex items-center gap-2">
@@ -401,8 +487,8 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
               disabled={currentPage === 1}
               className={`p-2 rounded-md ${
                 currentPage === 1
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-100"
               }`}
             >
               <FaChevronLeft />
@@ -415,8 +501,8 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
               disabled={currentPage === totalPages}
               className={`p-2 rounded-md ${
                 currentPage === totalPages
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-100"
               }`}
             >
               <FaChevronRight />
@@ -428,4 +514,4 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   );
 };
 
-export default DocumentsTable; 
+export default DocumentsTable;

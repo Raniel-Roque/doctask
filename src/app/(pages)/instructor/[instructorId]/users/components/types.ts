@@ -39,7 +39,7 @@ export interface AddFormData {
 // Notification Types
 // =========================================
 export interface Notification {
-  type: 'error' | 'success' | 'warning' | 'info';
+  type: "error" | "success" | "warning" | "info";
   message: string;
 }
 
@@ -63,7 +63,7 @@ export interface LogDetails {
     subrole?: boolean;
   };
   user?: User;
-  action?: 'lock' | 'unlock';
+  action?: "lock" | "unlock";
 }
 
 // =========================================
@@ -89,4 +89,4 @@ export const TABLE_CONSTANTS = {
 // Table Types
 // =========================================
 export type SortField = "first_name" | "last_name" | "email" | "_creationTime";
-export type SortDirection = "asc" | "desc"; 
+export type SortDirection = "asc" | "desc";

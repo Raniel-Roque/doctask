@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
-import { FaTimes, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { useUser } from '@clerk/clerk-react';
-import { NotificationBanner } from './NotificationBanner';
-import { sanitizeInput } from './SanitizeInput';
+import React, { useState } from "react";
+import { FaTimes, FaEye, FaEyeSlash } from "react-icons/fa";
+import { useUser } from "@clerk/clerk-react";
+import { NotificationBanner } from "./NotificationBanner";
+import { sanitizeInput } from "./SanitizeInput";
 
 interface ChangePasswordProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps) {
+export default function ChangePassword({
+  isOpen,
+  onClose,
+}: ChangePasswordProps) {
   const { user, isLoaded } = useUser();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,9 +26,9 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const resetForm = () => {
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
     setError(null);
     setSuccess(null);
     setIsVerified(false);
@@ -50,13 +53,13 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
       const sanitizedPassword = sanitizeInput(currentPassword, {
         trim: true,
         removeHtml: true,
-        escapeSpecialChars: true
+        escapeSpecialChars: true,
       });
 
-      const response = await fetch('/api/clerk/verify-password', {
-        method: 'POST',
+      const response = await fetch("/api/clerk/verify-password", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           clerkId: user.id,
@@ -67,7 +70,7 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to verify password');
+        throw new Error(data.error || "Failed to verify password");
       }
 
       setIsVerified(true);
@@ -100,14 +103,14 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
       const sanitizedNewPassword = sanitizeInput(newPassword, {
         trim: true,
         removeHtml: true,
-        escapeSpecialChars: true
+        escapeSpecialChars: true,
       });
 
       // Update the password using our API endpoint
-      const updateResponse = await fetch('/api/clerk/user-reset-password', {
-        method: 'POST',
+      const updateResponse = await fetch("/api/clerk/user-reset-password", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           clerkId: user.id,
@@ -119,21 +122,27 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
 
       if (!updateResponse.ok) {
         // Check for specific Clerk password strength error
-        if (data.error?.includes('password_strength') || 
-            data.error?.includes('weak_password') || 
-            data.error?.includes('password is too weak') ||
-            data.error?.includes('password_validation')) {
-          throw new Error("Password is too weak. Please use a stronger password with a mix of letters, numbers, and special characters.");
+        if (
+          data.error?.includes("password_strength") ||
+          data.error?.includes("weak_password") ||
+          data.error?.includes("password is too weak") ||
+          data.error?.includes("password_validation")
+        ) {
+          throw new Error(
+            "Password is too weak. Please use a stronger password with a mix of letters, numbers, and special characters.",
+          );
         }
-        throw new Error(data.error || 'Failed to update password');
+        throw new Error(data.error || "Failed to update password");
       }
 
       setSuccess("Password updated successfully");
-        setTimeout(() => {
-          handleClose();
-        }, 2000);
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update password");
+      setError(
+        err instanceof Error ? err.message : "Failed to update password",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -144,8 +153,8 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
-          <button
-            onClick={handleClose}
+        <button
+          onClick={handleClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
         >
           <FaTimes />
@@ -156,7 +165,10 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
         {!isVerified ? (
           <form onSubmit={handleVerifyPassword} className="space-y-4">
             <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="currentPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Current Password
               </label>
               <div className="relative">
@@ -175,9 +187,9 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showCurrentPassword ? <FaEye /> : <FaEyeSlash />}
-          </button>
-        </div>
-          </div>
+                </button>
+              </div>
+            </div>
 
             <button
               type="submit"
@@ -190,7 +202,10 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
         ) : (
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="newPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 New Password
               </label>
               <div className="relative">
@@ -215,7 +230,10 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Confirm New Password
               </label>
               <div className="relative">
@@ -266,4 +284,4 @@ export default function ChangePassword({ isOpen, onClose }: ChangePasswordProps)
       </div>
     </div>
   );
-} 
+}

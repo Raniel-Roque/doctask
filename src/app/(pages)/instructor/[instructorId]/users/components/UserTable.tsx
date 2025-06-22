@@ -1,9 +1,22 @@
-import { FaChevronLeft, FaChevronRight, FaPlus, FaEdit, FaTrash, FaKey, FaSearch, FaSort, FaSortUp, FaSortDown, FaChevronDown, FaLock } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaKey,
+  FaSearch,
+  FaSort,
+  FaSortUp,
+  FaSortDown,
+  FaChevronDown,
+  FaLock,
+} from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 import { useState } from "react";
 import { useQuery } from "convex/react";
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import PDFReport from './PDFReport';
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import PDFReport from "./PDFReport";
 import { api } from "../../../../../../../convex/_generated/api";
 
 // =========================================
@@ -12,14 +25,18 @@ import { api } from "../../../../../../../convex/_generated/api";
 interface UserTableProps {
   users: User[];
   searchTerm: string;
-  statusFilter: typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS];
-  roleFilter?: typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS];
+  statusFilter: (typeof TABLE_CONSTANTS.STATUS_FILTERS)[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS];
+  roleFilter?: (typeof TABLE_CONSTANTS.ROLE_FILTERS)[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS];
   sortField: SortField;
   sortDirection: SortDirection;
   currentPage: number;
   onSearchChange: (value: string) => void;
-  onStatusFilterChange: (value: typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]) => void;
-  onRoleFilterChange?: (value: typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS]) => void;
+  onStatusFilterChange: (
+    value: (typeof TABLE_CONSTANTS.STATUS_FILTERS)[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS],
+  ) => void;
+  onRoleFilterChange?: (
+    value: (typeof TABLE_CONSTANTS.ROLE_FILTERS)[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS],
+  ) => void;
   onSort: (field: SortField) => void;
   onPageChange: (page: number) => void;
   onEdit: (user: User) => void;
@@ -71,8 +88,12 @@ export const UserTable = ({
   isStudent,
   isDeleting = false,
 }: UserTableProps) => {
-  const [expandedCode, setExpandedCode] = useState<{ [key: string]: boolean }>({});
-  const [expandedEmail, setExpandedEmail] = useState<{ [key: string]: boolean }>({});
+  const [expandedCode, setExpandedCode] = useState<{ [key: string]: boolean }>(
+    {},
+  );
+  const [expandedEmail, setExpandedEmail] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   // Fetch adviser codes
   const adviserCodes = useQuery(api.fetch.getAdviserCodes) || {};
@@ -81,16 +102,18 @@ export const UserTable = ({
   const allFilteredUsersQuery = useQuery(api.fetch.searchUsers, {
     searchTerm,
     role: showRoleColumn ? 0 : 1,
-    emailVerified: statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED ? true :
-                  statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED ? false : undefined,
-    ...(
-      showRoleColumn &&
+    emailVerified:
+      statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED
+        ? true
+        : statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED
+          ? false
+          : undefined,
+    ...(showRoleColumn &&
       (roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
         ? { subrole: 1 }
         : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
-        ? { subrole: 0 }
-        : {})
-    ),
+          ? { subrole: 0 }
+          : {})),
     pageSize: 10000,
     pageNumber: 1,
     sortField,
@@ -144,7 +167,9 @@ export const UserTable = ({
 
     return (
       <button
-        onClick={() => setExpandedCode(prev => ({ ...prev, [userId]: !prev[userId] }))}
+        onClick={() =>
+          setExpandedCode((prev) => ({ ...prev, [userId]: !prev[userId] }))
+        }
         className="w-full text-center"
       >
         {isExpanded ? code : `${code.slice(0, 4)}...`}
@@ -152,12 +177,20 @@ export const UserTable = ({
     );
   };
 
-  const CollapsibleEmail = ({ email, userId }: { email: string, userId: string }) => {
+  const CollapsibleEmail = ({
+    email,
+    userId,
+  }: {
+    email: string;
+    userId: string;
+  }) => {
     const isExpanded = expandedEmail[userId] || false;
 
     return (
       <button
-        onClick={() => setExpandedEmail(prev => ({ ...prev, [userId]: !prev[userId] }))}
+        onClick={() =>
+          setExpandedEmail((prev) => ({ ...prev, [userId]: !prev[userId] }))
+        }
         className="w-full text-left"
       >
         {isExpanded ? email : `${email.slice(0, 10)}...`}
@@ -185,14 +218,25 @@ export const UserTable = ({
           />
         </div>
         <div className="relative">
-          <select 
+          <select
             className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
             value={statusFilter}
-            onChange={(e) => onStatusFilterChange(e.target.value as typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS])}
+            onChange={(e) =>
+              onStatusFilterChange(
+                e.target
+                  .value as (typeof TABLE_CONSTANTS.STATUS_FILTERS)[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS],
+              )
+            }
           >
-            <option value={TABLE_CONSTANTS.STATUS_FILTERS.ALL}>All Status</option>
-            <option value={TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED}>Verified</option>
-            <option value={TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED}>Unverified</option>
+            <option value={TABLE_CONSTANTS.STATUS_FILTERS.ALL}>
+              All Status
+            </option>
+            <option value={TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED}>
+              Verified
+            </option>
+            <option value={TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED}>
+              Unverified
+            </option>
           </select>
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
             <FaChevronDown color="#6B7280" />
@@ -200,14 +244,25 @@ export const UserTable = ({
         </div>
         {showRoleColumn && onRoleFilterChange && (
           <div className="relative">
-            <select 
+            <select
               className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
               value={roleFilter}
-              onChange={(e) => onRoleFilterChange(e.target.value as typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS])}
+              onChange={(e) =>
+                onRoleFilterChange(
+                  e.target
+                    .value as (typeof TABLE_CONSTANTS.ROLE_FILTERS)[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS],
+                )
+              }
             >
-              <option value={TABLE_CONSTANTS.ROLE_FILTERS.ALL}>All Roles</option>
-              <option value={TABLE_CONSTANTS.ROLE_FILTERS.MANAGER}>Manager</option>
-              <option value={TABLE_CONSTANTS.ROLE_FILTERS.MEMBER}>Member</option>
+              <option value={TABLE_CONSTANTS.ROLE_FILTERS.ALL}>
+                All Roles
+              </option>
+              <option value={TABLE_CONSTANTS.ROLE_FILTERS.MANAGER}>
+                Manager
+              </option>
+              <option value={TABLE_CONSTANTS.ROLE_FILTERS.MEMBER}>
+                Member
+              </option>
             </select>
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
               <FaChevronDown color="#6B7280" />
@@ -215,7 +270,7 @@ export const UserTable = ({
           </div>
         )}
         <div className="flex items-center gap-2">
-        <button 
+          <button
             onClick={onAdd}
             className="px-4 py-2 bg-[#B54A4A] text-white rounded-lg hover:bg-[#9a3d3d] flex items-center gap-2"
           >
@@ -229,7 +284,7 @@ export const UserTable = ({
         <table className="min-w-full bg-white border border-gray-200">
           <thead>
             <tr className="bg-[#B54A4A]">
-              <th 
+              <th
                 className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("first_name")}
               >
@@ -238,8 +293,10 @@ export const UserTable = ({
                   <span className="ml-1">{getSortIcon("first_name")}</span>
                 </div>
               </th>
-              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">Middle Name</th>
-              <th 
+              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                Middle Name
+              </th>
+              <th
                 className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("last_name")}
               >
@@ -248,7 +305,7 @@ export const UserTable = ({
                   <span className="ml-1">{getSortIcon("last_name")}</span>
                 </div>
               </th>
-              <th 
+              <th
                 className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("email")}
               >
@@ -285,29 +342,37 @@ export const UserTable = ({
             ) : !hasResults ? (
               <tr>
                 <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                  {showRoleColumn 
-                    ? "No students available. Click \"Add User\" to create a new student."
-                    : "No advisers available. Click \"Add User\" to create a new adviser."}
+                  {showRoleColumn
+                    ? 'No students available. Click "Add User" to create a new student.'
+                    : 'No advisers available. Click "Add User" to create a new adviser.'}
                 </td>
               </tr>
             ) : (
               paginatedUsers.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 border-b text-left">{user.first_name}</td>
-                  <td className={`px-6 py-4 border-b ${!user.middle_name ? 'text-center' : 'text-left'}`}>
+                  <td className="px-6 py-4 border-b text-left">
+                    {user.first_name}
+                  </td>
+                  <td
+                    className={`px-6 py-4 border-b ${!user.middle_name ? "text-center" : "text-left"}`}
+                  >
                     {user.middle_name || "-"}
                   </td>
-                  <td className="px-6 py-4 border-b text-left">{user.last_name}</td>
+                  <td className="px-6 py-4 border-b text-left">
+                    {user.last_name}
+                  </td>
                   <td className="px-6 py-4 border-b text-center">
                     <CollapsibleEmail email={user.email} userId={user._id} />
                   </td>
                   <td className="px-6 py-4 border-b text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      user.email_verified 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {user.email_verified ? 'Verified' : 'Unverified'}
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        user.email_verified
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {user.email_verified ? "Verified" : "Unverified"}
                     </span>
                   </td>
                   {showCodeColumn && (
@@ -363,17 +428,17 @@ export const UserTable = ({
       <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
         <div className="flex items-center gap-4">
           <p className="text-sm text-gray-700">
-            Showing{' '}
+            Showing{" "}
             <span className="font-medium">
               {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
             </span>
-            {' - '}
+            {" - "}
             <span className="font-medium">
               {Math.min(currentPage * pageSize, totalCount)}
             </span>
-            {' of '}
+            {" of "}
             <span className="font-medium">{totalCount}</span>
-            {' entries'}
+            {" entries"}
           </p>
           <div className="h-6 w-px bg-gray-300"></div>
           <div className="flex items-center gap-2">
@@ -389,22 +454,24 @@ export const UserTable = ({
               ))}
             </select>
             <span className="text-sm text-gray-700">entries per page</span>
-            {(!isDeleting && users.length > 0 && !isLoading) && (
+            {!isDeleting && users.length > 0 && !isLoading && (
               <>
                 <span className="text-gray-300 mx-1">|</span>
                 <PDFDownloadLink
                   document={
                     <PDFReport
                       users={allFilteredUsersQuery?.users || []}
-                      title={showRoleColumn ? "Students Report" : "Advisers Report"}
+                      title={
+                        showRoleColumn ? "Students Report" : "Advisers Report"
+                      }
                       filters={{
                         status: statusFilter,
                         subrole: showRoleColumn
                           ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
                             ? "Manager"
                             : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
-                            ? "Member"
-                            : "All"
+                              ? "Member"
+                              : "All"
                           : undefined,
                       }}
                       isStudent={isStudent}
@@ -412,11 +479,14 @@ export const UserTable = ({
                     />
                   }
                   fileName={(() => {
-                    const role = showRoleColumn ? 'Student' : 'Adviser';
-                    const filters = [`Status-${statusFilter}`, `Role-${roleFilter}`];
+                    const role = showRoleColumn ? "Student" : "Adviser";
+                    const filters = [
+                      `Status-${statusFilter}`,
+                      `Role-${roleFilter}`,
+                    ];
                     const date = new Date();
-                    const dateTime = `${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2,'0')}${date.getDate().toString().padStart(2,'0')}_${date.getHours().toString().padStart(2,'0')}${date.getMinutes().toString().padStart(2,'0')}${date.getSeconds().toString().padStart(2,'0')}`;
-                    return `${role}Report-${filters.join('_')}-${dateTime}.pdf`;
+                    const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}_${date.getHours().toString().padStart(2, "0")}${date.getMinutes().toString().padStart(2, "0")}${date.getSeconds().toString().padStart(2, "0")}`;
+                    return `${role}Report-${filters.join("_")}-${dateTime}.pdf`;
                   })()}
                 >
                   {({ loading }) => {
@@ -424,9 +494,11 @@ export const UserTable = ({
                       <span
                         className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
                         title="Download Report"
-                        style={{ minWidth: 90, display: 'inline-block' }}
+                        style={{ minWidth: 90, display: "inline-block" }}
                       >
-                        {loading || allFilteredUsersQuery === undefined ? 'Generating...' : 'Download Report'}
+                        {loading || allFilteredUsersQuery === undefined
+                          ? "Generating..."
+                          : "Download Report"}
                       </span>
                     );
                   }}
@@ -441,8 +513,8 @@ export const UserTable = ({
             disabled={currentPage === 1}
             className={`p-2 rounded-md ${
               currentPage === 1
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-700 hover:bg-gray-100"
             }`}
           >
             <FaChevronLeft />
@@ -455,8 +527,8 @@ export const UserTable = ({
             disabled={currentPage === totalPages}
             className={`p-2 rounded-md ${
               currentPage === totalPages
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-700 hover:bg-gray-100"
             }`}
           >
             <FaChevronRight />
@@ -465,4 +537,4 @@ export const UserTable = ({
       </div>
     </div>
   );
-}; 
+};

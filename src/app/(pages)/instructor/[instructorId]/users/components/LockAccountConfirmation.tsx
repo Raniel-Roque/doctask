@@ -5,7 +5,7 @@ import { useState } from "react";
 interface LockAccountConfirmationProps {
   user: User | null;
   onCancel: () => void;
-  onConfirm: (action: 'lock' | 'unlock') => void;
+  onConfirm: (action: "lock" | "unlock") => void;
   isSubmitting: boolean;
   networkError: string | null;
   setNetworkError?: (err: string | null) => void;
@@ -17,9 +17,11 @@ export const LockAccountConfirmation = ({
   onConfirm,
   isSubmitting,
   networkError,
-  setNetworkError
+  setNetworkError,
 }: LockAccountConfirmationProps) => {
-  const [processingAction, setProcessingAction] = useState<'lock' | 'unlock' | null>(null);
+  const [processingAction, setProcessingAction] = useState<
+    "lock" | "unlock" | null
+  >(null);
 
   if (!user) return null;
 
@@ -28,7 +30,7 @@ export const LockAccountConfirmation = ({
     onCancel();
   };
 
-  const handleAction = async (action: 'lock' | 'unlock') => {
+  const handleAction = async (action: "lock" | "unlock") => {
     setProcessingAction(action);
     await onConfirm(action);
     setProcessingAction(null);
@@ -47,11 +49,14 @@ export const LockAccountConfirmation = ({
 
         <div className="flex items-center gap-3 mb-4">
           <FaLock size={24} color="#B54A4A" />
-          <h2 className="text-xl font-semibold text-gray-900">Account Access Control</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Account Access Control
+          </h2>
         </div>
-        
+
         <p className="text-gray-600 mb-6">
-          Choose an action for {user.first_name} {user.last_name}&apos;s account:
+          Choose an action for {user.first_name} {user.last_name}&apos;s
+          account:
         </p>
 
         {networkError && (
@@ -62,11 +67,11 @@ export const LockAccountConfirmation = ({
 
         <div className="flex flex-col gap-3">
           <button
-            onClick={() => handleAction('unlock')}
+            onClick={() => handleAction("unlock")}
             className="flex items-center justify-center gap-2 px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isSubmitting || processingAction === 'lock'}
+            disabled={isSubmitting || processingAction === "lock"}
           >
-            {processingAction === 'unlock' ? (
+            {processingAction === "unlock" ? (
               <>
                 <div className="animate-spin">
                   <FaSpinner size={16} />
@@ -81,11 +86,11 @@ export const LockAccountConfirmation = ({
             )}
           </button>
           <button
-            onClick={() => handleAction('lock')}
+            onClick={() => handleAction("lock")}
             className="flex items-center justify-center gap-2 px-4 py-2 text-white bg-[#B54A4A] rounded-md hover:bg-[#9B3F3F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isSubmitting || processingAction === 'unlock'}
+            disabled={isSubmitting || processingAction === "unlock"}
           >
-            {processingAction === 'lock' ? (
+            {processingAction === "lock" ? (
               <>
                 <div className="animate-spin">
                   <FaSpinner size={16} />
@@ -103,4 +108,4 @@ export const LockAccountConfirmation = ({
       </div>
     </div>
   );
-}; 
+};

@@ -1,6 +1,12 @@
-import React from 'react';
-import { FaExclamationTriangle, FaCheck, FaTimes, FaSpinner, FaBan } from "react-icons/fa";
-import { Group } from './types';
+import React from "react";
+import {
+  FaExclamationTriangle,
+  FaCheck,
+  FaTimes,
+  FaSpinner,
+  FaBan,
+} from "react-icons/fa";
+import { Group } from "./types";
 
 interface GroupActionConfirmationProps {
   group: Group | null;
@@ -9,26 +15,28 @@ interface GroupActionConfirmationProps {
   onConfirm: () => void;
   isSubmitting?: boolean;
   networkError?: string | null;
-  action: 'accept' | 'reject';
+  action: "accept" | "reject";
 }
 
-export default function GroupActionConfirmation({ 
-  group, 
-  isOpen, 
-  onClose, 
+export default function GroupActionConfirmation({
+  group,
+  isOpen,
+  onClose,
   onConfirm,
   isSubmitting = false,
   networkError = null,
-  action
+  action,
 }: GroupActionConfirmationProps) {
   if (!isOpen || !group) return null;
 
-  const isAccept = action === 'accept';
-  const title = isAccept ? 'Accept Group' : 'Reject Group';
+  const isAccept = action === "accept";
+  const title = isAccept ? "Accept Group" : "Reject Group";
   const icon = isAccept ? FaCheck : FaBan;
-  const iconColor = isAccept ? '#059669' : '#DC2626';
-  const confirmButtonColor = isAccept ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
-  const confirmText = isAccept ? 'Accept' : 'Reject';
+  const iconColor = isAccept ? "#059669" : "#DC2626";
+  const confirmButtonColor = isAccept
+    ? "bg-green-600 hover:bg-green-700"
+    : "bg-red-600 hover:bg-red-700";
+  const confirmText = isAccept ? "Accept" : "Reject";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -51,10 +59,14 @@ export default function GroupActionConfirmation({
 
         {/* Confirmation Message */}
         <p className="mb-8 text-gray-600">
-          Are you sure you want to {action} group &quot;{group.projectManager ? `${group.projectManager.last_name} et al` : 'Unknown Group'}&quot;?
-          {isAccept 
-            ? ' This will make you the adviser for this group.'
-            : ' This will remove the group from your pending requests.'}
+          Are you sure you want to {action} group &quot;
+          {group.projectManager
+            ? `${group.projectManager.last_name} et al`
+            : "Unknown Group"}
+          &quot;?
+          {isAccept
+            ? " This will make you the adviser for this group."
+            : " This will remove the group from your pending requests."}
         </p>
 
         {/* Action Buttons */}
@@ -77,7 +89,7 @@ export default function GroupActionConfirmation({
                 <div className="animate-spin">
                   <FaSpinner />
                 </div>
-                {isAccept ? 'Accepting...' : 'Rejecting...'}
+                {isAccept ? "Accepting..." : "Rejecting..."}
               </>
             ) : (
               <>
@@ -91,5 +103,3 @@ export default function GroupActionConfirmation({
     </div>
   );
 }
-
- 

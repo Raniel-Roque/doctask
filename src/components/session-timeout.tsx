@@ -23,14 +23,14 @@ export function SessionTimeout() {
       localStorage.removeItem(LAST_ACTIVITY_KEY);
       return;
     }
-    
+
     // Check if session has expired on mount
     const checkInitialTimeout = () => {
       const currentTime = Date.now();
       const storedTime = localStorage.getItem(LAST_ACTIVITY_KEY);
-      
+
       if (storedTime) {
-        const timeSinceLastActivity = currentTime - parseInt(storedTime);        
+        const timeSinceLastActivity = currentTime - parseInt(storedTime);
         if (timeSinceLastActivity >= TIMEOUT_DURATION) {
           localStorage.removeItem(LAST_ACTIVITY_KEY);
           signOut();
@@ -42,7 +42,7 @@ export function SessionTimeout() {
 
     // Run initial check
     checkInitialTimeout();
-    
+
     // Function to update last activity timestamp
     const updateLastActivity = () => {
       const newTime = Date.now();
@@ -58,10 +58,10 @@ export function SessionTimeout() {
       "scroll",
       "touchstart",
       "click",
-      "keydown"
+      "keydown",
     ];
 
-    events.forEach(event => {
+    events.forEach((event) => {
       window.addEventListener(event, updateLastActivity);
     });
 
@@ -89,7 +89,7 @@ export function SessionTimeout() {
 
     // Cleanup
     return () => {
-      events.forEach(event => {
+      events.forEach((event) => {
         window.removeEventListener(event, updateLastActivity);
       });
       window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -98,4 +98,4 @@ export function SessionTimeout() {
   }, [lastActivity, signOut, router, pathname]);
 
   return null; // This component doesn't render anything
-} 
+}

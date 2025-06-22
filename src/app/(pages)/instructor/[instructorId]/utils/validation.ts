@@ -6,28 +6,31 @@ export const VALIDATION_RULES = {
   firstName: {
     maxLength: 50,
     pattern: /^[a-zA-Z\s-']+$/,
-    message: "First name can only contain letters, spaces, hyphens, and apostrophes",
-    required: true
+    message:
+      "First name can only contain letters, spaces, hyphens, and apostrophes",
+    required: true,
   },
   middleName: {
     maxLength: 50,
     pattern: /^[a-zA-Z\s-']*$/,
-    message: "Middle name can only contain letters, spaces, hyphens, and apostrophes",
-    required: false
+    message:
+      "Middle name can only contain letters, spaces, hyphens, and apostrophes",
+    required: false,
   },
   lastName: {
     maxLength: 50,
     pattern: /^[a-zA-Z\s-']+$/,
-    message: "Last name must be less than 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
-    required: true
+    message:
+      "Last name must be less than 50 characters and can only contain letters, spaces, hyphens, and apostrophes",
+    required: true,
   },
   // Email
   email: {
     maxLength: 100,
     pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
     message: "Invalid email format",
-    required: true
-  }
+    required: true,
+  },
 } as const;
 
 // =========================================
@@ -35,10 +38,10 @@ export const VALIDATION_RULES = {
 // =========================================
 export const validateField = (
   value: string,
-  fieldName: keyof typeof VALIDATION_RULES
+  fieldName: keyof typeof VALIDATION_RULES,
 ): string | null => {
   const rules = VALIDATION_RULES[fieldName];
-  
+
   // Check if required
   if (rules.required && !value) {
     return `${fieldName} is required`;
@@ -74,19 +77,19 @@ export const validateUserForm = (formData: {
   const errors: { [key: string]: string } = {};
 
   // Validate each field
-  const firstNameError = validateField(formData.first_name, 'firstName');
+  const firstNameError = validateField(formData.first_name, "firstName");
   if (firstNameError) errors.first_name = firstNameError;
 
   if (formData.middle_name) {
-    const middleNameError = validateField(formData.middle_name, 'middleName');
+    const middleNameError = validateField(formData.middle_name, "middleName");
     if (middleNameError) errors.middle_name = middleNameError;
   }
 
-  const lastNameError = validateField(formData.last_name, 'lastName');
+  const lastNameError = validateField(formData.last_name, "lastName");
   if (lastNameError) errors.last_name = lastNameError;
 
-  const emailError = validateField(formData.email, 'email');
+  const emailError = validateField(formData.email, "email");
   if (emailError) errors.email = emailError;
 
   return Object.keys(errors).length > 0 ? errors : null;
-}; 
+};

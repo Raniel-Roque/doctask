@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     // Validate request body
-    if (!body || typeof body !== 'object') {
+    if (!body || typeof body !== "object") {
       return NextResponse.json(
         { error: "Invalid request body" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -21,14 +21,14 @@ export async function POST(request: Request) {
     if (!firstName || !lastName || !email || !password) {
       return NextResponse.json(
         { error: "Required fields are missing" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     await resend.emails.send({
-      from: 'DocTask <onboarding@resend.dev>',
+      from: "DocTask <onboarding@resend.dev>",
       to: email,
-      subject: 'Welcome to DocTask',
+      subject: "Welcome to DocTask",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Welcome to DocTask!</h2>
@@ -63,11 +63,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : "Failed to send welcome email",
-        details: error instanceof Error ? error.stack : undefined
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to send welcome email",
+        details: error instanceof Error ? error.stack : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
-} 
+}

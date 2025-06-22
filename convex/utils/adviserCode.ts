@@ -22,7 +22,7 @@ function generateCodeSegment(length: number): string {
  */
 export function generateAdviserCode(): string {
   const segments = Array.from({ length: CODE_SEGMENTS }, () =>
-    generateCodeSegment(CODE_LENGTH)
+    generateCodeSegment(CODE_LENGTH),
   );
   return segments.join("-");
 }
@@ -32,7 +32,7 @@ export function generateAdviserCode(): string {
  */
 export function validateAdviserCode(code: string): boolean {
   const codeRegex = new RegExp(
-    `^[A-Z]{${CODE_LENGTH}}-[A-Z]{${CODE_LENGTH}}-[A-Z]{${CODE_LENGTH}}$`
+    `^[A-Z]{${CODE_LENGTH}}-[A-Z]{${CODE_LENGTH}}-[A-Z]{${CODE_LENGTH}}$`,
   );
   return codeRegex.test(code);
 }

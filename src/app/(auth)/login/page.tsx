@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft } from "react-icons/fa";
 import EmailInput from "../components/EmailInput";
 import VerifyCodeInput from "../components/VerifyCodeInput";
 import PasswordInput from "../components/PasswordInput";
@@ -40,7 +40,7 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (isSignedIn) {
-      router.push('/');
+      router.push("/");
     }
   }, [isSignedIn, router]);
 
@@ -48,11 +48,11 @@ const LoginPage = () => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   useEffect(() => {
@@ -64,7 +64,10 @@ const LoginPage = () => {
       <div className="min-h-screen bg-[#B54A4A] flex items-center justify-center p-4">
         <div className="text-center text-white">
           <h1 className="text-2xl font-bold mb-4">Desktop Only</h1>
-          <p className="text-lg">Please access this application from a desktop device for the best experience.</p>
+          <p className="text-lg">
+            Please access this application from a desktop device for the best
+            experience.
+          </p>
         </div>
       </div>
     );
@@ -89,7 +92,7 @@ const LoginPage = () => {
       });
 
       const data = await response.json();
-      
+
       if (!data.exists) {
         setError("Email not found");
         return;
@@ -99,7 +102,7 @@ const LoginPage = () => {
       const userRes = await fetch("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailToCheck })
+        body: JSON.stringify({ email: emailToCheck }),
       });
 
       if (!userRes.ok) {
@@ -107,7 +110,7 @@ const LoginPage = () => {
       }
 
       const user = await userRes.json();
-      
+
       if (user.email_verified) {
         // If email is verified, proceed to password step
         setStep(3);
@@ -148,7 +151,7 @@ const LoginPage = () => {
       });
 
       const data = await response.json();
-      
+
       if (!data.exists) {
         setError("Email not found");
         return;
@@ -158,7 +161,7 @@ const LoginPage = () => {
       const userRes = await fetch("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email }),
       });
 
       if (!userRes.ok) {
@@ -166,7 +169,7 @@ const LoginPage = () => {
       }
 
       const user = await userRes.json();
-      
+
       if (user.email_verified) {
         // If email is verified, try to auto-login if password is present
         if (password) {
@@ -181,14 +184,20 @@ const LoginPage = () => {
             });
             if (result.status === "complete") {
               await setActive({ session: result.createdSessionId });
-              localStorage.setItem("lastActivityTimestamp", Date.now().toString());
+              localStorage.setItem(
+                "lastActivityTimestamp",
+                Date.now().toString(),
+              );
               return; // Success, user will be redirected
             } else {
               setError("Incorrect password. Please try again.");
             }
           } catch (err) {
             const clerkError = err as ClerkError;
-            setError(clerkError.errors?.[0]?.message || "An error occurred during sign in");
+            setError(
+              clerkError.errors?.[0]?.message ||
+                "An error occurred during sign in",
+            );
           } finally {
             setLoading(false);
           }
@@ -236,22 +245,22 @@ const LoginPage = () => {
         const userRes = await fetch("/api/convex/get-user-by-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email }),
         });
-        
+
         if (!userRes.ok) {
           throw new Error("Failed to fetch user for verification update");
         }
-        
+
         const user = await userRes.json();
-        
+
         // Update email_verified status
         const verifyRes = await fetch("/api/convex/mark-email-verified", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user._id })
+          body: JSON.stringify({ userId: user._id }),
         });
-        
+
         if (!verifyRes.ok) {
           throw new Error("Failed to update verification status");
         }
@@ -291,11 +300,13 @@ const LoginPage = () => {
       }
     } catch (err) {
       const errorMessage = (err as Error).message || "";
-      
+
       if (errorMessage.includes("Your account is locked")) {
-        setError(`Your account is locked. Please try again later or contact your capstone instructor.`);
+        setError(
+          `Your account is locked. Please try again later or contact your capstone instructor.`,
+        );
       } else if (
-        errorMessage.toLowerCase().includes("password") || 
+        errorMessage.toLowerCase().includes("password") ||
         errorMessage.toLowerCase().includes("invalid credentials") ||
         errorMessage.toLowerCase().includes("incorrect")
       ) {
@@ -323,7 +334,9 @@ const LoginPage = () => {
       if (result.status === "needs_first_factor") {
         setError(""); // Clear any previous errors
         setResentSuccess(true);
-        setSuccessMessage("A new verification code has been sent to your email. Please check your inbox and spam folder.");
+        setSuccessMessage(
+          "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+        );
       } else {
         setError("Failed to resend code. Please try again.");
         setResentSuccess(false);
@@ -354,7 +367,9 @@ const LoginPage = () => {
         identifier: email,
       });
       if (result.status === "needs_first_factor") {
-        setSuccessMessage("A password reset code has been sent to your email. Please check your inbox and spam folder.");
+        setSuccessMessage(
+          "A password reset code has been sent to your email. Please check your inbox and spam folder.",
+        );
         setError("");
       } else {
         setError("Failed to send reset code. Please try again.");
@@ -404,7 +419,9 @@ const LoginPage = () => {
             height={180}
             className="rounded-full mb-8 mx-auto shadow-xl border-4 border-black"
           />
-          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 tracking-wider">DOCTASK</h1>
+          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 tracking-wider">
+            DOCTASK
+          </h1>
           <p className="text-gray-600 text-lg md:text-xl leading-relaxed mx-auto max-w-md font-light">
             A Collaborative Documentation and Management Desktop Web App
           </p>
@@ -415,18 +432,20 @@ const LoginPage = () => {
       <div className="w-full md:w-[35%] bg-[#B54A4A] flex flex-col items-center justify-center p-8 md:p-12 relative shadow-2xl">
         <div className="max-w-sm w-full space-y-8 z-10 relative pb-16">
           {/* Back Button for steps 2, 3, 4 */}
-          {(step > 1) && (
+          {step > 1 && (
             <button
               type="button"
               onClick={handleForgotBack}
               className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20"
-              style={{ marginTop: '-2rem', marginLeft: '-1rem' }}
+              style={{ marginTop: "-2rem", marginLeft: "-1rem" }}
             >
               <FaArrowLeft className="mr-2" /> Back
             </button>
           )}
           <div className="text-center mb-8">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-3">{forgotStep ? "Reset" : "Login"}</h2>
+            <h2 className="text-5xl md:text-6xl font-bold text-white mb-3">
+              {forgotStep ? "Reset" : "Login"}
+            </h2>
             <p className="text-white text-lg md:text-2xl font-light">
               {step === 1 && "Enter your email"}
               {step === 2 && "Enter verification code"}
@@ -435,18 +454,28 @@ const LoginPage = () => {
             </p>
           </div>
           {/* Step 1: Email Input */}
-            {step === 1 && (
-            <form className="mt-8 space-y-6" onSubmit={handleEmailSubmit} autoComplete="on" action="#" method="post">
+          {step === 1 && (
+            <form
+              className="mt-8 space-y-6"
+              onSubmit={handleEmailSubmit}
+              autoComplete="on"
+              action="#"
+              method="post"
+            >
               <input type="hidden" name="username" value={email} />
-              <EmailInput 
-                email={email} 
-                setEmail={setEmail} 
+              <EmailInput
+                email={email}
+                setEmail={setEmail}
                 loading={loading}
                 name="email"
                 autoComplete="username"
                 onAutocomplete={handleAutocomplete}
               />
-              {error && <div className="text-red-300 text-sm text-center mt-4">{error}</div>}
+              {error && (
+                <div className="text-red-300 text-sm text-center mt-4">
+                  {error}
+                </div>
+              )}
               <div className="mt-6">
                 <button
                   type="submit"
@@ -454,34 +483,67 @@ const LoginPage = () => {
                   className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                 >
                   {loading ? "Processing..." : "Continue"}
-                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  <svg
+                    className="ml-2 w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
                   </svg>
                 </button>
               </div>
             </form>
           )}
           {/* Step 2: Verification Code */}
-            {step === 2 && (
+          {step === 2 && (
             <form className="mt-8 space-y-6" onSubmit={handleCodeSubmit}>
-                {resentSuccess && (
-                  <div className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs" role="alert">
-                    <span className="block sm:inline">{successMessage}</span>
-                  </div>
-                )}
-              <VerifyCodeInput code={code} setCode={setCode} loading={loading} />
-              {error && <div className="text-red-300 text-sm text-center mt-4">{error}</div>}
-            <div className="mt-6">
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-              >
+              {resentSuccess && (
+                <div
+                  className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs"
+                  role="alert"
+                >
+                  <span className="block sm:inline">{successMessage}</span>
+                </div>
+              )}
+              <VerifyCodeInput
+                code={code}
+                setCode={setCode}
+                loading={loading}
+              />
+              {error && (
+                <div className="text-red-300 text-sm text-center mt-4">
+                  {error}
+                </div>
+              )}
+              <div className="mt-6">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                >
                   {loading ? "Processing..." : "Verify Code"}
-                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </button>
+                  <svg
+                    className="ml-2 w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
+                  </svg>
+                </button>
                 <div className="text-sm text-center mt-4">
                   <button
                     type="button"
@@ -497,18 +559,26 @@ const LoginPage = () => {
           )}
           {/* Step 3: Password Input with Forgot Password */}
           {step === 3 && !forgotStep && (
-            <form className="mt-8 space-y-6" onSubmit={handlePasswordSubmit} autoComplete="on">
+            <form
+              className="mt-8 space-y-6"
+              onSubmit={handlePasswordSubmit}
+              autoComplete="on"
+            >
               <input type="hidden" name="username" value={email} />
-              <PasswordInput 
-                password={password} 
-                setPassword={setPassword} 
-                showPassword={showPassword} 
-                setShowPassword={setShowPassword} 
+              <PasswordInput
+                password={password}
+                setPassword={setPassword}
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
                 loading={loading}
                 name="password"
                 autoComplete="current-password"
               />
-              {error && <div className="text-red-300 text-sm text-center mt-4">{error}</div>}
+              {error && (
+                <div className="text-red-300 text-sm text-center mt-4">
+                  {error}
+                </div>
+              )}
               <div className="mt-6">
                 <button
                   type="submit"
@@ -516,8 +586,19 @@ const LoginPage = () => {
                   className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                 >
                   {loading ? "Processing..." : "Log In"}
-                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  <svg
+                    className="ml-2 w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
                   </svg>
                 </button>
               </div>
@@ -540,14 +621,17 @@ const LoginPage = () => {
                 type="button"
                 onClick={handleForgotBack}
                 className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20"
-                style={{ marginTop: '-2rem', marginLeft: '-1rem' }}
+                style={{ marginTop: "-2rem", marginLeft: "-1rem" }}
               >
                 <FaArrowLeft className="mr-2" /> Back
               </button>
               {forgotStepIndex === 0 && (
                 <>
                   {successMessage && (
-                    <div className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs" role="alert">
+                    <div
+                      className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs"
+                      role="alert"
+                    >
                       <span className="block sm:inline">{successMessage}</span>
                     </div>
                   )}
@@ -611,22 +695,28 @@ const LoginPage = () => {
                       const result = await signIn.resetPassword({ password });
                       if (result.status === "complete") {
                         // Update Convex database to mark email as verified
-                        const userRes = await fetch("/api/convex/get-user-by-email", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ email })
-                        });
+                        const userRes = await fetch(
+                          "/api/convex/get-user-by-email",
+                          {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email }),
+                          },
+                        );
                         if (userRes.ok) {
                           const user = await userRes.json();
                           await fetch("/api/convex/mark-email-verified", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ userId: user._id })
+                            body: JSON.stringify({ userId: user._id }),
                           });
                         }
                         await signOut();
                         router.push("/login");
-                        localStorage.setItem("lastActivityTimestamp", Date.now().toString());
+                        localStorage.setItem(
+                          "lastActivityTimestamp",
+                          Date.now().toString(),
+                        );
                       } else {
                         setError("Failed to reset password. Please try again.");
                       }
@@ -643,7 +733,7 @@ const LoginPage = () => {
         </div>
         {/* College of Computer Studies Text - always at the bottom right of the red container */}
         <div className="absolute bottom-0 right-0 mb-4 mr-4 text-sm text-red-200 font-light select-none">
-              College of Computer Studies
+          College of Computer Studies
         </div>
       </div>
     </div>

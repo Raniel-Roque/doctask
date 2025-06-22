@@ -1,5 +1,10 @@
 import React from "react";
-import { FaExclamationTriangle, FaKey, FaTimes, FaSpinner } from "react-icons/fa";
+import {
+  FaExclamationTriangle,
+  FaKey,
+  FaTimes,
+  FaSpinner,
+} from "react-icons/fa";
 import { User } from "./types";
 
 // =========================================
@@ -22,12 +27,14 @@ export const ResetPasswordConfirmation = ({
   onConfirm,
   isSubmitting,
   networkError,
-  setNetworkError
-}: ResetPasswordConfirmationProps & { setNetworkError?: (err: string | null) => void }) => {
+  setNetworkError,
+}: ResetPasswordConfirmationProps & {
+  setNetworkError?: (err: string | null) => void;
+}) => {
   if (!user) return null;
 
   const handleCancel = () => {
-    if (typeof setNetworkError === 'function') setNetworkError(null);
+    if (typeof setNetworkError === "function") setNetworkError(null);
     onCancel();
   };
 
@@ -40,7 +47,9 @@ export const ResetPasswordConfirmation = ({
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <FaExclamationTriangle size={24} color="#EAB308" />
-          <h3 className="text-xl font-semibold text-gray-900">Reset Password Confirmation</h3>
+          <h3 className="text-xl font-semibold text-gray-900">
+            Reset Password Confirmation
+          </h3>
         </div>
 
         {/* User Information */}
@@ -60,7 +69,8 @@ export const ResetPasswordConfirmation = ({
         {/* Reset Information */}
         <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-gray-700">
-            A new temporary password will be generated and sent to the user&apos;s email address. 
+            A new temporary password will be generated and sent to the
+            user&apos;s email address.
           </p>
         </div>
 
@@ -104,4 +114,4 @@ export const ResetPasswordConfirmation = ({
       </div>
     </div>
   );
-}; 
+};

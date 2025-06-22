@@ -1,5 +1,5 @@
-import React from 'react';
-import { FaEnvelope } from 'react-icons/fa';
+import React from "react";
+import { FaEnvelope } from "react-icons/fa";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface EmailInputProps {
@@ -13,23 +13,31 @@ interface EmailInputProps {
   onAutocomplete?: (email: string) => void;
 }
 
-const EmailInput: React.FC<EmailInputProps> = ({ 
-  email, 
-  setEmail, 
-  disabled = false, 
-  loading = false, 
-  placeholder = 'Email', 
-  name = "email", 
+const EmailInput: React.FC<EmailInputProps> = ({
+  email,
+  setEmail,
+  disabled = false,
+  loading = false,
+  placeholder = "Email",
+  name = "email",
   autoComplete = "username",
-  onAutocomplete 
+  onAutocomplete,
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only sanitize HTML and special chars, but preserve case
-    const sanitizedValue = sanitizeInput(e.target.value, { trim: true, removeHtml: true, escapeSpecialChars: true, preserveCase: true });
+    const sanitizedValue = sanitizeInput(e.target.value, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true,
+      preserveCase: true,
+    });
     setEmail(sanitizedValue);
-    
+
     // If this is an autocomplete event (the input was filled by the browser)
-    if (e.nativeEvent instanceof InputEvent && e.nativeEvent.inputType === "insertReplacementText") {
+    if (
+      e.nativeEvent instanceof InputEvent &&
+      e.nativeEvent.inputType === "insertReplacementText"
+    ) {
       onAutocomplete?.(sanitizedValue.toLowerCase());
     }
   };
@@ -58,4 +66,4 @@ const EmailInput: React.FC<EmailInputProps> = ({
   );
 };
 
-export default EmailInput; 
+export default EmailInput;

@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaEdit, FaExclamationTriangle, FaUsers, FaUserTie, FaBook, FaSearch, FaChevronDown, FaSave, FaSpinner } from "react-icons/fa";
+import {
+  FaTimes,
+  FaEdit,
+  FaExclamationTriangle,
+  FaUsers,
+  FaUserTie,
+  FaBook,
+  FaSearch,
+  FaChevronDown,
+  FaSave,
+  FaSpinner,
+} from "react-icons/fa";
 import { Group } from "./types";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
-import { sanitizeInput, validateInput, VALIDATION_RULES } from "../../../../components/SanitizeInput";
+import {
+  sanitizeInput,
+  validateInput,
+  VALIDATION_RULES,
+} from "../../../../components/SanitizeInput";
 
 interface User {
   _id: string;
@@ -31,10 +46,10 @@ interface EditGroupFormProps {
 }
 
 export default function EditGroupForm({
-  isOpen, 
+  isOpen,
   isSubmitting,
   networkError,
-  onClose, 
+  onClose,
   onSubmit,
   members,
   advisers,
@@ -52,8 +67,11 @@ export default function EditGroupForm({
 
   const [initialFormData, setInitialFormData] = useState(formData);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] =
+    useState(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    [key: string]: string;
+  }>({});
 
   const [showMembersSearch, setShowMembersSearch] = useState(false);
   const [showAdviserSearch, setShowAdviserSearch] = useState(false);
@@ -78,7 +96,8 @@ export default function EditGroupForm({
 
   // Check for unsaved changes
   useEffect(() => {
-    const hasChanges = JSON.stringify(formData) !== JSON.stringify(initialFormData);
+    const hasChanges =
+      JSON.stringify(formData) !== JSON.stringify(initialFormData);
     setHasUnsavedChanges(hasChanges);
   }, [formData, initialFormData]);
 
@@ -92,14 +111,15 @@ export default function EditGroupForm({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-container')) {
+      if (!target.closest(".dropdown-container")) {
         closeAllDropdowns();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
 
@@ -116,15 +136,19 @@ export default function EditGroupForm({
 
   // Filter functions
   const filterMembers = (member: User) => {
-    const fullName = `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`.toLowerCase();
-    const lastNameFirst = `${member.last_name} ${member.first_name} ${member.middle_name ? member.middle_name : ''}`.toLowerCase();
+    const fullName =
+      `${member.first_name} ${member.middle_name ? member.middle_name + " " : ""}${member.last_name}`.toLowerCase();
+    const lastNameFirst =
+      `${member.last_name} ${member.first_name} ${member.middle_name ? member.middle_name : ""}`.toLowerCase();
     const searchTerm = membersSearch.toLowerCase();
     return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm);
   };
 
   const filterAdvisers = (adviser: User) => {
-    const fullName = `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + ' ' : ''}${adviser.last_name}`.toLowerCase();
-    const lastNameFirst = `${adviser.last_name} ${adviser.first_name} ${adviser.middle_name ? adviser.middle_name : ''}`.toLowerCase();
+    const fullName =
+      `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`.toLowerCase();
+    const lastNameFirst =
+      `${adviser.last_name} ${adviser.first_name} ${adviser.middle_name ? adviser.middle_name : ""}`.toLowerCase();
     const searchTerm = adviserSearch.toLowerCase();
     return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm);
   };
@@ -133,7 +157,7 @@ export default function EditGroupForm({
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (hasUnsavedChanges) {
       setShowUnsavedChangesDialog(true);
     } else {
@@ -153,70 +177,74 @@ export default function EditGroupForm({
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: sanitizeInput(value, {
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-        maxLength: VALIDATION_RULES.text.maxLength
-      })
+        maxLength: VALIDATION_RULES.text.maxLength,
+      }),
     }));
   };
 
   const handleMembersSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMembersSearch(sanitizeInput(e.target.value, {
-      trim: true,
-      removeHtml: true,
-      escapeSpecialChars: true
-    }));
+    setMembersSearch(
+      sanitizeInput(e.target.value, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+      }),
+    );
   };
 
   const handleAdviserSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAdviserSearch(sanitizeInput(e.target.value, {
-      trim: true,
-      removeHtml: true,
-      escapeSpecialChars: true
-    }));
+    setAdviserSearch(
+      sanitizeInput(e.target.value, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+      }),
+    );
   };
 
   // Handle member selection
   const handleMemberSelect = (member: User) => {
     if (!formData.members.includes(member._id)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        members: [...prev.members, member._id]
+        members: [...prev.members, member._id],
       }));
     }
-    setMembersSearch('');
+    setMembersSearch("");
     setShowMembersSearch(false);
   };
 
   // Handle member removal
   const handleMemberRemove = (memberId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      members: prev.members.filter(id => id !== memberId)
+      members: prev.members.filter((id) => id !== memberId),
     }));
   };
 
   // Handle clear members
   const handleClearMembers = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setFormData(prev => ({ ...prev, members: [] }));
+    setFormData((prev) => ({ ...prev, members: [] }));
   };
 
   // Handle clear adviser
   const handleClearAdviser = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setFormData(prev => ({ ...prev, adviser: null }));
+    setFormData((prev) => ({ ...prev, adviser: null }));
   };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     closeAllDropdowns();
     if (setNetworkError) {
       setNetworkError(null);
@@ -225,11 +253,14 @@ export default function EditGroupForm({
 
     // Validate capstone title if provided
     if (formData.capstoneTitle) {
-      const { isValid, message } = validateInput(formData.capstoneTitle, 'text');
+      const { isValid, message } = validateInput(
+        formData.capstoneTitle,
+        "text",
+      );
       if (!isValid) {
-        setValidationErrors(prev => ({
+        setValidationErrors((prev) => ({
           ...prev,
-          capstoneTitle: message || "Invalid capstone title"
+          capstoneTitle: message || "Invalid capstone title",
         }));
         return;
       }
@@ -238,14 +269,15 @@ export default function EditGroupForm({
     try {
       await onSubmit({
         ...formData,
-        grade: Number(formData.grade) // Ensure grade is a number
+        grade: Number(formData.grade), // Ensure grade is a number
       });
       setHasUnsavedChanges(false);
       setInitialFormData(formData);
       closeForm();
     } catch (error) {
       setValidationErrors({
-        general: error instanceof Error ? error.message : "Failed to update group"
+        general:
+          error instanceof Error ? error.message : "Failed to update group",
       });
     }
   };
@@ -254,7 +286,9 @@ export default function EditGroupForm({
 
   return (
     <>
-      <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isOpen ? '' : 'hidden'}`}>
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isOpen ? "" : "hidden"}`}
+      >
         <div className="bg-white rounded-lg p-8 w-full max-w-4xl shadow-2xl border-2 border-gray-200">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
@@ -262,7 +296,7 @@ export default function EditGroupForm({
               <FaEdit />
               Edit Group
             </h2>
-            <button 
+            <button
               onClick={handleClose}
               className="text-gray-500 hover:text-gray-700 transition-colors"
               disabled={isSubmitting}
@@ -302,7 +336,9 @@ export default function EditGroupForm({
                 onChange={handleInputChange}
                 placeholder="Enter Capstone Title"
                 className={`w-full px-4 py-2 rounded-lg border-2 ${
-                  validationErrors.capstoneTitle ? 'border-red-500' : 'border-gray-300'
+                  validationErrors.capstoneTitle
+                    ? "border-red-500"
+                    : "border-gray-300"
                 } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                 disabled={isSubmitting}
               />
@@ -328,22 +364,33 @@ export default function EditGroupForm({
                   )}
                 </label>
                 <div className="relative">
-                  <div 
+                  <div
                     className={`w-full px-4 py-2 rounded-lg border-2 ${
-                      validationErrors.adviser ? 'border-red-500' : 'border-gray-300'
+                      validationErrors.adviser
+                        ? "border-red-500"
+                        : "border-gray-300"
                     } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer`}
                     onClick={handleOpenAdviserSearch}
                   >
-                    {formData.adviser 
-                      ? advisers.find(a => a._id === formData.adviser)?.first_name + ' ' + 
-                        (advisers.find(a => a._id === formData.adviser)?.middle_name ? advisers.find(a => a._id === formData.adviser)?.middle_name + ' ' : '') +
-                        advisers.find(a => a._id === formData.adviser)?.last_name
-                      : <span className="text-gray-500">Select Adviser</span>}
+                    {formData.adviser ? (
+                      advisers.find((a) => a._id === formData.adviser)
+                        ?.first_name +
+                      " " +
+                      (advisers.find((a) => a._id === formData.adviser)
+                        ?.middle_name
+                        ? advisers.find((a) => a._id === formData.adviser)
+                            ?.middle_name + " "
+                        : "") +
+                      advisers.find((a) => a._id === formData.adviser)
+                        ?.last_name
+                    ) : (
+                      <span className="text-gray-500">Select Adviser</span>
+                    )}
                   </div>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                     <FaChevronDown color="#6B7280" />
                   </div>
-                  
+
                   {showAdviserSearch && (
                     <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
                       <div className="p-2 border-b">
@@ -363,7 +410,7 @@ export default function EditGroupForm({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setAdviserSearch('');
+                                setAdviserSearch("");
                               }}
                               className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
@@ -373,23 +420,25 @@ export default function EditGroupForm({
                         </div>
                       </div>
                       <div className="max-h-48 overflow-y-auto">
-                        {advisers
-                          .filter(filterAdvisers)
-                          .map((adviser) => (
-                            <div
-                              key={adviser._id}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                              onClick={() => {
-                                setFormData(prev => ({ ...prev, adviser: adviser._id }));
-                                setShowAdviserSearch(false);
-                              }}
-                            >
-                              {`${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + ' ' : ''}${adviser.last_name}`}
-                            </div>
-                          ))}
+                        {advisers.filter(filterAdvisers).map((adviser) => (
+                          <div
+                            key={adviser._id}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                adviser: adviser._id,
+                              }));
+                              setShowAdviserSearch(false);
+                            }}
+                          >
+                            {`${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`}
+                          </div>
+                        ))}
                         {advisers.filter(filterAdvisers).length === 0 && (
                           <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
-                            No more advisers available. Please register more users with adviser role.
+                            No more advisers available. Please register more
+                            users with adviser role.
                           </div>
                         )}
                       </div>
@@ -407,9 +456,16 @@ export default function EditGroupForm({
                 <div className="relative">
                   <select
                     value={formData.grade}
-                    onChange={(e) => setFormData(prev => ({ ...prev, grade: Number(e.target.value) }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        grade: Number(e.target.value),
+                      }))
+                    }
                     className={`w-full px-4 py-2 rounded-lg border-2 ${
-                      validationErrors.grade ? 'border-red-500' : 'border-gray-300'
+                      validationErrors.grade
+                        ? "border-red-500"
+                        : "border-gray-300"
                     } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white`}
                     disabled={isSubmitting}
                   >
@@ -446,15 +502,17 @@ export default function EditGroupForm({
                 )}
               </label>
               <div className="relative">
-                <div 
+                <div
                   className={`w-full min-h-[42px] px-4 py-2 rounded-lg border-2 ${
-                    validationErrors.members ? 'border-red-500' : 'border-gray-300'
+                    validationErrors.members
+                      ? "border-red-500"
+                      : "border-gray-300"
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex flex-wrap gap-2`}
                   onClick={handleOpenMembersSearch}
                 >
                   {formData.members.length > 0 ? (
-                    formData.members.map(memberId => {
-                      const member = members.find(m => m._id === memberId);
+                    formData.members.map((memberId) => {
+                      const member = members.find((m) => m._id === memberId);
                       return (
                         <div
                           key={memberId}
@@ -465,7 +523,7 @@ export default function EditGroupForm({
                           }}
                         >
                           {member
-                            ? `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`
+                            ? `${member.first_name} ${member.middle_name ? member.middle_name + " " : ""}${member.last_name}`
                             : memberId}
                           <FaTimes color="#2563EB" size={12} />
                         </div>
@@ -478,7 +536,7 @@ export default function EditGroupForm({
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                   <FaChevronDown color="#6B7280" />
                 </div>
-                
+
                 {showMembersSearch && (
                   <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
                     <div className="p-2 border-b">
@@ -498,7 +556,7 @@ export default function EditGroupForm({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setMembersSearch('');
+                              setMembersSearch("");
                             }}
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                           >
@@ -509,15 +567,25 @@ export default function EditGroupForm({
                     </div>
                     <div className="max-h-48 overflow-y-auto">
                       {members
-                        .filter(member => {
-                          const isSelected = formData.members.includes(member._id);
-                          const isInThisGroup = group && String(member.group_id) === String(group._id);
+                        .filter((member) => {
+                          const isSelected = formData.members.includes(
+                            member._id,
+                          );
+                          const isInThisGroup =
+                            group &&
+                            String(member.group_id) === String(group._id);
                           const isUnassigned = !member.group_id;
-                          return !isSelected && (isUnassigned || isInThisGroup) && filterMembers(member);
+                          return (
+                            !isSelected &&
+                            (isUnassigned || isInThisGroup) &&
+                            filterMembers(member)
+                          );
                         })
                         .sort((a, b) => {
-                          const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
-                          const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+                          const aName =
+                            `${a.last_name} ${a.first_name}`.toLowerCase();
+                          const bName =
+                            `${b.last_name} ${b.first_name}`.toLowerCase();
                           return aName.localeCompare(bName);
                         })
                         .map((member) => (
@@ -526,19 +594,28 @@ export default function EditGroupForm({
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                             onClick={() => handleMemberSelect(member)}
                           >
-                            {`${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`}
+                            {`${member.first_name} ${member.middle_name ? member.middle_name + " " : ""}${member.last_name}`}
                           </div>
                         ))}
-                        {members.filter(member => {
-                          const isSelected = formData.members.includes(member._id);
-                          const isInThisGroup = group && String(member.group_id) === String(group._id);
-                          const isUnassigned = !member.group_id;
-                          return !isSelected && (isUnassigned || isInThisGroup) && filterMembers(member);
-                        }).length === 0 && (
-                          <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
-                            No more members available. Please register more users with member role.
-                          </div>
-                        )}
+                      {members.filter((member) => {
+                        const isSelected = formData.members.includes(
+                          member._id,
+                        );
+                        const isInThisGroup =
+                          group &&
+                          String(member.group_id) === String(group._id);
+                        const isUnassigned = !member.group_id;
+                        return (
+                          !isSelected &&
+                          (isUnassigned || isInThisGroup) &&
+                          filterMembers(member)
+                        );
+                      }).length === 0 && (
+                        <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
+                          No more members available. Please register more users
+                          with member role.
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -590,4 +667,4 @@ export default function EditGroupForm({
       />
     </>
   );
-} 
+}

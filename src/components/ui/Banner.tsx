@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
-import { FaCheckCircle, FaInfoCircle, FaExclamationCircle, FaTimes } from 'react-icons/fa';
+import { useEffect, useState } from "react";
+import {
+  FaCheckCircle,
+  FaInfoCircle,
+  FaExclamationCircle,
+  FaTimes,
+} from "react-icons/fa";
 
-type BannerType = 'success' | 'info' | 'warning';
+type BannerType = "success" | "info" | "warning";
 
 interface BannerProps {
   message: string;
@@ -15,7 +20,7 @@ const Banner = ({ message, type, duration = 3000, onClose }: BannerProps) => {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    
+
     if (duration) {
       timeoutId = setTimeout(() => {
         setIsVisible(false);
@@ -35,24 +40,24 @@ const Banner = ({ message, type, duration = 3000, onClose }: BannerProps) => {
 
   const getBannerStyles = () => {
     switch (type) {
-      case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
-      case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      case "success":
+        return "bg-green-50 border-green-200 text-green-800";
+      case "info":
+        return "bg-blue-50 border-blue-200 text-blue-800";
+      case "warning":
+        return "bg-yellow-50 border-yellow-200 text-yellow-800";
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
+        return "bg-gray-50 border-gray-200 text-gray-800";
     }
   };
 
   const getIcon = () => {
     switch (type) {
-      case 'success':
+      case "success":
         return <FaCheckCircle size={20} color="#10B981" />;
-      case 'info':
+      case "info":
         return <FaInfoCircle size={20} color="#3B82F6" />;
-      case 'warning':
+      case "warning":
         return <FaExclamationCircle size={20} color="#F59E0B" />;
       default:
         return <FaInfoCircle size={20} color="#6B7280" />;
@@ -62,15 +67,15 @@ const Banner = ({ message, type, duration = 3000, onClose }: BannerProps) => {
   return (
     <div
       className={`fixed top-16 left-0 right-0 z-50 transform transition-all duration-300 ${
-        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+        isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
       }`}
     >
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 border-b ${getBannerStyles()}`}>
+      <div
+        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 border-b ${getBannerStyles()}`}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
-              {getIcon()}
-            </div>
+            <div className="flex-shrink-0">{getIcon()}</div>
             <div className="ml-3">
               <p className="text-sm font-medium">{message}</p>
             </div>
@@ -94,4 +99,4 @@ const Banner = ({ message, type, duration = 3000, onClose }: BannerProps) => {
   );
 };
 
-export default Banner; 
+export default Banner;

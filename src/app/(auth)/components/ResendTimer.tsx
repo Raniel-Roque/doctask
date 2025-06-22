@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 interface ResendTimerProps {
   onResend: () => void;
@@ -6,7 +6,11 @@ interface ResendTimerProps {
   loading?: boolean;
 }
 
-const ResendTimer: React.FC<ResendTimerProps> = ({ onResend, disabled = false, loading = false }) => {
+const ResendTimer: React.FC<ResendTimerProps> = ({
+  onResend,
+  disabled = false,
+  loading = false,
+}) => {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [canResend, setCanResend] = useState(false);
 
@@ -24,7 +28,7 @@ const ResendTimer: React.FC<ResendTimerProps> = ({ onResend, disabled = false, l
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   const handleResend = () => {
@@ -49,4 +53,4 @@ const ResendTimer: React.FC<ResendTimerProps> = ({ onResend, disabled = false, l
   );
 };
 
-export default ResendTimer; 
+export default ResendTimer;

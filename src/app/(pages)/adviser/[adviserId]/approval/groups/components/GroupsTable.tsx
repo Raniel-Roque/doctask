@@ -1,8 +1,15 @@
 "use client";
 
-import React, { useState } from 'react';
-import { FaCheck, FaTimes, FaPlus, FaChevronLeft, FaChevronRight, FaMinus } from "react-icons/fa";
-import { User, Group } from './types';
+import React, { useState } from "react";
+import {
+  FaCheck,
+  FaTimes,
+  FaPlus,
+  FaChevronLeft,
+  FaChevronRight,
+  FaMinus,
+} from "react-icons/fa";
+import { User, Group } from "./types";
 
 interface GroupsTableProps {
   groups: Group[];
@@ -11,14 +18,16 @@ interface GroupsTableProps {
   sortField: "name" | "capstoneTitle" | "projectManager";
   sortDirection: "asc" | "desc";
   onSort: (field: "name" | "capstoneTitle" | "projectManager") => void;
-  getSortIcon: (field: "name" | "capstoneTitle" | "projectManager") => React.ReactNode;
+  getSortIcon: (
+    field: "name" | "capstoneTitle" | "projectManager",
+  ) => React.ReactNode;
   currentPage: number;
   totalPages: number;
   totalCount: number;
   pageSize: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
-  status: 'idle' | 'loading' | 'error';
+  status: "idle" | "loading" | "error";
   hasResults: boolean;
 }
 
@@ -44,7 +53,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   };
 
   const getFullName = (user: User) => {
-    return `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`;
+    return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
   };
 
   return (
@@ -54,8 +63,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-[#B54A4A] text-white">
               <tr>
-                <th 
-                  scope="col" 
+                <th
+                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
                   onClick={() => onSort("name")}
                 >
@@ -64,8 +73,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     <span className="ml-1">{getSortIcon("name")}</span>
                   </div>
                 </th>
-                <th 
-                  scope="col" 
+                <th
+                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
                   onClick={() => onSort("capstoneTitle")}
                 >
@@ -74,42 +83,59 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     <span className="ml-1">{getSortIcon("capstoneTitle")}</span>
                   </div>
                 </th>
-                <th 
-                  scope="col" 
+                <th
+                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
                   onClick={() => onSort("projectManager")}
                 >
                   <div className="flex items-center justify-center">
                     Project Manager
-                    <span className="ml-1">{getSortIcon("projectManager")}</span>
+                    <span className="ml-1">
+                      {getSortIcon("projectManager")}
+                    </span>
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+                >
                   Members
                 </th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+                >
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {status === 'loading' && (
+              {status === "loading" && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
                     Loading...
                   </td>
                 </tr>
               )}
-              {status === 'error' && (
+              {status === "error" && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-red-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-center text-red-500"
+                  >
                     An error occurred while loading groups. Please try again.
                   </td>
                 </tr>
               )}
-              {status === 'idle' && !hasResults && (
+              {status === "idle" && !hasResults && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
                     No group requests available at this time.
                   </td>
                 </tr>
@@ -117,11 +143,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               {groups.map((group) => (
                 <tr key={group._id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {group.name || '-'}
+                    {group.name || "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.capstone_title || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {group.projectManager ? getFullName(group.projectManager) : '-'}
+                    {group.capstone_title || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {group.projectManager
+                      ? getFullName(group.projectManager)
+                      : "-"}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-between">
@@ -129,7 +159,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                         <button
                           onClick={() => toggleExpand(group._id)}
                           className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                          disabled={!group.members || group.members.length === 0}
+                          disabled={
+                            !group.members || group.members.length === 0
+                          }
                         >
                           {group.members && group.members.length > 0 ? (
                             expandedGroupId === group._id ? (
@@ -141,31 +173,38 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                         </button>
                         <span className="ml-2">
                           {group.members && group.members.length > 0 ? (
-                            `${group.members.length} member${group.members.length === 1 ? '' : 's'}`
+                            `${group.members.length} member${group.members.length === 1 ? "" : "s"}`
                           ) : (
                             <span className="text-gray-500">-</span>
                           )}
                         </span>
                       </div>
                     </div>
-                    {group.members && group.members.length > 0 && expandedGroupId === group._id && (
-                      <div className="mt-2 pl-6">
-                        <ul className="list-disc list-inside">
-                          {group.members
-                            ?.slice()
-                            .sort((a, b) => {
-                              const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
-                              const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
-                              return aName.localeCompare(bName);
-                            })
-                            .map((member) => (
-                              <li key={member._id} className="text-sm text-gray-600">
-                                {getFullName(member)}
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                    )}
+                    {group.members &&
+                      group.members.length > 0 &&
+                      expandedGroupId === group._id && (
+                        <div className="mt-2 pl-6">
+                          <ul className="list-disc list-inside">
+                            {group.members
+                              ?.slice()
+                              .sort((a, b) => {
+                                const aName =
+                                  `${a.last_name} ${a.first_name}`.toLowerCase();
+                                const bName =
+                                  `${b.last_name} ${b.first_name}`.toLowerCase();
+                                return aName.localeCompare(bName);
+                              })
+                              .map((member) => (
+                                <li
+                                  key={member._id}
+                                  className="text-sm text-gray-600"
+                                >
+                                  {getFullName(member)}
+                                </li>
+                              ))}
+                          </ul>
+                        </div>
+                      )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center justify-center gap-2">
@@ -195,17 +234,17 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
         <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
           <div className="flex items-center gap-4">
             <p className="text-sm text-gray-700">
-              Showing{' '}
+              Showing{" "}
               <span className="font-medium">
                 {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
               </span>
-              {' - '}
+              {" - "}
               <span className="font-medium">
                 {Math.min(currentPage * pageSize, totalCount)}
               </span>
-              {' of '}
+              {" of "}
               <span className="font-medium">{totalCount}</span>
-              {' entries'}
+              {" entries"}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
             <div className="flex items-center gap-2">
@@ -229,8 +268,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               disabled={currentPage === 1}
               className={`p-2 rounded-md ${
                 currentPage === 1
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-100"
               }`}
             >
               <FaChevronLeft />
@@ -243,8 +282,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               disabled={currentPage === totalPages}
               className={`p-2 rounded-md ${
                 currentPage === totalPages
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-100"
               }`}
             >
               <FaChevronRight />
@@ -256,4 +295,4 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   );
 };
 
-export default GroupsTable; 
+export default GroupsTable;

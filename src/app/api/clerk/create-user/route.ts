@@ -13,12 +13,12 @@ export async function POST(request: Request) {
   let clerkUser = null;
   try {
     const body = await request.json();
-    
+
     // Validate request body
-    if (!body || typeof body !== 'object') {
+    if (!body || typeof body !== "object") {
       return NextResponse.json(
         { error: "Invalid request body" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -28,41 +28,60 @@ export async function POST(request: Request) {
     if (!firstName || !lastName || !email) {
       return NextResponse.json(
         { error: "Required fields are missing" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Trim all string values and convert null to undefined
-    const trimmedFirstName = sanitizeInput(firstName, { trim: true, removeHtml: true, escapeSpecialChars: true }) || null;
-    const trimmedLastName = sanitizeInput(lastName, { trim: true, removeHtml: true, escapeSpecialChars: true }) || null;
-    const trimmedEmail = sanitizeInput(email, { trim: true, removeHtml: true, escapeSpecialChars: true }) || null;
+    const trimmedFirstName =
+      sanitizeInput(firstName, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+      }) || null;
+    const trimmedLastName =
+      sanitizeInput(lastName, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+      }) || null;
+    const trimmedEmail =
+      sanitizeInput(email, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+      }) || null;
 
     // Validate required fields after sanitization
     if (!trimmedFirstName || !trimmedLastName || !trimmedEmail) {
       return NextResponse.json(
         { error: "Required fields are missing or invalid after sanitization" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const client = await clerkClient();
-    const password = generatePassword(trimmedFirstName, trimmedLastName, Date.now());
+    const password = generatePassword(
+      trimmedFirstName,
+      trimmedLastName,
+      Date.now(),
+    );
 
     // Create user in Clerk with just email and password
     clerkUser = await client.users.createUser({
       emailAddress: [trimmedEmail],
       password: password,
-      skipPasswordChecks: true // Skip password complexity checks
+      skipPasswordChecks: true, // Skip password complexity checks
     });
 
     // Set email as unverified
     const emailAddress = clerkUser.emailAddresses[0];
     await client.emailAddresses.updateEmailAddress(emailAddress.id, {
       primary: true,
-      verified: false
+      verified: false,
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       user: {
         id: clerkUser.id,
@@ -70,8 +89,8 @@ export async function POST(request: Request) {
         lastName: clerkUser.lastName,
         email: trimmedEmail,
         role: role,
-        password: password // Return password for welcome email
-      }
+        password: password, // Return password for welcome email
+      },
     });
   } catch (error) {
     // Cleanup if anything fails
@@ -81,15 +100,16 @@ export async function POST(request: Request) {
     }
 
     const clerkError = error as ClerkError;
-    const errorMessage = clerkError.errors?.[0]?.message || 
-                        (error instanceof Error ? error.message : "Failed to create user");
-    
+    const errorMessage =
+      clerkError.errors?.[0]?.message ||
+      (error instanceof Error ? error.message : "Failed to create user");
+
     return NextResponse.json(
-      { 
+      {
         error: errorMessage,
-        details: error instanceof Error ? error.stack : undefined
+        details: error instanceof Error ? error.stack : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -18,7 +18,7 @@ const ROLES = {
   INSTRUCTOR: 2,
 } as const;
 
-type Role = typeof ROLES[keyof typeof ROLES];
+type Role = (typeof ROLES)[keyof typeof ROLES];
 
 // Redirect authenticated users based on role
 function RedirectHandler() {
@@ -41,7 +41,7 @@ function RedirectHandler() {
       expectedPath = `/instructor/${_id}/home`;
     } else if (role === ROLES.ADVISER) {
       expectedPath = `/adviser/${_id}/home`;
-    } else if (role === ROLES.STUDENT && typeof subrole === 'number') {
+    } else if (role === ROLES.STUDENT && typeof subrole === "number") {
       if (subrole === 0) {
         expectedPath = `/student/${_id}/member/home`;
       } else if (subrole === 1) {
@@ -49,7 +49,11 @@ function RedirectHandler() {
       }
     }
 
-    if (pathname === "/" || pathname === `/${role === ROLES.INSTRUCTOR ? 'instructor' : role === ROLES.ADVISER ? 'adviser' : 'student'}/${_id}`) {
+    if (
+      pathname === "/" ||
+      pathname ===
+        `/${role === ROLES.INSTRUCTOR ? "instructor" : role === ROLES.ADVISER ? "adviser" : "student"}/${_id}`
+    ) {
       router.replace(expectedPath);
     }
   }, [isLoaded, isSignedIn, user, convexUser, router, pathname]);
@@ -87,20 +91,24 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 
   // Validate role is within expected range
   const isValidRole = (role: number): role is Role => {
-    return role === ROLES.STUDENT || role === ROLES.ADVISER || role === ROLES.INSTRUCTOR;
+    return (
+      role === ROLES.STUDENT ||
+      role === ROLES.ADVISER ||
+      role === ROLES.INSTRUCTOR
+    );
   };
 
   // Sanitize and validate path segments
   const sanitizePath = (path: string) => {
-    return path.replace(/\.\./g, '').replace(/\/+/g, '/');
+    return path.replace(/\.\./g, "").replace(/\/+/g, "/");
   };
 
   // Check if the current path matches the user's role and subrole
   const isAuthorizedPath = () => {
     if (!convexUser) return false;
-    
+
     const { role, subrole, _id } = convexUser;
-    
+
     // Validate role
     if (!isValidRole(role)) {
       setError("Invalid user role");
@@ -111,14 +119,14 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
     if (role === ROLES.STUDENT) {
       // Sanitize path and check student path
       const sanitizedPath = sanitizePath(pathname);
-      const subrolePath = subrole === 0 ? 'member' : 'manager';
+      const subrolePath = subrole === 0 ? "member" : "manager";
       const pathPattern = new RegExp(`^/student/${_id}/${subrolePath}/`);
       return pathPattern.test(sanitizedPath);
     }
 
     // For non-students, check their respective paths
     const sanitizedPath = sanitizePath(pathname);
-    const basePath = role === ROLES.INSTRUCTOR ? 'instructor' : 'adviser';
+    const basePath = role === ROLES.INSTRUCTOR ? "instructor" : "adviser";
     const pathPattern = new RegExp(`^/${basePath}/${_id}/`);
     return pathPattern.test(sanitizedPath);
   };
@@ -127,13 +135,13 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
     if (isLoaded) {
       // If not signed in, redirect to login regardless of the path
       if (!isSignedIn) {
-        router.replace('/login');
+        router.replace("/login");
         return;
       }
 
       // If signed in but no user data, also redirect to login
       if (!user) {
-        router.replace('/login');
+        router.replace("/login");
         return;
       }
 
@@ -153,7 +161,14 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
   }
 
   // Render children when loaded, signed in, user and convexUser are available, AND on an authorized path and verified
-  if (isLoaded && isSignedIn && user && convexUser && isAuthorizedPath() && convexUser.email_verified) {
+  if (
+    isLoaded &&
+    isSignedIn &&
+    user &&
+    convexUser &&
+    isAuthorizedPath() &&
+    convexUser.email_verified
+  ) {
     return <>{children}</>;
   }
 
@@ -204,7 +219,9 @@ function AuthCheck({ children }: { children: ReactNode }) {
 // Main Provider with Auth Gate
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}>
+    <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
+    >
       <AuthCheck>{children}</AuthCheck>
     </ClerkProvider>
   );

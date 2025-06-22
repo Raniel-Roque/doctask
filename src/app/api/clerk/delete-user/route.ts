@@ -10,12 +10,12 @@ interface ClerkError {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     // Validate request body
-    if (!body || typeof body !== 'object') {
+    if (!body || typeof body !== "object") {
       return NextResponse.json(
         { error: "Invalid request body" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -25,18 +25,22 @@ export async function POST(request: Request) {
     if (!clerkId) {
       return NextResponse.json(
         { error: "Clerk ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Sanitize input
-    const sanitizedClerkId = sanitizeInput(clerkId, { trim: true, removeHtml: true, escapeSpecialChars: true });
+    const sanitizedClerkId = sanitizeInput(clerkId, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true,
+    });
 
     // Validate required fields after sanitization
     if (!sanitizedClerkId) {
       return NextResponse.json(
         { error: "Clerk ID is invalid after sanitization" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,14 +52,14 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json(
         { error: "Failed to delete user from authentication service" },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error: unknown) {
     const clerkError = error as ClerkError;
     return NextResponse.json(
       { error: clerkError.errors?.[0]?.message || "Failed to delete user" },
-      { status: 500 }
+      { status: 500 },
     );
   }
-} 
+}

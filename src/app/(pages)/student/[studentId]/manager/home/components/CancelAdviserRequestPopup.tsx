@@ -8,12 +8,9 @@ interface CancelAdviserRequestPopupProps {
   isSubmitting?: boolean;
 }
 
-export const CancelAdviserRequestPopup: React.FC<CancelAdviserRequestPopupProps> = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  isSubmitting = false,
-}) => {
+export const CancelAdviserRequestPopup: React.FC<
+  CancelAdviserRequestPopupProps
+> = ({ isOpen, onClose, onConfirm, isSubmitting = false }) => {
   if (!isOpen) return null;
 
   return (
@@ -48,4 +45,4 @@ export const CancelAdviserRequestPopup: React.FC<CancelAdviserRequestPopupProps>
       </div>
     </div>
   );
-}; 
+};

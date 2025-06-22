@@ -94,7 +94,7 @@ export const createUser = mutation({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{ success: boolean; userId: Id<"users"> }> => {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -126,7 +126,7 @@ export const createUser = mutation({
     if (existingUserByEmail) {
       // If user exists with this email but different clerk_id, something is wrong
       throw new Error(
-        "Email already registered with a different account. Please contact support."
+        "Email already registered with a different account. Please contact support.",
       );
     }
 
@@ -191,7 +191,7 @@ export const createUser = mutation({
           middle_name: instructor.middle_name,
           last_name: instructor.last_name,
           email: instructor.email,
-        }
+        },
       );
       return { success: true, userId };
     } catch (error) {
@@ -429,7 +429,7 @@ export const createGroup = mutation({
 
     for (const documentPart of documentParts) {
       const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
-        documentPart
+        documentPart,
       );
 
       await ctx.db.insert("documentStatus", {
@@ -470,7 +470,7 @@ export const createGroup = mutation({
         middle_name: project_manager.middle_name,
         last_name: project_manager.last_name,
         email: project_manager.email,
-      }
+      },
     );
 
     return { success: true, groupId };
@@ -531,7 +531,7 @@ export const updateUser = mutation({
         const managedGroups = await ctx.db
           .query("groupsTable")
           .withIndex("by_project_manager", (q) =>
-            q.eq("project_manager_id", args.userId)
+            q.eq("project_manager_id", args.userId),
           )
           .collect();
 
@@ -551,14 +551,14 @@ export const updateUser = mutation({
             const adviserCode = await ctx.db
               .query("advisersTable")
               .withIndex("by_adviser", (q) =>
-                q.eq("adviser_id", group.adviser_id!)
+                q.eq("adviser_id", group.adviser_id!),
               )
               .first();
 
             if (adviserCode) {
               await ctx.db.patch(adviserCode._id, {
                 group_ids: (adviserCode.group_ids || []).filter(
-                  (id) => id !== group._id
+                  (id) => id !== group._id,
                 ),
               });
             }
@@ -677,7 +677,7 @@ export const updateUser = mutation({
           middle_name: instructor.middle_name,
           last_name: instructor.last_name,
           email: instructor.email,
-        }
+        },
       );
     }
     return { success: true };
@@ -769,7 +769,7 @@ export const updateGroup = mutation({
         if (oldAdviserCode) {
           await ctx.db.patch(oldAdviserCode._id, {
             group_ids: (oldAdviserCode.group_ids || []).filter(
-              (id) => id !== args.groupId
+              (id) => id !== args.groupId,
             ),
           });
         }
@@ -804,7 +804,7 @@ export const updateGroup = mutation({
     // Check capstone title changes
     if (args.capstone_title !== group.capstone_title) {
       changes.push(
-        `Capstone Title: ${group.capstone_title || "None"} → ${args.capstone_title}`
+        `Capstone Title: ${group.capstone_title || "None"} → ${args.capstone_title}`,
       );
     }
 
@@ -814,12 +814,12 @@ export const updateGroup = mutation({
 
     if (removedMembers.length > 0) {
       changes.push(
-        `Members: Removed ${removedMembers.length} Member${removedMembers.length > 1 ? "s" : ""}`
+        `Members: Removed ${removedMembers.length} Member${removedMembers.length > 1 ? "s" : ""}`,
       );
     }
     if (addedMembers.length > 0) {
       changes.push(
-        `Members: Added ${addedMembers.length} Member${addedMembers.length > 1 ? "s" : ""}`
+        `Members: Added ${addedMembers.length} Member${addedMembers.length > 1 ? "s" : ""}`,
       );
     }
 
@@ -828,7 +828,7 @@ export const updateGroup = mutation({
       const newAdviser = await ctx.db.get(args.adviser_id);
       if (newAdviser) {
         changes.push(
-          `Adviser: None -> ${newAdviser.first_name} ${newAdviser.last_name}`
+          `Adviser: None -> ${newAdviser.first_name} ${newAdviser.last_name}`,
         );
       }
     } else if (group.adviser_id && !args.adviser_id) {
@@ -836,7 +836,7 @@ export const updateGroup = mutation({
         const oldAdviser = await ctx.db.get(group.adviser_id);
         if (oldAdviser) {
           changes.push(
-            `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> Removed`
+            `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> Removed`,
           );
         }
       }
@@ -849,7 +849,7 @@ export const updateGroup = mutation({
       const newAdviser = await ctx.db.get(args.adviser_id);
       if (oldAdviser && newAdviser) {
         changes.push(
-          `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> ${newAdviser.first_name} ${newAdviser.last_name}`
+          `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> ${newAdviser.first_name} ${newAdviser.last_name}`,
         );
       }
     }
@@ -885,7 +885,7 @@ export const updateGroup = mutation({
         middle_name: project_manager.middle_name,
         last_name: project_manager.last_name,
         email: project_manager.email,
-      }
+      },
     );
 
     return { success: true };
@@ -1066,7 +1066,7 @@ export const deleteUser = mutation({
       const managedGroups = await ctx.db
         .query("groupsTable")
         .withIndex("by_project_manager", (q) =>
-          q.eq("project_manager_id", args.userId)
+          q.eq("project_manager_id", args.userId),
         )
         .collect();
       for (const group of managedGroups) {
@@ -1085,13 +1085,13 @@ export const deleteUser = mutation({
           const adviserCode = await ctx.db
             .query("advisersTable")
             .withIndex("by_adviser", (q) =>
-              q.eq("adviser_id", group.adviser_id!)
+              q.eq("adviser_id", group.adviser_id!),
             )
             .first();
           if (adviserCode) {
             await ctx.db.patch(adviserCode._id, {
               group_ids: (adviserCode.group_ids || []).filter(
-                (id) => id !== group._id
+                (id) => id !== group._id,
               ),
             });
           }
@@ -1180,7 +1180,7 @@ export const deleteGroup = mutation({
       if (adviserCode) {
         await ctx.db.patch(adviserCode._id, {
           group_ids: (adviserCode.group_ids || []).filter(
-            (id) => id !== args.groupId
+            (id) => id !== args.groupId,
           ),
         });
       }
@@ -1232,7 +1232,7 @@ export const deleteGroup = mutation({
         middle_name: project_manager.middle_name,
         last_name: project_manager.last_name,
         email: project_manager.email,
-      }
+      },
     );
 
     return { success: true };
@@ -1270,7 +1270,7 @@ export const resetPassword = mutation({
         middle_name: instructor.middle_name,
         last_name: instructor.last_name,
         email: instructor.email,
-      }
+      },
     );
     return { success: true };
   },
@@ -1353,7 +1353,7 @@ export const acceptGroupRequest = mutation({
     // Update adviser's records
     await ctx.db.patch(adviserCode._id, {
       requests_group_ids: adviserCode.requests_group_ids.filter(
-        (id) => id !== args.groupId
+        (id) => id !== args.groupId,
       ),
       group_ids: [...(adviserCode.group_ids || []), args.groupId],
     });
@@ -1386,7 +1386,7 @@ export const rejectGroupRequest = mutation({
     // Remove the group from requests_group_ids
     await ctx.db.patch(adviserCode._id, {
       requests_group_ids: adviserCode.requests_group_ids.filter(
-        (id) => id !== args.groupId
+        (id) => id !== args.groupId,
       ),
     });
 
@@ -1427,7 +1427,7 @@ export const logLockAccountMutation = mutation({
       args.affectedEntityId,
       args.action,
       args.affectedUserInfo,
-      args.instructorInfo
+      args.instructorInfo,
     );
   },
 });
@@ -1593,7 +1593,7 @@ export const updateDocumentStatus = mutation({
       const existingStatus = await ctx.db
         .query("documentStatus")
         .withIndex("by_group_document", (q) =>
-          q.eq("group_id", groupId).eq("document_part", documentPart)
+          q.eq("group_id", groupId).eq("document_part", documentPart),
         )
         .first();
 

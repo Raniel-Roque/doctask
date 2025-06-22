@@ -8,11 +8,19 @@ export async function POST(request: Request) {
   try {
     const { userId } = await request.json();
     if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "userId is required" },
+        { status: 400 },
+      );
     }
-    const result = await convex.mutation(api.mutations.updateEmailStatus, { userId });
+    const result = await convex.mutation(api.mutations.updateEmailStatus, {
+      userId,
+    });
     return NextResponse.json({ success: true, result });
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
-} 
+}

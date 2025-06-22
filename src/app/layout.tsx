@@ -5,7 +5,6 @@ import { ConvexClientProvider } from "@/components/convex-client-provider";
 
 import "./globals.css";
 
-
 export const metadata: Metadata = {
   title: "DocTask",
   description: "A Collaborative Documentation and Management Desktop App",
@@ -25,15 +24,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={inter.className}
-      >
+      <body className={inter.className}>
         <NuqsAdapter>
-          <ConvexClientProvider>
-            {children}
-          </ConvexClientProvider>
+          <ConvexClientProvider>{children}</ConvexClientProvider>
         </NuqsAdapter>
-      </body> 
+      </body>
     </html>
   );
 }

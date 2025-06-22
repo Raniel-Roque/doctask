@@ -1,6 +1,11 @@
-import React from 'react';
-import { FaExclamationTriangle, FaTrash, FaTimes, FaSpinner } from "react-icons/fa";
-import { Group } from './types';
+import React from "react";
+import {
+  FaExclamationTriangle,
+  FaTrash,
+  FaTimes,
+  FaSpinner,
+} from "react-icons/fa";
+import { Group } from "./types";
 
 interface DeleteGroupConfirmationProps {
   group: Group | null;
@@ -11,13 +16,13 @@ interface DeleteGroupConfirmationProps {
   networkError?: string | null;
 }
 
-const DeleteGroupConfirmation: React.FC<DeleteGroupConfirmationProps> = ({ 
-  group, 
-  isOpen, 
-  onClose, 
+const DeleteGroupConfirmation: React.FC<DeleteGroupConfirmationProps> = ({
+  group,
+  isOpen,
+  onClose,
   onConfirm,
   isSubmitting = false,
-  networkError = null
+  networkError = null,
 }) => {
   if (!isOpen || !group) return null;
 
@@ -42,7 +47,9 @@ const DeleteGroupConfirmation: React.FC<DeleteGroupConfirmationProps> = ({
 
         {/* Confirmation Message */}
         <p className="mb-8 text-gray-600">
-          Are you sure you want to delete group &quot;{group.capstone_title || group.name}&quot;? This action cannot be undone.
+          Are you sure you want to delete group &quot;
+          {group.capstone_title || group.name}&quot;? This action cannot be
+          undone.
         </p>
 
         {/* Action Buttons */}

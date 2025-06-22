@@ -1,5 +1,5 @@
-import React from 'react';
-import { FaExclamationTriangle } from 'react-icons/fa';
+import React from "react";
+import { FaExclamationTriangle } from "react-icons/fa";
 
 interface UnsavedChangesConfirmationProps {
   isOpen: boolean;
@@ -7,11 +7,9 @@ interface UnsavedChangesConfirmationProps {
   onCancel: () => void;
 }
 
-export const UnsavedChangesConfirmation: React.FC<UnsavedChangesConfirmationProps> = ({
-  isOpen,
-  onContinue,
-  onCancel,
-}) => {
+export const UnsavedChangesConfirmation: React.FC<
+  UnsavedChangesConfirmationProps
+> = ({ isOpen, onContinue, onCancel }) => {
   if (!isOpen) return null;
 
   return (
@@ -24,7 +22,8 @@ export const UnsavedChangesConfirmation: React.FC<UnsavedChangesConfirmationProp
           <h3 className="text-lg font-semibold">Unsaved Changes</h3>
         </div>
         <p className="text-gray-600 mb-6">
-          You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+          You have unsaved changes. Are you sure you want to leave? Your changes
+          will be lost.
         </p>
         <div className="flex justify-end gap-3">
           <button
@@ -43,4 +42,4 @@ export const UnsavedChangesConfirmation: React.FC<UnsavedChangesConfirmationProp
       </div>
     </div>
   );
-}; 
+};

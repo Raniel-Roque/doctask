@@ -25,4 +25,4 @@ export interface Group {
   grade?: number;
   documentCount: number;
   documents: Document[];
-} 
+}

@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
-import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../../../../convex/_generated/api';
-import { clerkClient, auth } from '@clerk/nextjs/server';
-import { generatePassword } from '@/utils/passwordGeneration';
-import { Resend } from 'resend';
+import { NextResponse } from "next/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../../convex/_generated/api";
+import { clerkClient, auth } from "@clerk/nextjs/server";
+import { generatePassword } from "@/utils/passwordGeneration";
+import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -35,14 +35,14 @@ export async function POST(request: Request) {
 
     if (!backup || !backup.tables || !backup.timestamp || !backup.version) {
       return NextResponse.json(
-        { error: 'Invalid backup format' },
-        { status: 400 }
+        { error: "Invalid backup format" },
+        { status: 400 },
       );
     }
 
     // Delete from Convex first
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-    
+
     // Delete students
     await convex.mutation(api.restore.deleteAllStudents);
 
@@ -51,46 +51,55 @@ export async function POST(request: Request) {
 
     // Delete groups
     await convex.mutation(api.restore.deleteAllGroups);
-    
+
     // Delete documents
     await convex.mutation(api.restore.deleteAllDocuments);
 
     // Delete task assignments
     await convex.mutation(api.restore.deleteAllTaskAssignments);
-    
+
     // Delete document status
     await convex.mutation(api.restore.deleteAllDocumentStatus);
-    
+
     // Delete users (except instructor)
     await convex.mutation(api.restore.deleteAllUsers, { instructorId });
-    
+
     // Get all users from Clerk
     const { data: existingClerkUsers } = await clerk.users.getUserList();
-    
+
     // Delete all users except the instructor
     for (const clerkUser of existingClerkUsers) {
-      if (clerkUser.id !== userId) { // Don't delete the instructor
+      if (clerkUser.id !== userId) {
+        // Don't delete the instructor
         // Delete from Clerk
         await clerk.users.deleteUser(clerkUser.id);
 
         // Delete from Convex if exists
-        const convexUser = await convex.query(api.fetch.getUserByClerkId, { clerkId: clerkUser.id });
+        const convexUser = await convex.query(api.fetch.getUserByClerkId, {
+          clerkId: clerkUser.id,
+        });
         if (convexUser) {
           await convex.mutation(api.mutations.deleteUser, {
             userId: convexUser._id,
             instructorId,
-            clerkId: clerkUser.id
+            clerkId: clerkUser.id,
           });
         }
       }
     }
 
-    const usersToCreate = backup.tables.users.filter((user: BackupUser) => user.role !== 2);
+    const usersToCreate = backup.tables.users.filter(
+      (user: BackupUser) => user.role !== 2,
+    );
     const clerkResults = [];
 
     for (const user of usersToCreate) {
-      const password = generatePassword(user.first_name, user.last_name, Date.now());
-      
+      const password = generatePassword(
+        user.first_name,
+        user.last_name,
+        Date.now(),
+      );
+
       // Create user in Clerk with just email and password
       const newUser = await clerk.users.createUser({
         emailAddress: [user.email],
@@ -101,14 +110,14 @@ export async function POST(request: Request) {
       const emailAddress = newUser.emailAddresses[0];
       await clerk.emailAddresses.updateEmailAddress(emailAddress.id, {
         primary: true,
-        verified: false
+        verified: false,
       });
 
       // Send welcome email
       await resend.emails.send({
-        from: 'DocTask <onboarding@resend.dev>',
+        from: "DocTask <onboarding@resend.dev>",
         to: user.email,
-        subject: 'Welcome to DocTask',
+        subject: "Welcome to DocTask",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">Welcome to DocTask!</h2>
@@ -148,7 +157,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const idMap = new Map(clerkResults.map(r => [r.oldId, r.newId]));
+    const idMap = new Map(clerkResults.map((r) => [r.oldId, r.newId]));
     const oldUserIdToNewUserId = new Map();
     for (const user of backup.tables.users) {
       if (user.role === 2) continue; // Skip instructor
@@ -172,9 +181,15 @@ export async function POST(request: Request) {
     // First restore all groups
     const oldGroupIdToNewGroupId = new Map();
     for (const group of backup.tables.groups) {
-      const newProjectManagerId = oldUserIdToNewUserId.get(group.project_manager_id);
-      const newMemberIds = group.member_ids.map((id: string) => oldUserIdToNewUserId.get(id)).filter(Boolean);
-      const newAdviserId = group.adviser_id ? oldUserIdToNewUserId.get(group.adviser_id) : undefined;
+      const newProjectManagerId = oldUserIdToNewUserId.get(
+        group.project_manager_id,
+      );
+      const newMemberIds = group.member_ids
+        .map((id: string) => oldUserIdToNewUserId.get(id))
+        .filter(Boolean);
+      const newAdviserId = group.adviser_id
+        ? oldUserIdToNewUserId.get(group.adviser_id)
+        : undefined;
       const result = await convex.mutation(api.restore.restoreGroup, {
         project_manager_id: newProjectManagerId,
         member_ids: newMemberIds,
@@ -187,7 +202,9 @@ export async function POST(request: Request) {
     // Then restore student entries
     for (const student of backup.tables.students) {
       const newUserId = oldUserIdToNewUserId.get(student.user_id);
-      const newGroupId = student.group_id ? oldGroupIdToNewGroupId.get(student.group_id) : null;
+      const newGroupId = student.group_id
+        ? oldGroupIdToNewGroupId.get(student.group_id)
+        : null;
       await convex.mutation(api.restore.restoreStudentEntry, {
         user_id: newUserId,
         group_id: newGroupId ?? null,
@@ -197,7 +214,9 @@ export async function POST(request: Request) {
     // Finally restore adviser codes
     for (const adviser of backup.tables.advisers) {
       const newAdviserId = oldUserIdToNewUserId.get(adviser.adviser_id);
-      const newGroupIds = (adviser.group_ids || []).map((gid: string) => oldGroupIdToNewGroupId.get(gid)).filter(Boolean);
+      const newGroupIds = (adviser.group_ids || [])
+        .map((gid: string) => oldGroupIdToNewGroupId.get(gid))
+        .filter(Boolean);
       await convex.mutation(api.restore.restoreAdviserCode, {
         adviser_id: newAdviserId,
         code: adviser.code,
@@ -232,7 +251,9 @@ export async function POST(request: Request) {
     // Restore task assignments
     for (const assignment of backup.tables.taskAssignments) {
       const newGroupId = oldGroupIdToNewGroupId.get(assignment.group_id);
-      const newAssignedStudentIds = assignment.assigned_student_ids.map((id: string) => oldUserIdToNewUserId.get(id)).filter(Boolean);
+      const newAssignedStudentIds = assignment.assigned_student_ids
+        .map((id: string) => oldUserIdToNewUserId.get(id))
+        .filter(Boolean);
       await convex.mutation(api.restore.restoreTaskAssignment, {
         group_id: newGroupId,
         chapter: assignment.chapter,
@@ -244,13 +265,13 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      message: 'Backup restored successfully',
+      message: "Backup restored successfully",
       users: clerkResults,
     });
   } catch (error) {
     return new NextResponse(
       error instanceof Error ? error.message : "Failed to restore database",
-      { status: 500 }
+      { status: 500 },
     );
   }
-} 
+}

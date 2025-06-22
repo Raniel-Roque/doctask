@@ -1,7 +1,7 @@
-import React from 'react';
-import { FaEnvelope } from 'react-icons/fa';
+import React from "react";
+import { FaEnvelope } from "react-icons/fa";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
-import ResendTimer from './ResendTimer';
+import ResendTimer from "./ResendTimer";
 
 interface ResetCodeInputProps {
   code: string;
@@ -25,7 +25,8 @@ const ResetCodeInput: React.FC<ResetCodeInputProps> = ({
   <form className="mt-8 space-y-6" onSubmit={onSubmit}>
     {resentSuccess && (
       <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-300 text-blue-800 text-sm text-center font-medium shadow-sm">
-        A new code has been sent to your email. Please check your inbox and spam folder.
+        A new code has been sent to your email. Please check your inbox and spam
+        folder.
       </div>
     )}
     <div className="relative">
@@ -36,7 +37,15 @@ const ResetCodeInput: React.FC<ResetCodeInputProps> = ({
         type="text"
         required
         value={code}
-        onChange={(e) => setCode(sanitizeInput(e.target.value, { trim: true, removeHtml: true, escapeSpecialChars: true }))}
+        onChange={(e) =>
+          setCode(
+            sanitizeInput(e.target.value, {
+              trim: true,
+              removeHtml: true,
+              escapeSpecialChars: true,
+            }),
+          )
+        }
         className="appearance-none rounded-lg relative block w-full pl-10 pr-3 h-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
         placeholder="Enter verification code"
         disabled={loading}
@@ -53,11 +62,15 @@ const ResetCodeInput: React.FC<ResetCodeInputProps> = ({
       </button>
     </div>
     {onResendCode && (
-    <div className="text-sm text-center">
-        <ResendTimer onResend={onResendCode} disabled={loading} loading={loading} />
-    </div>
+      <div className="text-sm text-center">
+        <ResendTimer
+          onResend={onResendCode}
+          disabled={loading}
+          loading={loading}
+        />
+      </div>
     )}
   </form>
 );
 
-export default ResetCodeInput; 
+export default ResetCodeInput;

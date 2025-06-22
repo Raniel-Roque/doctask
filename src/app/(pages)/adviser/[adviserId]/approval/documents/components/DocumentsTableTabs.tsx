@@ -1,8 +1,17 @@
 "use client";
 
-import React, { useState } from 'react';
-import { FaChevronLeft, FaChevronRight, FaSearch, FaEye, FaCheck, FaClock, FaTimes, FaFileAlt } from "react-icons/fa";
-import { User, Group } from './types';
+import React, { useState } from "react";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaSearch,
+  FaEye,
+  FaCheck,
+  FaClock,
+  FaTimes,
+  FaFileAlt,
+} from "react-icons/fa";
+import { User, Group } from "./types";
 
 interface DocumentsTableTabsProps {
   groups: Group[];
@@ -23,25 +32,27 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
   onPageChange,
   onPageSizeChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<string | null>(groups[0]?._id || null);
+  const [activeTab, setActiveTab] = useState<string | null>(
+    groups[0]?._id || null,
+  );
   const [searchTerm, setSearchTerm] = useState("");
 
   const getFullName = (user: User) => {
-    return `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`;
+    return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
   };
 
   const getStatusColor = (status: number) => {
     switch (status) {
       case 0: // not_submitted
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
       case 1: // submitted
-        return 'bg-blue-100 text-blue-800';
+        return "bg-blue-100 text-blue-800";
       case 2: // approved
-        return 'bg-green-100 text-green-800';
+        return "bg-green-100 text-green-800";
       case 3: // rejected
-        return 'bg-red-100 text-red-800';
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -61,28 +72,35 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
 
   const formatDate = (timestamp?: number) => {
     if (!timestamp) return "Never";
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(timestamp).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
-  const activeGroup = groups.find(g => g._id === activeTab);
-  const filteredDocuments = activeGroup?.documents?.filter(doc => {
-    const searchLower = searchTerm.toLowerCase();
-    const titleMatch = doc.title.toLowerCase().includes(searchLower);
-    const chapterMatch = doc.chapter.toLowerCase().includes(searchLower);
-    
-    // Convert status number to string for search
-    const statusText = doc.status === 0 ? 'not submitted' : 
-                      doc.status === 1 ? 'submitted' :
-                      doc.status === 2 ? 'approved' :
-                      doc.status === 3 ? 'rejected' : 'unknown';
-    const statusMatch = statusText.includes(searchLower);
-    
-    return titleMatch || chapterMatch || statusMatch;
-  }) || [];
+  const activeGroup = groups.find((g) => g._id === activeTab);
+  const filteredDocuments =
+    activeGroup?.documents?.filter((doc) => {
+      const searchLower = searchTerm.toLowerCase();
+      const titleMatch = doc.title.toLowerCase().includes(searchLower);
+      const chapterMatch = doc.chapter.toLowerCase().includes(searchLower);
+
+      // Convert status number to string for search
+      const statusText =
+        doc.status === 0
+          ? "not submitted"
+          : doc.status === 1
+            ? "submitted"
+            : doc.status === 2
+              ? "approved"
+              : doc.status === 3
+                ? "rejected"
+                : "unknown";
+      const statusMatch = statusText.includes(searchLower);
+
+      return titleMatch || chapterMatch || statusMatch;
+    }) || [];
 
   return (
     <div className="space-y-6">
@@ -95,12 +113,12 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
               onClick={() => setActiveTab(group._id)}
               className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === group._id
-                  ? 'border-[#B54A4A] text-[#B54A4A]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? "border-[#B54A4A] text-[#B54A4A]"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               <div className="flex items-center space-x-2">
-                <span>{group.name || 'Unknown Group'}</span>
+                <span>{group.name || "Unknown Group"}</span>
                 <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
                   {group.documentCount || 0}
                 </span>
@@ -115,14 +133,23 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{activeGroup.name}</h3>
-              <p className="text-sm text-gray-600">{activeGroup.capstone_title}</p>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {activeGroup.name}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {activeGroup.capstone_title}
+              </p>
               <p className="text-xs text-gray-500">
-                Project Manager: {activeGroup.projectManager ? getFullName(activeGroup.projectManager) : 'N/A'}
+                Project Manager:{" "}
+                {activeGroup.projectManager
+                  ? getFullName(activeGroup.projectManager)
+                  : "N/A"}
               </p>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-[#B54A4A]">{activeGroup.documentCount || 0}</div>
+              <div className="text-2xl font-bold text-[#B54A4A]">
+                {activeGroup.documentCount || 0}
+              </div>
               <div className="text-xs text-gray-500">Total Documents</div>
             </div>
           </div>
@@ -147,23 +174,33 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
           {filteredDocuments.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredDocuments.map((doc) => (
-                <div key={doc._id} className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                <div
+                  key={doc._id}
+                  className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h5 className="font-medium text-gray-900 text-sm mb-1 truncate">
                         {doc.title}
                       </h5>
                       <p className="text-xs text-gray-500 capitalize">
-                        {doc.chapter.replace('_', ' ')}
+                        {doc.chapter.replace("_", " ")}
                       </p>
                     </div>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}
+                    >
                       {getStatusIcon(doc.status)}
                       <span className="ml-1">
-                        {doc.status === 0 ? 'Not Submitted' : 
-                         doc.status === 1 ? 'Submitted' :
-                         doc.status === 2 ? 'Approved' :
-                         doc.status === 3 ? 'Rejected' : doc.status}
+                        {doc.status === 0
+                          ? "Not Submitted"
+                          : doc.status === 1
+                            ? "Submitted"
+                            : doc.status === 2
+                              ? "Approved"
+                              : doc.status === 3
+                                ? "Rejected"
+                                : doc.status}
                       </span>
                     </span>
                   </div>
@@ -179,9 +216,13 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
           ) : (
             <div className="text-center py-8">
               <FaFileAlt className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No documents found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                No documents found
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm ? 'Try adjusting your search terms.' : 'This group has no documents yet.'}
+                {searchTerm
+                  ? "Try adjusting your search terms."
+                  : "This group has no documents yet."}
               </p>
             </div>
           )}
@@ -192,17 +233,17 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
       <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-lg">
         <div className="flex items-center gap-4">
           <p className="text-sm text-gray-700">
-            Showing{' '}
+            Showing{" "}
             <span className="font-medium">
               {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
             </span>
-            {' - '}
+            {" - "}
             <span className="font-medium">
               {Math.min(currentPage * pageSize, totalCount)}
             </span>
-            {' of '}
+            {" of "}
             <span className="font-medium">{totalCount}</span>
-            {' groups'}
+            {" groups"}
           </p>
           <div className="h-6 w-px bg-gray-300"></div>
           <div className="flex items-center gap-2">
@@ -226,8 +267,8 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
             disabled={currentPage === 1}
             className={`p-2 rounded-md ${
               currentPage === 1
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-700 hover:bg-gray-100"
             }`}
           >
             <FaChevronLeft />
@@ -240,8 +281,8 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
             disabled={currentPage === totalPages}
             className={`p-2 rounded-md ${
               currentPage === totalPages
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-700 hover:bg-gray-100"
             }`}
           >
             <FaChevronRight />
@@ -252,4 +293,4 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
   );
 };
 
-export default DocumentsTableTabs; 
+export default DocumentsTableTabs;

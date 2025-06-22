@@ -14,12 +14,12 @@ interface ClerkError {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     // Validate request body
-    if (!body || typeof body !== 'object') {
+    if (!body || typeof body !== "object") {
       return NextResponse.json(
         { error: "Invalid request body" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     if (!clerkId || !newPassword) {
       return NextResponse.json(
         { error: "Clerk ID and new password are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     if (newPassword.length < 8) {
       return NextResponse.json(
         { error: "Password must be at least 8 characters long" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -46,18 +46,17 @@ export async function POST(request: Request) {
     // Get the user to verify it exists
     const user = await client.users.getUser(clerkId);
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get the Convex user record
-    const convexUser = await convex.query(api.fetch.getUserByClerkId, { clerkId });
+    const convexUser = await convex.query(api.fetch.getUserByClerkId, {
+      clerkId,
+    });
     if (!convexUser) {
       return NextResponse.json(
         { error: "User not found in database" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -67,35 +66,42 @@ export async function POST(request: Request) {
         password: newPassword,
       });
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: true,
-        message: "Password has been reset successfully"
+        message: "Password has been reset successfully",
       });
     } catch (error) {
       const clerkError = error as ClerkError;
-      
+
       // Check for password strength error
-      if (clerkError.errors?.[0]?.message?.includes('password_strength') ||
-          clerkError.errors?.[0]?.message?.includes('weak_password') ||
-          clerkError.errors?.[0]?.message?.includes('password is too weak') ||
-          clerkError.errors?.[0]?.message?.includes('not strong enough')) {
+      if (
+        clerkError.errors?.[0]?.message?.includes("password_strength") ||
+        clerkError.errors?.[0]?.message?.includes("weak_password") ||
+        clerkError.errors?.[0]?.message?.includes("password is too weak") ||
+        clerkError.errors?.[0]?.message?.includes("not strong enough")
+      ) {
         return NextResponse.json(
-          { error: "Password is too weak. Please use a stronger password with a mix of letters, numbers, and special characters." },
-          { status: 400 }
+          {
+            error:
+              "Password is too weak. Please use a stronger password with a mix of letters, numbers, and special characters.",
+          },
+          { status: 400 },
         );
       }
 
       // Forward other Clerk errors
       return NextResponse.json(
-        { error: clerkError.errors?.[0]?.message || "Failed to reset password" },
-        { status: 400 }
+        {
+          error: clerkError.errors?.[0]?.message || "Failed to reset password",
+        },
+        { status: 400 },
       );
     }
   } catch (error) {
     const serverError = error as Error;
     return NextResponse.json(
       { error: serverError.message || "Failed to reset password" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

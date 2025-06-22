@@ -19,4 +19,4 @@ export type Group = Doc<"groupsTable"> & {
   members?: User[];
   adviser?: User;
   name?: string;
-}; 
+};

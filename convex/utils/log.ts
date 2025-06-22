@@ -22,7 +22,7 @@ export async function logCreateUser(
   instructorId: Id<"users">,
   affectedEntityId: Id<"users">,
   userInfo: UserInfo,
-  instructorInfo: UserInfo
+  instructorInfo: UserInfo,
 ) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
@@ -47,7 +47,7 @@ export async function logUpdateUser(
   affectedEntityId: Id<"users">,
   details: string,
   userInfo: UserInfo,
-  instructorInfo: UserInfo
+  instructorInfo: UserInfo,
 ) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
@@ -71,7 +71,7 @@ export async function logDeleteUser(
   instructorId: Id<"users">,
   affectedEntityId: Id<"users">,
   userInfo: UserInfo,
-  instructorInfo: UserInfo
+  instructorInfo: UserInfo,
 ) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
@@ -95,7 +95,7 @@ export async function logResetPassword(
   instructorId: Id<"users">,
   affectedEntityId: Id<"users">,
   affectedUserInfo: UserInfo,
-  instructorInfo: UserInfo
+  instructorInfo: UserInfo,
 ) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
@@ -119,7 +119,7 @@ export async function logCreateGroup(
   instructorId: Id<"users">,
   affectedEntityId: Id<"groupsTable">,
   instructorInfo: UserInfo,
-  projectManagerInfo: UserInfo
+  projectManagerInfo: UserInfo,
 ) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
@@ -144,7 +144,7 @@ export async function logUpdateGroup(
   affectedEntityId: Id<"groupsTable">,
   details: string,
   instructorInfo: UserInfo,
-  projectManagerInfo: UserInfo
+  projectManagerInfo: UserInfo,
 ) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
@@ -168,7 +168,7 @@ export async function logDeleteGroup(
   instructorId: Id<"users">,
   affectedEntityId: Id<"groupsTable">,
   instructorInfo: UserInfo,
-  projectManagerInfo: UserInfo
+  projectManagerInfo: UserInfo,
 ) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,
@@ -193,7 +193,7 @@ export async function logLockAccount(
   affectedEntityId: Id<"users">,
   action: "lock" | "unlock",
   affectedUserInfo: UserInfo,
-  instructorInfo: UserInfo
+  instructorInfo: UserInfo,
 ) {
   await ctx.db.insert("instructorLogs", {
     instructor_id: instructorId,

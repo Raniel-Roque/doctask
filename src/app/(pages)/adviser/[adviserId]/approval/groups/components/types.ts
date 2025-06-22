@@ -13,4 +13,4 @@ export interface Group {
   members?: User[];
   adviser?: User;
   grade?: number;
-} 
+}

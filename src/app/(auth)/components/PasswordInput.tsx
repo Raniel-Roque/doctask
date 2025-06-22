@@ -1,5 +1,5 @@
-import React from 'react';
-import { FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import React from "react";
+import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface PasswordInputProps {
@@ -14,7 +14,17 @@ interface PasswordInputProps {
   autoComplete?: string;
 }
 
-const PasswordInput: React.FC<PasswordInputProps> = ({ password, setPassword, showPassword, setShowPassword, disabled = false, loading = false, placeholder = 'Password', name = "password", autoComplete = "current-password" }) => (
+const PasswordInput: React.FC<PasswordInputProps> = ({
+  password,
+  setPassword,
+  showPassword,
+  setShowPassword,
+  disabled = false,
+  loading = false,
+  placeholder = "Password",
+  name = "password",
+  autoComplete = "current-password",
+}) => (
   <div className="relative">
     <label htmlFor={name} className="sr-only">
       Password
@@ -25,11 +35,19 @@ const PasswordInput: React.FC<PasswordInputProps> = ({ password, setPassword, sh
     <input
       id={name}
       name={name}
-      type={showPassword ? 'text' : 'password'}
+      type={showPassword ? "text" : "password"}
       autoComplete={autoComplete}
       required
       value={password}
-      onChange={(e) => setPassword(sanitizeInput(e.target.value, { trim: true, removeHtml: true, escapeSpecialChars: true }))}
+      onChange={(e) =>
+        setPassword(
+          sanitizeInput(e.target.value, {
+            trim: true,
+            removeHtml: true,
+            escapeSpecialChars: true,
+          }),
+        )
+      }
       className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
       placeholder={placeholder}
       disabled={disabled || loading}
@@ -41,9 +59,13 @@ const PasswordInput: React.FC<PasswordInputProps> = ({ password, setPassword, sh
       tabIndex={-1}
       disabled={loading}
     >
-      {showPassword ? <FaEye color="#9CA3AF" /> : <FaEyeSlash color="#9CA3AF" />}
+      {showPassword ? (
+        <FaEye color="#9CA3AF" />
+      ) : (
+        <FaEyeSlash color="#9CA3AF" />
+      )}
     </button>
   </div>
 );
 
-export default PasswordInput; 
+export default PasswordInput;

@@ -1,5 +1,10 @@
 import React from "react";
-import { FaExclamationTriangle, FaTrash, FaTimes, FaSpinner } from "react-icons/fa";
+import {
+  FaExclamationTriangle,
+  FaTrash,
+  FaTimes,
+  FaSpinner,
+} from "react-icons/fa";
 import { User } from "./types";
 
 // =========================================
@@ -16,18 +21,20 @@ interface DeleteConfirmationProps {
 // =========================================
 // Component
 // =========================================
-export const DeleteConfirmation = ({ 
-  user, 
-  onCancel, 
-  onConfirm, 
+export const DeleteConfirmation = ({
+  user,
+  onCancel,
+  onConfirm,
   isSubmitting = false,
   networkError = null,
-  setNetworkError
-}: DeleteConfirmationProps & { setNetworkError?: (err: string | null) => void }) => {
+  setNetworkError,
+}: DeleteConfirmationProps & {
+  setNetworkError?: (err: string | null) => void;
+}) => {
   if (!user) return null;
 
   const handleCancel = () => {
-    if (typeof setNetworkError === 'function') setNetworkError(null);
+    if (typeof setNetworkError === "function") setNetworkError(null);
     onCancel();
   };
 
@@ -55,7 +62,8 @@ export const DeleteConfirmation = ({
 
         {/* Confirmation Message */}
         <p className="mb-8 text-gray-600">
-          Are you sure you want to delete {user.first_name} {user.last_name}? This action cannot be undone.
+          Are you sure you want to delete {user.first_name} {user.last_name}?
+          This action cannot be undone.
         </p>
 
         {/* Action Buttons */}
@@ -91,4 +99,4 @@ export const DeleteConfirmation = ({
       </div>
     </div>
   );
-}; 
+};

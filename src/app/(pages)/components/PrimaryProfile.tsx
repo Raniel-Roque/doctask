@@ -11,12 +11,19 @@ interface PrimaryProfileProps {
   onError: (msg: string) => void;
 }
 
-export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({ user, userData, onSuccess, onError }) => {
+export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
+  user,
+  userData,
+  onSuccess,
+  onError,
+}) => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 mt-4">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Primary Information</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+        Primary Information
+      </h2>
       <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
         {/* Profile Picture Section */}
         {user && (
@@ -36,7 +43,9 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({ user, userData, 
           {/* Names Row */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">First Name</label>
+              <label className="block text-sm font-medium text-gray-700">
+                First Name
+              </label>
               <input
                 type="text"
                 value={userData?.first_name || ""}
@@ -45,7 +54,9 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({ user, userData, 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Middle Name</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Middle Name
+              </label>
               <input
                 type="text"
                 value={userData?.middle_name || ""}
@@ -54,7 +65,9 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({ user, userData, 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Last Name</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Last Name
+              </label>
               <input
                 type="text"
                 value={userData?.last_name || ""}
@@ -67,7 +80,9 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({ user, userData, 
           {/* Email and Password Row */}
           <div className="grid grid-cols-5 gap-4 mb-2">
             <div className="col-span-3">
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
               <input
                 type="email"
                 value={userData?.email || ""}
@@ -106,4 +121,4 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({ user, userData, 
       />
     </div>
   );
-}; 
+};

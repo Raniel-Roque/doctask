@@ -16,10 +16,13 @@ interface SanitizeInputProps {
 // =========================================
 // Component
 // =========================================
-export const sanitizeInput = (value: string, options: SanitizeInputProps['options'] = {}): string => {
+export const sanitizeInput = (
+  value: string,
+  options: SanitizeInputProps["options"] = {},
+): string => {
   // Handle null or undefined values
   if (value === null || value === undefined) {
-    return '';
+    return "";
   }
 
   const {
@@ -28,7 +31,7 @@ export const sanitizeInput = (value: string, options: SanitizeInputProps['option
     escapeSpecialChars = true,
     maxLength,
     allowedPattern,
-    preserveCase = true
+    preserveCase = true,
   } = options;
 
   let sanitizedValue = value;
@@ -40,16 +43,16 @@ export const sanitizeInput = (value: string, options: SanitizeInputProps['option
 
   // Remove HTML tags if enabled
   if (removeHtml) {
-    sanitizedValue = sanitizedValue.replace(/[<>]/g, '');
+    sanitizedValue = sanitizedValue.replace(/[<>]/g, "");
   }
 
   // Escape special characters if enabled
   if (escapeSpecialChars) {
     sanitizedValue = sanitizedValue
-      .replace(/[&]/g, '&amp;')
-      .replace(/["]/g, '&quot;')
-      .replace(/[']/g, '&#x27;')
-      .replace(/[/]/g, '&#x2F;');
+      .replace(/[&]/g, "&amp;")
+      .replace(/["]/g, "&quot;")
+      .replace(/[']/g, "&#x27;")
+      .replace(/[/]/g, "&#x2F;");
   }
 
   // Apply max length if specified
@@ -59,7 +62,7 @@ export const sanitizeInput = (value: string, options: SanitizeInputProps['option
 
   // Apply pattern matching if specified
   if (allowedPattern && !allowedPattern.test(sanitizedValue)) {
-    sanitizedValue = '';
+    sanitizedValue = "";
   }
 
   // Preserve case if enabled
@@ -79,22 +82,22 @@ export const VALIDATION_RULES = {
     maxLength: 50,
     pattern: /^[a-zA-Z\s-']+$/,
     message: "Can only contain letters, spaces, hyphens, and apostrophes",
-    required: true
+    required: true,
   },
   // Email
   email: {
     maxLength: 100,
     pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
     message: "Invalid email format",
-    required: true
+    required: true,
   },
   // General text
   text: {
     maxLength: 255,
     pattern: /^[a-zA-Z0-9\s.,!?-]+$/,
     message: "Can only contain letters, numbers, and basic punctuation",
-    required: false
-  }
+    required: false,
+  },
 } as const;
 
 // =========================================
@@ -102,10 +105,10 @@ export const VALIDATION_RULES = {
 // =========================================
 export const validateInput = (
   value: string,
-  type: keyof typeof VALIDATION_RULES
+  type: keyof typeof VALIDATION_RULES,
 ): { isValid: boolean; message?: string } => {
   const rules = VALIDATION_RULES[type];
-  
+
   // Check if required
   if (rules.required && !value) {
     return { isValid: false, message: `${type} is required` };
@@ -118,9 +121,9 @@ export const validateInput = (
 
   // Check max length
   if (value.length > rules.maxLength) {
-    return { 
-      isValid: false, 
-      message: `${type} must be less than ${rules.maxLength} characters` 
+    return {
+      isValid: false,
+      message: `${type} must be less than ${rules.maxLength} characters`,
     };
   }
 

@@ -1,8 +1,8 @@
 import React, { useRef, useState } from "react";
-import { FaCamera } from 'react-icons/fa';
+import { FaCamera } from "react-icons/fa";
 import Image from "next/image";
-import { Cropper, ReactCropperElement } from 'react-cropper';
-import 'cropperjs/dist/cropper.css';
+import { Cropper, ReactCropperElement } from "react-cropper";
+import "cropperjs/dist/cropper.css";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface User {
@@ -17,10 +17,10 @@ interface ProfilePictureUploaderProps {
   onError: (message: string) => void;
 }
 
-export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({ 
+export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
   user,
   onSuccess,
-  onError
+  onError,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showCropper, setShowCropper] = useState(false);
@@ -32,11 +32,11 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const sanitizedFileName = sanitizeInput(file.name, { 
-      trim: true, 
-      removeHtml: true, 
-      escapeSpecialChars: true, 
-      maxLength: 100 
+    const sanitizedFileName = sanitizeInput(file.name, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true,
+      maxLength: 100,
     });
 
     // Only allow jpg, jpeg, png
@@ -85,8 +85,8 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           clerkId: user.id,
-          imageData: imageData
-        })
+          imageData: imageData,
+        }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -98,7 +98,9 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
         window.location.reload();
       }, 2000);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Failed to update profile picture");
+      onError(
+        err instanceof Error ? err.message : "Failed to update profile picture",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -141,12 +143,14 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
       {showCropper && selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Crop Image</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Crop Image
+            </h2>
             <div className="mb-4">
               <Cropper
                 ref={cropperRef}
                 src={selectedImage}
-                style={{ height: 400, width: '100%' }}
+                style={{ height: 400, width: "100%" }}
                 aspectRatio={1}
                 guides={true}
                 cropBoxResizable={true}
@@ -179,4 +183,4 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
       )}
     </div>
   );
-}; 
+};

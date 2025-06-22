@@ -13,7 +13,11 @@ interface ValidationErrorProps {
 // =========================================
 // Component
 // =========================================
-export const ValidationError = ({ error, onClose, className = "" }: ValidationErrorProps) => {
+export const ValidationError = ({
+  error,
+  onClose,
+  className = "",
+}: ValidationErrorProps) => {
   // =========================================
   // State
   // =========================================
@@ -31,7 +35,7 @@ export const ValidationError = ({ error, onClose, className = "" }: ValidationEr
       setIsExiting(true);
       const timer = setTimeout(() => {
         setIsVisible(false);
-      }, 300); 
+      }, 300);
       return () => clearTimeout(timer);
     }
   }, [error]);
@@ -45,25 +49,25 @@ export const ValidationError = ({ error, onClose, className = "" }: ValidationEr
     setIsExiting(true);
     setTimeout(() => {
       onClose();
-    }, 300); 
+    }, 300);
   };
 
   // =========================================
   // Render
   // =========================================
   return (
-    <div 
+    <div
       className={`
         fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${className}
         transition-opacity duration-300 ease-in-out
-        ${isExiting ? 'opacity-0' : 'opacity-100'}
+        ${isExiting ? "opacity-0" : "opacity-100"}
       `}
     >
-      <div 
+      <div
         className={`
           bg-white rounded-lg p-6 max-w-md w-full mx-4
           transform transition-all duration-300 ease-in-out
-          ${isExiting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
+          ${isExiting ? "opacity-0 scale-95" : "opacity-100 scale-100"}
         `}
       >
         {/* Header */}
@@ -95,4 +99,4 @@ export const ValidationError = ({ error, onClose, className = "" }: ValidationEr
       </div>
     </div>
   );
-}; 
+};

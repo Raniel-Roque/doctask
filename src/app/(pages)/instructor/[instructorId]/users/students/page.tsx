@@ -12,7 +12,16 @@ import { DeleteConfirmation } from "../components/DeleteConfirmation";
 import { ValidationError } from "../components/ValidationError";
 import { NotificationBanner } from "../../../../components/NotificationBanner";
 import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
-import { User, EditFormData, AddFormData, TABLE_CONSTANTS, SortField, SortDirection, Notification as NotificationType, LogDetails } from "../components/types";
+import {
+  User,
+  EditFormData,
+  AddFormData,
+  TABLE_CONSTANTS,
+  SortField,
+  SortDirection,
+  Notification as NotificationType,
+  LogDetails,
+} from "../components/types";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
@@ -32,15 +41,23 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   const { instructorId } = use(params);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]>(TABLE_CONSTANTS.STATUS_FILTERS.ALL);
-  const [roleFilter, setRoleFilter] = useState<typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS]>(TABLE_CONSTANTS.ROLE_FILTERS.ALL);
-  const [sortField, setSortField] = useState<SortField>(TABLE_CONSTANTS.DEFAULT_SORT_FIELD);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(TABLE_CONSTANTS.DEFAULT_SORT_DIRECTION);
+  const [statusFilter, setStatusFilter] = useState<
+    (typeof TABLE_CONSTANTS.STATUS_FILTERS)[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]
+  >(TABLE_CONSTANTS.STATUS_FILTERS.ALL);
+  const [roleFilter, setRoleFilter] = useState<
+    (typeof TABLE_CONSTANTS.ROLE_FILTERS)[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS]
+  >(TABLE_CONSTANTS.ROLE_FILTERS.ALL);
+  const [sortField, setSortField] = useState<SortField>(
+    TABLE_CONSTANTS.DEFAULT_SORT_FIELD,
+  );
+  const [sortDirection, setSortDirection] = useState<SortDirection>(
+    TABLE_CONSTANTS.DEFAULT_SORT_DIRECTION,
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
     // Get saved page size from localStorage or default to 5
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('studentsPageSize');
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("studentsPageSize");
       return saved ? parseInt(saved, 10) : 5;
     }
     return 5;
@@ -48,14 +65,20 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [notification, setNotification] = useState<NotificationType | null>(null);
+  const [notification, setNotification] = useState<NotificationType | null>(
+    null,
+  );
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editNetworkError, setEditNetworkError] = useState<string | null>(null);
-  const [deleteNetworkError, setDeleteNetworkError] = useState<string | null>(null);
+  const [deleteNetworkError, setDeleteNetworkError] = useState<string | null>(
+    null,
+  );
   const [addNetworkError, setAddNetworkError] = useState<string | null>(null);
-  const [resetPasswordNetworkError, setResetPasswordNetworkError] = useState<string | null>(null);
+  const [resetPasswordNetworkError, setResetPasswordNetworkError] = useState<
+    string | null
+  >(null);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     first_name: "",
     middle_name: "",
@@ -73,7 +96,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
-  const [pendingCloseAction, setPendingCloseAction] = useState<(() => void) | null>(null);
+  const [pendingCloseAction, setPendingCloseAction] = useState<
+    (() => void) | null
+  >(null);
 
   // =========================================
   // Mutations
@@ -86,27 +111,37 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   // Queries
   // =========================================
-  const queryData = useQuery(
-    api.fetch.searchUsers,
-    {
-      searchTerm,
-      role: 0, // 0 for students
-      emailVerified: statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED ? true : 
-                    statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED ? false : 
-                    undefined,
-      subrole: roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER ? 1 :
-               roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER ? 0 :
-               undefined,
-      pageSize,
-      pageNumber: currentPage,
-      sortField,
-      sortDirection,
-    }
-  );
+  const queryData = useQuery(api.fetch.searchUsers, {
+    searchTerm,
+    role: 0, // 0 for students
+    emailVerified:
+      statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED
+        ? true
+        : statusFilter === TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED
+          ? false
+          : undefined,
+    subrole:
+      roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
+        ? 1
+        : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
+          ? 0
+          : undefined,
+    pageSize,
+    pageNumber: currentPage,
+    sortField,
+    sortDirection,
+  });
 
-  const searchResult = useMemo(() => 
-    queryData || { users: [], totalCount: 0, totalPages: 0, status: 'idle', hasResults: false },
-    [queryData]
+  const searchResult = useMemo(
+    () =>
+      queryData || {
+        users: [],
+        totalCount: 0,
+        totalPages: 0,
+        status: "idle",
+        hasResults: false,
+      },
+    [queryData],
   );
 
   // =========================================
@@ -127,13 +162,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isSubmitting) {
         e.preventDefault();
-        e.returnValue = '';
-        return '';
+        e.returnValue = "";
+        return "";
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isSubmitting]);
 
   // =========================================
@@ -141,7 +176,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   const handleSort = (field: SortField) => {
     if (field === sortField) {
-      setSortDirection(prevDirection => prevDirection === "asc" ? "desc" : "asc");
+      setSortDirection((prevDirection) =>
+        prevDirection === "asc" ? "desc" : "asc",
+      );
     } else {
       setSortField(field);
       setSortDirection("asc");
@@ -150,12 +187,16 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   };
 
   // Update filter handlers to reset pagination
-  const handleStatusFilterChange = (value: typeof TABLE_CONSTANTS.STATUS_FILTERS[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]) => {
+  const handleStatusFilterChange = (
+    value: (typeof TABLE_CONSTANTS.STATUS_FILTERS)[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS],
+  ) => {
     setStatusFilter(value);
     setCurrentPage(1);
   };
 
-  const handleRoleFilterChange = (value: typeof TABLE_CONSTANTS.ROLE_FILTERS[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS]) => {
+  const handleRoleFilterChange = (
+    value: (typeof TABLE_CONSTANTS.ROLE_FILTERS)[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS],
+  ) => {
     setRoleFilter(value);
     setCurrentPage(1);
   };
@@ -170,13 +211,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setCurrentPage(page);
     // Reset to 5 entries when changing pages
     setPageSize(5);
-    localStorage.setItem('studentsPageSize', '5');
+    localStorage.setItem("studentsPageSize", "5");
   };
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
-    localStorage.setItem('studentsPageSize', size.toString());
+    localStorage.setItem("studentsPageSize", size.toString());
   };
 
   // =========================================
@@ -186,7 +227,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     if (!formData.first_name.trim()) return "First name is required";
     if (!formData.last_name.trim()) return "Last name is required";
     if (!formData.email.trim()) return "Email is required";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return "Invalid email format";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+      return "Invalid email format";
     if (formData.subrole === undefined) return "Role is required";
     return null;
   };
@@ -195,7 +237,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     if (!formData.first_name.trim()) return "First name is required";
     if (!formData.last_name.trim()) return "Last name is required";
     if (!formData.email.trim()) return "Email is required";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return "Invalid email format";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+      return "Invalid email format";
     if (formData.subrole === undefined) return "Role is required";
     return null;
   };
@@ -227,13 +270,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
     const error = validateEditForm(editFormData);
     if (error) {
-      logUserAction('Edit Validation Failed', { error, user: editingUser });
+      logUserAction("Edit Validation Failed", { error, user: editingUser });
       setValidationError(error);
       return;
     }
 
     // Check if there are any changes
-    const hasChanges = 
+    const hasChanges =
       editFormData.first_name !== editingUser.first_name ||
       editFormData.middle_name !== (editingUser.middle_name || "") ||
       editFormData.last_name !== editingUser.last_name ||
@@ -249,7 +292,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setEditNetworkError(null);
 
     try {
-      logUserAction('Edit Started', { 
+      logUserAction("Edit Started", {
         userId: editingUser._id,
         oldEmail: editingUser.email,
         newEmail: editFormData.email,
@@ -258,7 +301,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           lastName: editFormData.last_name !== editingUser.last_name,
           email: editFormData.email !== editingUser.email,
           subrole: editFormData.subrole !== editingUser.subrole,
-        }
+        },
       });
 
       // If email is changed, update in Clerk first
@@ -277,21 +320,23 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             firstName: editFormData.first_name.trim(),
             lastName: editFormData.last_name.trim(),
           }),
-          signal: controller.signal
+          signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
 
         if (!response.ok) {
           if (response.status === 0) {
-            throw new Error("Network error - please check your internet connection");
+            throw new Error(
+              "Network error - please check your internet connection",
+            );
           }
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to update user email");
         }
 
         const data = await response.json();
-        
+
         // Send update email
         await fetch("/api/resend/update-email", {
           method: "POST",
@@ -300,7 +345,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
-            password: data.password
+            password: data.password,
           }),
         });
 
@@ -313,7 +358,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           last_name: editFormData.last_name.trim(),
           email: editFormData.email.trim(),
           subrole: editFormData.subrole,
-          clerk_id: data.clerkId
+          clerk_id: data.clerkId,
         });
       } else {
         // Update in Convex without changing Clerk ID
@@ -328,28 +373,30 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         });
       }
 
-      logUserAction('Edit Success', { 
+      logUserAction("Edit Success", {
         userId: editingUser._id,
         changes: {
           firstName: editFormData.first_name !== editingUser.first_name,
           lastName: editFormData.last_name !== editingUser.last_name,
           email: editFormData.email !== editingUser.email,
           subrole: editFormData.subrole !== editingUser.subrole,
-        }
+        },
       });
 
       // Only show success message if there were changes
       setNotification({
-        type: 'success',
-        message: "User updated successfully"
+        type: "success",
+        message: "User updated successfully",
       });
       setEditingUser(null);
     } catch (error) {
-      logUserAction('Edit Failed', { 
+      logUserAction("Edit Failed", {
         userId: editingUser._id,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : "Unknown error",
       });
-      setEditNetworkError(error instanceof Error ? error.message : "Failed to update user");
+      setEditNetworkError(
+        error instanceof Error ? error.message : "Failed to update user",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -358,8 +405,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const handleDeleteSubmit = async () => {
     if (!deleteUser || !deleteUser.clerk_id) {
       setNotification({
-        type: 'error',
-        message: 'Cannot delete user: Missing Clerk ID'
+        type: "error",
+        message: "Cannot delete user: Missing Clerk ID",
       });
       return;
     }
@@ -368,9 +415,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setDeleteNetworkError(null);
 
     try {
-      logUserAction('Delete Started', { 
+      logUserAction("Delete Started", {
         userId: deleteUser._id,
-        email: deleteUser.email
+        email: deleteUser.email,
       });
 
       // First delete from Clerk
@@ -393,29 +440,30 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       await deleteUserMutation({
         userId: deleteUser._id as Id<"users">,
         instructorId: instructorId as Id<"users">,
-        clerkId: deleteUser.clerk_id
+        clerkId: deleteUser.clerk_id,
       });
 
-      logUserAction('Delete Success', { 
+      logUserAction("Delete Success", {
         userId: deleteUser._id,
-        email: deleteUser.email
+        email: deleteUser.email,
       });
 
       setDeleteUser(null);
     } catch (error) {
-      logUserAction('Delete Failed', { 
+      logUserAction("Delete Failed", {
         userId: deleteUser._id,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : "Unknown error",
       });
       if (error instanceof Error) {
         setNotification({
-          type: 'error',
-          message: error.message || 'Failed to delete student. Please try again.'
+          type: "error",
+          message:
+            error.message || "Failed to delete student. Please try again.",
         });
       } else {
         setNotification({
-          type: 'error',
-          message: 'An unexpected error occurred. Please try again.'
+          type: "error",
+          message: "An unexpected error occurred. Please try again.",
         });
       }
     } finally {
@@ -431,7 +479,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     }
 
     // Check if there are any values entered
-    const hasValues = Object.values(addFormData).some(value => value !== "" && value !== 0);
+    const hasValues = Object.values(addFormData).some(
+      (value) => value !== "" && value !== 0,
+    );
     if (!hasValues) {
       setIsAddingUser(false);
       return;
@@ -448,9 +498,21 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
-          firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
-          lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
+          email: sanitizeInput(addFormData.email, {
+            maxLength: 100,
+            trim: true,
+            removeHtml: true,
+          }),
+          firstName: sanitizeInput(addFormData.first_name, {
+            maxLength: 50,
+            trim: true,
+            removeHtml: true,
+          }),
+          lastName: sanitizeInput(addFormData.last_name, {
+            maxLength: 50,
+            trim: true,
+            removeHtml: true,
+          }),
           role: 0, // 0 = student
         }),
       });
@@ -461,13 +523,31 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       }
 
       const data = await response.json();
-      
+
       // Step 2: Create in Convex with the Clerk ID
       await createUser({
-        first_name: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
-        middle_name: addFormData.middle_name ? sanitizeInput(addFormData.middle_name, { maxLength: 50, trim: true, removeHtml: true }) : undefined,
-        last_name: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
-        email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
+        first_name: sanitizeInput(addFormData.first_name, {
+          maxLength: 50,
+          trim: true,
+          removeHtml: true,
+        }),
+        middle_name: addFormData.middle_name
+          ? sanitizeInput(addFormData.middle_name, {
+              maxLength: 50,
+              trim: true,
+              removeHtml: true,
+            })
+          : undefined,
+        last_name: sanitizeInput(addFormData.last_name, {
+          maxLength: 50,
+          trim: true,
+          removeHtml: true,
+        }),
+        email: sanitizeInput(addFormData.email, {
+          maxLength: 100,
+          trim: true,
+          removeHtml: true,
+        }),
         role: 0, // 0 = student
         subrole: addFormData.subrole,
         instructorId: instructorId as Id<"users">,
@@ -481,17 +561,29 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          firstName: sanitizeInput(addFormData.first_name, { maxLength: 50, trim: true, removeHtml: true }),
-          lastName: sanitizeInput(addFormData.last_name, { maxLength: 50, trim: true, removeHtml: true }),
-          email: sanitizeInput(addFormData.email, { maxLength: 100, trim: true, removeHtml: true }),
+          firstName: sanitizeInput(addFormData.first_name, {
+            maxLength: 50,
+            trim: true,
+            removeHtml: true,
+          }),
+          lastName: sanitizeInput(addFormData.last_name, {
+            maxLength: 50,
+            trim: true,
+            removeHtml: true,
+          }),
+          email: sanitizeInput(addFormData.email, {
+            maxLength: 100,
+            trim: true,
+            removeHtml: true,
+          }),
           password: data.user.password,
         }),
       });
 
       // Only show success message if there were values
       setNotification({
-        type: 'success',
-        message: "Student added successfully"
+        type: "success",
+        message: "Student added successfully",
       });
       setIsAddingUser(false);
       setAddFormData({
@@ -504,13 +596,14 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     } catch (error) {
       if (error instanceof Error) {
         setNotification({
-          type: 'error',
-          message: error.message || 'Failed to create student. Please try again.'
+          type: "error",
+          message:
+            error.message || "Failed to create student. Please try again.",
         });
       } else {
         setNotification({
-          type: 'error',
-          message: 'An unexpected error occurred. Please try again.'
+          type: "error",
+          message: "An unexpected error occurred. Please try again.",
         });
       }
     } finally {
@@ -525,9 +618,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setResetPasswordNetworkError(null);
 
     try {
-      logUserAction("reset_password_started", { 
+      logUserAction("reset_password_started", {
         userId: resetPasswordUser._id,
-        email: resetPasswordUser.email
+        email: resetPasswordUser.email,
       });
 
       // Step 1: Call Clerk API to reset password
@@ -567,22 +660,26 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           firstName: data.firstName,
           lastName: data.lastName,
           email: data.email,
-          password: data.password
+          password: data.password,
         }),
       });
-      
+
       setResetPasswordUser(null);
     } catch (error) {
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
+        if (error.name === "AbortError") {
           setResetPasswordNetworkError("Request timed out. Please try again.");
-        } else if (error.message.includes('Network error')) {
-          setResetPasswordNetworkError("Network error - please check your internet connection");
+        } else if (error.message.includes("Network error")) {
+          setResetPasswordNetworkError(
+            "Network error - please check your internet connection",
+          );
         } else {
           setResetPasswordNetworkError(error.message);
         }
       } else {
-        setResetPasswordNetworkError("An unexpected error occurred. Please try again.");
+        setResetPasswordNetworkError(
+          "An unexpected error occurred. Please try again.",
+        );
       }
     } finally {
       setIsResettingPassword(false);
@@ -607,13 +704,15 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   return (
     <div className="min-h-screen bg-gray-50">
-        <Navbar instructorId={instructorId} />
+      <Navbar instructorId={instructorId} />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
-            <h1 className="text-3xl font-bold">Students Table</h1>
-            <p className="text-muted-foreground">View, add, update, and manage all registered students.</p>
+          <h1 className="text-3xl font-bold">Students Table</h1>
+          <p className="text-muted-foreground">
+            View, add, update, and manage all registered students.
+          </p>
         </div>
-        
+
         {/* User Table */}
         <UserTable
           users={searchResult.users}
@@ -658,22 +757,22 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         />
 
         {/* Edit Form */}
-      <EditForm
-        user={editingUser}
-        formData={editFormData}
-        isSubmitting={isSubmitting}
-        networkError={editNetworkError}
+        <EditForm
+          user={editingUser}
+          formData={editFormData}
+          isSubmitting={isSubmitting}
+          networkError={editNetworkError}
           setNetworkError={setEditNetworkError}
-        onClose={() => {
+          onClose={() => {
             if (isSubmitting) {
               // During submission, don't allow closing
               return;
             }
 
             if (!editingUser) return;
-            
+
             // Check if there are any unsaved changes
-            const hasChanges = 
+            const hasChanges =
               editFormData.first_name !== editingUser.first_name ||
               editFormData.middle_name !== (editingUser.middle_name || "") ||
               editFormData.last_name !== editingUser.last_name ||
@@ -683,19 +782,19 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             if (hasChanges) {
               // Just show the confirmation dialog without closing anything
               setPendingCloseAction(() => () => {
-          setEditingUser(null);
-          setEditFormData({
-            first_name: "",
-            middle_name: "",
-            last_name: "",
-            email: "",
-            subrole: 0,
-          });
+                setEditingUser(null);
+                setEditFormData({
+                  first_name: "",
+                  middle_name: "",
+                  last_name: "",
+                  email: "",
+                  subrole: 0,
+                });
               });
               setShowUnsavedConfirm(true);
               return; // Prevent the form from closing
             }
-            
+
             // No changes, safe to close
             setEditingUser(null);
             setEditFormData({
@@ -705,20 +804,20 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
               email: "",
               subrole: 0,
             });
-        }}
-        onSubmit={handleEditSubmit}
-        onFormDataChange={setEditFormData}
-        isStudent={true}
-      />
+          }}
+          onSubmit={handleEditSubmit}
+          onFormDataChange={setEditFormData}
+          isStudent={true}
+        />
 
         {/* Delete Confirmation */}
-      <DeleteConfirmation
-        user={deleteUser}
+        <DeleteConfirmation
+          user={deleteUser}
           onCancel={() => setDeleteUser(null)}
-        onConfirm={handleDeleteSubmit}
-        isSubmitting={isDeleting}
-        networkError={deleteNetworkError}
-      />
+          onConfirm={handleDeleteSubmit}
+          isSubmitting={isDeleting}
+          networkError={deleteNetworkError}
+        />
 
         {/* Reset Password Confirmation */}
         <ResetPasswordConfirmation
@@ -730,15 +829,15 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         />
 
         {/* Validation Error */}
-      <ValidationError
-        error={validationError}
-        onClose={() => setValidationError(null)}
+        <ValidationError
+          error={validationError}
+          onClose={() => setValidationError(null)}
         />
 
         {/* Notification */}
         <NotificationBanner
-          message={notification?.message || ''}
-          type={notification?.type || 'success'}
+          message={notification?.message || ""}
+          type={notification?.type || "success"}
           onClose={() => {
             setNotification(null);
           }}
@@ -754,11 +853,11 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             setShowUnsavedConfirm(false);
             setPendingCloseAction(null);
           }}
-        onCancel={() => {
+          onCancel={() => {
             setShowUnsavedConfirm(false);
             setPendingCloseAction(null);
           }}
-      />
+        />
       </div>
     </div>
   );
