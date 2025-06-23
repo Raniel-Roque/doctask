@@ -71,14 +71,14 @@ export interface LogDetails {
 // =========================================
 export const TABLE_CONSTANTS = {
   STATUS_FILTERS: {
-    ALL: "all",
-    VERIFIED: "verified",
-    UNVERIFIED: "unverified",
+    ALL: "ALL STATUS",
+    VERIFIED: "VERIFIED",
+    UNVERIFIED: "UNVERIFIED",
   },
   ROLE_FILTERS: {
-    ALL: "all",
-    MANAGER: "manager",
-    MEMBER: "member",
+    ALL: "ALL ROLE",
+    MANAGER: "MANAGER",
+    MEMBER: "MEMBER",
   },
   DEFAULT_SORT_FIELD: "first_name" as const,
   DEFAULT_SORT_DIRECTION: "asc" as const,

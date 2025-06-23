@@ -1,14 +1,14 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { useState, use, useEffect } from "react";
+import { useState, use, useEffect, useMemo } from "react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { User, Group } from "./components/types";
 import AddGroupForm from "./components/AddGroupForm";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
-import GroupsTable from "./components/GroupsTable";
+import GroupsTable, { GRADE_FILTERS } from "./components/GroupsTable";
 import EditGroupForm from "./components/EditGroupForm";
 
 // Filter constants
@@ -16,17 +16,6 @@ const CAPSTONE_FILTERS = {
   ALL: "All Capstone Titles",
   WITH_TITLE: "With Capstone Title",
   WITHOUT_TITLE: "Without Capstone Title",
-} as const;
-
-const GRADE_FILTERS = {
-  ALL: "All Grades",
-  NO_GRADE: "No Grade",
-  APPROVED: "Approved",
-  APPROVED_WITH_REVISIONS: "Approved With Revisions",
-  DISAPPROVED: "Disapproved",
-  ACCEPTED_WITH_REVISIONS: "Accepted With Revisions",
-  REORAL_DEFENSE: "Reoral Defense",
-  NOT_ACCEPTED: "Not Accepted",
 } as const;
 
 interface GroupsPageProps {
@@ -55,26 +44,30 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [capstoneFilter, setCapstoneFilter] = useState<
+  
+  // Applied filters for backend query (only change when filters are actually saved)
+  const [appliedCapstoneFilter, setAppliedCapstoneFilter] = useState<
     (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS]
   >(CAPSTONE_FILTERS.ALL);
-  const [adviserFilter, setAdviserFilter] = useState<string>("");
-  const [gradeFilter, setGradeFilter] = useState<
-    (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS]
-  >(GRADE_FILTERS.ALL);
+  const [appliedAdviserFilters, setAppliedAdviserFilters] = useState<string[]>([]);
+  const [appliedGradeFilters, setAppliedGradeFilters] = useState<(typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]>([]);
+  
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch groups data with search and pagination
-  const searchResult = useQuery(api.fetch.searchGroups, {
+  // Memoize query parameters to prevent unnecessary re-renders during temporary filter selections
+  const queryParams = useMemo(() => ({
     searchTerm,
     pageSize,
     pageNumber: currentPage,
     sortField,
     sortDirection,
-    capstoneFilter,
-    adviserFilter,
-    gradeFilter,
-  });
+    capstoneFilter: appliedCapstoneFilter,
+    adviserFilters: appliedAdviserFilters,
+    gradeFilters: appliedGradeFilters,
+  }), [searchTerm, pageSize, currentPage, sortField, sortDirection, appliedCapstoneFilter, appliedAdviserFilters, appliedGradeFilters]);
+
+  // Fetch groups data with search and pagination
+  const searchResult = useQuery(api.fetch.searchGroups, queryParams);
 
   // Get users for forms
   const users = useQuery(api.fetch.getUsers) || [];
@@ -126,19 +119,17 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const handleCapstoneFilterChange = (
     filter: (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS],
   ) => {
-    setCapstoneFilter(filter);
+    setAppliedCapstoneFilter(filter);
     setCurrentPage(1);
   };
 
-  const handleAdviserFilterChange = (filter: string) => {
-    setAdviserFilter(filter);
+  const handleAdviserFilterChange = (filters: string[]) => {
+    setAppliedAdviserFilters(filters);
     setCurrentPage(1);
   };
 
-  const handleGradeFilterChange = (
-    filter: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS],
-  ) => {
-    setGradeFilter(filter);
+  const handleGradeFilterChange = (filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]) => {
+    setAppliedGradeFilters(filters);
     setCurrentPage(1);
   };
 

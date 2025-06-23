@@ -81,8 +81,8 @@ const PDFReport: React.FC<PDFReportProps> = ({
     : [];
 
   const filteredUsers = validUsers.filter((user) => {
-    if (!filters?.status || filters.status === "all") return true;
-    return user.email_verified === (filters.status === "verified");
+    if (!filters?.status || filters.status === "ALL STATUS") return true;
+    return user.email_verified === (filters.status === "VERIFIED");
   });
 
   const getSubroleName = (subrole: number | undefined) => {
@@ -144,7 +144,8 @@ const PDFReport: React.FC<PDFReportProps> = ({
             Object.entries(filters).filter(([key, value]) => {
               if (
                 !value ||
-                value.toLowerCase() === "all" ||
+                value === "ALL STATUS" ||
+                value === "ALL ROLE" ||
                 value === "undefined"
               )
                 return false;
@@ -156,7 +157,8 @@ const PDFReport: React.FC<PDFReportProps> = ({
                 .filter(([key, value]) => {
                   if (
                     !value ||
-                    value.toLowerCase() === "all" ||
+                    value === "ALL STATUS" ||
+                    value === "ALL ROLE" ||
                     value === "undefined"
                   )
                     return false;

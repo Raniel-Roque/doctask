@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useLayoutEffect, useRef, useEffect } from "react";
 import {
   FaSearch,
   FaSort,
@@ -11,7 +11,7 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaMinus,
-  FaTimes,
+  FaCheck,
 } from "react-icons/fa"; // Import icons and pagination icons
 import { User, Group } from "./types";
 import DeleteGroupConfirmation from "./DeleteGroupConfirmation";
@@ -25,15 +25,14 @@ const CAPSTONE_FILTERS = {
   WITHOUT_TITLE: "Without Capstone Title",
 } as const;
 
-const GRADE_FILTERS = {
-  ALL: "All Grades",
-  NO_GRADE: "No Grade",
-  APPROVED: "Approved",
-  APPROVED_WITH_REVISIONS: "Approved With Revisions",
-  DISAPPROVED: "Disapproved",
-  ACCEPTED_WITH_REVISIONS: "Accepted With Revisions",
-  REORAL_DEFENSE: "Reoral Defense",
-  NOT_ACCEPTED: "Not Accepted",
+export const GRADE_FILTERS = {
+  NO_GRADE: "NO GRADE",
+  APPROVED: "APPROVED",
+  APPROVED_WITH_REVISIONS: "APPROVED WITH REVISIONS",
+  DISAPPROVED: "DISAPPROVED",
+  ACCEPTED_WITH_REVISIONS: "ACCEPTED WITH REVISIONS",
+  REORAL_DEFENSE: "REORAL DEFENSE",
+  NOT_ACCEPTED: "NOT ACCEPTED",
 } as const;
 
 const getGradeDisplay = (grade?: number): { text: string; color: string } => {
@@ -87,10 +86,8 @@ interface GroupsTableProps {
   onCapstoneFilterChange: (
     filter: (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS],
   ) => void;
-  onAdviserFilterChange: (filter: string) => void;
-  onGradeFilterChange: (
-    filter: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS],
-  ) => void;
+  onAdviserFilterChange: (filters: string[]) => void;
+  onGradeFilterChange: (filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]) => void;
   isDeleting?: boolean;
 }
 
@@ -119,19 +116,61 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   isDeleting = false,
 }) => {
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
-  const [adviserFilter, setAdviserFilter] = useState<string>("");
+  const [adviserFilters, setAdviserFilters] = useState<string[]>([]);
+  const [tempAdviserFilters, setTempAdviserFilters] = useState<string[]>([]);
   const [showAdviserDropdown, setShowAdviserDropdown] = useState(false);
   const [adviserSearch, setAdviserSearch] = useState("");
+  const [adviserDropdownStyle, setAdviserDropdownStyle] = useState({});
+  const adviserDropdownRef = useRef<HTMLDivElement>(null);
   const [capstoneFilter, setCapstoneFilter] = useState<
     (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS]
   >(CAPSTONE_FILTERS.ALL);
   const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
-  const [gradeFilter, setGradeFilter] = useState<
-    (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS]
-  >(GRADE_FILTERS.ALL);
+  const [gradeFilters, setGradeFilters] = useState<(typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]>([]);
+  const [tempGradeFilters, setTempGradeFilters] = useState<(typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]>([]);
   const [showGradeDropdown, setShowGradeDropdown] = useState(false);
-  const [gradeSearch, setGradeSearch] = useState("");
+  const [gradeDropdownStyle, setGradeDropdownStyle] = useState({});
+  const gradeDropdownRef = useRef<HTMLDivElement>(null);
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
+
+  useLayoutEffect(() => {
+    if (showGradeDropdown && gradeDropdownRef.current) {
+      const dropdownRect = gradeDropdownRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+
+      if (dropdownRect.right > viewportWidth) {
+        setGradeDropdownStyle({ right: 0 });
+      } else {
+        setGradeDropdownStyle({ left: 0 });
+      }
+    }
+  }, [showGradeDropdown]);
+
+  useLayoutEffect(() => {
+    if (showAdviserDropdown && adviserDropdownRef.current) {
+      const dropdownRect = adviserDropdownRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+
+      if (dropdownRect.right > viewportWidth) {
+        setAdviserDropdownStyle({ right: 0 });
+      } else {
+        setAdviserDropdownStyle({ left: 0 });
+      }
+    }
+  }, [showAdviserDropdown]);
+
+  // Sync temporary state with actual state when dropdowns open
+  useEffect(() => {
+    if (showAdviserDropdown) {
+      setTempAdviserFilters(adviserFilters);
+    }
+  }, [showAdviserDropdown, adviserFilters]);
+
+  useEffect(() => {
+    if (showGradeDropdown) {
+      setTempGradeFilters(gradeFilters);
+    }
+  }, [showGradeDropdown, gradeFilters]);
 
   const toggleExpand = (groupId: string) => {
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
@@ -162,19 +201,47 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   };
 
   const handleAdviserFilter = (filter: string) => {
-    setAdviserFilter(filter);
-    setShowAdviserDropdown(false);
-    onPageChange(1);
-    onAdviserFilterChange(filter);
+    let newFilters;
+    if (tempAdviserFilters.includes(filter)) {
+      newFilters = tempAdviserFilters.filter((f) => f !== filter);
+    } else {
+      newFilters = [...tempAdviserFilters, filter];
+    }
+    setTempAdviserFilters(newFilters);
   };
 
   const handleGradeFilter = (
     filter: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS],
   ) => {
-    setGradeFilter(filter);
+    let newFilters;
+    if (tempGradeFilters.includes(filter)) {
+      newFilters = tempGradeFilters.filter((f) => f !== filter);
+    } else {
+      newFilters = [...tempGradeFilters, filter];
+    }
+    setTempGradeFilters(newFilters);
+  };
+
+  const handleSaveAdviserFilters = () => {
+    setAdviserFilters(tempAdviserFilters);
+    onAdviserFilterChange(tempAdviserFilters);
+    setShowAdviserDropdown(false);
+    onPageChange(1);
+  };
+
+  const handleResetAdviserFilters = () => {
+    setTempAdviserFilters(adviserFilters);
+  };
+
+  const handleSaveGradeFilters = () => {
+    setGradeFilters(tempGradeFilters);
+    onGradeFilterChange(tempGradeFilters);
     setShowGradeDropdown(false);
     onPageChange(1);
-    onGradeFilterChange(filter);
+  };
+
+  const handleResetGradeFilters = () => {
+    setTempGradeFilters(gradeFilters);
   };
 
   return (
@@ -204,7 +271,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
             onClick={() => {
               setShowCapstoneDropdown(!showCapstoneDropdown);
               setShowAdviserDropdown(false);
-              setShowGradeDropdown(false);
             }}
           >
             {capstoneFilter === CAPSTONE_FILTERS.ALL
@@ -223,136 +289,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     key={filter}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                     onClick={() => handleCapstoneFilter(filter)}
-                  >
-                    {filter}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Adviser Filter */}
-        <div className="relative">
-          <div
-            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10 cursor-pointer min-w-[200px]"
-            onClick={() => {
-              setShowAdviserDropdown(!showAdviserDropdown);
-              setShowCapstoneDropdown(false);
-              setShowGradeDropdown(false);
-            }}
-          >
-            {adviserFilter || "All Advisers"}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <FaChevronDown color="#6B7280" />
-            </div>
-          </div>
-
-          {showAdviserDropdown && (
-            <div className="absolute z-10 w-[300px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
-              <div className="p-2 border-b">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={adviserSearch}
-                    onChange={(e) => setAdviserSearch(e.target.value)}
-                    placeholder="Search advisers..."
-                    className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    autoFocus
-                  />
-                  <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
-                    <FaSearch />
-                  </div>
-                </div>
-              </div>
-              <div className="max-h-48 overflow-y-auto">
-                <div
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleAdviserFilter("")}
-                >
-                  All Advisers
-                </div>
-                <div
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleAdviserFilter("No Adviser")}
-                >
-                  No Adviser
-                </div>
-                {uniqueAdvisers
-                  .filter((adviser) =>
-                    adviser.toLowerCase().includes(adviserSearch.toLowerCase()),
-                  )
-                  .map((adviser) => (
-                    <div
-                      key={adviser}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer whitespace-nowrap"
-                      onClick={() => handleAdviserFilter(adviser)}
-                    >
-                      {adviser}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Grade Filter */}
-        <div className="relative">
-          <div
-            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10 cursor-pointer min-w-[150px]"
-            onClick={() => {
-              setShowGradeDropdown(!showGradeDropdown);
-              setShowCapstoneDropdown(false);
-              setShowAdviserDropdown(false);
-            }}
-          >
-            {gradeFilter}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <FaChevronDown color="#6B7280" />
-            </div>
-          </div>
-
-          {showGradeDropdown && (
-            <div className="absolute z-10 w-[300px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
-              <div className="p-2 border-b">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={gradeSearch}
-                    onChange={(e) => setGradeSearch(e.target.value)}
-                    placeholder="Search grades..."
-                    className="w-full pl-8 pr-8 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    autoFocus
-                  />
-                  <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
-                    <FaSearch />
-                  </div>
-                  {gradeSearch && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setGradeSearch("");
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <FaTimes size={12} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="max-h-48 overflow-y-auto">
-                {Object.values(GRADE_FILTERS)
-                  .filter((grade) =>
-                    grade.toLowerCase().includes(gradeSearch.toLowerCase()),
-                  )
-                  .map((filter) => (
-                    <div
-                      key={filter}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        handleGradeFilter(filter);
-                        setGradeSearch("");
-                      }}
                     >
                       {filter}
                     </div>
@@ -415,16 +351,153 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 scope="col"
                 className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
               >
-                <div className="flex items-center justify-center">Adviser</div>
+                <div className="relative inline-block">
+                  <div
+                    className="group inline-flex justify-center items-center gap-2 px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none cursor-pointer min-w-[120px] text-white bg-[#B54A4A] hover:bg-[#9a3d3d]"
+                    onClick={() => {
+                      setShowAdviserDropdown(!showAdviserDropdown);
+                      setShowCapstoneDropdown(false);
+                      setShowGradeDropdown(false);
+                    }}
+                  >
+                    <span className="font-medium uppercase">
+                      {adviserFilters.length > 0 
+                        ? adviserFilters.length === 1 
+                          ? adviserFilters[0] 
+                          : `ADVISER: ${adviserFilters.length}`
+                        : "ADVISER"}
+                    </span>
+                    <FaChevronDown className="group-hover:text-white" />
+                  </div>
+
+                  {showAdviserDropdown && (
+                    <div
+                      ref={adviserDropdownRef}
+                      className="absolute z-10 w-auto min-w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      style={adviserDropdownStyle}
+                    >
+                      <div className="p-2 border-b">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={adviserSearch}
+                            onChange={(e) => setAdviserSearch(e.target.value)}
+                            placeholder="Search advisers..."
+                            className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            autoFocus
+                          />
+                          <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
+                            <FaSearch />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        <div
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                          onClick={() => handleAdviserFilter("No Adviser")}
+                        >
+                          <div className="w-4 h-4 border border-gray-300 rounded mr-2 flex items-center justify-center">
+                            {tempAdviserFilters.includes("No Adviser") && <FaCheck className="text-xs text-blue-600" />}
+                          </div>
+                          No Adviser
+                        </div>
+                        {uniqueAdvisers
+                          .filter((adviser) =>
+                            adviser.toLowerCase().includes(adviserSearch.toLowerCase()),
+                          )
+                          .map((adviser) => (
+                            <div
+                              key={adviser}
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer whitespace-nowrap flex items-center"
+                              onClick={() => handleAdviserFilter(adviser)}
+                            >
+                              <div className="w-4 h-4 border border-gray-300 rounded mr-2 flex items-center justify-center">
+                                {tempAdviserFilters.includes(adviser) && <FaCheck className="text-xs text-blue-600" />}
+                              </div>
+                              {adviser}
+                            </div>
+                          ))}
+                      </div>
+                      {/* Save and Reset buttons */}
+                      <div className="p-2 border-t border-gray-200 flex gap-2">
+                        <button
+                          onClick={handleSaveAdviserFilters}
+                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleResetAdviserFilters}
+                          className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
-                onClick={() => onSort("grade")}
+                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
               >
-                <div className="flex items-center justify-center">
-                  Grade
-                  <span className="ml-1">{getSortIcon("grade")}</span>
+                <div className="relative inline-block">
+                  <div
+                    className="group inline-flex justify-center items-center gap-2 px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none cursor-pointer min-w-[120px] text-white bg-[#B54A4A] hover:bg-[#9a3d3d]"
+                    onClick={() => {
+                      setShowGradeDropdown(!showGradeDropdown);
+                      setShowCapstoneDropdown(false);
+                      setShowAdviserDropdown(false);
+                    }}
+                  >
+                    <span className="font-medium uppercase">
+                      {gradeFilters.length > 0 
+                        ? gradeFilters.length === 1 
+                          ? gradeFilters[0] 
+                          : `GRADE: ${gradeFilters.length}`
+                        : "GRADE"}
+                    </span>
+                    <FaChevronDown className="group-hover:text-white" />
+                  </div>
+
+                  {showGradeDropdown && (
+                    <div
+                      ref={gradeDropdownRef}
+                      className="absolute z-10 w-auto min-w-[220px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      style={gradeDropdownStyle}
+                    >
+                      <div className="max-h-48 overflow-y-auto">
+                        {/* Remove All Grades option */}
+                        {Object.values(GRADE_FILTERS).map((filter) => (
+                          <div
+                            key={filter}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-left flex items-center"
+                            onClick={() => handleGradeFilter(filter)}
+                          >
+                            <div className="w-4 h-4 border border-gray-300 rounded mr-2 flex items-center justify-center">
+                              {tempGradeFilters.includes(filter) && <FaCheck className="text-xs text-blue-600" />}
+                            </div>
+                            {filter}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Save and Reset buttons */}
+                      <div className="p-2 border-t border-gray-200 flex gap-2">
+                        <button
+                          onClick={handleSaveGradeFilters}
+                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleResetGradeFilters}
+                          className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </th>
               <th
@@ -526,7 +599,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {group.adviser ? getFullName(group.adviser) : "-"}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                <td className="px-6 py-4 whitespace-nowrap text-center">
                   {(() => {
                     const { text, color } = getGradeDisplay(group.grade);
                     return (
@@ -609,6 +682,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               <>
                 <div className="h-6 w-px bg-gray-300"></div>
                 <PDFDownloadLink
+                  key={`pdf-${searchTerm}-${capstoneFilter}-${adviserFilters.join(",")}-${gradeFilters.join(",")}`}
                   document={
                     <GroupPDFReport
                       groups={groups}
@@ -616,12 +690,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       filters={{
                         searchTerm,
                         capstoneFilter,
-                        adviserFilter,
-                        gradeFilter,
+                        adviserFilters,
+                        gradeFilters,
                       }}
                     />
                   }
-                  fileName={`GroupsReport-${capstoneFilter}_${adviserFilter}_${gradeFilter}_${new Date().toISOString().slice(0, 10)}.pdf`}
+                  fileName={`GroupsReport-${capstoneFilter}_${adviserFilters.join(",")}_${gradeFilters.join(",")}_${new Date().toISOString().slice(0, 10)}.pdf`}
                 >
                   {({ loading }) => (
                     <span

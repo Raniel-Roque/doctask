@@ -184,7 +184,7 @@ export const getLogs = query({
     pageNumber: v.optional(v.number()),
     sortField: v.optional(v.string()),
     sortDirection: v.optional(v.string()),
-    actionFilter: v.optional(v.string()),
+    actionFilters: v.optional(v.array(v.string())),
     entityTypeFilter: v.optional(v.string()),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
@@ -196,7 +196,7 @@ export const getLogs = query({
       pageNumber = 1,
       sortField,
       sortDirection,
-      actionFilter,
+      actionFilters,
       entityTypeFilter,
       startDate,
       endDate,
@@ -235,8 +235,20 @@ export const getLogs = query({
       }
 
       // Apply action filter
-      if (actionFilter && actionFilter !== "All Actions") {
-        logs = logs.filter((log) => log.action === actionFilter);
+      if (actionFilters && actionFilters.length > 0) {
+        logs = logs.filter((log) => {
+          // Map the detailed actions to their consolidated versions
+          const consolidatedAction = 
+            log.action === "Create User" || log.action === "Create Group" ? "Create" :
+            log.action === "Edit User" || log.action === "Edit Group" ? "Edit" :
+            log.action === "Delete User" || log.action === "Delete Group" ? "Delete" :
+            log.action === "Reset Password" ? "Reset Password" :
+            log.action === "Lock Account" ? "Lock Account" :
+            log.action === "Unlock Account" ? "Unlock Account" :
+            log.action;
+          
+          return actionFilters.includes(consolidatedAction);
+        });
       }
 
       // Apply entity type filter
@@ -650,8 +662,8 @@ export const searchGroups = query({
     sortField: v.optional(v.string()),
     sortDirection: v.optional(v.string()),
     capstoneFilter: v.optional(v.string()),
-    adviserFilter: v.optional(v.string()),
-    gradeFilter: v.optional(v.string()),
+    adviserFilters: v.optional(v.array(v.string())),
+    gradeFilters: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const {
@@ -661,8 +673,8 @@ export const searchGroups = query({
       sortField,
       sortDirection,
       capstoneFilter,
-      adviserFilter,
-      gradeFilter,
+      adviserFilters,
+      gradeFilters,
     } = args;
     const skip = (pageNumber - 1) * pageSize;
 
@@ -733,18 +745,32 @@ export const searchGroups = query({
       }
 
       // Apply adviser filter
-      if (adviserFilter && adviserFilter !== "All Advisers") {
+      if (adviserFilters && adviserFilters.length > 0) {
         groups = groups.filter((group) => {
           const adviser = group.adviser_id
             ? users.find((u) => u._id === group.adviser_id)
             : null;
-          if (adviserFilter === "No Adviser") {
-            return !adviser;
+          
+          // Check if "No Adviser" is selected
+          const noAdviserSelected = adviserFilters.includes("No Adviser");
+          
+          // If group has no adviser and "No Adviser" is selected, include it
+          if (!adviser && noAdviserSelected) {
+            return true;
           }
-          const adviserName = adviser
-            ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`.toLowerCase()
-            : "";
-          return adviserName === adviserFilter.toLowerCase();
+          
+          // If group has no adviser but "No Adviser" is not selected, exclude it
+          if (!adviser && !noAdviserSelected) {
+            return false;
+          }
+          
+          // If group has an adviser, check if it matches any selected adviser
+          if (adviser) {
+            const adviserName = `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`;
+            return adviserFilters.includes(adviserName);
+          }
+          
+          return false;
         });
       }
 
@@ -760,14 +786,18 @@ export const searchGroups = query({
       };
 
       // Apply grade filter
-      if (gradeFilter && gradeFilter.toLowerCase() !== "all grades") {
+      if (gradeFilters && gradeFilters.length > 0) {
         groups = groups.filter((group) => {
           const grade = group.grade;
-          if (gradeFilter.toLowerCase() === "no grade") {
-            return grade === undefined || grade === null || grade === 0;
-          }
-          const gradeNumber = GRADE_LABEL_TO_NUMBER[gradeFilter];
-          return grade === gradeNumber;
+          
+          // Check if any of the selected grade filters match
+          return gradeFilters.some((gradeFilter) => {
+            if (gradeFilter.toLowerCase() === "no grade") {
+              return grade === undefined || grade === null || grade === 0;
+            }
+            const gradeNumber = GRADE_LABEL_TO_NUMBER[gradeFilter];
+            return grade === gradeNumber;
+          });
         });
       }
 

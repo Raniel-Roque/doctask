@@ -7,8 +7,9 @@ import {
   FaSortUp,
   FaSortDown,
   FaChevronDown,
+  FaCheck,
 } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect, useEffect } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
@@ -105,12 +106,23 @@ export const LogTable = () => {
     }
     return 5;
   });
-  const [actionFilter, setActionFilter] = useState<
-    (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS]
-  >(LOG_ACTIONS.ALL);
+  const [tempActionFilters, setTempActionFilters] = useState<
+    (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS][]
+  >([]);
+  const [appliedActionFilters, setAppliedActionFilters] = useState<
+    (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS][]
+  >([]);
+  const [showActionDropdown, setShowActionDropdown] = useState(false);
+  const [actionDropdownStyle, setActionDropdownStyle] = useState({});
+  const actionDropdownRef = useRef<HTMLDivElement>(null);
+  
   const [entityTypeFilter, setEntityTypeFilter] = useState<
     (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES]
   >(ENTITY_TYPES.ALL);
+  const [showEntityDropdown, setShowEntityDropdown] = useState(false);
+  const [entityDropdownStyle, setEntityDropdownStyle] = useState({});
+  const entityDropdownRef = useRef<HTMLDivElement>(null);
+  
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
@@ -127,6 +139,46 @@ export const LogTable = () => {
     details: false,
   });
 
+  // Sync temporary state with applied state when dropdowns open
+  useEffect(() => {
+    if (showActionDropdown) {
+      setTempActionFilters(appliedActionFilters);
+    }
+  }, [showActionDropdown, appliedActionFilters]);
+
+  useEffect(() => {
+    if (showEntityDropdown) {
+      setEntityTypeFilter(entityTypeFilter);
+    }
+  }, [showEntityDropdown, entityTypeFilter]);
+
+  // Handle dropdown positioning
+  useLayoutEffect(() => {
+    if (showActionDropdown && actionDropdownRef.current) {
+      const dropdownRect = actionDropdownRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+
+      if (dropdownRect.right > viewportWidth) {
+        setActionDropdownStyle({ right: 0 });
+      } else {
+        setActionDropdownStyle({ left: 0 });
+      }
+    }
+  }, [showActionDropdown]);
+
+  useLayoutEffect(() => {
+    if (showEntityDropdown && entityDropdownRef.current) {
+      const dropdownRect = entityDropdownRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+
+      if (dropdownRect.right > viewportWidth) {
+        setEntityDropdownStyle({ right: 0 });
+      } else {
+        setEntityDropdownStyle({ left: 0 });
+      }
+    }
+  }, [showEntityDropdown]);
+
   // Convert date strings to timestamps
   const startTimestamp = startDate
     ? new Date(startDate + "T00:00:00").getTime()
@@ -142,7 +194,7 @@ export const LogTable = () => {
     pageNumber: currentPage || 1,
     sortField: sortField || undefined,
     sortDirection: sortDirection || undefined,
-    actionFilter: actionFilter === LOG_ACTIONS.ALL ? undefined : actionFilter,
+    actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
     entityTypeFilter:
       entityTypeFilter === ENTITY_TYPES.ALL ? undefined : entityTypeFilter,
     startDate: startTimestamp,
@@ -197,21 +249,43 @@ export const LogTable = () => {
     setCurrentPage(1);
   };
 
+  const handleActionFilter = (filter: (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS]) => {
+    let newFilters;
+    if (tempActionFilters.includes(filter)) {
+      newFilters = tempActionFilters.filter((f) => f !== filter);
+    } else {
+      newFilters = [...tempActionFilters, filter];
+    }
+    setTempActionFilters(newFilters);
+  };
+
+  const handleSaveActionFilters = () => {
+    setAppliedActionFilters(tempActionFilters);
+    setShowActionDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const handleResetActionFilters = () => {
+    setTempActionFilters(appliedActionFilters);
+  };
+
+  const handleEntityFilterChange = (filter: (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES]) => {
+    setEntityTypeFilter(filter);
+    setShowEntityDropdown(false);
+    setCurrentPage(1);
+  };
+
   const getActionColors = (action: string) => {
     // Map the detailed actions to their consolidated versions
-    const actionMap: { [key: string]: string } = {
-      "Create User": LOG_ACTIONS.CREATE,
-      "Create Group": LOG_ACTIONS.CREATE,
-      "Edit User": LOG_ACTIONS.EDIT,
-      "Edit Group": LOG_ACTIONS.EDIT,
-      "Delete User": LOG_ACTIONS.DELETE,
-      "Delete Group": LOG_ACTIONS.DELETE,
-      "Reset Password": LOG_ACTIONS.RESET_PASSWORD,
-      "Lock Account": LOG_ACTIONS.LOCK_ACCOUNT,
-      "Unlock Account": LOG_ACTIONS.UNLOCK_ACCOUNT,
-    };
+    const consolidatedAction = 
+      action === "Create User" || action === "Create Group" ? LOG_ACTIONS.CREATE :
+      action === "Edit User" || action === "Edit Group" ? LOG_ACTIONS.EDIT :
+      action === "Delete User" || action === "Delete Group" ? LOG_ACTIONS.DELETE :
+      action === "Reset Password" ? LOG_ACTIONS.RESET_PASSWORD :
+      action === "Lock Account" ? LOG_ACTIONS.LOCK_ACCOUNT :
+      action === "Unlock Account" ? LOG_ACTIONS.UNLOCK_ACCOUNT :
+      action;
 
-    const consolidatedAction = actionMap[action] || action;
     const colors =
       ACTION_COLORS[consolidatedAction as keyof typeof ACTION_COLORS] ||
       ACTION_COLORS.default;
@@ -287,54 +361,6 @@ export const LogTable = () => {
             }}
           />
         </div>
-        <div className="relative">
-          <select
-            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
-            value={actionFilter}
-            onChange={(e) => {
-              setActionFilter(
-                e.target
-                  .value as (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS],
-              );
-              setCurrentPage(1);
-            }}
-          >
-            {Object.values(LOG_ACTIONS).map((action) => (
-              <option key={action} value={action}>
-                {action}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <FaChevronDown color="#6B7280" />
-          </div>
-        </div>
-        <div className="relative">
-          <select
-            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
-            value={entityTypeFilter}
-            onChange={(e) => {
-              setEntityTypeFilter(
-                e.target
-                  .value as (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES],
-              );
-              setCurrentPage(1);
-            }}
-          >
-            {Object.values(ENTITY_TYPES).map((type) => (
-              <option key={type} value={type}>
-                {type === ENTITY_TYPES.ALL
-                  ? "All Entities"
-                  : type === ENTITY_TYPES.USER
-                    ? "Users"
-                    : "Groups"}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <FaChevronDown color="#6B7280" />
-          </div>
-        </div>
         <div className="flex gap-2">
           <div
             className="relative flex flex-col items-start"
@@ -398,16 +424,16 @@ export const LogTable = () => {
             <thead>
               <tr className="bg-[#B54A4A]">
                 <th
-                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
+                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer w-32"
                   onClick={() => handleSort("_creationTime")}
                 >
-                  <div className="flex items-center justify-center">
+                  <div className="flex items-center justify-center text-xs">
                     Date & Time
                     <span className="ml-1">{getSortIcon("_creationTime")}</span>
                   </div>
                 </th>
                 <th
-                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
+                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer w-40"
                   onClick={() => handleSort("instructor")}
                 >
                   <div className="flex items-center justify-center">
@@ -416,26 +442,112 @@ export const LogTable = () => {
                   </div>
                 </th>
                 <th
-                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort("action")}
+                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-24"
                 >
-                  <div className="flex items-center justify-center">
-                    Action
-                    <span className="ml-1">{getSortIcon("action")}</span>
+                  <div className="relative inline-block">
+                    <div
+                      className="group inline-flex justify-center items-center gap-2 px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none cursor-pointer min-w-[120px] text-white bg-[#B54A4A] hover:bg-[#9a3d3d]"
+                      onClick={() => {
+                        setShowActionDropdown(!showActionDropdown);
+                        setShowEntityDropdown(false);
+                      }}
+                    >
+                      <span className="font-medium uppercase">
+                        {appliedActionFilters.length === 0 
+                          ? "ACTION" 
+                          : appliedActionFilters.length === 1 
+                            ? appliedActionFilters[0] 
+                            : `ACTION: ${appliedActionFilters.length}`}
+                      </span>
+                      <FaChevronDown className="group-hover:text-white" />
+                    </div>
+                    
+                    {showActionDropdown && (
+                      <div
+                        ref={actionDropdownRef}
+                        className="absolute z-10 w-auto min-w-[200px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                        style={actionDropdownStyle}
+                      >
+                        <div className="max-h-48 overflow-y-auto">
+                          {Object.values(LOG_ACTIONS).filter(action => action !== LOG_ACTIONS.ALL).map((action) => (
+                            <div
+                              key={action}
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-left flex items-center"
+                              onClick={() => handleActionFilter(action)}
+                            >
+                              <div className="w-4 h-4 border border-gray-300 rounded mr-2 flex items-center justify-center">
+                                {tempActionFilters.includes(action) && <FaCheck className="text-xs text-blue-600" />}
+                              </div>
+                              {action}
+                            </div>
+                          ))}
+                        </div>
+                        {/* Save and Reset buttons */}
+                        <div className="p-2 border-t border-gray-200 flex gap-2">
+                          <button
+                            onClick={handleSaveActionFilters}
+                            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={handleResetActionFilters}
+                            className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </th>
                 <th
-                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort("affectedEntity")}
+                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-40"
                 >
-                  <div className="flex items-center justify-center">
-                    Affected Entity
-                    <span className="ml-1">
-                      {getSortIcon("affectedEntity")}
-                    </span>
+                  <div className="relative inline-block">
+                    <div
+                      className="group inline-flex justify-center items-center gap-2 px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none cursor-pointer min-w-[120px] text-white bg-[#B54A4A] hover:bg-[#9a3d3d]"
+                      onClick={() => {
+                        setShowEntityDropdown(!showEntityDropdown);
+                        setShowActionDropdown(false);
+                      }}
+                    >
+                      <span className="font-medium uppercase">
+                        {entityTypeFilter === ENTITY_TYPES.ALL
+                          ? "ENTITY"
+                          : entityTypeFilter === ENTITY_TYPES.USER
+                            ? "Users"
+                            : "Groups"}
+                      </span>
+                      <FaChevronDown className="group-hover:text-white" />
+                    </div>
+                    
+                    {showEntityDropdown && (
+                      <div
+                        ref={entityDropdownRef}
+                        className="absolute z-10 w-auto min-w-[150px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                        style={entityDropdownStyle}
+                      >
+                        <div className="max-h-48 overflow-y-auto">
+                          {Object.values(ENTITY_TYPES).map((type) => (
+                            <div
+                              key={type}
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-left"
+                              onClick={() => handleEntityFilterChange(type)}
+                            >
+                              {type === ENTITY_TYPES.ALL
+                                ? "All Entities"
+                                : type === ENTITY_TYPES.USER
+                                  ? "Users"
+                                  : "Groups"}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </th>
-                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider flex-1">
                   Details
                 </th>
               </tr>
@@ -468,13 +580,13 @@ export const LogTable = () => {
                       key={log._id}
                       className={`${index % 2 === 0 ? "bg-white" : "bg-gray-200"}`}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-left w-32">
                         {format(
                           new Date(log._creationTime),
                           "MMM dd, yyyy hh:mm a",
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-left">
+                      <td className="px-6 py-4 whitespace-nowrap text-left w-40">
                         <CollapsibleText
                           text={instructor.display}
                           maxLength={20}
@@ -482,14 +594,14 @@ export const LogTable = () => {
                           id={instructor.id}
                         />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <td className="px-6 py-4 whitespace-nowrap text-center w-24">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}
                         >
                           {log.action}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-left">
+                      <td className="px-6 py-4 whitespace-nowrap text-left w-40">
                         <CollapsibleText
                           text={affectedEntity.display}
                           maxLength={20}
@@ -497,7 +609,7 @@ export const LogTable = () => {
                           id={affectedEntity.id}
                         />
                       </td>
-                      <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line">
+                      <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line flex-1">
                         <CollapsibleText
                           text={log.details}
                           maxLength={20}

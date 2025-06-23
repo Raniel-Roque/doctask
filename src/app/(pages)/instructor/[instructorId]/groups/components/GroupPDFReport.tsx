@@ -77,8 +77,8 @@ interface GroupPDFReportProps {
   filters?: {
     searchTerm?: string;
     capstoneFilter?: string;
-    adviserFilter?: string;
-    gradeFilter?: string;
+    adviserFilters?: string[];
+    gradeFilters?: string[];
   };
 }
 
@@ -132,25 +132,31 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
           Total Records: {groups.length}
           {"\n"}
           {filters &&
-            Object.entries(filters).filter(
-              ([, value]) =>
-                value && value.toLowerCase() !== "all" && value !== "undefined",
-            ).length > 0 &&
+            Object.entries(filters).filter(([key, value]) => {
+              if (!value) return false;
+              if (key === "adviserFilters" && Array.isArray(value) && value.length === 0) return false;
+              if (key === "gradeFilters" && Array.isArray(value) && value.length === 0) return false;
+              if (value === "undefined") return false;
+              return true;
+            }).length > 0 &&
             "Filters: " +
               Object.entries(filters)
-                .filter(
-                  ([, value]) =>
-                    value &&
-                    value.toLowerCase() !== "all" &&
-                    value !== "undefined",
-                )
+                .filter(([key, value]) => {
+                  if (!value) return false;
+                  if (key === "adviserFilters" && Array.isArray(value) && value.length === 0) return false;
+                  if (key === "gradeFilters" && Array.isArray(value) && value.length === 0) return false;
+                  if (value === "undefined") return false;
+                  return true;
+                })
                 .map(([key, value]) => {
                   const capKey = key.charAt(0).toUpperCase() + key.slice(1);
-                  const capValue =
-                    typeof value === "string"
-                      ? value.charAt(0).toUpperCase() + value.slice(1)
-                      : value;
-                  return `${capKey}: ${capValue}`;
+                  let displayValue = value;
+                  if (Array.isArray(value)) {
+                    displayValue = value.join(", ");
+                  } else if (typeof value === "string") {
+                    displayValue = value.charAt(0).toUpperCase() + value.slice(1);
+                  }
+                  return `${capKey}: ${displayValue}`;
                 })
                 .join(", ")}
         </Text>

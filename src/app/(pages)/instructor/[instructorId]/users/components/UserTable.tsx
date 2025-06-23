@@ -94,6 +94,8 @@ export const UserTable = ({
   const [expandedEmail, setExpandedEmail] = useState<{
     [key: string]: boolean;
   }>({});
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   // Fetch adviser codes
   const adviserCodes = useQuery(api.fetch.getAdviserCodes) || {};
@@ -131,12 +133,36 @@ export const UserTable = ({
   const getRoleLabel = (subrole?: number) => {
     switch (subrole) {
       case 0:
-        return "Member";
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            Member
+          </span>
+        );
       case 1:
-        return "Manager";
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+            Manager
+          </span>
+        );
       default:
-        return "N/A";
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            N/A
+          </span>
+        );
     }
+  };
+
+  const getStatusDisplay = (
+    filter: (typeof TABLE_CONSTANTS.STATUS_FILTERS)[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS],
+  ) => {
+    return filter === TABLE_CONSTANTS.STATUS_FILTERS.ALL ? "STATUS" : filter;
+  };
+
+  const getRoleDisplay = (
+    filter: (typeof TABLE_CONSTANTS.ROLE_FILTERS)[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS],
+  ) => {
+    return filter === TABLE_CONSTANTS.ROLE_FILTERS.ALL ? "ROLE" : filter;
   };
 
   // =========================================
@@ -217,58 +243,6 @@ export const UserTable = ({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-        <div className="relative">
-          <select
-            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
-            value={statusFilter}
-            onChange={(e) =>
-              onStatusFilterChange(
-                e.target
-                  .value as (typeof TABLE_CONSTANTS.STATUS_FILTERS)[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS],
-              )
-            }
-          >
-            <option value={TABLE_CONSTANTS.STATUS_FILTERS.ALL}>
-              All Status
-            </option>
-            <option value={TABLE_CONSTANTS.STATUS_FILTERS.VERIFIED}>
-              Verified
-            </option>
-            <option value={TABLE_CONSTANTS.STATUS_FILTERS.UNVERIFIED}>
-              Unverified
-            </option>
-          </select>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <FaChevronDown color="#6B7280" />
-          </div>
-        </div>
-        {showRoleColumn && onRoleFilterChange && (
-          <div className="relative">
-            <select
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-10"
-              value={roleFilter}
-              onChange={(e) =>
-                onRoleFilterChange(
-                  e.target
-                    .value as (typeof TABLE_CONSTANTS.ROLE_FILTERS)[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS],
-                )
-              }
-            >
-              <option value={TABLE_CONSTANTS.ROLE_FILTERS.ALL}>
-                All Roles
-              </option>
-              <option value={TABLE_CONSTANTS.ROLE_FILTERS.MANAGER}>
-                Manager
-              </option>
-              <option value={TABLE_CONSTANTS.ROLE_FILTERS.MEMBER}>
-                Member
-              </option>
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <FaChevronDown color="#6B7280" />
-            </div>
-          </div>
-        )}
         <div className="flex items-center gap-2">
           <button
             onClick={onAdd}
@@ -315,7 +289,40 @@ export const UserTable = ({
                 </div>
               </th>
               <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                Status
+                <div className="relative inline-block">
+                  <div
+                    className="px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none pr-10 cursor-pointer min-w-[120px] text-white text-xs font-medium uppercase tracking-wider"
+                    onClick={() => {
+                      setShowStatusDropdown(!showStatusDropdown);
+                      setShowRoleDropdown(false); // Close other dropdown
+                    }}
+                  >
+                    {getStatusDisplay(statusFilter)}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <FaChevronDown />
+                    </div>
+                  </div>
+                  {showStatusDropdown && (
+                    <div className="absolute z-10 w-auto min-w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black">
+                      <div className="max-h-48 overflow-y-auto">
+                        {Object.values(TABLE_CONSTANTS.STATUS_FILTERS).map(
+                          (filter) => (
+                            <div
+                              key={filter}
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-left"
+                              onClick={() => {
+                                onStatusFilterChange(filter);
+                                setShowStatusDropdown(false);
+                              }}
+                            >
+                              {filter}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </th>
               {showCodeColumn && (
                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
@@ -324,7 +331,40 @@ export const UserTable = ({
               )}
               {showRoleColumn && (
                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                  Role
+                  <div className="relative inline-block">
+                    <div
+                      className="px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none pr-10 cursor-pointer min-w-[120px] text-white text-xs font-medium uppercase tracking-wider"
+                      onClick={() => {
+                        setShowRoleDropdown(!showRoleDropdown);
+                        setShowStatusDropdown(false); // Close other dropdown
+                      }}
+                    >
+                      {getRoleDisplay(roleFilter)}
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <FaChevronDown />
+                      </div>
+                    </div>
+                    {showRoleDropdown && onRoleFilterChange && (
+                      <div className="absolute z-10 w-auto min-w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black">
+                        <div className="max-h-48 overflow-y-auto">
+                          {Object.values(TABLE_CONSTANTS.ROLE_FILTERS).map(
+                            (filter) => (
+                              <div
+                                key={filter}
+                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-left"
+                                onClick={() => {
+                                  onRoleFilterChange(filter);
+                                  setShowRoleDropdown(false);
+                                }}
+                              >
+                                {filter}
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </th>
               )}
               <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
@@ -386,7 +426,7 @@ export const UserTable = ({
                     </td>
                   )}
                   <td className="px-6 py-4 border-b text-center">
-                    <div className="flex justify-center gap-2">
+                    <div className="flex justify-center gap-1">
                       <button
                         onClick={() => onEdit(user)}
                         className="p-2 text-blue-600 hover:text-blue-800"
@@ -468,10 +508,10 @@ export const UserTable = ({
                         status: statusFilter,
                         subrole: showRoleColumn
                           ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
-                            ? "Manager"
+                            ? "MANAGER"
                             : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
-                              ? "Member"
-                              : "All"
+                              ? "MEMBER"
+                              : "ALL ROLE"
                           : undefined,
                       }}
                       isStudent={isStudent}
