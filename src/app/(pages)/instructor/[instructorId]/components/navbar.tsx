@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useClerk } from "@clerk/clerk-react";
+import { useClerk, useUser } from "@clerk/clerk-react";
 import { useState, useEffect, useRef } from "react";
 import {
   FaHome,
@@ -11,11 +11,12 @@ import {
   FaUsers,
   FaClipboardList,
   FaDatabase,
-  FaSignOutAlt,
   FaChevronDown,
 } from "react-icons/fa";
-import { Users, GraduationCap } from "lucide-react";
+import { Users, GraduationCap, User as UserIcon, LogOut } from "lucide-react";
 import { LogoutConfirmation } from "../../../components/LogoutConfirmation";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
 
 interface NavbarProps {
   instructorId: string;
@@ -25,13 +26,30 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useClerk();
+  const { user } = useUser();
   const [isUsersDropdownOpen, setIsUsersDropdownOpen] = useState(false);
   const [isLogsDropdownOpen, setIsLogsDropdownOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] =
     useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dropdownRef = useRef<HTMLLIElement>(null);
   const logsDropdownRef = useRef<HTMLLIElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user data from Convex
+  const convexUser = useQuery(api.fetch.getUserByClerkId, {
+    clerkId: user?.id || "",
+  });
+
+  // Format the name with middle initial if available
+  const formatName = () => {
+    if (!convexUser) return "Loading...";
+    const middleInitial = convexUser.middle_name
+      ? ` ${convexUser.middle_name[0]}.`
+      : "";
+    return `${convexUser.first_name}${middleInitial} ${convexUser.last_name}`;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -46,6 +64,12 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
         !logsDropdownRef.current.contains(event.target as Node)
       ) {
         setIsLogsDropdownOpen(false);
+      }
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileDropdownOpen(false);
       }
     };
 
@@ -90,6 +114,47 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
             DOCTASK
           </h1>
         </Link>
+        {/* Profile Image and Name Dropdown (top right) */}
+        <div className="relative" ref={profileDropdownRef}>
+          <button
+            onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+            className="flex items-center gap-2 focus:outline-none"
+            aria-label="Open profile menu"
+          >
+            <Image
+              src={user?.imageUrl || "/default-profile.png"}
+              alt="Profile"
+              width={36}
+              height={36}
+              className="rounded-full border border-black shadow"
+            />
+            <span className="text-gray-800 font-medium whitespace-nowrap">
+              {formatName()}
+            </span>
+          </button>
+          {isProfileDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg py-1 z-50 text-gray-800">
+              <Link
+                href={`/instructor/${instructorId}/profile`}
+                className="px-4 py-2 hover:bg-gray-100 transition-colors duration-200 flex items-center gap-2"
+                onClick={() => setIsProfileDropdownOpen(false)}
+              >
+                <UserIcon className="w-4 h-4" />
+                View Profile
+              </Link>
+              <button
+                onClick={() => {
+                  setIsLogoutConfirmationOpen(true);
+                  setIsProfileDropdownOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-200 flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Nav Section */}
@@ -222,17 +287,6 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
               <FaDatabase size={16} />
               Backup & Restore
             </Link>
-          </li>
-
-          {/* Logout Button */}
-          <li className="ml-auto">
-            <button
-              onClick={() => setIsLogoutConfirmationOpen(true)}
-              className="flex items-center gap-2 hover:text-gray-300 transition-colors duration-200"
-            >
-              <FaSignOutAlt size={20} />
-              Logout
-            </button>
           </li>
         </ul>
       </nav>
