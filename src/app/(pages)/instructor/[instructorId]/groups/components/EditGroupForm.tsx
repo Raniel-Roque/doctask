@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import {
   FaTimes,
   FaEdit,
@@ -73,10 +73,18 @@ export default function EditGroupForm({
     [key: string]: string;
   }>({});
 
+  const [dropdownPositions, setDropdownPositions] = useState<
+    Record<string, "top" | "bottom">
+  >({});
   const [showMembersSearch, setShowMembersSearch] = useState(false);
   const [showAdviserSearch, setShowAdviserSearch] = useState(false);
   const [membersSearch, setMembersSearch] = useState("");
   const [adviserSearch, setAdviserSearch] = useState("");
+
+  const adviserTriggerRef = useRef<HTMLDivElement>(null);
+  const membersTriggerRef = useRef<HTMLDivElement>(null);
+  const adviserDropdownRef = useRef<HTMLDivElement>(null);
+  const membersDropdownRef = useRef<HTMLDivElement>(null);
 
   // Update form data when group changes
   useEffect(() => {
@@ -122,6 +130,41 @@ export default function EditGroupForm({
         document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
+
+  useLayoutEffect(() => {
+    let activeTriggerRef: React.RefObject<HTMLDivElement> | null = null;
+    let activeDropdownRef: React.RefObject<HTMLDivElement> | null = null;
+    let dropdownKey: string | null = null;
+
+    if (showAdviserSearch) {
+      activeTriggerRef = adviserTriggerRef;
+      activeDropdownRef = adviserDropdownRef;
+      dropdownKey = "adviser";
+    } else if (showMembersSearch) {
+      activeTriggerRef = membersTriggerRef;
+      activeDropdownRef = membersDropdownRef;
+      dropdownKey = "members";
+    }
+
+    if (activeTriggerRef?.current && activeDropdownRef?.current && dropdownKey) {
+      const button = activeTriggerRef.current;
+      const dropdown = activeDropdownRef.current;
+
+      const buttonRect = button.getBoundingClientRect();
+      const dropdownRect = dropdown.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+
+      const spaceBelow = viewportHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+
+      let position: "top" | "bottom" = "bottom";
+      if (spaceBelow < dropdownRect.height && spaceAbove > dropdownRect.height) {
+        position = "top";
+      }
+      const key = dropdownKey;
+      setDropdownPositions((prev) => ({ ...prev, [key]: position }));
+    }
+  }, [showAdviserSearch, showMembersSearch]);
 
   // Handle opening dropdowns
   const handleOpenMembersSearch = () => {
@@ -365,6 +408,7 @@ export default function EditGroupForm({
                 </label>
                 <div className="relative">
                   <div
+                    ref={adviserTriggerRef}
                     className={`w-full px-4 py-2 rounded-lg border-2 ${
                       validationErrors.adviser
                         ? "border-red-500"
@@ -392,7 +436,14 @@ export default function EditGroupForm({
                   </div>
 
                   {showAdviserSearch && (
-                    <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div
+                      ref={adviserDropdownRef}
+                      className={`absolute z-10 w-full bg-white rounded-lg shadow-lg border border-gray-200 ${
+                        dropdownPositions.adviser === "top"
+                          ? "bottom-full mb-1"
+                          : "top-full mt-1"
+                      }`}
+                    >
                       <div className="p-2 border-b">
                         <div className="relative">
                           <input
@@ -503,6 +554,7 @@ export default function EditGroupForm({
               </label>
               <div className="relative">
                 <div
+                  ref={membersTriggerRef}
                   className={`w-full min-h-[42px] px-4 py-2 rounded-lg border-2 ${
                     validationErrors.members
                       ? "border-red-500"
@@ -538,7 +590,14 @@ export default function EditGroupForm({
                 </div>
 
                 {showMembersSearch && (
-                  <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+                  <div
+                    ref={membersDropdownRef}
+                    className={`absolute z-10 w-full bg-white rounded-lg shadow-lg border border-gray-200 ${
+                      dropdownPositions.members === "top"
+                        ? "bottom-full mb-1"
+                        : "top-full mt-1"
+                    }`}
+                  >
                     <div className="p-2 border-b">
                       <div className="relative">
                         <input

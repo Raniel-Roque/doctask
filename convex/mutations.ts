@@ -520,6 +520,22 @@ export const updateUser = mutation({
               await ctx.db.patch(group._id, {
                 member_ids: group.member_ids.filter((id) => id !== args.userId),
               });
+
+              // Also remove from any task assignments in that group
+              const tasks = await ctx.db
+                .query("taskAssignments")
+                .withIndex("by_group", (q) => q.eq("group_id", membership.group_id!))
+                .collect();
+              for (const task of tasks) {
+                const newAssignments = task.assigned_student_ids.filter(
+                  (id) => id !== args.userId,
+                );
+                if (newAssignments.length !== task.assigned_student_ids.length) {
+                  await ctx.db.patch(task._id, {
+                    assigned_student_ids: newAssignments,
+                  });
+                }
+              }
             }
           }
         }
@@ -558,6 +574,23 @@ export const updateUser = mutation({
             if (adviserCode) {
               await ctx.db.patch(adviserCode._id, {
                 group_ids: (adviserCode.group_ids || []).filter(
+                  (id) => id !== group._id,
+                ),
+              });
+            }
+          }
+
+          // Also remove group from any pending adviser requests
+          if (group.requested_adviser) {
+            const adviser = await ctx.db
+              .query("advisersTable")
+              .withIndex("by_adviser", (q) =>
+                q.eq("adviser_id", group.requested_adviser!),
+              )
+              .first();
+            if (adviser && adviser.requests_group_ids) {
+              await ctx.db.patch(adviser._id, {
+                requests_group_ids: adviser.requests_group_ids.filter(
                   (id) => id !== group._id,
                 ),
               });
@@ -709,16 +742,34 @@ export const updateGroup = mutation({
     // Get old members for cleanup
     const oldMembers = [group.project_manager_id, ...group.member_ids];
     const newMembers = [args.project_manager_id, ...args.member_ids];
+    const removedMembers = oldMembers.filter((id) => !newMembers.includes(id));
 
     // Remove old members from studentsTable if they're no longer in the group
-    for (const memberId of oldMembers) {
-      if (!newMembers.includes(memberId)) {
-        const studentEntry = await ctx.db
-          .query("studentsTable")
-          .withIndex("by_user", (q) => q.eq("user_id", memberId))
-          .first();
-        if (studentEntry) {
-          await ctx.db.patch(studentEntry._id, { group_id: null });
+    for (const memberId of removedMembers) {
+      const studentEntry = await ctx.db
+        .query("studentsTable")
+        .withIndex("by_user", (q) => q.eq("user_id", memberId))
+        .first();
+      if (studentEntry) {
+        await ctx.db.patch(studentEntry._id, { group_id: null });
+      }
+    }
+
+    // Also remove them from any task assignments in this group
+    if (removedMembers.length > 0) {
+      const tasks = await ctx.db
+        .query("taskAssignments")
+        .withIndex("by_group", (q) => q.eq("group_id", args.groupId))
+        .collect();
+
+      for (const task of tasks) {
+        const newAssignments = task.assigned_student_ids.filter(
+          (id) => !removedMembers.includes(id),
+        );
+        if (newAssignments.length !== task.assigned_student_ids.length) {
+          await ctx.db.patch(task._id, {
+            assigned_student_ids: newAssignments,
+          });
         }
       }
     }
@@ -769,7 +820,7 @@ export const updateGroup = mutation({
         if (oldAdviserCode) {
           await ctx.db.patch(oldAdviserCode._id, {
             group_ids: (oldAdviserCode.group_ids || []).filter(
-              (id) => id !== args.groupId,
+              (id) => id !== group._id,
             ),
           });
         }
@@ -809,7 +860,6 @@ export const updateGroup = mutation({
     }
 
     // Check member changes
-    const removedMembers = oldMembers.filter((id) => !newMembers.includes(id));
     const addedMembers = newMembers.filter((id) => !oldMembers.includes(id));
 
     if (removedMembers.length > 0) {
@@ -1055,6 +1105,22 @@ export const deleteUser = mutation({
               member_ids: group.member_ids.filter((id) => id !== args.userId),
             });
           }
+
+          // Also remove user from any task assignments in that group
+          const tasks = await ctx.db
+            .query("taskAssignments")
+            .withIndex("by_group", (q) => q.eq("group_id", studentEntry.group_id!))
+            .collect();
+          for (const task of tasks) {
+            const newAssignments = task.assigned_student_ids.filter(
+              (id) => id !== args.userId,
+            );
+            if (newAssignments.length !== task.assigned_student_ids.length) {
+              await ctx.db.patch(task._id, {
+                assigned_student_ids: newAssignments,
+              });
+            }
+          }
         }
         await ctx.db.delete(studentEntry._id);
       }
@@ -1096,6 +1162,49 @@ export const deleteUser = mutation({
             });
           }
         }
+        // Also remove group from any pending adviser requests
+        if (group.requested_adviser) {
+          const adviser = await ctx.db
+            .query("advisersTable")
+            .withIndex("by_adviser", (q) =>
+              q.eq("adviser_id", group.requested_adviser!),
+            )
+            .first();
+          if (adviser && adviser.requests_group_ids) {
+            await ctx.db.patch(adviser._id, {
+              requests_group_ids: adviser.requests_group_ids.filter(
+                (id) => id !== group._id,
+              ),
+            });
+          }
+        }
+        // Delete all documents associated with this group
+        const docs = await ctx.db
+          .query("documents")
+          .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
+          .collect();
+        for (const doc of docs) {
+          await ctx.db.delete(doc._id);
+        }
+
+        // Delete all task assignments associated with this group
+        const taskAssignments = await ctx.db
+          .query("taskAssignments")
+          .withIndex("by_group", (q) => q.eq("group_id", group._id))
+          .collect();
+        for (const task of taskAssignments) {
+          await ctx.db.delete(task._id);
+        }
+
+        // Delete all document status entries associated with this group
+        const documentStatuses = await ctx.db
+          .query("documentStatus")
+          .withIndex("by_group", (q) => q.eq("group_id", group._id))
+          .collect();
+        for (const status of documentStatuses) {
+          await ctx.db.delete(status._id);
+        }
+
         // Delete the group
         await ctx.db.delete(group._id);
       }
@@ -1119,6 +1228,16 @@ export const deleteUser = mutation({
       for (const group of advisedGroups) {
         await ctx.db.patch(group._id, { adviser_id: undefined });
       }
+
+      // Also clear any pending requests for this adviser
+      const requestingGroups = await ctx.db
+        .query("groupsTable")
+        .filter((q) => q.eq(q.field("requested_adviser"), args.userId))
+        .collect();
+      for (const group of requestingGroups) {
+        await ctx.db.patch(group._id, { requested_adviser: undefined });
+      }
+
       // Delete advisersTable entry
       const adviserCode = await ctx.db
         .query("advisersTable")
@@ -1173,20 +1292,35 @@ export const deleteGroup = mutation({
 
     // Update adviser's group_ids if exists
     if (group.adviser_id) {
-      const adviserCode = await ctx.db
+      const adviser = await ctx.db
         .query("advisersTable")
         .withIndex("by_adviser", (q) => q.eq("adviser_id", group.adviser_id!))
         .first();
-      if (adviserCode) {
-        await ctx.db.patch(adviserCode._id, {
-          group_ids: (adviserCode.group_ids || []).filter(
+      if (adviser) {
+        await ctx.db.patch(adviser._id, {
+          group_ids: (adviser.group_ids || []).filter((id) => id !== args.groupId),
+        });
+      }
+    }
+
+    // Also remove group from any pending adviser requests
+    if (group.requested_adviser) {
+      const adviser = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) =>
+          q.eq("adviser_id", group.requested_adviser!),
+        )
+        .first();
+      if (adviser && adviser.requests_group_ids) {
+        await ctx.db.patch(adviser._id, {
+          requests_group_ids: adviser.requests_group_ids.filter(
             (id) => id !== args.groupId,
           ),
         });
       }
     }
 
-    // Delete all documents associated with this group
+    // Delete all associated documents
     const docs = await ctx.db
       .query("documents")
       .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))

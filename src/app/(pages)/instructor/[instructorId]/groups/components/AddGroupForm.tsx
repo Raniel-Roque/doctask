@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import {
   FaPlus,
   FaTimes,
@@ -78,6 +78,9 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     [key: string]: string;
   }>({});
 
+  const [dropdownPositions, setDropdownPositions] = useState<
+    Record<string, "top" | "bottom">
+  >({});
   const [memberSearch, setMemberSearch] = useState("");
   const [showMemberSearch, setShowMemberSearch] = useState(false);
   const [projectManagerSearch, setProjectManagerSearch] = useState("");
@@ -88,6 +91,9 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
 
   const formRef = useRef<HTMLDivElement>(null);
   const activeDropdownRef = useRef<HTMLDivElement>(null);
+  const projectManagerTriggerRef = useRef<HTMLDivElement>(null);
+  const adviserTriggerRef = useRef<HTMLDivElement>(null);
+  const membersTriggerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -136,6 +142,48 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
       JSON.stringify(formData) !== JSON.stringify(initialFormData);
     setHasUnsavedChanges(hasChanges);
   }, [formData, initialFormData]);
+
+  useLayoutEffect(() => {
+    let activeTriggerRef: React.RefObject<HTMLDivElement> | null = null;
+    let dropdownKey: string | null = null;
+
+    if (showProjectManagerSearch) {
+      activeTriggerRef = projectManagerTriggerRef;
+      dropdownKey = "projectManager";
+    } else if (showAdviserSearch) {
+      activeTriggerRef = adviserTriggerRef;
+      dropdownKey = "adviser";
+    } else if (showMemberSearch) {
+      activeTriggerRef = membersTriggerRef;
+      dropdownKey = "members";
+    }
+
+    if (activeTriggerRef?.current && activeDropdownRef.current && dropdownKey) {
+      const button = activeTriggerRef.current;
+      const dropdown = activeDropdownRef.current;
+
+      const buttonRect = button.getBoundingClientRect();
+      const dropdownRect = dropdown.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+
+      const spaceBelow = viewportHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+
+      let position: "top" | "bottom" = "bottom";
+      if (
+        spaceBelow < dropdownRect.height &&
+        spaceAbove > dropdownRect.height
+      ) {
+        position = "top";
+      }
+
+      const key = dropdownKey; // to satisfy TS in the updater function
+      setDropdownPositions((prev) => ({
+        ...prev,
+        [key]: position,
+      }));
+    }
+  }, [showProjectManagerSearch, showAdviserSearch, showMemberSearch]);
 
   const closeAllDropdowns = () => {
     setShowMemberSearch(false);
@@ -190,14 +238,14 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   };
 
   const handleProjectManagerSearch = (
-    e: React.ChangeEvent<HTMLInputElement>,
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     setProjectManagerSearch(
       sanitizeInput(e.target.value, {
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-      }),
+      })
     );
   };
 
@@ -207,7 +255,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-      }),
+      })
     );
   };
 
@@ -217,7 +265,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-      }),
+      })
     );
   };
 
@@ -324,7 +372,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     if (formData.capstoneTitle) {
       const { isValid, message } = validateInput(
         formData.capstoneTitle,
-        "text",
+        "text"
       );
       if (!isValid) {
         errors.capstoneTitle = message || "Invalid capstone title";
@@ -480,6 +528,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                 </label>
                 <div className="relative">
                   <div
+                    ref={projectManagerTriggerRef}
                     className={`w-full px-4 py-2 rounded-lg border-2 ${
                       validationErrors.projectManager
                         ? "border-red-500"
@@ -491,7 +540,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       <div className="flex items-center justify-between w-full">
                         {(() => {
                           const user = projectManagers.find(
-                            (u) => u._id === formData.projectManager,
+                            (u) => u._id === formData.projectManager
                           );
                           return user
                             ? `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`
@@ -511,7 +560,11 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                   {showProjectManagerSearch && (
                     <div
                       ref={activeDropdownRef}
-                      className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200"
+                      className={`absolute z-10 w-full bg-white rounded-lg shadow-lg border border-gray-200 ${
+                        dropdownPositions.projectManager === "top"
+                          ? "bottom-full mb-1"
+                          : "top-full mt-1"
+                      }`}
                     >
                       <div className="p-2 border-b">
                         <div className="relative">
@@ -533,7 +586,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           .filter((user) =>
                             `${user.first_name} ${user.last_name}`
                               .toLowerCase()
-                              .includes(projectManagerSearch.toLowerCase()),
+                              .includes(projectManagerSearch.toLowerCase())
                           )
                           .map((user) => (
                             <div
@@ -549,7 +602,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                         {projectManagers.filter((user) =>
                           `${user.first_name} ${user.last_name}`
                             .toLowerCase()
-                            .includes(projectManagerSearch.toLowerCase()),
+                            .includes(projectManagerSearch.toLowerCase())
                         ).length === 0 && (
                           <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
                             No more project managers available. Please register
@@ -583,6 +636,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                 </label>
                 <div className="relative">
                   <div
+                    ref={adviserTriggerRef}
                     className={`w-full px-4 py-2 rounded-lg border-2 ${
                       validationErrors.adviser
                         ? "border-red-500"
@@ -594,7 +648,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       <div className="flex items-center justify-between w-full">
                         {(() => {
                           const user = advisers.find(
-                            (u) => u._id === formData.adviser,
+                            (u) => u._id === formData.adviser
                           );
                           return user
                             ? `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`
@@ -614,7 +668,11 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                   {showAdviserSearch && (
                     <div
                       ref={activeDropdownRef}
-                      className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200"
+                      className={`absolute z-10 w-full bg-white rounded-lg shadow-lg border border-gray-200 ${
+                        dropdownPositions.adviser === "top"
+                          ? "bottom-full mb-1"
+                          : "top-full mt-1"
+                      }`}
                     >
                       <div className="p-2 border-b">
                         <div className="relative">
@@ -636,7 +694,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           .filter((user) =>
                             `${user.first_name} ${user.last_name}`
                               .toLowerCase()
-                              .includes(adviserSearch.toLowerCase()),
+                              .includes(adviserSearch.toLowerCase())
                           )
                           .map((user) => (
                             <div
@@ -652,7 +710,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                         {advisers.filter((user) =>
                           `${user.first_name} ${user.last_name}`
                             .toLowerCase()
-                            .includes(adviserSearch.toLowerCase()),
+                            .includes(adviserSearch.toLowerCase())
                         ).length === 0 && (
                           <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
                             No more advisers available. Please register more
@@ -687,6 +745,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
               </label>
               <div className="relative">
                 <div
+                  ref={membersTriggerRef}
                   className={`w-full px-4 py-2 rounded-lg border-2 ${
                     validationErrors.members
                       ? "border-red-500"
@@ -730,7 +789,11 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                 {showMemberSearch && (
                   <div
                     ref={activeDropdownRef}
-                    className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200"
+                    className={`absolute z-10 w-full bg-white rounded-lg shadow-lg border border-gray-200 ${
+                      dropdownPositions.members === "top"
+                        ? "bottom-full mb-1"
+                        : "top-full mt-1"
+                    }`}
                   >
                     <div className="p-2 border-b">
                       <div className="relative">
@@ -754,7 +817,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             `${user.first_name} ${user.last_name}`
                               .toLowerCase()
                               .includes(memberSearch.toLowerCase()) &&
-                            !formData.members.includes(user._id),
+                            !formData.members.includes(user._id)
                         )
                         .sort((a, b) => {
                           const aName =
@@ -779,7 +842,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           `${user.first_name} ${user.last_name}`
                             .toLowerCase()
                             .includes(memberSearch.toLowerCase()) &&
-                          !formData.members.includes(user._id),
+                          !formData.members.includes(user._id)
                       ).length === 0 && (
                         <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
                           No more members available. Please register more users

@@ -7,7 +7,14 @@ import {
   FaDownload,
   FaChevronDown,
 } from "react-icons/fa";
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+  useLayoutEffect,
+} from "react";
 import React from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -101,27 +108,32 @@ export const TaskAssignmentTable = ({
   // Add state for status filter and expanded chapters
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
-    new Set(),
+    new Set()
   );
 
   // Add state for member selector UI
   const [showMemberSelector, setShowMemberSelector] = useState<string | null>(
-    null,
+    null
   );
+  // Add state for dropdown position
+  const [dropdownPosition, setDropdownPosition] = useState<
+    Record<string, "top" | "bottom">
+  >({});
   // Add search state per chapter
   const [search, setSearch] = useState<Record<string, string>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   // Add loading states
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [updatingAssignment, setUpdatingAssignment] = useState<string | null>(
-    null,
+    null
   );
 
   // Add state for profile images
   const [profileImages, setProfileImages] = useState<Record<string, string>>(
-    {},
+    {}
   );
   const [profileImagesLoading, setProfileImagesLoading] = useState(true);
   const [memberOverviewExpanded, setMemberOverviewExpanded] = useState(false);
@@ -190,6 +202,35 @@ export const TaskAssignmentTable = ({
     };
   }, [showMemberSelector]);
 
+  // Calculate and update dropdown position
+  useLayoutEffect(() => {
+    if (showMemberSelector) {
+      const button = buttonRefs.current[showMemberSelector];
+      const dropdown = dropdownRef.current;
+
+      if (button && dropdown) {
+        const buttonRect = button.getBoundingClientRect();
+        const dropdownRect = dropdown.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
+        const spaceBelow = viewportHeight - buttonRect.bottom;
+        const spaceAbove = buttonRect.top;
+
+        let position: "top" | "bottom" = "bottom";
+        if (
+          spaceBelow < dropdownRect.height &&
+          spaceAbove > dropdownRect.height
+        ) {
+          position = "top";
+        }
+        setDropdownPosition((prev) => ({
+          ...prev,
+          [showMemberSelector]: position,
+        }));
+      }
+    }
+  }, [showMemberSelector]);
+
   // Filter tasks based on selected status
   const filteredTasks = tasks.filter((task) => {
     const statusMatch =
@@ -223,17 +264,17 @@ export const TaskAssignmentTable = ({
       return (
         groupMembers?.filter(
           (member) =>
-            !assignedMembers.includes(member._id) && !member.isProjectManager,
+            !assignedMembers.includes(member._id) && !member.isProjectManager
         ) || []
       );
     },
-    [tasks, groupMembers],
+    [tasks, groupMembers]
   );
 
   // Add member to task
   const addMemberToTask = async (
     taskId: Id<"taskAssignments">,
-    memberId: Id<"users">,
+    memberId: Id<"users">
   ) => {
     try {
       setUpdatingAssignment(taskId);
@@ -262,7 +303,7 @@ export const TaskAssignmentTable = ({
   // Remove member from task
   const removeMemberFromTask = async (
     taskId: Id<"taskAssignments">,
-    memberId: Id<"users">,
+    memberId: Id<"users">
   ) => {
     try {
       setUpdatingAssignment(taskId);
@@ -298,13 +339,13 @@ export const TaskAssignmentTable = ({
       acc[chapter].push(task);
       return acc;
     },
-    {} as Record<string, Task[]>,
+    {} as Record<string, Task[]>
   );
 
   // Create sorted grouped tasks to maintain the correct chapter order
   const sortedGroupedTasks = Object.fromEntries(
     CHAPTER_ORDER.filter((chapter) => groupedTasks[chapter]) // Only include chapters that have tasks
-      .map((chapter) => [chapter, groupedTasks[chapter]]),
+      .map((chapter) => [chapter, groupedTasks[chapter]])
   );
 
   // Check if user can edit the task
@@ -361,7 +402,7 @@ export const TaskAssignmentTable = ({
   // Helper to get merged, deduped, sorted members from all subparts
   const getMergedSubpartMembers = (chapter: string, chapterTasks: Task[]) => {
     const allMemberIds = chapterTasks.flatMap(
-      (task) => task.assigned_student_ids,
+      (task) => task.assigned_student_ids
     );
     const uniqueMemberIds = Array.from(new Set(allMemberIds));
 
@@ -386,7 +427,7 @@ export const TaskAssignmentTable = ({
     const filteredMembers = availableMembers.filter((member) =>
       `${member.first_name} ${member.last_name}`
         .toLowerCase()
-        .includes(searchValue.toLowerCase()),
+        .includes(searchValue.toLowerCase())
     );
     const isLoading = updatingAssignment === task._id;
 
@@ -433,6 +474,9 @@ export const TaskAssignmentTable = ({
           {mode === "manager" && !allAssigned && (
             <div className="relative">
               <button
+                ref={(el) => {
+                  buttonRefs.current[task._id] = el;
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowMemberSelector(task._id);
@@ -447,7 +491,11 @@ export const TaskAssignmentTable = ({
               {showMemberSelector === task._id && (
                 <div
                   ref={dropdownRef}
-                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-[180px] p-2"
+                  className={`absolute left-0 z-10 min-w-[180px] p-2 bg-white border border-gray-200 rounded-md shadow-lg ${
+                    dropdownPosition[task._id] === "top"
+                      ? "bottom-full mb-1"
+                      : "top-full mt-1"
+                  }`}
                 >
                   <input
                     ref={searchInputRef}
@@ -552,7 +600,7 @@ export const TaskAssignmentTable = ({
 
     // Sort all non-PM members alphabetically by first name
     const sorted = members.sort((a, b) =>
-      a.first_name.localeCompare(b.first_name),
+      a.first_name.localeCompare(b.first_name)
     );
 
     // If the current user isn't a regular member (i.e., they are the PM), return the sorted list as is.
@@ -594,7 +642,7 @@ export const TaskAssignmentTable = ({
                 {sortedMembers.map((member) => {
                   const assignedTasks = tasks
                     .filter((task) =>
-                      task.assigned_student_ids.includes(member._id),
+                      task.assigned_student_ids.includes(member._id)
                     )
                     .sort((a, b) => {
                       const indexA = CHAPTER_ORDER.indexOf(a.chapter);
@@ -607,7 +655,7 @@ export const TaskAssignmentTable = ({
                     });
 
                   const completedTasks = assignedTasks.filter(
-                    (task) => task.task_status === 1,
+                    (task) => task.task_status === 1
                   ).length;
                   const totalTasks = assignedTasks.length;
 
@@ -727,9 +775,10 @@ export const TaskAssignmentTable = ({
                               <span className="font-medium text-gray-700">
                                 Assigned:
                               </span>
-                              {finalDisplayItems.map((item, index) => (
+                              {finalDisplayItems.map((title, index) => (
                                 <div key={index} className="truncate pl-2">
-                                  • {item}
+                                  •{" "}
+                                  {title}
                                 </div>
                               ))}
                             </>
@@ -887,11 +936,11 @@ export const TaskAssignmentTable = ({
                                 <div className="flex flex-wrap justify-center gap-2">
                                   {getMergedSubpartMembers(
                                     chapter,
-                                    chapterTasks,
+                                    chapterTasks
                                   ).length > 0 ? (
                                     getMergedSubpartMembers(
                                       chapter,
-                                      chapterTasks,
+                                      chapterTasks
                                     ).map((member) => {
                                       const isCurrentUser =
                                         member._id === currentUserId;

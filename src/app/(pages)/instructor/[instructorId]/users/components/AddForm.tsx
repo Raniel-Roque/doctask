@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useLayoutEffect } from "react";
 import {
   FaPlus,
   FaTimes,
@@ -60,10 +60,16 @@ export const AddForm = ({
   }>({});
   const [roleSearch, setRoleSearch] = useState("");
   const [showRoleSearch, setShowRoleSearch] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<"top" | "bottom">(
+    "bottom"
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] =
     useState(false);
+
+  const roleTriggerRef = useRef<HTMLDivElement>(null);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
 
   const roles = [
     { value: 0, label: "Member" },
@@ -79,11 +85,36 @@ export const AddForm = ({
     setShowRoleSearch(!showRoleSearch);
   };
 
+  useLayoutEffect(() => {
+    if (showRoleSearch) {
+      const trigger = roleTriggerRef.current;
+      const dropdown = roleDropdownRef.current;
+
+      if (trigger && dropdown) {
+        const triggerRect = trigger.getBoundingClientRect();
+        const dropdownRect = dropdown.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
+        const spaceBelow = viewportHeight - triggerRect.bottom;
+        const spaceAbove = triggerRect.top;
+
+        if (
+          spaceBelow < dropdownRect.height &&
+          spaceAbove > dropdownRect.height
+        ) {
+          setDropdownPosition("top");
+        } else {
+          setDropdownPosition("bottom");
+        }
+      }
+    }
+  }, [showRoleSearch]);
+
   // =========================================
   // Event Handlers
   // =========================================
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
 
@@ -103,7 +134,7 @@ export const AddForm = ({
             name === "email"
               ? VALIDATION_RULES.email.maxLength
               : VALIDATION_RULES.name.maxLength,
-        },
+        }
       );
 
       onFormDataChange({
@@ -128,7 +159,7 @@ export const AddForm = ({
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-      }),
+      })
     );
   };
 
@@ -333,6 +364,7 @@ export const AddForm = ({
                 </label>
                 <div className="relative">
                   <div
+                    ref={roleTriggerRef}
                     className={`w-full px-4 py-2 rounded-lg border-2 ${
                       validationErrors.subrole
                         ? "border-red-500"
@@ -350,7 +382,14 @@ export const AddForm = ({
                   </div>
 
                   {showRoleSearch && (
-                    <div className="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200">
+                    <div
+                      ref={roleDropdownRef}
+                      className={`absolute z-10 w-full bg-white rounded-lg shadow-lg border border-gray-200 ${
+                        dropdownPosition === "top"
+                          ? "bottom-full mb-1"
+                          : "top-full mt-1"
+                      }`}
+                    >
                       <div className="p-2 border-b">
                         <div className="relative">
                           <input
@@ -371,7 +410,7 @@ export const AddForm = ({
                           .filter((role) =>
                             role.label
                               .toLowerCase()
-                              .includes(roleSearch.toLowerCase()),
+                              .includes(roleSearch.toLowerCase())
                           )
                           .map((role) => (
                             <div
