@@ -189,6 +189,7 @@ export const getLogs = query({
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
     userRole: v.optional(v.number()), // 0 = instructor, 1 = adviser
+    specificUserId: v.optional(v.id("users")), // Filter by specific user ID
   },
   handler: async (ctx, args) => {
     const {
@@ -202,6 +203,7 @@ export const getLogs = query({
       startDate,
       endDate,
       userRole = 0, // Default to instructor logs
+      specificUserId, // Optional specific user ID filter
     } = args;
     const skip = (pageNumber - 1) * pageSize;
 
@@ -211,6 +213,11 @@ export const getLogs = query({
         .query("LogsTable")
         .withIndex("by_user_role", (q) => q.eq("user_role", userRole))
         .collect();
+
+      // Apply specific user ID filter if provided
+      if (specificUserId) {
+        logs = logs.filter((log) => log.user_id === specificUserId);
+      }
 
       // Apply search filters if searchTerm is provided
       if (searchTerm.trim()) {
