@@ -342,24 +342,9 @@ export const LatestDocumentsTable = ({
                   <span className="text-sm font-medium text-gray-700">
                     Documentation Progress
                   </span>
-                  <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-gray-500 justify-end">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                      Approved
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                      Rejected
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
-                      In Review
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-gray-300"></span>
-                      Not Submitted
-                    </div>
-                  </div>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {statusCounts.approved} / {totalDocuments} Approved
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3 flex overflow-hidden">
                   <div
@@ -379,7 +364,25 @@ export const LatestDocumentsTable = ({
                     style={{ width: `${progress.not_submitted}%` }}
                   ></div>
                 </div>
-                <div className="mt-2 flex justify-end">
+                <div className="mt-2 flex justify-between items-end">
+                  <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                      Approved
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                      Rejected
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
+                      In Review
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+                      Not Submitted
+                    </div>
+                  </div>
                   <button
                     onClick={() => handleToggleDetails("documents")}
                     className="text-xs text-gray-500 hover:text-gray-700"
