@@ -44,6 +44,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [capstoneSortDirection, setCapstoneSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
   
   // Applied filters for backend query (only change when filters are actually saved)
   const [appliedCapstoneFilter, setAppliedCapstoneFilter] = useState<
@@ -55,16 +56,28 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Memoize query parameters to prevent unnecessary re-renders during temporary filter selections
-  const queryParams = useMemo(() => ({
-    searchTerm,
-    pageSize,
-    pageNumber: currentPage,
-    sortField,
-    sortDirection,
-    capstoneFilter: appliedCapstoneFilter,
-    adviserFilters: appliedAdviserFilters,
-    gradeFilters: appliedGradeFilters,
-  }), [searchTerm, pageSize, currentPage, sortField, sortDirection, appliedCapstoneFilter, appliedAdviserFilters, appliedGradeFilters]);
+  const queryParams = useMemo(() => {
+    // Determine which sort to use
+    let finalSortField = sortField;
+    let finalSortDirection = sortDirection;
+    
+    // If capstone sort is active (not 'none'), use it instead of regular sort
+    if (capstoneSortDirection !== 'none') {
+      finalSortField = 'capstoneTitle';
+      finalSortDirection = capstoneSortDirection;
+    }
+    
+    return {
+      searchTerm,
+      pageSize,
+      pageNumber: currentPage,
+      sortField: finalSortField,
+      sortDirection: finalSortDirection,
+      capstoneFilter: appliedCapstoneFilter,
+      adviserFilters: appliedAdviserFilters,
+      gradeFilters: appliedGradeFilters,
+    };
+  }, [searchTerm, pageSize, currentPage, sortField, sortDirection, capstoneSortDirection, appliedCapstoneFilter, appliedAdviserFilters, appliedGradeFilters]);
 
   // Fetch groups data with search and pagination
   const searchResult = useQuery(api.fetch.searchGroups, queryParams);
@@ -107,19 +120,26 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   };
 
   const handleSort = (field: string) => {
-    if (field === sortField) {
+    // If capstone sort is active, reset it when clicking other sort fields
+    if (capstoneSortDirection !== 'none' && field !== 'capstoneTitle') {
+      setCapstoneSortDirection('none');
+    }
+    
+    if (field === 'capstoneTitle') {
+      // Handle capstone title sorting
+      if (capstoneSortDirection === 'none') {
+        setCapstoneSortDirection('asc');
+      } else if (capstoneSortDirection === 'asc') {
+        setCapstoneSortDirection('desc');
+      } else {
+        setCapstoneSortDirection('none');
+      }
+    } else if (field === sortField) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
       setSortDirection("asc");
     }
-    setCurrentPage(1);
-  };
-
-  const handleCapstoneFilterChange = (
-    filter: (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS],
-  ) => {
-    setAppliedCapstoneFilter(filter);
     setCurrentPage(1);
   };
 
@@ -130,6 +150,19 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
   const handleGradeFilterChange = (filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]) => {
     setAppliedGradeFilters(filters);
+    setCurrentPage(1);
+  };
+
+  const handleCapstoneSortApply = (direction: "asc" | "desc" | "none") => {
+    if (direction === "none") {
+      setCapstoneSortDirection("none");
+      setSortField("name");
+      setSortDirection("asc");
+    } else {
+      setCapstoneSortDirection(direction);
+      setSortField("capstoneTitle");
+      setSortDirection(direction);
+    }
     setCurrentPage(1);
   };
 
@@ -370,15 +403,19 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           onPageSizeChange={handlePageSizeChange}
           onSort={handleSort}
           sortField={sortField}
-          sortDirection={sortDirection}
+          sortDirection={capstoneSortDirection !== 'none' ? capstoneSortDirection : sortDirection}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           status={getStatus()}
           hasResults={searchResult?.hasResults || false}
-          onCapstoneFilterChange={handleCapstoneFilterChange}
           onAdviserFilterChange={handleAdviserFilterChange}
           onGradeFilterChange={handleGradeFilterChange}
           isDeleting={isDeleting}
+          capstoneFilter={appliedCapstoneFilter}
+          setCapstoneFilter={setAppliedCapstoneFilter}
+          capstoneSortDirection={capstoneSortDirection}
+          setCapstoneSortDirection={setCapstoneSortDirection}
+          onCapstoneSortApply={handleCapstoneSortApply}
         />
 
         {/* Add Group Form */}
