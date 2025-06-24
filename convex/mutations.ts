@@ -10,6 +10,8 @@ import {
   logUpdateGroup,
   logDeleteGroup,
   logLockAccount,
+  logAcceptGroupRequest,
+  logRejectGroupRequest,
 } from "./utils/log";
 import { Id } from "./_generated/dataModel";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
@@ -179,6 +181,7 @@ export const createUser = mutation({
       await logCreateUser(
         ctx,
         args.instructorId,
+        0, // instructor role
         userId,
         {
           first_name: args.first_name,
@@ -458,6 +461,7 @@ export const createGroup = mutation({
     await logCreateGroup(
       ctx,
       args.instructorId,
+      0, // instructor role
       groupId,
       {
         first_name: instructor.first_name,
@@ -701,6 +705,7 @@ export const updateUser = mutation({
       await logUpdateUser(
         ctx,
         args.instructorId,
+        0, // instructor role
         args.userId,
         changes.join("\n"),
         {
@@ -926,6 +931,7 @@ export const updateGroup = mutation({
     await logUpdateGroup(
       ctx,
       args.instructorId,
+      0, // instructor role
       args.groupId,
       changes.join("\n"),
       {
@@ -1258,7 +1264,7 @@ export const deleteUser = mutation({
     await ctx.db.delete(args.userId);
 
     // Log the deletion with user info
-    await logDeleteUser(ctx, args.instructorId, args.userId, userInfo, {
+    await logDeleteUser(ctx, args.instructorId, 0, args.userId, userInfo, {
       first_name: instructor.first_name,
       middle_name: instructor.middle_name,
       last_name: instructor.last_name,
@@ -1362,6 +1368,7 @@ export const deleteGroup = mutation({
     await logDeleteGroup(
       ctx,
       args.instructorId,
+      0, // instructor role
       args.groupId,
       {
         first_name: instructor.first_name,
@@ -1400,6 +1407,7 @@ export const resetPassword = mutation({
     await logResetPassword(
       ctx,
       args.instructorId,
+      0, // instructor role
       args.userId,
       {
         first_name: user.first_name,
@@ -1435,7 +1443,7 @@ export const downloadConvexBackup = mutation({
     const groups = await ctx.db.query("groupsTable").collect();
     const students = await ctx.db.query("studentsTable").collect();
     const advisers = await ctx.db.query("advisersTable").collect();
-    const logs = await ctx.db.query("instructorLogs").collect();
+    const logs = await ctx.db.query("LogsTable").collect();
     const documents = await ctx.db.query("documents").collect();
     const taskAssignments = await ctx.db.query("taskAssignments").collect();
     const documentStatus = await ctx.db.query("documentStatus").collect();
@@ -1484,9 +1492,18 @@ export const acceptGroupRequest = mutation({
       throw new Error("Group is not in pending requests");
     }
 
-    // Update the group's adviser_id to requested_adviser and clear requested_adviser
+    // Get group and user data for logging
     const group = await ctx.db.get(args.groupId);
     if (!group) throw new Error("Group not found");
+    
+    const adviser = await ctx.db.get(args.adviserId);
+    const projectManager = await ctx.db.get(group.project_manager_id);
+    
+    if (!adviser || !projectManager) {
+      throw new Error("User data not found");
+    }
+
+    // Update the group's adviser_id to requested_adviser and clear requested_adviser
     await ctx.db.patch(args.groupId, {
       adviser_id: group.requested_adviser,
       requested_adviser: undefined,
@@ -1499,6 +1516,25 @@ export const acceptGroupRequest = mutation({
       ),
       group_ids: [...(adviserCode.group_ids || []), args.groupId],
     });
+
+    // Log the acceptance of the group request
+    await logAcceptGroupRequest(
+      ctx,
+      args.adviserId,
+      args.groupId,
+      {
+        first_name: adviser.first_name,
+        middle_name: adviser.middle_name,
+        last_name: adviser.last_name,
+        email: adviser.email,
+      },
+      {
+        first_name: projectManager.first_name,
+        middle_name: projectManager.middle_name,
+        last_name: projectManager.last_name,
+        email: projectManager.email,
+      }
+    );
 
     return { success: true };
   },
@@ -1525,6 +1561,17 @@ export const rejectGroupRequest = mutation({
       throw new Error("Group is not in pending requests");
     }
 
+    // Get group and user data for logging
+    const group = await ctx.db.get(args.groupId);
+    if (!group) throw new Error("Group not found");
+    
+    const adviser = await ctx.db.get(args.adviserId);
+    const projectManager = await ctx.db.get(group.project_manager_id);
+    
+    if (!adviser || !projectManager) {
+      throw new Error("User data not found");
+    }
+
     // Remove the group from requests_group_ids
     await ctx.db.patch(adviserCode._id, {
       requests_group_ids: adviserCode.requests_group_ids.filter(
@@ -1533,12 +1580,30 @@ export const rejectGroupRequest = mutation({
     });
 
     // Clear requested_adviser on the group if it matches this adviser
-    const group = await ctx.db.get(args.groupId);
-    if (group && group.requested_adviser === args.adviserId) {
+    if (group.requested_adviser === args.adviserId) {
       await ctx.db.patch(args.groupId, {
         requested_adviser: undefined,
       });
     }
+
+    // Log the rejection of the group request
+    await logRejectGroupRequest(
+      ctx,
+      args.adviserId,
+      args.groupId,
+      {
+        first_name: adviser.first_name,
+        middle_name: adviser.middle_name,
+        last_name: adviser.last_name,
+        email: adviser.email,
+      },
+      {
+        first_name: projectManager.first_name,
+        middle_name: projectManager.middle_name,
+        last_name: projectManager.last_name,
+        email: projectManager.email,
+      }
+    );
 
     return { success: true };
   },
@@ -1566,6 +1631,7 @@ export const logLockAccountMutation = mutation({
     await logLockAccount(
       ctx,
       args.instructorId,
+      0, // instructor role
       args.affectedEntityId,
       args.action,
       args.affectedUserInfo,

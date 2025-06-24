@@ -641,7 +641,7 @@ export const UserTable = ({
             <FaChevronLeft />
           </button>
           <span className="text-sm text-gray-700">
-            Page {currentPage} of {totalPages}
+            Page {currentPage} of {Math.max(totalPages, 1)}
           </span>
           <button
             onClick={() => onPageChange(currentPage + 1)}

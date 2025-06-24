@@ -188,6 +188,7 @@ export const getLogs = query({
     entityTypeFilter: v.optional(v.string()),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
+    userRole: v.optional(v.number()), // 0 = instructor, 1 = adviser
   },
   handler: async (ctx, args) => {
     const {
@@ -200,12 +201,16 @@ export const getLogs = query({
       entityTypeFilter,
       startDate,
       endDate,
+      userRole = 0, // Default to instructor logs
     } = args;
     const skip = (pageNumber - 1) * pageSize;
 
     try {
-      // Start with base query
-      let logs = await ctx.db.query("instructorLogs").collect();
+      // Start with base query and filter by user role
+      let logs = await ctx.db
+        .query("LogsTable")
+        .withIndex("by_user_role", (q) => q.eq("user_role", userRole))
+        .collect();
 
       // Apply search filters if searchTerm is provided
       if (searchTerm.trim()) {
@@ -215,20 +220,20 @@ export const getLogs = query({
           .filter((term) => term.length > 0);
 
         logs = logs.filter((log) => {
-          const instructorName =
-            `${log.instructor_first_name || ""} ${log.instructor_middle_name || ""} ${log.instructor_last_name || ""}`.toLowerCase();
+          const userName =
+            `${log.user_first_name || ""} ${log.user_middle_name || ""} ${log.user_last_name || ""}`.toLowerCase();
           const affectedEntityName =
             `${log.affected_entity_first_name || ""} ${log.affected_entity_middle_name || ""} ${log.affected_entity_last_name || ""}`.toLowerCase();
-          const instructorId = log.instructor_id.toString().toLowerCase();
+          const userId = log.user_id.toString().toLowerCase();
           const affectedEntityId = log.affected_entity_id
             .toString()
             .toLowerCase();
 
           return searchTerms.every(
             (term) =>
-              instructorName.includes(term) ||
+              userName.includes(term) ||
               affectedEntityName.includes(term) ||
-              instructorId.includes(term) ||
+              userId.includes(term) ||
               affectedEntityId.includes(term),
           );
         });
@@ -275,9 +280,10 @@ export const getLogs = query({
               comparison = a._creationTime - b._creationTime;
               break;
             case "instructor":
-              const aInstructor = `${a.instructor_last_name || ""} ${a.instructor_first_name || ""}`;
-              const bInstructor = `${b.instructor_last_name || ""} ${b.instructor_first_name || ""}`;
-              comparison = aInstructor.localeCompare(bInstructor);
+            case "user":
+              const aUser = `${a.user_last_name || ""} ${a.user_first_name || ""}`;
+              const bUser = `${b.user_last_name || ""} ${b.user_first_name || ""}`;
+              comparison = aUser.localeCompare(bUser);
               break;
             case "affectedEntity":
               const aEntity = `${a.affected_entity_last_name || ""} ${a.affected_entity_first_name || ""}`;

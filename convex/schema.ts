@@ -108,15 +108,16 @@ export default defineSchema({
     .index("by_code", ["code"]),
 
   // =========================================
-  // instructor Logs Table
+  // Logs Table (Unified for Instructors and Advisers)
   // =========================================
-  instructorLogs: defineTable({
+  LogsTable: defineTable({
     // Log Identification
-    instructor_id: v.id("users"),
-    instructor_first_name: v.optional(v.string()),
-    instructor_middle_name: v.optional(v.string()),
-    instructor_last_name: v.optional(v.string()),
-    instructor_email: v.optional(v.string()),
+    user_id: v.id("users"), // The user who performed the action
+    user_role: v.number(), // 0 = instructor, 1 = adviser
+    user_first_name: v.optional(v.string()),
+    user_middle_name: v.optional(v.string()),
+    user_last_name: v.optional(v.string()),
+    user_email: v.optional(v.string()),
 
     // Affected Entity Information
     affected_entity_type: v.string(), // "user" or "group"
@@ -130,24 +131,26 @@ export default defineSchema({
     action: v.string(),
     details: v.string(), // JSON stringified details of the action
   })
-    .index("by_instructor", ["instructor_id"])
+    .index("by_user", ["user_id"])
+    .index("by_user_role", ["user_role"])
     .index("by_action", ["action"])
     .index("by_affected_entity", ["affected_entity_id"])
-    .searchIndex("search_by_instructor_name", {
-      searchField: "instructor_first_name",
-      filterFields: ["action", "affected_entity_type"],
+    .index("by_user_and_role", ["user_id", "user_role"])
+    .searchIndex("search_by_user_name", {
+      searchField: "user_first_name",
+      filterFields: ["action", "affected_entity_type", "user_role"],
     })
-    .searchIndex("search_by_instructor_last_name", {
-      searchField: "instructor_last_name",
-      filterFields: ["action", "affected_entity_type"],
+    .searchIndex("search_by_user_last_name", {
+      searchField: "user_last_name",
+      filterFields: ["action", "affected_entity_type", "user_role"],
     })
     .searchIndex("search_by_affected_entity_name", {
       searchField: "affected_entity_first_name",
-      filterFields: ["action", "affected_entity_type"],
+      filterFields: ["action", "affected_entity_type", "user_role"],
     })
     .searchIndex("search_by_affected_entity_last_name", {
       searchField: "affected_entity_last_name",
-      filterFields: ["action", "affected_entity_type"],
+      filterFields: ["action", "affected_entity_type", "user_role"],
     }),
 
   // =========================================
