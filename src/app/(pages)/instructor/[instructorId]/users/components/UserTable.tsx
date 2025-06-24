@@ -9,11 +9,11 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
-  FaChevronDown,
   FaLock,
+  FaFilter,
 } from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import PDFReport from "./PDFReport";
@@ -96,6 +96,55 @@ export const UserTable = ({
   }>({});
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const [tempStatusFilter, setTempStatusFilter] = useState(statusFilter);
+  const [tempRoleFilter, setTempRoleFilter] = useState(roleFilter);
+
+  // Add refs for dropdown elements
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
+  const roleButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Click outside handlers
+  useEffect(() => {
+    if (!showStatusDropdown) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(event.target as Node) &&
+        statusButtonRef.current &&
+        !statusButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowStatusDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showStatusDropdown]);
+
+  useEffect(() => {
+    if (!showRoleDropdown) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        roleDropdownRef.current &&
+        !roleDropdownRef.current.contains(event.target as Node) &&
+        roleButtonRef.current &&
+        !roleButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowRoleDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showRoleDropdown]);
+
+  // Sync temp state when dropdown opens
+  useEffect(() => {
+    if (showStatusDropdown) setTempStatusFilter(statusFilter);
+  }, [showStatusDropdown, statusFilter]);
+  useEffect(() => {
+    if (showRoleDropdown) setTempRoleFilter(roleFilter);
+  }, [showRoleDropdown, roleFilter]);
 
   // Fetch adviser codes
   const adviserCodes = useQuery(api.fetch.getAdviserCodes) || {};
@@ -151,18 +200,6 @@ export const UserTable = ({
           </span>
         );
     }
-  };
-
-  const getStatusDisplay = (
-    filter: (typeof TABLE_CONSTANTS.STATUS_FILTERS)[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS],
-  ) => {
-    return filter === TABLE_CONSTANTS.STATUS_FILTERS.ALL ? "STATUS" : filter;
-  };
-
-  const getRoleDisplay = (
-    filter: (typeof TABLE_CONSTANTS.ROLE_FILTERS)[keyof typeof TABLE_CONSTANTS.ROLE_FILTERS],
-  ) => {
-    return filter === TABLE_CONSTANTS.ROLE_FILTERS.ALL ? "ROLE" : filter;
   };
 
   // =========================================
@@ -254,7 +291,7 @@ export const UserTable = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="relative">
         <table className="min-w-full bg-white border border-gray-200">
           <thead>
             <tr className="bg-[#B54A4A]">
@@ -288,41 +325,65 @@ export const UserTable = ({
                   <span className="ml-1">{getSortIcon("email")}</span>
                 </div>
               </th>
-              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                <div className="relative inline-block">
-                  <div
-                    className="px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none pr-10 cursor-pointer min-w-[120px] text-white text-xs font-medium uppercase tracking-wider"
-                    onClick={() => {
+              <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-medium uppercase">STATUS</span>
+                  <button
+                    type="button"
+                    className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setShowStatusDropdown(!showStatusDropdown);
-                      setShowRoleDropdown(false); // Close other dropdown
+                      setShowRoleDropdown(false);
                     }}
+                    title="Filter status"
+                    ref={statusButtonRef}
+                    style={{ boxShadow: "none" }}
                   >
-                    {getStatusDisplay(statusFilter)}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <FaChevronDown />
+                    <FaFilter
+                      className={
+                        `w-4 h-4 transition-colors ` +
+                        (showStatusDropdown || statusFilter !== TABLE_CONSTANTS.STATUS_FILTERS.ALL
+                          ? "text-blue-500"
+                          : "text-white")
+                      }
+                    />
+                  </button>
+                </div>
+                {showStatusDropdown && (
+                  <div
+                    ref={statusDropdownRef}
+                    className="absolute left-0 top-full z-20 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
+                      {Object.values(TABLE_CONSTANTS.STATUS_FILTERS).map((filter) => (
+                        <label key={filter} className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left">
+                          <input
+                            type="radio"
+                            name="statusFilter"
+                            checked={tempStatusFilter === filter}
+                            onChange={() => setTempStatusFilter(filter)}
+                            className="accent-blue-600"
+                          />
+                          <span className="text-left">{filter}</span>
+                        </label>
+                      ))}
                     </div>
-                  </div>
-                  {showStatusDropdown && (
-                    <div className="absolute z-10 w-auto min-w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black">
-                      <div className="max-h-48 overflow-y-auto">
-                        {Object.values(TABLE_CONSTANTS.STATUS_FILTERS).map(
-                          (filter) => (
-                            <div
-                              key={filter}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-left"
+                    <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
+                      <button
                               onClick={() => {
-                                onStatusFilterChange(filter);
                                 setShowStatusDropdown(false);
-                              }}
-                            >
-                              {filter}
-                            </div>
-                          ),
-                        )}
+                          onStatusFilterChange(tempStatusFilter);
+                          onPageChange(1);
+                        }}
+                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                      >
+                        Apply
+                      </button>
                       </div>
                     </div>
                   )}
-                </div>
               </th>
               {showCodeColumn && (
                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
@@ -330,41 +391,65 @@ export const UserTable = ({
                 </th>
               )}
               {showRoleColumn && (
-                <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
-                  <div className="relative inline-block">
-                    <div
-                      className="px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none pr-10 cursor-pointer min-w-[120px] text-white text-xs font-medium uppercase tracking-wider"
-                      onClick={() => {
+                <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="font-medium uppercase">ROLE</span>
+                    <button
+                      type="button"
+                      className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShowRoleDropdown(!showRoleDropdown);
-                        setShowStatusDropdown(false); // Close other dropdown
+                        setShowStatusDropdown(false);
                       }}
+                      title="Filter role"
+                      ref={roleButtonRef}
+                      style={{ boxShadow: "none" }}
                     >
-                      {getRoleDisplay(roleFilter)}
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <FaChevronDown />
+                      <FaFilter
+                        className={
+                          `w-4 h-4 transition-colors ` +
+                          (showRoleDropdown || roleFilter !== TABLE_CONSTANTS.ROLE_FILTERS.ALL
+                            ? "text-blue-500"
+                            : "text-white")
+                        }
+                      />
+                    </button>
+                  </div>
+                  {showRoleDropdown && onRoleFilterChange && (
+                    <div
+                      ref={roleDropdownRef}
+                      className="absolute left-0 top-full z-20 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
+                        {Object.values(TABLE_CONSTANTS.ROLE_FILTERS).map((filter) => (
+                          <label key={filter} className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left">
+                            <input
+                              type="radio"
+                              name="roleFilter"
+                              checked={tempRoleFilter === filter}
+                              onChange={() => setTempRoleFilter(filter)}
+                              className="accent-blue-600"
+                            />
+                            <span className="text-left">{filter}</span>
+                          </label>
+                        ))}
                       </div>
-                    </div>
-                    {showRoleDropdown && onRoleFilterChange && (
-                      <div className="absolute z-10 w-auto min-w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black">
-                        <div className="max-h-48 overflow-y-auto">
-                          {Object.values(TABLE_CONSTANTS.ROLE_FILTERS).map(
-                            (filter) => (
-                              <div
-                                key={filter}
-                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-left"
+                      <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
+                        <button
                                 onClick={() => {
-                                  onRoleFilterChange(filter);
                                   setShowRoleDropdown(false);
-                                }}
-                              >
-                                {filter}
-                              </div>
-                            ),
-                          )}
+                            if (onRoleFilterChange) onRoleFilterChange(tempRoleFilter);
+                            onPageChange(1);
+                          }}
+                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                        >
+                          Apply
+                        </button>
                         </div>
                       </div>
                     )}
-                  </div>
                 </th>
               )}
               <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
@@ -529,19 +614,15 @@ export const UserTable = ({
                     return `${role}Report-${filters.join("_")}-${dateTime}.pdf`;
                   })()}
                 >
-                  {({ loading }) => {
-                    return (
+                  {() => (
                       <span
                         className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
                         title="Download Report"
                         style={{ minWidth: 90, display: "inline-block" }}
                       >
-                        {loading || allFilteredUsersQuery === undefined
-                          ? "Generating..."
-                          : "Download Report"}
+                      Download Report
                       </span>
-                    );
-                  }}
+                  )}
                 </PDFDownloadLink>
               </>
             )}

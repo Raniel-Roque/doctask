@@ -6,10 +6,9 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
-  FaChevronDown,
-  FaCheck,
+  FaFilter,
 } from "react-icons/fa";
-import { useState, useRef, useLayoutEffect, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
@@ -42,13 +41,13 @@ type SortDirection = "asc" | "desc";
 // Constants
 // =========================================
 const LOG_ACTIONS = {
-  ALL: "All Actions",
+  ALL: "All actions",
   CREATE: "Create",
   EDIT: "Edit",
   DELETE: "Delete",
-  RESET_PASSWORD: "Reset Password",
-  LOCK_ACCOUNT: "Lock Account",
-  UNLOCK_ACCOUNT: "Unlock Account",
+  RESET_PASSWORD: "Reset password",
+  LOCK_ACCOUNT: "Lock account",
+  UNLOCK_ACCOUNT: "Unlock account",
 } as const;
 
 const ACTION_COLORS = {
@@ -86,8 +85,8 @@ const ACTION_COLORS = {
 // Add entity type constants
 const ENTITY_TYPES = {
   ALL: "All Entities",
-  USER: "user",
-  GROUP: "group",
+  USER: "User",
+  GROUP: "Group",
 } as const;
 
 // =========================================
@@ -113,16 +112,14 @@ export const LogTable = () => {
     (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS][]
   >([]);
   const [showActionDropdown, setShowActionDropdown] = useState(false);
-  const [actionDropdownStyle, setActionDropdownStyle] = useState({});
   const actionDropdownRef = useRef<HTMLDivElement>(null);
-  
+
   const [entityTypeFilter, setEntityTypeFilter] = useState<
     (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES]
   >(ENTITY_TYPES.ALL);
   const [showEntityDropdown, setShowEntityDropdown] = useState(false);
-  const [entityDropdownStyle, setEntityDropdownStyle] = useState({});
   const entityDropdownRef = useRef<HTMLDivElement>(null);
-  
+
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
@@ -139,6 +136,14 @@ export const LogTable = () => {
     details: false,
   });
 
+  // Add refs for button elements
+  const actionButtonRef = useRef<HTMLButtonElement>(null);
+  const entityButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Add after state declarations
+  const [tempEntityTypeFilter, setTempEntityTypeFilter] =
+    useState(entityTypeFilter);
+
   // Sync temporary state with applied state when dropdowns open
   useEffect(() => {
     if (showActionDropdown) {
@@ -146,37 +151,42 @@ export const LogTable = () => {
     }
   }, [showActionDropdown, appliedActionFilters]);
 
+  // Sync temp state when dropdown opens
   useEffect(() => {
-    if (showEntityDropdown) {
-      setEntityTypeFilter(entityTypeFilter);
-    }
+    if (showEntityDropdown) setTempEntityTypeFilter(entityTypeFilter);
   }, [showEntityDropdown, entityTypeFilter]);
 
-  // Handle dropdown positioning
-  useLayoutEffect(() => {
-    if (showActionDropdown && actionDropdownRef.current) {
-      const dropdownRect = actionDropdownRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-
-      if (dropdownRect.right > viewportWidth) {
-        setActionDropdownStyle({ right: 0 });
-      } else {
-        setActionDropdownStyle({ left: 0 });
+  // Click outside handlers
+  useEffect(() => {
+    if (!showActionDropdown) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        actionDropdownRef.current &&
+        !actionDropdownRef.current.contains(event.target as Node) &&
+        actionButtonRef.current &&
+        !actionButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowActionDropdown(false);
       }
     }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showActionDropdown]);
 
-  useLayoutEffect(() => {
-    if (showEntityDropdown && entityDropdownRef.current) {
-      const dropdownRect = entityDropdownRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-
-      if (dropdownRect.right > viewportWidth) {
-        setEntityDropdownStyle({ right: 0 });
-      } else {
-        setEntityDropdownStyle({ left: 0 });
+  useEffect(() => {
+    if (!showEntityDropdown) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        entityDropdownRef.current &&
+        !entityDropdownRef.current.contains(event.target as Node) &&
+        entityButtonRef.current &&
+        !entityButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowEntityDropdown(false);
       }
     }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showEntityDropdown]);
 
   // Convert date strings to timestamps
@@ -194,7 +204,8 @@ export const LogTable = () => {
     pageNumber: currentPage || 1,
     sortField: sortField || undefined,
     sortDirection: sortDirection || undefined,
-    actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
+    actionFilters:
+      appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
     entityTypeFilter:
       entityTypeFilter === ENTITY_TYPES.ALL ? undefined : entityTypeFilter,
     startDate: startTimestamp,
@@ -249,7 +260,9 @@ export const LogTable = () => {
     setCurrentPage(1);
   };
 
-  const handleActionFilter = (filter: (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS]) => {
+  const handleActionFilter = (
+    filter: (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS]
+  ) => {
     let newFilters;
     if (tempActionFilters.includes(filter)) {
       newFilters = tempActionFilters.filter((f) => f !== filter);
@@ -269,22 +282,22 @@ export const LogTable = () => {
     setTempActionFilters(appliedActionFilters);
   };
 
-  const handleEntityFilterChange = (filter: (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES]) => {
-    setEntityTypeFilter(filter);
-    setShowEntityDropdown(false);
-    setCurrentPage(1);
-  };
-
   const getActionColors = (action: string) => {
     // Map the detailed actions to their consolidated versions
-    const consolidatedAction = 
-      action === "Create User" || action === "Create Group" ? LOG_ACTIONS.CREATE :
-      action === "Edit User" || action === "Edit Group" ? LOG_ACTIONS.EDIT :
-      action === "Delete User" || action === "Delete Group" ? LOG_ACTIONS.DELETE :
-      action === "Reset Password" ? LOG_ACTIONS.RESET_PASSWORD :
-      action === "Lock Account" ? LOG_ACTIONS.LOCK_ACCOUNT :
-      action === "Unlock Account" ? LOG_ACTIONS.UNLOCK_ACCOUNT :
-      action;
+    const consolidatedAction =
+      action === "Create User" || action === "Create Group"
+        ? LOG_ACTIONS.CREATE
+        : action === "Edit User" || action === "Edit Group"
+          ? LOG_ACTIONS.EDIT
+          : action === "Delete User" || action === "Delete Group"
+            ? LOG_ACTIONS.DELETE
+            : action === "Reset Password"
+              ? LOG_ACTIONS.RESET_PASSWORD
+              : action === "Lock Account"
+                ? LOG_ACTIONS.LOCK_ACCOUNT
+                : action === "Unlock Account"
+                  ? LOG_ACTIONS.UNLOCK_ACCOUNT
+                  : action;
 
     const colors =
       ACTION_COLORS[consolidatedAction as keyof typeof ACTION_COLORS] ||
@@ -441,111 +454,141 @@ export const LogTable = () => {
                     <span className="ml-1">{getSortIcon("instructor")}</span>
                   </div>
                 </th>
-                <th
-                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-24"
-                >
-                  <div className="relative inline-block">
-                    <div
-                      className="group inline-flex justify-center items-center gap-2 px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none cursor-pointer min-w-[120px] text-white bg-[#B54A4A] hover:bg-[#9a3d3d]"
-                      onClick={() => {
+                <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-24">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="font-medium uppercase">ACTION</span>
+                    <button
+                      type="button"
+                      className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShowActionDropdown(!showActionDropdown);
                         setShowEntityDropdown(false);
                       }}
+                      title="Filter actions"
+                      ref={actionButtonRef}
+                      style={{ boxShadow: "none" }}
                     >
-                      <span className="font-medium uppercase">
-                        {appliedActionFilters.length === 0 
-                          ? "ACTION" 
-                          : appliedActionFilters.length === 1 
-                            ? appliedActionFilters[0] 
-                            : `ACTION: ${appliedActionFilters.length}`}
-                      </span>
-                      <FaChevronDown className="group-hover:text-white" />
-                    </div>
-                    
-                    {showActionDropdown && (
-                      <div
-                        ref={actionDropdownRef}
-                        className="absolute z-10 w-auto min-w-[200px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                        style={actionDropdownStyle}
-                      >
-                        <div className="max-h-48 overflow-y-auto">
-                          {Object.values(LOG_ACTIONS).filter(action => action !== LOG_ACTIONS.ALL).map((action) => (
-                            <div
-                              key={action}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-left flex items-center"
-                              onClick={() => handleActionFilter(action)}
-                            >
-                              <div className="w-4 h-4 border border-gray-300 rounded mr-2 flex items-center justify-center">
-                                {tempActionFilters.includes(action) && <FaCheck className="text-xs text-blue-600" />}
-                              </div>
-                              {action}
-                            </div>
-                          ))}
-                        </div>
-                        {/* Save and Reset buttons */}
-                        <div className="p-2 border-t border-gray-200 flex gap-2">
-                          <button
-                            onClick={handleSaveActionFilters}
-                            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={handleResetActionFilters}
-                            className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                      <FaFilter
+                        className={
+                          `w-4 h-4 transition-colors ` +
+                          (showActionDropdown || appliedActionFilters.length > 0
+                            ? "text-blue-500"
+                            : "text-white")
+                        }
+                      />
+                    </button>
                   </div>
-                </th>
-                <th
-                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-40"
-                >
-                  <div className="relative inline-block">
+                  {showActionDropdown && (
                     <div
-                      className="group inline-flex justify-center items-center gap-2 px-4 py-2 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/80 appearance-none cursor-pointer min-w-[120px] text-white bg-[#B54A4A] hover:bg-[#9a3d3d]"
-                      onClick={() => {
+                      ref={actionDropdownRef}
+                      className="absolute left-0 top-full z-20 mt-2 min-w-[200px] bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
+                        {Object.values(LOG_ACTIONS)
+                          .filter((action) => action !== LOG_ACTIONS.ALL)
+                          .map((action) => (
+                            <label
+                              key={action}
+                              className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left whitespace-nowrap"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={tempActionFilters.includes(action)}
+                                onChange={() => handleActionFilter(action)}
+                                className="accent-blue-600"
+                              />
+                              <span className="text-left" style={{ textTransform: 'none' }}>{action}</span>
+                            </label>
+                          ))}
+                      </div>
+                      <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
+                        <button
+                          onClick={handleSaveActionFilters}
+                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          onClick={handleResetActionFilters}
+                          className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </th>
+                <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-40">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="font-medium uppercase">ENTITY</span>
+                    <button
+                      type="button"
+                      className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShowEntityDropdown(!showEntityDropdown);
                         setShowActionDropdown(false);
                       }}
+                      title="Filter entity type"
+                      ref={entityButtonRef}
+                      style={{ boxShadow: "none" }}
                     >
-                      <span className="font-medium uppercase">
-                        {entityTypeFilter === ENTITY_TYPES.ALL
-                          ? "ENTITY"
-                          : entityTypeFilter === ENTITY_TYPES.USER
-                            ? "Users"
-                            : "Groups"}
-                      </span>
-                      <FaChevronDown className="group-hover:text-white" />
-                    </div>
-                    
-                    {showEntityDropdown && (
-                      <div
-                        ref={entityDropdownRef}
-                        className="absolute z-10 w-auto min-w-[150px] mt-1 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                        style={entityDropdownStyle}
-                      >
-                        <div className="max-h-48 overflow-y-auto">
-                          {Object.values(ENTITY_TYPES).map((type) => (
-                            <div
-                              key={type}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-left"
-                              onClick={() => handleEntityFilterChange(type)}
-                            >
+                      <FaFilter
+                        className={
+                          `w-4 h-4 transition-colors ` +
+                          (showEntityDropdown ||
+                          entityTypeFilter !== ENTITY_TYPES.ALL
+                            ? "text-blue-500"
+                            : "text-white")
+                        }
+                      />
+                    </button>
+                  </div>
+                  {showEntityDropdown && (
+                    <div
+                      ref={entityDropdownRef}
+                      className="absolute left-0 top-full z-20 mt-2 min-w-[180px] bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
+                        {Object.values(ENTITY_TYPES).map((type) => (
+                          <label
+                            key={type}
+                            className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
+                          >
+                            <input
+                              type="radio"
+                              name="entityTypeFilter"
+                              checked={tempEntityTypeFilter === type}
+                              onChange={() => setTempEntityTypeFilter(type)}
+                              className="accent-blue-600"
+                            />
+                            <span className="text-left">
                               {type === ENTITY_TYPES.ALL
                                 ? "All Entities"
                                 : type === ENTITY_TYPES.USER
                                   ? "Users"
                                   : "Groups"}
-                            </div>
-                          ))}
-                        </div>
+                            </span>
+                          </label>
+                        ))}
                       </div>
-                    )}
-                  </div>
+                      <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
+                        <button
+                          onClick={() => {
+                            setShowEntityDropdown(false);
+                            setEntityTypeFilter(tempEntityTypeFilter);
+                            setCurrentPage(1);
+                          }}
+                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </th>
                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider flex-1">
                   Details
@@ -583,7 +626,7 @@ export const LogTable = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-left w-32">
                         {format(
                           new Date(log._creationTime),
-                          "MMM dd, yyyy hh:mm a",
+                          "MMM dd, yyyy hh:mm a"
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-left w-40">
