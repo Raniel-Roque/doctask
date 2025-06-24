@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
 import { Navbar } from "../../components/navbar";
 import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import DocumentsTable from "./components/DocumentsTable";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
+import { useSearchParams } from "next/navigation";
 
 interface AdviserDocsPageProps {
   params: Promise<{ adviserId: string }>;
@@ -14,6 +15,9 @@ interface AdviserDocsPageProps {
 
 const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
   const { adviserId } = use(params);
+  const searchParams = useSearchParams();
+  const groupId = searchParams.get("groupId");
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<
     "name" | "capstoneTitle" | "projectManager" | "documentCount"
@@ -21,6 +25,7 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+  const [initialGroupId, setInitialGroupId] = useState<string | null>(groupId);
 
   // Use the backend query instead of mock data
   const result = useQuery(api.fetch.getAdviserDocuments, {
@@ -31,6 +36,16 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
     sortField,
     sortDirection,
   });
+
+  // Clear the initial group ID after first load to prevent re-expanding
+  useEffect(() => {
+    if (result && initialGroupId) {
+      const timer = setTimeout(() => {
+        setInitialGroupId(null);
+      }, 1000); // Clear after 1 second to allow the table to process the initial expansion
+      return () => clearTimeout(timer);
+    }
+  }, [result, initialGroupId]);
 
   const handleSort = (field: typeof sortField) => {
     if (field === sortField) {
@@ -102,6 +117,7 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
             status="loading"
             hasResults={false}
             currentUserId={adviserId as Id<"users">}
+            initialExpandedGroupId={initialGroupId}
           />
         </div>
       </div>
@@ -155,6 +171,7 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
           status={result.status as "idle" | "loading" | "error"}
           hasResults={result.hasResults}
           currentUserId={adviserId as Id<"users">}
+          initialExpandedGroupId={initialGroupId}
         />
       </div>
     </div>

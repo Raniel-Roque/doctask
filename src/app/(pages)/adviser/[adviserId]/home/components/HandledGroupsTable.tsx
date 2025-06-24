@@ -266,9 +266,12 @@ export const HandledGroupsTable = ({
                         <span>{statusCounts.in_review}</span>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <button className="text-blue-600 hover:text-blue-800">
+                        <Link
+                          href={`/adviser/${adviserId}/approval/documents?groupId=${group._id}`}
+                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                        >
                           View Details
-                        </button>
+                        </Link>
                       </td>
                     </tr>
                   );

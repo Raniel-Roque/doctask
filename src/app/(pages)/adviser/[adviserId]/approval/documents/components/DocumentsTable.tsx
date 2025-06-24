@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -31,6 +31,7 @@ interface DocumentsTableProps {
   hasResults: boolean;
   onStatusChange?: (documentId: string, newStatus: number) => void;
   currentUserId: Id<"users">;
+  initialExpandedGroupId?: string | null;
 }
 
 const DocumentsTable: React.FC<DocumentsTableProps> = ({
@@ -47,13 +48,40 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   hasResults,
   onStatusChange,
   currentUserId,
+  initialExpandedGroupId,
 }) => {
-  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(initialExpandedGroupId || null);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const groupRowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
 
   // Add Convex mutation
   const updateDocumentStatus = useMutation(api.mutations.updateDocumentStatus);
+
+  // Handle initial expansion and scrolling
+  useEffect(() => {
+    if (initialExpandedGroupId && groups.length > 0 && status === "idle") {
+      setExpandedGroupId(initialExpandedGroupId);
+      
+      // Scroll to the group row after a short delay to ensure rendering is complete
+      const timer = setTimeout(() => {
+        const targetRow = groupRowRefs.current[initialExpandedGroupId];
+        if (targetRow) {
+          targetRow.scrollIntoView({ 
+            behavior: "smooth", 
+            block: "center" 
+          });
+          // Add a highlight effect
+          targetRow.classList.add("bg-blue-50", "border-blue-200", "border-2");
+          setTimeout(() => {
+            targetRow.classList.remove("bg-blue-50", "border-blue-200", "border-2");
+          }, 3000);
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [initialExpandedGroupId, groups, status]);
 
   const toggleExpand = (groupId: string) => {
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
@@ -244,7 +272,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
               {groups.map((group) => (
                 <React.Fragment key={group._id}>
                   {/* Main Group Row */}
-                  <tr className="hover:bg-gray-50">
+                  <tr className="hover:bg-gray-50" ref={(el) => { groupRowRefs.current[group._id] = el; }}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {group.name || "-"}
                     </td>
