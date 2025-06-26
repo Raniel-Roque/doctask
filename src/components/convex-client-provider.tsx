@@ -67,8 +67,8 @@ function UnauthRedirect() {
   const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
-    // Allow access to login and forgot-password pages only
-    const publicPages = ["/login", "/forgot-password"];
+    // Allow access to login page only
+    const publicPages = ["/login", "/editor"];
     if (isLoaded && !isSignedIn && !publicPages.includes(pathname)) {
       router.replace("/login");
     }
@@ -187,7 +187,7 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 // Auth check component that will be used inside ClerkProvider
 function AuthCheck({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const publicPages = ["/login"];
+  const publicPages = ["/login", "/editor"];
   const isPublicPage = publicPages.includes(pathname);
 
   return (
