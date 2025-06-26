@@ -78,6 +78,13 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
     }
   };
 
+  // Function to handle navigation prevention when already on the page
+  const handleNavClick = (targetPath: string, e: React.MouseEvent) => {
+    if (pathname === targetPath) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <>
       <header className="bg-white shadow-md">
@@ -85,6 +92,7 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
         <div className="flex items-center justify-between px-6 py-2 bg-gray-200">
           <Link
             href={`/adviser/${adviserId}/home`}
+            onClick={(e) => handleNavClick(`/adviser/${adviserId}/home`, e)}
             className="flex items-center gap-3"
           >
             <Image
@@ -120,8 +128,11 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
               <div className="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg py-1 z-50 text-gray-800">
                 <Link
                   href={`/adviser/${adviserId}/profile`}
+                  onClick={(e) => {
+                    handleNavClick(`/adviser/${adviserId}/profile`, e);
+                    setIsProfileDropdownOpen(false);
+                  }}
                   className="px-4 py-2 hover:bg-gray-100 transition-colors duration-200 flex items-center gap-2"
-                  onClick={() => setIsProfileDropdownOpen(false)}
                 >
                   <UserIcon className="w-4 h-4" />
                   View Profile
@@ -148,6 +159,7 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
             <li>
               <Link
                 href={`/adviser/${adviserId}/home`}
+                onClick={(e) => handleNavClick(`/adviser/${adviserId}/home`, e)}
                 className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/adviser/${adviserId}/home`) ? "underline italic" : ""}`}
               >
                 <FaHome size={20} />
@@ -185,16 +197,22 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
                 <div className="absolute top-full left-0 mt-2 w-40 bg-white rounded-md shadow-lg py-1 z-50">
                   <Link
                     href={`/adviser/${adviserId}/approval/documents`}
+                    onClick={(e) => {
+                      handleNavClick(`/adviser/${adviserId}/approval/documents`, e);
+                      setIsApprovalDropdownOpen(false);
+                    }}
                     className={`flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/adviser/${adviserId}/approval/documents`) ? "bg-gray-100 font-medium" : ""}`}
-                    onClick={() => setIsApprovalDropdownOpen(false)}
                   >
                     <FileText className="w-4 h-4 text-blue-600" />
                     Documents
                   </Link>
                   <Link
                     href={`/adviser/${adviserId}/approval/groups`}
+                    onClick={(e) => {
+                      handleNavClick(`/adviser/${adviserId}/approval/groups`, e);
+                      setIsApprovalDropdownOpen(false);
+                    }}
                     className={`flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/adviser/${adviserId}/approval/groups`) ? "bg-gray-100 font-medium" : ""}`}
-                    onClick={() => setIsApprovalDropdownOpen(false)}
                   >
                     <Users className="w-4 h-4 text-purple-600" />
                     Groups
@@ -209,6 +227,7 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
             <li>
               <Link
                 href={`/adviser/${adviserId}/logs`}
+                onClick={(e) => handleNavClick(`/adviser/${adviserId}/logs`, e)}
                 className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isLogsActive() ? "underline italic" : ""}`}
               >
                 <FaClipboardList size={20} />

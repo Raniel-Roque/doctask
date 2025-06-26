@@ -67,6 +67,13 @@ export const Navbar = ({ studentId }: NavbarProps) => {
     }
   };
 
+  // Function to handle navigation prevention when already on the page
+  const handleNavClick = (targetPath: string, e: React.MouseEvent) => {
+    if (pathname === targetPath) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <>
       <header className="bg-white shadow-md">
@@ -74,6 +81,7 @@ export const Navbar = ({ studentId }: NavbarProps) => {
         <div className="flex items-center justify-between px-6 py-2 bg-gray-200">
           <Link
             href={`/student/${studentId}/manager/home`}
+            onClick={(e) => handleNavClick(`/student/${studentId}/manager/home`, e)}
             className="flex items-center gap-3"
           >
             <Image
@@ -109,8 +117,11 @@ export const Navbar = ({ studentId }: NavbarProps) => {
               <div className="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg py-1 z-50 text-gray-800">
                 <Link
                   href={`/student/${studentId}/manager/profile`}
+                  onClick={(e) => {
+                    handleNavClick(`/student/${studentId}/manager/profile`, e);
+                    setIsProfileDropdownOpen(false);
+                  }}
                   className="px-4 py-2 hover:bg-gray-100 transition-colors duration-200 flex items-center gap-2"
-                  onClick={() => setIsProfileDropdownOpen(false)}
                 >
                   <UserIcon className="w-4 h-4" />
                   View Profile
@@ -137,6 +148,7 @@ export const Navbar = ({ studentId }: NavbarProps) => {
             <li>
               <Link
                 href={`/student/${studentId}/manager/home`}
+                onClick={(e) => handleNavClick(`/student/${studentId}/manager/home`, e)}
                 className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/student/${studentId}/manager/home`) ? "underline italic" : ""}`}
               >
                 <FaHome size={20} />
@@ -150,6 +162,7 @@ export const Navbar = ({ studentId }: NavbarProps) => {
             <li>
               <Link
                 href={`/student/${studentId}/manager/tasks`}
+                onClick={(e) => handleNavClick(`/student/${studentId}/manager/tasks`, e)}
                 className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/student/${studentId}/manager/tasks`) ? "underline italic" : ""}`}
               >
                 <FaClipboardList size={20} />
@@ -163,6 +176,7 @@ export const Navbar = ({ studentId }: NavbarProps) => {
             <li>
               <Link
                 href={`/student/${studentId}/manager/docs`}
+                onClick={(e) => handleNavClick(`/student/${studentId}/manager/docs`, e)}
                 className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/student/${studentId}/manager/docs`) ? "underline italic" : ""}`}
               >
                 <FaFileAlt size={20} />

@@ -95,12 +95,20 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
     }
   };
 
+  // Function to handle navigation prevention when already on the page
+  const handleNavClick = (targetPath: string, e: React.MouseEvent) => {
+    if (pathname === targetPath) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <header className="bg-white shadow-md">
       {/* Top Section */}
       <div className="flex items-center justify-between px-6 py-2 bg-gray-200">
         <Link
           href={`/instructor/${instructorId}/home`}
+          onClick={(e) => handleNavClick(`/instructor/${instructorId}/home`, e)}
           className="flex items-center gap-3"
         >
           <Image
@@ -136,8 +144,11 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
             <div className="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg py-1 z-50 text-gray-800">
               <Link
                 href={`/instructor/${instructorId}/profile`}
+                onClick={(e) => {
+                  handleNavClick(`/instructor/${instructorId}/profile`, e);
+                  setIsProfileDropdownOpen(false);
+                }}
                 className="px-4 py-2 hover:bg-gray-100 transition-colors duration-200 flex items-center gap-2"
-                onClick={() => setIsProfileDropdownOpen(false)}
               >
                 <UserIcon className="w-4 h-4" />
                 View Profile
@@ -164,6 +175,7 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
           <li>
             <Link
               href={`/instructor/${instructorId}/home`}
+              onClick={(e) => handleNavClick(`/instructor/${instructorId}/home`, e)}
               className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/home`) ? "underline italic" : ""}`}
             >
               <FaHome size={20} />
@@ -200,16 +212,22 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
               <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                 <Link
                   href={`/instructor/${instructorId}/users/advisers`}
+                  onClick={(e) => {
+                    handleNavClick(`/instructor/${instructorId}/users/advisers`, e);
+                    setIsUsersDropdownOpen(false);
+                  }}
                   className={`flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/users/advisers`) ? "bg-gray-100 font-medium" : ""}`}
-                  onClick={() => setIsUsersDropdownOpen(false)}
                 >
                   <Users className="w-6 h-6 text-purple-600" />
                   Advisers
                 </Link>
                 <Link
                   href={`/instructor/${instructorId}/users/students`}
+                  onClick={(e) => {
+                    handleNavClick(`/instructor/${instructorId}/users/students`, e);
+                    setIsUsersDropdownOpen(false);
+                  }}
                   className={`flex items-center gap-2 px-4 py-3 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/users/students`) ? "bg-gray-100 font-medium" : ""}`}
-                  onClick={() => setIsUsersDropdownOpen(false)}
                 >
                   <GraduationCap className="w-6 h-6 text-blue-600" />
                   Students
@@ -224,6 +242,7 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
           <li>
             <Link
               href={`/instructor/${instructorId}/groups`}
+              onClick={(e) => handleNavClick(`/instructor/${instructorId}/groups`, e)}
               className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/groups`) ? "underline italic" : ""}`}
             >
               <FaUsers size={20} />
@@ -260,15 +279,21 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
               <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                 <Link
                   href={`/instructor/${instructorId}/logs/instructor`}
+                  onClick={(e) => {
+                    handleNavClick(`/instructor/${instructorId}/logs/instructor`, e);
+                    setIsLogsDropdownOpen(false);
+                  }}
                   className={`flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/logs/instructor`) ? "bg-gray-100 font-medium" : ""}`}
-                  onClick={() => setIsLogsDropdownOpen(false)}
                 >
                   Instructor Logs
                 </Link>
                 <Link
                   href={`/instructor/${instructorId}/logs/adviser`}
+                  onClick={(e) => {
+                    handleNavClick(`/instructor/${instructorId}/logs/adviser`, e);
+                    setIsLogsDropdownOpen(false);
+                  }}
                   className={`flex items-center gap-2 px-4 py-3 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/logs/adviser`) ? "bg-gray-100 font-medium" : ""}`}
-                  onClick={() => setIsLogsDropdownOpen(false)}
                 >
                   Adviser Logs
                 </Link>
@@ -282,6 +307,7 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
           <li>
             <Link
               href={`/instructor/${instructorId}/backup`}
+              onClick={(e) => handleNavClick(`/instructor/${instructorId}/backup`, e)}
               className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/backup`) ? "underline italic" : ""}`}
             >
               <FaDatabase size={16} />
