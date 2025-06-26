@@ -29,7 +29,7 @@ export const Editor = () => {
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        style: "padding-left: 56px; padding-right:56px; font-family: 'Times New Roman', serif; font-size: 11px; line-height: 1.5;",
+        style: "padding-left: 56px; padding-right:56px; font-family: 'Times New Roman', serif; font-size: 11px; line-height: 1.5; text-align: justify;",
         class:
           "focus:outline-none print:border-0 bg-white border border-[#C7C7C7] flex flex-col min-h-[1054px] print:min-h-0 w-[816px] pt-10 pr-14 pb-10 print:p-0 cursor-text",
       },
@@ -62,6 +62,8 @@ export const Editor = () => {
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
+        alignments: ['left', 'center', 'right', 'justify'],
+        defaultAlignment: 'justify',
       }),
       Underline,
       FontSizeExtension,
