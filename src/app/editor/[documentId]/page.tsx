@@ -1,20 +1,28 @@
+"use client";
+
 import { Editor } from "./editor";
-import { Toolbar } from "./toolbar";
-import { Navbar } from "./navbar";
+import dynamic from "next/dynamic";
+import { useParams } from "next/navigation";
 
-interface DocumentIdPageProps {
-  params: Promise<{
-    documentId: string;
-  }>;
-}
+// Import components dynamically to prevent hydration mismatches
+const Toolbar = dynamic(() => import("./toolbar").then((mod) => ({ default: mod.Toolbar })), {
+  ssr: false,
+});
 
-const DocumentIdPage = async ({ params }: DocumentIdPageProps) => {
-  const { documentId } = await params;
+const Navbar = dynamic(() => import("./navbar").then((mod) => ({ default: mod.Navbar })), {
+  ssr: false,
+});
+
+const DocumentIdPage = () => {
+  const params = useParams();
+  const documentId = params.documentId as string;
 
   return (
     <div className="min-h-screen bg-[#FAFBFD]">
-      <Navbar />  
-      <Toolbar />
+      <div className="print:hidden">
+        <Navbar />  
+        <Toolbar />
+      </div>
       <Editor />
     </div>
   );
