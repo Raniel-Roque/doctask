@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AlignCenterIcon, AlignJustifyIcon, AlignLeftIcon, AlignRightIcon, BoldIcon, ChevronDownIcon, HighlighterIcon, ImageIcon, ItalicIcon, Link2Icon, ListCollapseIcon, ListIcon, ListOrderedIcon, ListTodoIcon, LucideIcon, MessageSquarePlusIcon, MinusIcon, PlusIcon, PrinterIcon, Redo2Icon, RemoveFormattingIcon, SearchIcon, SpellCheckIcon, UnderlineIcon, Undo2Icon, UploadIcon } from "lucide-react";
+import { AlignCenterIcon, AlignJustifyIcon, AlignLeftIcon, AlignRightIcon, BoldIcon, ChevronDownIcon, HighlighterIcon, ImageIcon, ItalicIcon, ListCollapseIcon, ListIcon, ListOrderedIcon, ListTodoIcon, LucideIcon, MessageSquarePlusIcon, MinusIcon, PlusIcon, PrinterIcon, Redo2Icon, RemoveFormattingIcon, SearchIcon, SpellCheckIcon, UnderlineIcon, Undo2Icon, Unlink, UploadIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type Level } from "@tiptap/extension-heading";
 import { type ColorResult, CompactPicker } from "react-color";
 import { Input } from "@/components/ui/input";
@@ -13,60 +14,18 @@ import { Button } from "@/components/ui/button";
 import { useEditorStore } from "@/store/use-editor-store";
 
 const FontFamilyButton = () => {
-    const { editor } = useEditorStore();
-    const [currentFont, setCurrentFont] = useState("Times New Roman");
-
-    useEffect(() => {
-        if (!editor) return;
-
-        const updateFontFamily = () => {
-            setCurrentFont(editor.getAttributes("textStyle").fontFamily || "Times New Roman");
-        };
-
-        editor.on("selectionUpdate", updateFontFamily);
-        
-        return () => {
-            editor.off("selectionUpdate", updateFontFamily);
-        };
-    }, [editor]);
-
-    const fonts = [
-        { label: "Times New Roman", value: "Times New Roman" },
-        { label: "Arial", value: "Arial" },
-        { label: "Courier New", value: "Courier New" },
-        { label: "Georgia", value: "Georgia" },
-        { label: "Verdana", value: "Verdana" },
-    ];
-
-    const handleFontChange = (value: string) => {
-        editor?.chain().focus().setFontFamily(value).run();
-        setCurrentFont(value); 
-    };
-
+    // Display-only button showing Times New Roman (cannot be changed)
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="h-7 w-[120px] shrink-0 flex items-center justify-between rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
-                    <span className="truncate">{currentFont}</span>
-                    <ChevronDownIcon className="ml-2 size-4 shrink-0"/>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button className="h-7 w-auto shrink-0 flex items-center justify-between rounded-sm hover:bg-neutral-200/80 px-1.5 text-sm cursor-default whitespace-nowrap">
+                    <span>Times New Roman</span>
                 </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="p=1 flex flex-col gap-y-1">
-                {fonts.map(({ label, value }) => (
-                    <button 
-                        onClick={() => handleFontChange(value)}
-                        key={value} 
-                        className={cn(
-                            "flex items-center gap-x-2 px-2 py-1 rounded-sm hover:bg-neutral-200/80",
-                            currentFont === value && "bg-neutral-200/80"
-                        )}
-                        style={{ fontFamily: value }}
-                    >
-                        <span className="text-sm">{label}</span>
-                    </button>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Font: Times New Roman (Fixed)</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
@@ -119,41 +78,51 @@ const HeadingLevelButton = () => {
     };
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
-                    <span className="truncate">{currentHeading}</span>
-                    <ChevronDownIcon className="ml-2 size-4 shrink-0"/>
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="p-1 flex flex-col gap-y-1">
-                {headings.map(({ label, value, fontSize }) => (
-                    <button 
-                        key={value}
-                        style={{ fontSize, fontWeight: value === 1 || value === 2 ? "bold" : "normal" }} // Ensure H1 & H2 are bold in dropdown
-                        onClick={() => handleHeadingChange(value)}
-                        className={cn(
-                            "flex items-center gap-x-2 px-2 py-1 rounded-sm hover:bg-neutral-200/80",
-                            currentHeading === label && "bg-neutral-200/80"
-                        )}
-                    >
-                        {label}
-                    </button>                
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
+                            <span className="truncate">{currentHeading}</span>
+                            <ChevronDownIcon className="ml-2 size-4 shrink-0"/>
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="p-1 flex flex-col gap-y-1">
+                        {headings.map(({ label, value, fontSize }) => (
+                            <button 
+                                key={value}
+                                style={{ fontSize, fontWeight: value === 1 || value === 2 ? "bold" : "normal" }} // Ensure H1 & H2 are bold in dropdown
+                                onClick={() => handleHeadingChange(value)}
+                                className={cn(
+                                    "flex items-center gap-x-2 px-2 py-1 rounded-sm hover:bg-neutral-200/80",
+                                    currentHeading === label && "bg-neutral-200/80"
+                                )}
+                            >
+                                {label}
+                            </button>                
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Text style and heading levels</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
 const TextColorButton = () => {
     const { editor } = useEditorStore();
-    const [currentColor, setCurrentColor] = useState("#000000");
 
     useEffect(() => {
         if (!editor) return;
 
         const updateTextColor = () => {
-            setCurrentColor(editor.getAttributes("textStyle").color || "#000000");
+            const color = editor.getAttributes("textStyle").color || "#000000";
+            // Force color to be black only
+            if (color !== "#000000") {
+                editor.chain().focus().setColor("#000000").run();
+            }
         };
 
         editor.on("selectionUpdate", updateTextColor);
@@ -163,23 +132,26 @@ const TextColorButton = () => {
         };
     }, [editor]);
 
-    const onChange = (color: ColorResult) => {
-        editor?.chain().focus().setColor(color.hex).run();
-        setCurrentColor(color.hex);
+    // Always force black color
+    const handleClick = () => {
+        editor?.chain().focus().setColor("#000000").run();
     };
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button 
+                    onClick={handleClick}
+                    className="h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm"
+                >
                     <span className="text-sx font-semibold">A</span>
-                    <div className="w-4 h-0.5 rounded-sm" style={{ backgroundColor: currentColor }} />
+                    <div className="w-4 h-0.5 rounded-sm bg-black" />
                 </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="p-0">
-                <CompactPicker color={currentColor} onChange={onChange} />
-            </DropdownMenuContent>
-        </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Text color (Black only)</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
@@ -207,58 +179,56 @@ const HighlightColorButton = () => {
     };
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
-                    <HighlighterIcon className="mt-0.5 size-4"/>
-                    <div className="w-4 h-0.5 mt-0.5 rounded-sm" style={{ backgroundColor: highlightColor }} />
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="p-0">
-                <CompactPicker color={highlightColor} onChange={onChange} />
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
+                            <HighlighterIcon className="mt-0.5 size-4"/>
+                            <div className="w-4 h-0.5 mt-0.5 rounded-sm" style={{ backgroundColor: highlightColor }} />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="p-0">
+                        <CompactPicker color={highlightColor} onChange={onChange} />
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Highlight text</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
-const LinkButton = () => {
+const UnlinkButton = () => {
     const { editor } = useEditorStore();
-    const [value, setValue] = useState(editor?.getAttributes("link").href || "")
 
-    const onChange = (href: string) => {
-        editor?.chain().focus().extendMarkRange("link").setLink({ href }).run();
-        setValue("");
+    const handleClick = () => {
+        if (!editor) return;
+        editor.chain().focus().unsetLink().run();
     };
 
     return (
-        <DropdownMenu onOpenChange={(open) => {
-            if (open) {
-                setValue(editor?.getAttributes("link").href || "");
-            }
-        }}>
-            <DropdownMenuTrigger asChild>
-                <button className="h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
-                    <Link2Icon className="mt-0.5 size-4"/>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button 
+                    onClick={handleClick}
+                    className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5"
+                >
+                    <Unlink className="size-4"/>
                 </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="p-2.5 flex items-center gap-x-2">
-                <Input 
-                    placeholder="https://example.com"
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                />
-                <Button onClick={() => onChange(value)}>
-                    Apply
-                </Button>
-            </DropdownMenuContent>
-        </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Remove link</p>
+            </TooltipContent>
+        </Tooltip>
     );
-}
+};
 
 const ImageButton = () => {
     const { editor } = useEditorStore();
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [imageUrl, setImageUrl] = useState("");
+    const [isEditing, setIsEditing] = useState(false);
 
     const onChange = (src: string) => {
         editor?.chain().focus().setImage({ src }).run();
@@ -275,66 +245,74 @@ const ImageButton = () => {
                 const imageUrl = URL.createObjectURL(file);
                 onChange(imageUrl);
             }
-        }
+        };
 
         input.click();
-    }
+    };
 
     const handleImageUrlSubmit = () => {
         if (imageUrl) {
             onChange(imageUrl);
             setImageUrl("");
-            setIsDialogOpen(false);
+            setIsEditing(false);
         }
-    }
+    };
+
     return (
         <>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <button className="h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
-                        <ImageIcon className="mt-0.5 size-4"/>
-                    </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={onUpload}>
-                        <UploadIcon className="size-4 mr-2" />
-                        Upload
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
-                        <SearchIcon className="size-4 mr-2" />
-                        Paste image url
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
+                                <ImageIcon className="mt-0.5 size-4"/>
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={onUpload}>
+                                <UploadIcon className="size-4 mr-2" />
+                                Upload
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                                <SearchIcon className="size-4 mr-2" />
+                                Paste image URL
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Insert image</p>
+                </TooltipContent>
+            </Tooltip>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            {isEditing && (
+                <Dialog open={isEditing} onOpenChange={setIsEditing}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Insert image URL</DialogTitle>
                     </DialogHeader>
                     <Input 
-                        placeholder="Insert image URL"
+                            placeholder="https://example.com/image.jpg"
                         value={imageUrl}
                         onChange={(e) => setImageUrl(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                                handleImageUrlSubmit()
+                                    handleImageUrlSubmit();
                             }
                         }}
-                        
                     />
                     <DialogFooter>
-                        <Button onClick={(handleImageUrlSubmit)}>
+                            <Button onClick={handleImageUrlSubmit}>
                             Insert
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            )}
         </>
     );
-}
+};
 
-/* ALIGNMENT */
 interface AlignButtonProps {
     alignment: "left" | "center" | "right" | "justify";
     icon: LucideIcon;
@@ -344,7 +322,6 @@ interface AlignButtonProps {
 
 const AlignButton: React.FC<AlignButtonProps> = ({ alignment, icon: Icon, activeAlignment, setActiveAlignment }) => {
     const { editor } = useEditorStore();
-    const isActive = activeAlignment === alignment;
 
     const handleClick = () => {
         editor?.chain().focus().setTextAlign(alignment).run();
@@ -352,21 +329,28 @@ const AlignButton: React.FC<AlignButtonProps> = ({ alignment, icon: Icon, active
     };
 
     return (
-        <button
-            onClick={handleClick}
-            className={cn(
-                "h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80",
-                isActive && "bg-neutral-300"
-            )}
-        >
-            <Icon className="size-4" />
-        </button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    onClick={handleClick}
+                    className={cn(
+                        "h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80",
+                        activeAlignment === alignment && "bg-neutral-300"
+                    )}
+                >
+                    <Icon className="size-4" />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>{alignment.charAt(0).toUpperCase() + alignment.slice(1)} alignment</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
 const AlignmentButtons: React.FC = () => {
     const { editor } = useEditorStore();
-    const [activeAlignment, setActiveAlignment] = useState<string>("");
+    const [activeAlignment, setActiveAlignment] = useState("justify");
 
     useEffect(() => {
         if (!editor) return;
@@ -380,15 +364,15 @@ const AlignmentButtons: React.FC = () => {
                 setActiveAlignment("right");
             } else if (editor.isActive({ textAlign: "justify" })) {
                 setActiveAlignment("justify");
-            } else {
-                setActiveAlignment("left");
             }
         };
 
         editor.on("selectionUpdate", updateState);
+        editor.on("transaction", updateState);
 
         return () => {
             editor.off("selectionUpdate", updateState);
+            editor.off("transaction", updateState);
         };
     }, [editor]);
 
@@ -402,7 +386,6 @@ const AlignmentButtons: React.FC = () => {
     );
 };
 
-/* LISTS */
 const BulletListButton = () => {
     const { editor } = useEditorStore();
     const [isActive, setIsActive] = useState(false);
@@ -424,15 +407,21 @@ const BulletListButton = () => {
     }, [editor]);
 
     return (
-        <button
-            onClick={() => editor?.chain().focus().toggleBulletList().run()}
-            className={cn(
-                "h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm",
-                isActive && "bg-neutral-300"
-            )}
-        >
-            <ListIcon className="mt-0.5 size-4" />
-        </button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                    className={cn("h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80", 
+                        isActive && "bg-neutral-300"
+                    )}
+                >
+                    <ListIcon className="size-4" />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Bullet list</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
@@ -457,29 +446,27 @@ const OrderedListButton = () => {
     }, [editor]);
 
     return (
-        <button
-            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-            className={cn(
-                "h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm",
-                isActive && "bg-neutral-300"
-            )}
-        >
-            <ListOrderedIcon className="mt-0.5 size-4" />
-        </button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                    className={cn("h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80", 
+                        isActive && "bg-neutral-300"
+                    )}
+                >
+                    <ListOrderedIcon className="size-4" />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Ordered list</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
 const FontSizeButton = () => {
     const { editor } = useEditorStore();
-
-    // Get the current font size from the editor's selection
-    const currentFontSize = editor?.getAttributes("textStyle").fontSize
-        ? editor?.getAttributes("textStyle").fontSize.replace("px", "")
-        : "11";
-
-    const [fontSize, setFontSize] = useState(currentFontSize);
-    const [inputValue, setInputValue] = useState(fontSize);
-    const [isEditing, setIsEditing] = useState(false);
+    const [fontSize, setFontSize] = useState("11");
 
     useEffect(() => {
         if (!editor) return;
@@ -495,133 +482,92 @@ const FontSizeButton = () => {
                 }
             }
     
-            // If not a heading, get the font size from textStyle
+            // If not a heading, get the font size from textStyle but restrict to 11 or 12
             if (newSize === "11") {
-                newSize = editor.getAttributes("textStyle").fontSize?.replace("px", "") || "11";
+                const currentSize = editor.getAttributes("textStyle").fontSize?.replace("px", "") || "11";
+                // Only allow 11 or 12
+                newSize = (currentSize === "12") ? "12" : "11";
             }
     
             setFontSize(newSize);
-            setInputValue(newSize);
         };
     
         editor.on("selectionUpdate", updateFontSizeFromSelection);
-        editor.on("transaction", updateFontSizeFromSelection); // ✅ Updates immediately on change
+        editor.on("transaction", updateFontSizeFromSelection);
     
         return () => {
             editor.off("selectionUpdate", updateFontSizeFromSelection);
-            editor.off("transaction", updateFontSizeFromSelection); // Cleanup event listeners
+            editor.off("transaction", updateFontSizeFromSelection);
         };
     }, [editor]);
-     
 
     const updateFontSize = (newSize: string) => {
-        const size = parseInt(newSize);
-        if (!isNaN(size) && size > 0) {
-            editor?.chain().focus().setFontSize(`${size}px`).run();
+        // Only allow 11 or 12
+        if (newSize === "11" || newSize === "12") {
+            editor?.chain().focus().setFontSize(`${newSize}px`).run();
             setFontSize(newSize);
-            setInputValue(newSize);
-            setIsEditing(false);
-        }
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value);
-    };
-
-    const handleInputBlur = () => {
-        updateFontSize(inputValue);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            updateFontSize(inputValue);
-            editor?.commands.focus();
         }
     };
 
     const increment = () => {
-        const newSize = parseInt(fontSize) + 1;
-        if (newSize > 0) {
-            updateFontSize(newSize.toString());
+        if (fontSize === "11") {
+            updateFontSize("12");
         }
     };
 
     const decrement = () => {
-        const newSize = parseInt(fontSize) - 1;
-        if (newSize > 0) {
-            updateFontSize(newSize.toString());
+        if (fontSize === "12") {
+            updateFontSize("11");
         }
     };
 
     return (
-        <div className="flex items-center gap-x-0.5">
-            <button onClick={decrement} className="h-7 w-7 shrink-0 flex items-center justify-center rounded-sm hover:bg-neutral-200/80">
-                <MinusIcon className="size-4" />
-            </button>
-            {isEditing ? (
-                <input 
-                    type="text"
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onBlur={handleInputBlur}
-                    onKeyDown={handleKeyDown}
-                    className="h-7 w-10 text-sm border border-neutral-400 text-center rounded-sm bg-transparent focus-outline-none focus:ring-0"
-                />
-            ) : (
-                <button 
-                    onClick={() => {
-                        setIsEditing(true);
-                        setFontSize(currentFontSize);
-                    }}
-                    className="h-7 w-10 text-sm border border-neutral-400 text-center rounded-sm bg-transparent cursor-text"
-                >
-                    {fontSize}
-                </button>
-            )}
-
-            <button onClick={increment} className="h-7 w-7 shrink-0 flex items-center justify-center rounded-sm hover:bg-neutral-200/80">
-                <PlusIcon className="size-4" />
-            </button>
-        </div>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <div className="flex items-center gap-x-0.5">
+                    <button onClick={decrement} className="h-7 w-7 shrink-0 flex items-center justify-center rounded-sm hover:bg-neutral-200/80">
+                        <MinusIcon className="size-4" />
+                    </button>
+                    <button className="h-7 w-10 text-sm border border-neutral-400 text-center rounded-sm bg-transparent cursor-default">
+                            {fontSize}
+                        </button>
+                    <button onClick={increment} className="h-7 w-7 shrink-0 flex items-center justify-center rounded-sm hover:bg-neutral-200/80">
+                        <PlusIcon className="size-4" />
+                    </button>
+                </div>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Font size</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
 const LineHeightButton = () => {
     const { editor } = useEditorStore();
 
-    const lineHeights = [
-        { label: "Default", value: "normal"},
-        { label: "Single", value: "1"},
-        { label: "1.15", value: "1.15"},
-        { label: "1.5", value: "1.5"},
-        { label: "Double", value: "2"},
-    ];
+    // Display current line height and apply 1.5 when clicked
+    const handleClick = () => {
+        editor?.chain().focus().setLineHeight("1.5").run();
+    };
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="h-7 min-w-7 shrink-0 flex items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
-                    <ListCollapseIcon className="mt-0.5 size-4" />
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="p-1 flex flex-col gap-y-1">
-                {lineHeights.map(({ label, value }) => (
-                    <button 
-                        key={value}
-                        onClick={() => editor?.chain().focus().setLineHeight(value).run()} 
-                        className={cn(
-                            "flex items-center gap-x-2 px-2 py-1 rounded-sm hover:bg-neutral-200/80",
-                            editor?.getAttributes("paragraph").lineHeight === value && "bg-neutral-200/80"
-                        )}
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button 
+            onClick={handleClick}
+            className="h-7 min-w-7 shrink-0 flex items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm"
                     >
-                        <span className="text-sm">{label}</span>
+            <span className="mr-1">1.5</span>
+            <ListCollapseIcon className="size-4" />
                     </button>                
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
-    )
-}
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Line Height: 1.5 (Fixed)</p>
+            </TooltipContent>
+        </Tooltip>
+    );
+};
 
 const BoldButton = () => {
     const { editor } = useEditorStore();
@@ -644,14 +590,21 @@ const BoldButton = () => {
     }, [editor]);
 
     return (
-        <button
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-            className={cn("h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80", 
-                isActive && "bg-neutral-300"
-            )}
-        >
-            <BoldIcon className="size-4" />
-        </button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    onClick={() => editor?.chain().focus().toggleBold().run()}
+                    className={cn("h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80", 
+                        isActive && "bg-neutral-300"
+                    )}
+                >
+                    <BoldIcon className="size-4" />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Bold text</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
@@ -676,14 +629,21 @@ const ItalicButton = () => {
     }, [editor]);
 
     return (
-        <button
-            onClick={() => editor?.chain().focus().toggleItalic().run()}
-            className={cn("h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80", 
-                isActive && "bg-neutral-300"
-            )}
-        >
-            <ItalicIcon className="size-4" />
-        </button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    onClick={() => editor?.chain().focus().toggleItalic().run()}
+                    className={cn("h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80", 
+                        isActive && "bg-neutral-300"
+                    )}
+                >
+                    <ItalicIcon className="size-4" />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Italic text</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
@@ -708,14 +668,21 @@ const UnderlineButton = () => {
     }, [editor]);
 
     return (
-        <button
-            onClick={() => editor?.chain().focus().toggleUnderline().run()}
-            className={cn("h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80", 
-                isActive && "bg-neutral-300"
-            )}
-        >
-            <UnderlineIcon className="size-4" />
-        </button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    onClick={() => editor?.chain().focus().toggleUnderline().run()}
+                    className={cn("h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80", 
+                        isActive && "bg-neutral-300"
+                    )}
+                >
+                    <UnderlineIcon className="size-4" />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>Underline text</p>
+            </TooltipContent>
+        </Tooltip>
     );
 };
 
@@ -723,23 +690,32 @@ interface ToolbarButtonProps {
     onClick?: () => void;
     isActive?: boolean;
     icon: LucideIcon;
+    label: string;
 }
 
 const ToolbarButton = ({
     onClick,
     isActive,
     icon: Icon,
+    label,
 }: ToolbarButtonProps) => {
     return (
-    <button 
-        onClick={onClick} 
-        className={cn(
-            "text-sm h-7 min-w-7 flex items-center justify-center rounder-sm hover:bg-neutral-200/80",
-            isActive && "bg-neutral-200/80"
-        )}
-    > 
-        <Icon className="size-4" />
-    </button>
+    <Tooltip>
+        <TooltipTrigger asChild>
+            <button 
+                onClick={onClick} 
+                className={cn(
+                    "text-sm h-7 min-w-7 flex items-center justify-center rounder-sm hover:bg-neutral-200/80",
+                    isActive && "bg-neutral-200/80"
+                )}
+            > 
+                <Icon className="size-4" />
+            </button>
+        </TooltipTrigger>
+        <TooltipContent>
+            <p>{label}</p>
+        </TooltipContent>
+    </Tooltip>
     )
 }
 
@@ -785,7 +761,7 @@ export const Toolbar = () => {
                 onClick: () => {}, //editor?.chain().focus().addPendingComment().run(),
             },
             {
-                label: "List Todo",
+                label: "Task List",
                 icon: ListTodoIcon,
                 isActive: editor?.isActive("taskList"),
                 onClick: () => editor?.chain().focus().toggleTaskList().run(),
@@ -798,35 +774,37 @@ export const Toolbar = () => {
         ]
     ]
     return ( 
-        <div className="bg-[#F1F4F9] px-2.5 py-0.5 rounded-[24px] min-h-[40px] flex items-center gap-x-0.5 overflow-x-auto">
-            {sections[0].map((item) => (
-                <ToolbarButton key={item.label} {...item}/>
-            ))}
-            <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-            <FontFamilyButton />
-            <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-            <HeadingLevelButton />
-            <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-            <FontSizeButton />
-            <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-            <BoldButton />
-            <ItalicButton />
-            <UnderlineButton />
-            <TextColorButton />
-            <HighlightColorButton />
-            <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-            <LinkButton />
-            <ImageButton />
-            <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-            <AlignmentButtons />
-            <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-            <LineHeightButton />          
-            <BulletListButton />
-            <OrderedListButton />
-            <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-            {sections[1].map((item) => (
-                <ToolbarButton key={item.label} {...item}/>
-            ))}
-        </div>
+        <TooltipProvider>
+            <div className="bg-[#F1F4F9] px-2.5 py-0.5 rounded-[24px] min-h-[40px] flex items-center gap-x-0.5 overflow-x-auto">
+                {sections[0].map((item) => (
+                    <ToolbarButton key={item.label} {...item}/>
+                ))}
+                <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+                <FontFamilyButton />
+                <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+                <HeadingLevelButton />
+                <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+                <FontSizeButton />
+                <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+                <BoldButton />
+                <ItalicButton />
+                <UnderlineButton />
+                <TextColorButton />
+                <HighlightColorButton />
+                <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+                <UnlinkButton />
+                <ImageButton />
+                <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+                <AlignmentButtons />
+                <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+                <LineHeightButton />          
+                <BulletListButton />
+                <OrderedListButton />
+                <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+                {sections[1].map((item) => (
+                    <ToolbarButton key={item.label} {...item}/>
+                ))}
+            </div>
+        </TooltipProvider>
     );
 };

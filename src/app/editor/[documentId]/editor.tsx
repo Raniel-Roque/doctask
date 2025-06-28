@@ -11,7 +11,6 @@ import TableHeader from "@tiptap/extension-table-header";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import ResizeImage from "tiptap-extension-resize-image";
-import FontFamily from "@tiptap/extension-font-family";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
@@ -48,9 +47,6 @@ export const Editor = () => {
       TableHeader,
       Image,
       ResizeImage,
-      FontFamily.configure({
-        types: ['textStyle'],
-      }),
       TextStyle,
       Color,
       Highlight.configure({
