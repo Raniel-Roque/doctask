@@ -4,7 +4,8 @@ import { use, useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
-import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useEditorStore } from "@/store/use-editor-store";
 
@@ -22,40 +23,73 @@ const Navbar = dynamic(() => import("../../../../../../editor/navbar").then((mod
 });
 
 interface MemberDocumentEditorProps {
-  params: Promise<{ studentId: string; documentId: string }>;
+  params: Promise<{ documentId: string }>;
 }
 
 const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
-  const { studentId, documentId } = use(params); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const { documentId } = use(params);
+  const { user } = useUser();
   const router = useRouter();
   const { editor } = useEditorStore();
   const [isLoading, setIsLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const isViewOnly = searchParams.get('viewOnly') === 'true';
+
+  // Get current user by Clerk ID
+  const currentUser = useQuery(api.fetch.getUserByClerkId, 
+    user?.id ? { clerkId: user.id } : "skip"
+  );
 
   // Get document data
   const document = useQuery(api.fetch.getDocument, {
     documentId: documentId as Id<"documents">,
   });
 
-  // Check user access using studentId directly (it's already a Convex user ID)
-  const userAccess = useQuery(api.fetch.getUserDocumentAccess, {
-    documentId: documentId as Id<"documents">,
-    userId: studentId as Id<"users">,
-  });
+  // Check user access using authenticated user ID
+  const userAccess = useQuery(api.fetch.getUserDocumentAccess, 
+    currentUser?._id ? {
+      documentId: documentId as Id<"documents">,
+      userId: currentUser._id,
+    } : "skip"
+  );
+
+  // Get task assignments to check if user can edit
+  const taskAssignments = useQuery(api.fetch.getTaskAssignments,
+    userAccess?.group?._id ? { groupId: userAccess.group._id } : "skip"
+  );
 
   // Mutation to update document content
   const updateContent = useMutation(api.mutations.updateDocumentContent);
+
+  // Check if user can edit this document
+  const canEdit = () => {
+    if (!document || !currentUser || !taskAssignments?.tasks) return false;
+    
+    // Members need to be assigned to related tasks to edit
+    const relatedTasks = taskAssignments.tasks.filter(task => task.chapter === document.chapter);
+    return relatedTasks.some(task => task.assigned_student_ids.includes(currentUser._id));
+  };
+
+  const isEditable = canEdit() && !isViewOnly;
 
   // Load document content into editor when available
   useEffect(() => {
     if (document && editor && isLoading) {
       editor.commands.setContent(document.content || "");
       setIsLoading(false);
+      
+      // Set editor to read-only if user can't edit or is in view-only mode
+      if (!isEditable) {
+        editor.setEditable(false);
+      } else {
+        editor.setEditable(true);
+      }
     }
-  }, [document, editor, isLoading]);
+  }, [document, editor, isLoading, isEditable]);
 
-  // Auto-save content changes
+  // Auto-save content changes (only if editable and not view-only)
   useEffect(() => {
-    if (!editor || !document || isLoading) return;
+    if (!editor || !document || !currentUser?._id || isLoading || !isEditable) return;
 
     const handleUpdate = async () => {
       const content = editor.getHTML();
@@ -64,7 +98,7 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
           await updateContent({
             documentId: documentId as Id<"documents">,
             content,
-            userId: studentId as Id<"users">,
+            userId: currentUser._id,
           });
         } catch (error) {
           console.error("Failed to save document:", error);
@@ -84,7 +118,7 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       clearTimeout(timeoutId);
       editor.off("update", handleUpdate);
     };
-  }, [editor, document, documentId, updateContent, isLoading, studentId]);
+  }, [editor, document, documentId, updateContent, isLoading, currentUser?._id, isEditable]);
 
   // Handle access control
   if (userAccess?.hasAccess === false) {
@@ -104,7 +138,7 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
     );
   }
 
-  if (!document || !userAccess) {
+  if (!document || !userAccess || !currentUser) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -120,6 +154,11 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       <div className="print:hidden">
         <Navbar title={document.title} />  
         <Toolbar />
+        {!isEditable && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center">
+            You are viewing this document in read-only mode. You need to be assigned to a related task to edit.
+          </div>
+        )}
       </div>
       <Editor />
     </div>

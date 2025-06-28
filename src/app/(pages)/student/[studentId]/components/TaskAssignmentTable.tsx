@@ -423,6 +423,16 @@ export const TaskAssignmentTable = ({
     }
   };
 
+  // Handle view document navigation (always view-only)
+  const handleViewDocument = (task: Task) => {
+    // Find the document that matches this task's chapter
+    const document = documents.find(doc => doc.chapter === task.chapter);
+    if (document) {
+      const path = `/student/${currentUserId}/${mode}/docs/${document._id}?viewOnly=true`;
+      router.push(path);
+    }
+  };
+
   // Helper to get merged, deduped, sorted members from all subparts
   const getMergedSubpartMembers = (chapter: string, chapterTasks: Task[]) => {
     const allMemberIds = chapterTasks.flatMap(
@@ -993,6 +1003,10 @@ export const TaskAssignmentTable = ({
                                   <button
                                     className="text-blue-600 hover:text-blue-800 transition-colors"
                                     title="View Document"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleViewDocument(chapterTasks[0]);
+                                    }}
                                   >
                                     <FaEye className="w-5 h-5" />
                                   </button>
@@ -1073,6 +1087,10 @@ export const TaskAssignmentTable = ({
                                 <button
                                   className="text-blue-600 hover:text-blue-800 transition-colors"
                                   title="View Document"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewDocument(chapterTasks[0]);
+                                  }}
                                 >
                                   <FaEye className="w-5 h-5" />
                                 </button>

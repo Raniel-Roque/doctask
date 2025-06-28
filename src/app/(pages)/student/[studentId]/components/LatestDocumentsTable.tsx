@@ -18,7 +18,6 @@ interface Document {
   room_id: string;
   title: string;
   content: string;
-  student_ids: Id<"users">[];
   status: number;
   last_modified?: number;
 }
@@ -59,6 +58,11 @@ interface LatestDocumentsTableProps {
   isSubmitting: boolean;
   mode: "manager" | "member";
   tasks?: Task[];
+  group?: {
+    _id: Id<"groupsTable">;
+    project_manager_id: Id<"users">;
+    member_ids: Id<"users">[];
+  };
 }
 
 // Grade mapping
@@ -119,6 +123,7 @@ export const LatestDocumentsTable = ({
   isSubmitting,
   mode,
   tasks = [],
+  group,
 }: LatestDocumentsTableProps) => {
   const router = useRouter();
   
@@ -137,6 +142,12 @@ export const LatestDocumentsTable = ({
   // Handle edit document navigation
   const handleEditDocument = (document: Document) => {
     const path = `/student/${currentUserId}/${mode}/docs/${document._id}`;
+    router.push(path);
+  };
+
+  // Handle view document navigation (always view-only)
+  const handleViewDocument = (document: Document) => {
+    const path = `/student/${currentUserId}/${mode}/docs/${document._id}?viewOnly=true`;
     router.push(path);
   };
 
@@ -161,7 +172,18 @@ export const LatestDocumentsTable = ({
   // Check if user can edit the document
   const canEditDocument = (doc: Document) => {
     if (viewOnlyDocuments.includes(doc.chapter)) return false;
-    return doc.student_ids.includes(currentUserId);
+    
+    // If no group information available, default to false
+    if (!group) return false;
+    
+    // Project managers can edit all documents
+    if (group.project_manager_id === currentUserId) {
+      return true;
+    }
+    
+    // Members need to be assigned to related tasks
+    const relatedTasks = tasks.filter(task => task.chapter === doc.chapter);
+    return relatedTasks.some(task => task.assigned_student_ids.includes(currentUserId));
   };
 
   const displayCapstoneTitle =
@@ -685,6 +707,7 @@ export const LatestDocumentsTable = ({
                         <button
                           className="text-blue-600 hover:text-blue-800 transition-colors"
                           title="View Document"
+                          onClick={() => handleViewDocument(doc)}
                         >
                           <FaEye className="w-5 h-5" />
                         </button>
