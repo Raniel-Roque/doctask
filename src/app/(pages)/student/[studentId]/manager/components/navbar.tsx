@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { useState, useRef, useEffect } from "react";
-import { FaHome, FaClipboardList, FaFileAlt } from "react-icons/fa";
+import { FaHome, FaClipboardList } from "react-icons/fa";
 import { LogOut, User as UserIcon } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
@@ -170,19 +170,7 @@ export const Navbar = ({ studentId }: NavbarProps) => {
               </Link>
             </li>
 
-            <li className="font-semibold text-white">|</li>
 
-            {/* Documents Link */}
-            <li>
-              <Link
-                href={`/student/${studentId}/manager/docs`}
-                onClick={(e) => handleNavClick(`/student/${studentId}/manager/docs`, e)}
-                className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/student/${studentId}/manager/docs`) ? "underline italic" : ""}`}
-              >
-                <FaFileAlt size={20} />
-                Documents
-              </Link>
-            </li>
           </ul>
         </nav>
       </header>

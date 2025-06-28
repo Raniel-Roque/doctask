@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Document {
   _id: Id<"documents">;
@@ -119,6 +120,8 @@ export const LatestDocumentsTable = ({
   mode,
   tasks = [],
 }: LatestDocumentsTableProps) => {
+  const router = useRouter();
+  
   // Add state for status filter
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
@@ -129,6 +132,12 @@ export const LatestDocumentsTable = ({
 
   const handleToggleDetails = (detailType: "documents" | "tasks") => {
     setOpenDetails((prev) => (prev === detailType ? null : detailType));
+  };
+
+  // Handle edit document navigation
+  const handleEditDocument = (document: Document) => {
+    const path = `/student/${currentUserId}/${mode}/docs/${document._id}`;
+    router.push(path);
   };
 
   // Status options for the dropdown
@@ -689,6 +698,7 @@ export const LatestDocumentsTable = ({
                           <button
                             className="text-purple-600 hover:text-purple-800 transition-colors"
                             title="Edit Document"
+                            onClick={() => handleEditDocument(doc)}
                           >
                             <FaEdit className="w-5 h-5" />
                           </button>

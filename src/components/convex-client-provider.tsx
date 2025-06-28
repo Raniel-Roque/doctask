@@ -67,8 +67,8 @@ function UnauthRedirect() {
   const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
-    // Allow access to login page and editor folder
-    const isPublicPath = pathname === "/login" || pathname.startsWith("/editor");
+    // Allow access to login page only
+    const isPublicPath = pathname === "/login";
     if (isLoaded && !isSignedIn && !isPublicPath) {
       router.replace("/login");
     }
@@ -187,7 +187,7 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 // Auth check component that will be used inside ClerkProvider
 function AuthCheck({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isPublicPage = pathname === "/login" || pathname.startsWith("/editor");
+  const isPublicPage = pathname === "/login";
 
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>

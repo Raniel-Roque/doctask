@@ -5,7 +5,6 @@ import { use } from "react";
 import { TaskAssignmentTable } from "../../components/TaskAssignmentTable";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
-import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 
@@ -15,10 +14,9 @@ interface MemberTasksPageProps {
 
 const MemberTasksPage = ({ params }: MemberTasksPageProps) => {
   const { studentId } = use(params);
-  const { user } = useUser();
   const [groupId, setGroupId] = useState<string | null>(null);
 
-  // Get the user's group
+  // Get the user's group using studentId directly (it's already a Convex user ID)
   const studentGroup = useQuery(api.fetch.getStudentGroup, {
     userId: studentId as Id<"users">,
   });
@@ -27,6 +25,15 @@ const MemberTasksPage = ({ params }: MemberTasksPageProps) => {
   const taskAssignments = useQuery(
     api.fetch.getTaskAssignments,
     groupId ? { groupId: groupId as Id<"groupsTable"> } : "skip",
+  );
+
+  // Get documents for the group using studentId directly
+  const documents = useQuery(
+    api.fetch.getDocuments,
+    groupId ? { 
+      groupId: groupId as Id<"groupsTable">, 
+      userId: studentId as Id<"users">
+    } : "skip",
   );
 
   // Set groupId when studentGroup is loaded
@@ -38,7 +45,6 @@ const MemberTasksPage = ({ params }: MemberTasksPageProps) => {
 
   // Determine status based on loading states
   const getStatus = () => {
-    if (!user) return "loading";
     if (!studentGroup) return "loading";
     if (!studentGroup.group_id) return "no_group";
     if (!taskAssignments) return "loading";
@@ -68,6 +74,7 @@ const MemberTasksPage = ({ params }: MemberTasksPageProps) => {
           currentUserId={studentId}
           mode="member"
           groupMembers={taskAssignments?.groupMembers}
+          documents={documents?.documents || []}
         />
       </div>
     </div>

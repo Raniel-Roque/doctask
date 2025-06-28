@@ -1328,7 +1328,7 @@ export const deleteGroup = mutation({
       if (adviser && adviser.requests_group_ids) {
         await ctx.db.patch(adviser._id, {
           requests_group_ids: adviser.requests_group_ids.filter(
-            (id) => id !== args.groupId
+            (id) => id !== group._id
           ),
         });
       }
@@ -1819,6 +1819,104 @@ export const updateDocumentStatus = mutation({
           last_modified: Date.now(),
         });
       }
+
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  },
+});
+
+// =========================================
+// DOCUMENT OPERATIONS
+// =========================================
+
+export const updateDocumentContent = mutation({
+  args: {
+    documentId: v.id("documents"),
+    content: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get the document
+      const document = await ctx.db.get(args.documentId);
+      if (!document) {
+        throw new Error("Document not found");
+      }
+
+      // Get the user
+      const user = await ctx.db.get(args.userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      // Check if user has permission to edit this document
+      // Get the group to check membership
+      const group = await ctx.db.get(document.group_id);
+      if (!group) {
+        throw new Error("Group not found");
+      }
+
+      // Check if user is part of this group (project manager or member)
+      const isProjectManager = group.project_manager_id === args.userId;
+      const isMember = group.member_ids.includes(args.userId);
+      
+      if (!isProjectManager && !isMember) {
+        throw new Error("You don't have permission to edit this document");
+      }
+
+      // Update the document content
+      await ctx.db.patch(args.documentId, {
+        content: args.content,
+      });
+
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  },
+});
+
+export const updateDocumentRoomId = mutation({
+  args: {
+    documentId: v.id("documents"),
+    roomId: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get the document
+      const document = await ctx.db.get(args.documentId);
+      if (!document) {
+        throw new Error("Document not found");
+      }
+
+      // Get the user
+      const user = await ctx.db.get(args.userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      // Check if user has permission to edit this document
+      // Get the group to check membership
+      const group = await ctx.db.get(document.group_id);
+      if (!group) {
+        throw new Error("Group not found");
+      }
+
+      // Check if user is part of this group (project manager or member)
+      const isProjectManager = group.project_manager_id === args.userId;
+      const isMember = group.member_ids.includes(args.userId);
+      
+      if (!isProjectManager && !isMember) {
+        throw new Error("You don't have permission to edit this document");
+      }
+
+      // Update the document room_id
+      await ctx.db.patch(args.documentId, {
+        room_id: args.roomId,
+      });
 
       return { success: true };
     } catch (error) {

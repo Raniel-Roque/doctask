@@ -20,6 +20,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface Task {
   _id: Id<"taskAssignments">;
@@ -37,6 +38,16 @@ interface Task {
   }>;
 }
 
+interface Document {
+  _id: Id<"documents">;
+  _creationTime: number;
+  group_id: Id<"groupsTable">;
+  chapter: string;
+  room_id: string;
+  title: string;
+  content: string;
+}
+
 interface TaskAssignmentTableProps {
   tasks: Task[];
   status: "loading" | "error" | "idle" | "no_group";
@@ -50,6 +61,7 @@ interface TaskAssignmentTableProps {
     clerk_id: string;
     isProjectManager: boolean;
   }>;
+  documents?: Document[];
   onStatusChange?: (taskId: string, newStatus: number) => void;
 }
 
@@ -99,8 +111,10 @@ export const TaskAssignmentTable = ({
   currentUserId,
   mode,
   groupMembers,
+  documents = [],
   onStatusChange,
 }: TaskAssignmentTableProps) => {
+  const router = useRouter();
   // Add Convex mutations
   const updateTaskStatus = useMutation(api.mutations.updateTaskStatus);
   const updateTaskAssignment = useMutation(api.mutations.updateTaskAssignment);
@@ -396,6 +410,16 @@ export const TaskAssignmentTable = ({
       }
     } finally {
       setUpdatingStatus(null);
+    }
+  };
+
+  // Handle edit document navigation
+  const handleEditDocument = (task: Task) => {
+    // Find the document that matches this task's chapter
+    const document = documents.find(doc => doc.chapter === task.chapter);
+    if (document) {
+      const path = `/student/${currentUserId}/${mode}/docs/${document._id}`;
+      router.push(path);
     }
   };
 
@@ -980,6 +1004,10 @@ export const TaskAssignmentTable = ({
                                   </button>
                                   {canEditTask(chapterTasks[0]) && (
                                     <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditDocument(chapterTasks[0]);
+                                      }}
                                       className="text-purple-600 hover:text-purple-800 transition-colors"
                                       title="Edit Document"
                                     >
@@ -1056,6 +1084,10 @@ export const TaskAssignmentTable = ({
                                 </button>
                                 {canEditTask(chapterTasks[0]) && (
                                   <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditDocument(chapterTasks[0]);
+                                    }}
                                     className="text-purple-600 hover:text-purple-800 transition-colors"
                                     title="Edit Document"
                                   >

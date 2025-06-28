@@ -1482,3 +1482,122 @@ export const getHandledGroupsWithProgress = query({
     };
   },
 });
+
+export const getDocument = query({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const document = await ctx.db.get(args.documentId);
+      return document; // Returns null if not found
+    } catch {
+      return null;
+    }
+  },
+});
+
+export const getDocumentByRoomId = query({
+  args: {
+    roomId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const document = await ctx.db
+        .query("documents")
+        .withIndex("by_room", (q) => q.eq("room_id", args.roomId))
+        .first();
+      return document; // Returns null if not found
+    } catch {
+      return null;
+    }
+  },
+});
+
+export const getUserDocumentAccess = query({
+  args: {
+    documentId: v.id("documents"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get the document
+      const document = await ctx.db.get(args.documentId);
+      if (!document) {
+        return { hasAccess: false, user: null, group: null };
+      }
+
+      // Get the user
+      const user = await ctx.db.get(args.userId);
+      if (!user) {
+        return { hasAccess: false, user: null, group: null };
+      }
+
+      // Get the group to check membership
+      const group = await ctx.db.get(document.group_id);
+      if (!group) {
+        return { hasAccess: false, user, group: null };
+      }
+
+      // Check if user has access to this document
+      const isProjectManager = group.project_manager_id === args.userId;
+      const isMember = group.member_ids.includes(args.userId);
+      const hasAccess = isProjectManager || isMember;
+
+      return { 
+        hasAccess, 
+        user: {
+          _id: user._id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          subrole: user.subrole,
+          email: user.email,
+          clerk_id: user.clerk_id,
+        }, 
+        group: hasAccess ? {
+          _id: group._id,
+          capstone_title: group.capstone_title,
+          project_manager_id: group.project_manager_id,
+          member_ids: group.member_ids,
+        } : null
+      };
+    } catch {
+      return { hasAccess: false, user: null, group: null };
+    }
+  },
+});
+
+export const getDocuments = query({
+  args: {
+    groupId: v.id("groupsTable"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // First check if user has access to this group
+      const group = await ctx.db.get(args.groupId);
+      if (!group) {
+        return { documents: [] };
+      }
+
+      // Check if user is either project manager or a member
+      const isProjectManager = group.project_manager_id === args.userId;
+      const isMember = group.member_ids.includes(args.userId);
+      
+      if (!isProjectManager && !isMember) {
+        return { documents: [] }; // User doesn't have access to this group
+      }
+
+      // Get all documents for this group using the correct index
+      const documents = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
+        .collect();
+      
+      return { documents }; // Returns array of documents for the group
+    } catch {
+      return { documents: [] };
+    }
+  },
+});

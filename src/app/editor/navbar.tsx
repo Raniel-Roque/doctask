@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react"; 
+import { useState } from "react";
+import { useRouter } from "next/navigation"; 
 import {
     Menubar,
     MenubarContent,
@@ -19,10 +20,15 @@ import { BoldIcon, FileIcon, FileJsonIcon, FilePlusIcon, FileTextIcon, GlobeIcon
 import { BsFilePdf, BsFiletypeDocx } from "react-icons/bs";
 import { useEditorStore } from "@/store/use-editor-store";
 
-export const Navbar = () => {
+interface NavbarProps {
+    title?: string;
+}
+
+export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
     const [selectedRows, setSelectedRows] = useState(1); 
     const [selectedCols, setSelectedCols] = useState(1);
-    const  { editor } = useEditorStore()
+    const { editor } = useEditorStore();
+    const router = useRouter();
 
     const createTable = (rows: number, cols: number) => {
         editor?.chain().focus().insertTable({ rows, cols, withHeaderRow: false}).run()
@@ -147,9 +153,14 @@ export const Navbar = () => {
     return (
         <nav className="flex items-center justify-between">
             <div className="pl-4 py-1 flex gap-2 items-center">
-                <Image src="/doctask.ico" alt="Logo" width={40} height={40}/>
+                <button 
+                    onClick={() => router.push('/')} 
+                    className="hover:opacity-80 transition-opacity"
+                >
+                    <Image src="/doctask.ico" alt="DocTask Logo" width={40} height={40}/>
+                </button>
                 <div className="flex flex-col">
-                    <div className="text-lg font-semibold">Untitled Document</div>
+                    <div className="text-lg font-semibold">{title}</div>
                         <Menubar className="border-none bg-transparent shadow-none h-auto p-0">
                             
                             {/* FILE */}
