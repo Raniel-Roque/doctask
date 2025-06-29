@@ -126,7 +126,7 @@ export const LatestDocumentsTable = ({
   group,
 }: LatestDocumentsTableProps) => {
   const router = useRouter();
-  
+
   // Add state for status filter
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
@@ -172,18 +172,20 @@ export const LatestDocumentsTable = ({
   // Check if user can edit the document
   const canEditDocument = (doc: Document) => {
     if (viewOnlyDocuments.includes(doc.chapter)) return false;
-    
+
     // If no group information available, default to false
     if (!group) return false;
-    
+
     // Project managers can edit all documents
     if (group.project_manager_id === currentUserId) {
       return true;
     }
-    
+
     // Members need to be assigned to related tasks
-    const relatedTasks = tasks.filter(task => task.chapter === doc.chapter);
-    return relatedTasks.some(task => task.assigned_student_ids.includes(currentUserId));
+    const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
+    return relatedTasks.some((task) =>
+      task.assigned_student_ids.includes(currentUserId),
+    );
   };
 
   const displayCapstoneTitle =

@@ -81,7 +81,9 @@ export const Navbar = ({ studentId }: NavbarProps) => {
         <div className="flex items-center justify-between px-6 py-2 bg-gray-200">
           <Link
             href={`/student/${studentId}/member/home`}
-            onClick={(e) => handleNavClick(`/student/${studentId}/member/home`, e)}
+            onClick={(e) =>
+              handleNavClick(`/student/${studentId}/member/home`, e)
+            }
             className="flex items-center gap-3"
           >
             <Image
@@ -148,7 +150,9 @@ export const Navbar = ({ studentId }: NavbarProps) => {
             <li>
               <Link
                 href={`/student/${studentId}/member/home`}
-                onClick={(e) => handleNavClick(`/student/${studentId}/member/home`, e)}
+                onClick={(e) =>
+                  handleNavClick(`/student/${studentId}/member/home`, e)
+                }
                 className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/student/${studentId}/member/home`) ? "underline italic" : ""}`}
               >
                 <FaHome size={20} />
@@ -162,15 +166,15 @@ export const Navbar = ({ studentId }: NavbarProps) => {
             <li>
               <Link
                 href={`/student/${studentId}/member/tasks`}
-                onClick={(e) => handleNavClick(`/student/${studentId}/member/tasks`, e)}
+                onClick={(e) =>
+                  handleNavClick(`/student/${studentId}/member/tasks`, e)
+                }
                 className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/student/${studentId}/member/tasks`) ? "underline italic" : ""}`}
               >
                 <FaClipboardList size={20} />
                 Tasks
               </Link>
             </li>
-
-
           </ul>
         </nav>
       </header>

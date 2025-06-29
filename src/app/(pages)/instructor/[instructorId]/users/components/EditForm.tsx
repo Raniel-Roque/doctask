@@ -61,7 +61,7 @@ export default function EditForm({
   const [roleSearch, setRoleSearch] = useState("");
   const [showRoleSearch, setShowRoleSearch] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<"top" | "bottom">(
-    "bottom"
+    "bottom",
   );
   const [showRoleChangeConfirmation, setShowRoleChangeConfirmation] =
     useState(false);
@@ -122,7 +122,7 @@ export default function EditForm({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
 
@@ -142,7 +142,7 @@ export default function EditForm({
             name === "email"
               ? VALIDATION_RULES.email.maxLength
               : VALIDATION_RULES.name.maxLength,
-        }
+        },
       );
 
       onFormDataChange({
@@ -167,7 +167,7 @@ export default function EditForm({
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-      })
+      }),
     );
   };
 
@@ -418,7 +418,7 @@ export default function EditForm({
                           .filter((role) =>
                             role.label
                               .toLowerCase()
-                              .includes(roleSearch.toLowerCase())
+                              .includes(roleSearch.toLowerCase()),
                           )
                           .map((role) => (
                             <div

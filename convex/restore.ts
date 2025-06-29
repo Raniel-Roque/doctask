@@ -87,6 +87,17 @@ export const deleteAllDocumentStatus = mutation({
   },
 });
 
+export const deleteAllImages = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const images = await ctx.db.query("images").collect();
+    for (const image of images) {
+      await ctx.db.delete(image._id);
+    }
+    return { success: true };
+  },
+});
+
 // =========================================
 // RESTORE OPERATIONS
 // =========================================
@@ -213,7 +224,6 @@ export const restoreDocument = mutation({
     await ctx.db.insert("documents", {
       group_id: args.group_id,
       chapter: args.chapter,
-      room_id: args.room_id,
       title: args.title,
       content: args.content,
     });
@@ -260,6 +270,33 @@ export const restoreDocumentStatus = mutation({
       review_status: args.review_status,
       review_notes: args.review_notes,
       last_modified: args.last_modified,
+    });
+
+    return { success: true };
+  },
+});
+
+export const restoreImage = mutation({
+  args: {
+    file_id: v.id("_storage"),
+    filename: v.string(),
+    content_type: v.string(),
+    size: v.number(),
+    group_id: v.id("groupsTable"),
+    uploaded_by: v.id("users"),
+    alt_text: v.optional(v.string()),
+    url: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("images", {
+      file_id: args.file_id,
+      filename: args.filename,
+      content_type: args.content_type,
+      size: args.size,
+      group_id: args.group_id,
+      uploaded_by: args.uploaded_by,
+      alt_text: args.alt_text,
+      url: args.url,
     });
 
     return { success: true };

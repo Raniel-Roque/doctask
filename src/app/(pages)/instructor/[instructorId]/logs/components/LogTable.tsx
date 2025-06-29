@@ -236,7 +236,10 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
         id: shortId,
       };
     }
-    return { display: userRole === 0 ? "Unknown Instructor" : "Unknown Adviser", id: null };
+    return {
+      display: userRole === 0 ? "Unknown Instructor" : "Unknown Adviser",
+      id: null,
+    };
   };
 
   const getAffectedEntityName = (log: Log) => {
@@ -277,7 +280,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   };
 
   const handleActionFilter = (
-    filter: (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS]
+    filter: (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS],
   ) => {
     let newFilters;
     if (tempActionFilters.includes(filter)) {
@@ -303,7 +306,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const getActionColors = (action: string) => {
     // Check if the action exists in our predefined colors
     const actionKey = Object.values(LOG_ACTIONS).find(
-      (logAction) => logAction === action
+      (logAction) => logAction === action,
     ) as keyof typeof ACTION_COLORS | undefined;
 
     if (actionKey && ACTION_COLORS[actionKey]) {
@@ -320,10 +323,11 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const getAvailableActions = () => {
     if (userRole === 0) {
       // Instructor actions
-      return Object.values(LOG_ACTIONS).filter((action) => 
-        action !== LOG_ACTIONS.ALL && 
-        action !== LOG_ACTIONS.ACCEPT_GROUP && 
-        action !== LOG_ACTIONS.REJECT_GROUP
+      return Object.values(LOG_ACTIONS).filter(
+        (action) =>
+          action !== LOG_ACTIONS.ALL &&
+          action !== LOG_ACTIONS.ACCEPT_GROUP &&
+          action !== LOG_ACTIONS.REJECT_GROUP,
       );
     } else {
       // Adviser actions
@@ -461,10 +465,10 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
         <table className="min-w-full bg-white border border-gray-200">
           <thead>
             <tr className="bg-[#B54A4A]">
-                              <th
-                  className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer w-32 whitespace-nowrap"
-                  onClick={() => handleSort("_creationTime")}
-                >
+              <th
+                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer w-32 whitespace-nowrap"
+                onClick={() => handleSort("_creationTime")}
+              >
                 <div className="flex items-center justify-center text-xs">
                   Date & Time
                   <span className="ml-1">{getSortIcon("_creationTime")}</span>
@@ -523,7 +527,12 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                               onChange={() => handleActionFilter(action)}
                               className="accent-blue-600"
                             />
-                            <span className="text-left" style={{ textTransform: 'none' }}>{action}</span>
+                            <span
+                              className="text-left"
+                              style={{ textTransform: "none" }}
+                            >
+                              {action}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -589,7 +598,12 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                               onChange={() => handleActionFilter(action)}
                               className="accent-blue-600"
                             />
-                            <span className="text-left" style={{ textTransform: 'none' }}>{action}</span>
+                            <span
+                              className="text-left"
+                              style={{ textTransform: "none" }}
+                            >
+                              {action}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -696,19 +710,13 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
           <tbody>
             {!logsData ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-6 py-4 text-center text-gray-500"
-                >
+                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                   Loading...
                 </td>
               </tr>
             ) : logs.length === 0 ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-6 py-4 text-center text-gray-500"
-                >
+                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                   No logs available
                 </td>
               </tr>
@@ -724,7 +732,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                     <td className="px-6 py-4 whitespace-nowrap text-left w-32">
                       {format(
                         new Date(log._creationTime),
-                        "MMM dd, yyyy hh:mm a"
+                        "MMM dd, yyyy hh:mm a",
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-left w-40">

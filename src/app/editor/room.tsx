@@ -2,9 +2,9 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { 
-  LiveblocksProvider, 
-  RoomProvider, 
+import {
+  LiveblocksProvider,
+  RoomProvider,
   ClientSideSuspense,
 } from "@liveblocks/react/suspense";
 import { getUsers } from "./actions";
@@ -16,7 +16,7 @@ interface RoomProps {
   children?: ReactNode;
   title?: string;
   isEditable?: boolean;
-  userType?: 'manager' | 'member';
+  userType?: "manager" | "member";
 }
 
 type User = {
@@ -37,8 +37,8 @@ export function Room({ children, title, isEditable, userType }: RoomProps) {
         const fetchedUsers = await getUsers();
         setUsers(fetchedUsers);
       } catch (err) {
-        console.error('Failed to fetch users:', err);
-        setError('Failed to load users');
+        console.error("Failed to fetch users:", err);
+        setError("Failed to load users");
       }
     };
 
@@ -48,31 +48,37 @@ export function Room({ children, title, isEditable, userType }: RoomProps) {
   useEffect(() => {
     // Listen for authentication errors via global error handling
     const handleError = (event: ErrorEvent) => {
-      const message = event.message?.toLowerCase() || '';
-      
-      if (message.includes('authentication failed') || message.includes('unauthorized')) {
-        setError('auth');
-      } else if (message.includes('timed out') || message.includes('timeout')) {
-        setError('timeout');
-      } else if (message.includes('connection') || message.includes('network')) {
-        setError('connection');
+      const message = event.message?.toLowerCase() || "";
+
+      if (
+        message.includes("authentication failed") ||
+        message.includes("unauthorized")
+      ) {
+        setError("auth");
+      } else if (message.includes("timed out") || message.includes("timeout")) {
+        setError("timeout");
+      } else if (
+        message.includes("connection") ||
+        message.includes("network")
+      ) {
+        setError("connection");
       }
     };
 
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
+    window.addEventListener("error", handleError);
+    return () => window.removeEventListener("error", handleError);
   }, []);
 
   const getErrorMessage = () => {
     switch (error) {
-      case 'auth':
-        return 'You don\'t have permission to access this document. Please check your account permissions.';
-      case 'timeout':
-        return 'Connection timed out. Please check your internet connection and try again.';
-      case 'connection':
-        return 'Unable to connect to the collaboration server. Please try again later.';
+      case "auth":
+        return "You don't have permission to access this document. Please check your account permissions.";
+      case "timeout":
+        return "Connection timed out. Please check your internet connection and try again.";
+      case "connection":
+        return "Unable to connect to the collaboration server. Please try again later.";
       default:
-        return 'An unexpected error occurred. Please try again.';
+        return "An unexpected error occurred. Please try again.";
     }
   };
 
@@ -92,13 +98,13 @@ export function Room({ children, title, isEditable, userType }: RoomProps) {
         <div className="text-center max-w-md">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {error === 'auth' ? 'Access Denied' : 'Connection Failed'}
+            {error === "auth" ? "Access Denied" : "Connection Failed"}
           </h2>
           <p className="text-gray-600 mb-2">{getErrorMessage()}</p>
         </div>
-        
+
         <div className="flex gap-4">
-          {error !== 'auth' && (
+          {error !== "auth" && (
             <Button onClick={handleRetry} variant="default">
               Try Again
             </Button>
@@ -112,27 +118,31 @@ export function Room({ children, title, isEditable, userType }: RoomProps) {
   }
 
   return (
-    <LiveblocksProvider 
+    <LiveblocksProvider
       throttle={16}
       authEndpoint={"/api/liveblocks-auth"}
       resolveUsers={({ userIds }) =>
         userIds.map((userId) => {
           const user = users.find((user) => user.id === userId);
-          return user ? {
-            name: user.name,
-            avatar: user.avatar,
-            color: user.color,
-          } : undefined;
+          return user
+            ? {
+                name: user.name,
+                avatar: user.avatar,
+                color: user.color,
+              }
+            : undefined;
         })
       }
     >
-      <RoomProvider 
+      <RoomProvider
         id={params.documentId as string}
         initialPresence={{ cursor: null, selection: null }}
       >
-        <ClientSideSuspense fallback={<FullscreenLoader label="Loading document editor..." />}>
+        <ClientSideSuspense
+          fallback={<FullscreenLoader label="Loading document editor..." />}
+        >
           {title && isEditable !== undefined && userType ? (
-            <DocumentEditor 
+            <DocumentEditor
               title={title}
               isEditable={isEditable}
               userType={userType}

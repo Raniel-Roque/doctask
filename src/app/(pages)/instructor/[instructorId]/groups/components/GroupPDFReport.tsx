@@ -134,8 +134,18 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
           {filters &&
             Object.entries(filters).filter(([key, value]) => {
               if (!value) return false;
-              if (key === "adviserFilters" && Array.isArray(value) && value.length === 0) return false;
-              if (key === "gradeFilters" && Array.isArray(value) && value.length === 0) return false;
+              if (
+                key === "adviserFilters" &&
+                Array.isArray(value) &&
+                value.length === 0
+              )
+                return false;
+              if (
+                key === "gradeFilters" &&
+                Array.isArray(value) &&
+                value.length === 0
+              )
+                return false;
               if (value === "undefined") return false;
               return true;
             }).length > 0 &&
@@ -143,8 +153,18 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
               Object.entries(filters)
                 .filter(([key, value]) => {
                   if (!value) return false;
-                  if (key === "adviserFilters" && Array.isArray(value) && value.length === 0) return false;
-                  if (key === "gradeFilters" && Array.isArray(value) && value.length === 0) return false;
+                  if (
+                    key === "adviserFilters" &&
+                    Array.isArray(value) &&
+                    value.length === 0
+                  )
+                    return false;
+                  if (
+                    key === "gradeFilters" &&
+                    Array.isArray(value) &&
+                    value.length === 0
+                  )
+                    return false;
                   if (value === "undefined") return false;
                   return true;
                 })
@@ -154,7 +174,8 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
                   if (Array.isArray(value)) {
                     displayValue = value.join(", ");
                   } else if (typeof value === "string") {
-                    displayValue = value.charAt(0).toUpperCase() + value.slice(1);
+                    displayValue =
+                      value.charAt(0).toUpperCase() + value.slice(1);
                   }
                   return `${capKey}: ${displayValue}`;
                 })

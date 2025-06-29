@@ -17,7 +17,7 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
   const { adviserId } = use(params);
   const searchParams = useSearchParams();
   const groupId = searchParams.get("groupId");
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<
     "name" | "capstoneTitle" | "projectManager" | "documentCount"

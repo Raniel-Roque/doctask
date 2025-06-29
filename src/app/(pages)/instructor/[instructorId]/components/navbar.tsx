@@ -175,7 +175,9 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
           <li>
             <Link
               href={`/instructor/${instructorId}/home`}
-              onClick={(e) => handleNavClick(`/instructor/${instructorId}/home`, e)}
+              onClick={(e) =>
+                handleNavClick(`/instructor/${instructorId}/home`, e)
+              }
               className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/home`) ? "underline italic" : ""}`}
             >
               <FaHome size={20} />
@@ -213,7 +215,10 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
                 <Link
                   href={`/instructor/${instructorId}/users/advisers`}
                   onClick={(e) => {
-                    handleNavClick(`/instructor/${instructorId}/users/advisers`, e);
+                    handleNavClick(
+                      `/instructor/${instructorId}/users/advisers`,
+                      e,
+                    );
                     setIsUsersDropdownOpen(false);
                   }}
                   className={`flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/users/advisers`) ? "bg-gray-100 font-medium" : ""}`}
@@ -224,7 +229,10 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
                 <Link
                   href={`/instructor/${instructorId}/users/students`}
                   onClick={(e) => {
-                    handleNavClick(`/instructor/${instructorId}/users/students`, e);
+                    handleNavClick(
+                      `/instructor/${instructorId}/users/students`,
+                      e,
+                    );
                     setIsUsersDropdownOpen(false);
                   }}
                   className={`flex items-center gap-2 px-4 py-3 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/users/students`) ? "bg-gray-100 font-medium" : ""}`}
@@ -242,7 +250,9 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
           <li>
             <Link
               href={`/instructor/${instructorId}/groups`}
-              onClick={(e) => handleNavClick(`/instructor/${instructorId}/groups`, e)}
+              onClick={(e) =>
+                handleNavClick(`/instructor/${instructorId}/groups`, e)
+              }
               className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/groups`) ? "underline italic" : ""}`}
             >
               <FaUsers size={20} />
@@ -280,7 +290,10 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
                 <Link
                   href={`/instructor/${instructorId}/logs/instructor`}
                   onClick={(e) => {
-                    handleNavClick(`/instructor/${instructorId}/logs/instructor`, e);
+                    handleNavClick(
+                      `/instructor/${instructorId}/logs/instructor`,
+                      e,
+                    );
                     setIsLogsDropdownOpen(false);
                   }}
                   className={`flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/logs/instructor`) ? "bg-gray-100 font-medium" : ""}`}
@@ -290,7 +303,10 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
                 <Link
                   href={`/instructor/${instructorId}/logs/adviser`}
                   onClick={(e) => {
-                    handleNavClick(`/instructor/${instructorId}/logs/adviser`, e);
+                    handleNavClick(
+                      `/instructor/${instructorId}/logs/adviser`,
+                      e,
+                    );
                     setIsLogsDropdownOpen(false);
                   }}
                   className={`flex items-center gap-2 px-4 py-3 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/logs/adviser`) ? "bg-gray-100 font-medium" : ""}`}
@@ -307,7 +323,9 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
           <li>
             <Link
               href={`/instructor/${instructorId}/backup`}
-              onClick={(e) => handleNavClick(`/instructor/${instructorId}/backup`, e)}
+              onClick={(e) =>
+                handleNavClick(`/instructor/${instructorId}/backup`, e)
+              }
               className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/backup`) ? "underline italic" : ""}`}
             >
               <FaDatabase size={16} />

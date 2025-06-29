@@ -254,11 +254,15 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
             isSubmitting={isSubmitting}
             mode="manager"
             tasks={taskAssignments?.tasks ?? []}
-            group={groupDetails ? {
-              _id: groupDetails._id,
-              project_manager_id: groupDetails.project_manager_id,
-              member_ids: groupDetails.member_ids,
-            } : undefined}
+            group={
+              groupDetails
+                ? {
+                    _id: groupDetails._id,
+                    project_manager_id: groupDetails.project_manager_id,
+                    member_ids: groupDetails.member_ids,
+                  }
+                : undefined
+            }
           />
         </div>
         <CancelAdviserRequestPopup

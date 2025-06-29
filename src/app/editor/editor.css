@@ -1,193 +1,193 @@
 /* List styles */
-.tiptap ul, 
+.tiptap ul,
 .tiptap ol {
-    padding: 0 1rem;
-    margin-left: 0.4rem;
+  padding: 0 1rem;
+  margin-left: 0.4rem;
 }
 
 .tiptap ul li {
-    list-style-type: disc;
+  list-style-type: disc;
 }
 
 .tiptap ul li p {
-    margin: 0; 
+  margin: 0;
 }
 
 .tiptap ol li {
-    list-style-type: decimal;
+  list-style-type: decimal;
 }
 
 .tiptap ol li p {
-    margin: 0; 
+  margin: 0;
 }
 
 /* Task list specific styles */
 .tiptap ul[data-type="taskList"] {
-    list-style: none;
-    margin-left: 0;
-    padding: 0;
+  list-style: none;
+  margin-left: 0;
+  padding: 0;
 }
 
 .tiptap ul[data-type="taskList"] li {
-    align-items: flex-start;
-    display: flex;
+  align-items: flex-start;
+  display: flex;
 }
 
 .tiptap ul[data-type="taskList"] li > label {
-    flex: 0 0 auto;
-    margin-right: 0.5rem;
-    user-select: none;
+  flex: 0 0 auto;
+  margin-right: 0.5rem;
+  user-select: none;
 }
 
 .tiptap ul[data-type="taskList"] li > div {
-    flex: 1 1 auto;
+  flex: 1 1 auto;
 }
 
 .tiptap ul[data-type="taskList"] input[type="checkbox"] {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 .tiptap ul[data-type="taskList"] ul[data-type="taskList"] {
-    margin: 0;
+  margin: 0;
 }
 
 /* Heading styles */
-.tiptap h1, 
-.tiptap h2, 
-.tiptap h3, 
-.tiptap h4, 
-.tiptap h5, 
+.tiptap h1,
+.tiptap h2,
+.tiptap h3,
+.tiptap h4,
+.tiptap h5,
 .tiptap h6 {
-    text-wrap: pretty;
+  text-wrap: pretty;
 }
 
-.tiptap h1, 
+.tiptap h1,
 .tiptap h2 {
-    font-size: 12px;
+  font-size: 12px;
 }
 
-.tiptap h3, 
-.tiptap h4, 
-.tiptap h5, 
-.tiptap h6 { 
-    font-size: 11px;
+.tiptap h3,
+.tiptap h4,
+.tiptap h5,
+.tiptap h6 {
+  font-size: 11px;
 }
 
 /* Table-specific styling - ONLY for tables inside .tiptap */
 .tiptap table {
-    border-collapse: collapse;
-    margin: 0;
-    overflow: hidden;
-    table-layout: fixed;
-    width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
 }
 
 .tiptap table td,
 .tiptap table th {
-    border: 1px solid black;
-    box-sizing: border-box;
-    min-width: 1em;
-    padding: 6px 8px;
-    position: relative;
-    vertical-align: top;
+  border: 1px solid black;
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 6px 8px;
+  position: relative;
+  vertical-align: top;
 }
 
 .tiptap table td > *,
 .tiptap table th > * {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .tiptap table th {
-    background-color: #C7C7C7;
-    font-weight: bold;
-    text-align: left;
+  background-color: #c7c7c7;
+  font-weight: bold;
+  text-align: left;
 }
 
 .tiptap table .selectedCell:after {
-    background: #959596;
-    content: "";
-    left: 0; 
-    right: 0; 
-    top: 0; 
-    bottom: 0;
-    pointer-events: none;
-    position: absolute;
-    z-index: 2;
+  background: #959596;
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
 }
 
 .tiptap table .column-resize-handle {
-    background-color: var(--primary);
-    bottom: -2px;
-    pointer-events: none;
-    position: absolute;
-    right: -2px;
-    top: 0;
-    width: 4px;
+  background-color: var(--primary);
+  bottom: -2px;
+  pointer-events: none;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  width: 4px;
 }
 
 .tiptap .tableWrapper {
-    margin: 1.5rem 0;
-    overflow-x: auto;
+  margin: 1.5rem 0;
+  overflow-x: auto;
 }
 
 .tiptap.resize-cursor {
-    cursor: ew-resize;
-    cursor: col-resize;
+  cursor: ew-resize;
+  cursor: col-resize;
 }
 
 /* Image Styles */
 .tiptap img {
-    display: block;
-    height: auto;
-    margin: 1.5rem 0;
-    max-width: 100%;
+  display: block;
+  height: auto;
+  margin: 1.5rem 0;
+  max-width: 100%;
 }
 
 .tiptap img.ProseMirror-selectednode {
-    outline: 3px solid var(--primary);
+  outline: 3px solid var(--primary);
 }
 
 /* Link styles */
 .tiptap a {
-    color: theme('colors.blue.600');
-    cursor: pointer;
+  color: theme("colors.blue.600");
+  cursor: pointer;
 }
 
 .tiptap a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 /* Thread styles - scoped to editor container */
 .editor-container .floating-threads {
-    display: none;
+  display: none;
 }
 
 .editor-container .anchored-threads {
-    display: block;
-    max-width: 300px;
-    width: 100%;
-    position: absolute;
-    right: 12px;
+  display: block;
+  max-width: 300px;
+  width: 100%;
+  position: absolute;
+  right: 12px;
 }
 
 @media (max-width: 640px) {
-    .editor-container .floating-threads {
-        display: block;
-    }
+  .editor-container .floating-threads {
+    display: block;
+  }
 
-    .editor-container .anchored-threads {
-        display: none;
-    }
+  .editor-container .anchored-threads {
+    display: none;
+  }
 }
 
 .editor-container div[data-radix-popper-content-wrapper] {
-    z-index: 50 !important;
-} 
+  z-index: 50 !important;
+}
 
 /* Hide Liveblocks collaborative elements during print */
 @media print {
-    /* Hide collaborative cursors */
-    .lb-user-cursor,
+  /* Hide collaborative cursors */
+  .lb-user-cursor,
     [data-user-cursor],
     .liveblocks-cursor,
     
@@ -217,37 +217,38 @@
     /* Generic Liveblocks UI components */
     [class*="lb-"],
     [class*="liveblocks-"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
+    display: none !important;
+    visibility: hidden !important;
+  }
 
-    /* Hide collaborative text highlights during print */
-    .collaborative-highlight,
-    .collaborative-highlight-conflict {
-        background-color: transparent !important;
-        border-bottom: none !important;
-    }
-} 
+  /* Hide collaborative text highlights during print */
+  .collaborative-highlight,
+  .collaborative-highlight-conflict {
+    background-color: transparent !important;
+    border-bottom: none !important;
+  }
+}
 
 /* Collaborative text highlighting styles */
 .collaborative-highlight {
-    border-radius: 2px;
-    transition: all 0.2s ease;
-    cursor: help;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+  cursor: help;
 }
 
 .collaborative-highlight-conflict {
-    border-radius: 2px;
-    border-top: 1px solid #ff6b35;
-    animation: pulse-conflict 2s infinite;
-    cursor: help;
+  border-radius: 2px;
+  border-top: 1px solid #ff6b35;
+  animation: pulse-conflict 2s infinite;
+  cursor: help;
 }
 
 @keyframes pulse-conflict {
-    0%, 100% {
-        background-color: rgba(255, 165, 0, 0.2);
-    }
-    50% {
-        background-color: rgba(255, 165, 0, 0.35);
-    }
-} 
+  0%,
+  100% {
+    background-color: rgba(255, 165, 0, 0.2);
+  }
+  50% {
+    background-color: rgba(255, 165, 0, 0.35);
+  }
+}

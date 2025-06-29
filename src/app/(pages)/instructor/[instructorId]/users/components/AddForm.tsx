@@ -61,7 +61,7 @@ export const AddForm = ({
   const [roleSearch, setRoleSearch] = useState("");
   const [showRoleSearch, setShowRoleSearch] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<"top" | "bottom">(
-    "bottom"
+    "bottom",
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -114,7 +114,7 @@ export const AddForm = ({
   // Event Handlers
   // =========================================
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
 
@@ -134,7 +134,7 @@ export const AddForm = ({
             name === "email"
               ? VALIDATION_RULES.email.maxLength
               : VALIDATION_RULES.name.maxLength,
-        }
+        },
       );
 
       onFormDataChange({
@@ -159,7 +159,7 @@ export const AddForm = ({
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-      })
+      }),
     );
   };
 
@@ -410,7 +410,7 @@ export const AddForm = ({
                           .filter((role) =>
                             role.label
                               .toLowerCase()
-                              .includes(roleSearch.toLowerCase())
+                              .includes(roleSearch.toLowerCase()),
                           )
                           .map((role) => (
                             <div

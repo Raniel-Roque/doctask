@@ -198,7 +198,10 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
                   <Link
                     href={`/adviser/${adviserId}/approval/documents`}
                     onClick={(e) => {
-                      handleNavClick(`/adviser/${adviserId}/approval/documents`, e);
+                      handleNavClick(
+                        `/adviser/${adviserId}/approval/documents`,
+                        e,
+                      );
                       setIsApprovalDropdownOpen(false);
                     }}
                     className={`flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/adviser/${adviserId}/approval/documents`) ? "bg-gray-100 font-medium" : ""}`}
@@ -209,7 +212,10 @@ export const Navbar = ({ adviserId }: NavbarProps) => {
                   <Link
                     href={`/adviser/${adviserId}/approval/groups`}
                     onClick={(e) => {
-                      handleNavClick(`/adviser/${adviserId}/approval/groups`, e);
+                      handleNavClick(
+                        `/adviser/${adviserId}/approval/groups`,
+                        e,
+                      );
                       setIsApprovalDropdownOpen(false);
                     }}
                     className={`flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/adviser/${adviserId}/approval/groups`) ? "bg-gray-100 font-medium" : ""}`}

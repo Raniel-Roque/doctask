@@ -29,13 +29,15 @@ declare global {
     };
 
     // Custom events, for useBroadcastEvent, useEventListener
-    RoomEvent: {
-      type: "cursor-moved";
-      cursor: { x: number; y: number };
-    } | {
-      type: "selection-changed";
-      selection: { from: number; to: number; color: string } | null;
-    };
+    RoomEvent:
+      | {
+          type: "cursor-moved";
+          cursor: { x: number; y: number };
+        }
+      | {
+          type: "selection-changed";
+          selection: { from: number; to: number; color: string } | null;
+        };
 
     // Custom metadata set on threads, for useThreads, useCreateThread, etc.
     ThreadMetadata: {

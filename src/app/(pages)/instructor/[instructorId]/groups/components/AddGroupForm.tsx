@@ -238,14 +238,14 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   };
 
   const handleProjectManagerSearch = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setProjectManagerSearch(
       sanitizeInput(e.target.value, {
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-      })
+      }),
     );
   };
 
@@ -255,7 +255,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-      })
+      }),
     );
   };
 
@@ -265,7 +265,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
-      })
+      }),
     );
   };
 
@@ -372,7 +372,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     if (formData.capstoneTitle) {
       const { isValid, message } = validateInput(
         formData.capstoneTitle,
-        "text"
+        "text",
       );
       if (!isValid) {
         errors.capstoneTitle = message || "Invalid capstone title";
@@ -540,7 +540,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       <div className="flex items-center justify-between w-full">
                         {(() => {
                           const user = projectManagers.find(
-                            (u) => u._id === formData.projectManager
+                            (u) => u._id === formData.projectManager,
                           );
                           return user
                             ? `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`
@@ -586,7 +586,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           .filter((user) =>
                             `${user.first_name} ${user.last_name}`
                               .toLowerCase()
-                              .includes(projectManagerSearch.toLowerCase())
+                              .includes(projectManagerSearch.toLowerCase()),
                           )
                           .map((user) => (
                             <div
@@ -602,7 +602,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                         {projectManagers.filter((user) =>
                           `${user.first_name} ${user.last_name}`
                             .toLowerCase()
-                            .includes(projectManagerSearch.toLowerCase())
+                            .includes(projectManagerSearch.toLowerCase()),
                         ).length === 0 && (
                           <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
                             No more project managers available. Please register
@@ -648,7 +648,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       <div className="flex items-center justify-between w-full">
                         {(() => {
                           const user = advisers.find(
-                            (u) => u._id === formData.adviser
+                            (u) => u._id === formData.adviser,
                           );
                           return user
                             ? `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`
@@ -694,7 +694,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           .filter((user) =>
                             `${user.first_name} ${user.last_name}`
                               .toLowerCase()
-                              .includes(adviserSearch.toLowerCase())
+                              .includes(adviserSearch.toLowerCase()),
                           )
                           .map((user) => (
                             <div
@@ -710,7 +710,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                         {advisers.filter((user) =>
                           `${user.first_name} ${user.last_name}`
                             .toLowerCase()
-                            .includes(adviserSearch.toLowerCase())
+                            .includes(adviserSearch.toLowerCase()),
                         ).length === 0 && (
                           <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
                             No more advisers available. Please register more
@@ -817,7 +817,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             `${user.first_name} ${user.last_name}`
                               .toLowerCase()
                               .includes(memberSearch.toLowerCase()) &&
-                            !formData.members.includes(user._id)
+                            !formData.members.includes(user._id),
                         )
                         .sort((a, b) => {
                           const aName =
@@ -842,7 +842,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           `${user.first_name} ${user.last_name}`
                             .toLowerCase()
                             .includes(memberSearch.toLowerCase()) &&
-                          !formData.members.includes(user._id)
+                          !formData.members.includes(user._id),
                       ).length === 0 && (
                         <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
                           No more members available. Please register more users

@@ -30,10 +30,12 @@ const ManagerTasksPage = ({ params }: ManagerTasksPageProps) => {
   // Get documents for the group using studentId directly
   const documents = useQuery(
     api.fetch.getDocuments,
-    groupId ? { 
-      groupId: groupId as Id<"groupsTable">, 
-      userId: studentId as Id<"users">
-    } : "skip",
+    groupId
+      ? {
+          groupId: groupId as Id<"groupsTable">,
+          userId: studentId as Id<"users">,
+        }
+      : "skip",
   );
 
   // Set groupId when studentGroup is loaded

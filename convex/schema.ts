@@ -163,8 +163,29 @@ export default defineSchema({
     chapter: v.string(), // e.g., "chapter_1", "acknowledgment", etc.
     title: v.string(),
     content: v.string(),
+  }).index("by_group_chapter", ["group_id", "chapter"]),
+
+  // =========================================
+  // Images Table (For collaborative document images)
+  // =========================================
+  images: defineTable({
+    // File Information
+    file_id: v.id("_storage"), // Reference to Convex file storage
+    filename: v.string(),
+    content_type: v.string(),
+    size: v.number(),
+
+    // Access Control
+    group_id: v.id("groupsTable"), // Only group members can access
+    uploaded_by: v.id("users"),
+
+    // Metadata
+    alt_text: v.optional(v.string()),
+    url: v.string(), // The public URL for the image
   })
-    .index("by_group_chapter", ["group_id", "chapter"]),
+    .index("by_group", ["group_id"])
+    .index("by_uploader", ["uploaded_by"])
+    .index("by_file_id", ["file_id"]),
 
   // =========================================
   // Task Assignments Table (Member/Manager Communication)

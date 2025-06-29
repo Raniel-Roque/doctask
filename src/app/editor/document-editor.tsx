@@ -1,32 +1,36 @@
-import dynamic from "next/dynamic";
-
-// Import editor components dynamically to prevent hydration mismatches
-const Editor = dynamic(() => import("./editor").then((mod) => ({ default: mod.Editor })), {
-  ssr: false,
-});
-
-const Toolbar = dynamic(() => import("./toolbar").then((mod) => ({ default: mod.Toolbar })), {
-  ssr: false,
-});
-
-const Navbar = dynamic(() => import("./navbar").then((mod) => ({ default: mod.Navbar })), {
-  ssr: false,
-});
+import { Navbar } from "./navbar";
+import { Toolbar } from "./toolbar";
+import { Editor } from "./editor";
+import { ImageDragDropWrapper } from "./image-drag-drop";
 
 interface DocumentEditorProps {
-  title: string;
-  isEditable: boolean;
-  userType: 'manager' | 'member';
+  isEditable?: boolean;
+  userType?: "manager" | "member";
+  title?: string;
+  initialContent?: string;
 }
 
-export const DocumentEditor = ({ title, isEditable, userType }: DocumentEditorProps) => {
+export const DocumentEditor = ({
+  isEditable = true,
+  userType = "manager",
+  title,
+  initialContent,
+}: DocumentEditorProps) => {
   return (
-    <div className="min-h-screen bg-[#FAFBFD]">
-      <div className="print:hidden">
-        <Navbar title={title} viewOnly={!isEditable} />  
-        {isEditable && <Toolbar />}
-      </div>
-      <Editor isEditable={isEditable} userType={userType} />
+    <div className="min-h-screen bg-[#F9F8FD]">
+      <Navbar title={title} viewOnly={!isEditable} />
+      {isEditable && <Toolbar />}
+      <ImageDragDropWrapper>
+        <div className="flex justify-center">
+          <div className="max-w-screen-lg w-full flex flex-col px-4 py-4 gap-y-2">
+            <Editor
+              initialContent={initialContent}
+              isEditable={isEditable}
+              userType={userType}
+            />
+          </div>
+        </div>
+      </ImageDragDropWrapper>
     </div>
   );
-}; 
+};

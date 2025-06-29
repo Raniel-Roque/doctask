@@ -146,7 +146,11 @@ export default function EditGroupForm({
       dropdownKey = "members";
     }
 
-    if (activeTriggerRef?.current && activeDropdownRef?.current && dropdownKey) {
+    if (
+      activeTriggerRef?.current &&
+      activeDropdownRef?.current &&
+      dropdownKey
+    ) {
       const button = activeTriggerRef.current;
       const dropdown = activeDropdownRef.current;
 
@@ -158,7 +162,10 @@ export default function EditGroupForm({
       const spaceAbove = buttonRect.top;
 
       let position: "top" | "bottom" = "bottom";
-      if (spaceBelow < dropdownRect.height && spaceAbove > dropdownRect.height) {
+      if (
+        spaceBelow < dropdownRect.height &&
+        spaceAbove > dropdownRect.height
+      ) {
         position = "top";
       }
       const key = dropdownKey;

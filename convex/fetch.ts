@@ -250,15 +250,21 @@ export const getLogs = query({
       if (actionFilters && actionFilters.length > 0) {
         logs = logs.filter((log) => {
           // Map the detailed actions to their consolidated versions
-          const consolidatedAction = 
-            log.action === "Create User" || log.action === "Create Group" ? "Create" :
-            log.action === "Edit User" || log.action === "Edit Group" ? "Edit" :
-            log.action === "Delete User" || log.action === "Delete Group" ? "Delete" :
-            log.action === "Reset Password" ? "Reset Password" :
-            log.action === "Lock Account" ? "Lock Account" :
-            log.action === "Unlock Account" ? "Unlock Account" :
-            log.action;
-          
+          const consolidatedAction =
+            log.action === "Create User" || log.action === "Create Group"
+              ? "Create"
+              : log.action === "Edit User" || log.action === "Edit Group"
+                ? "Edit"
+                : log.action === "Delete User" || log.action === "Delete Group"
+                  ? "Delete"
+                  : log.action === "Reset Password"
+                    ? "Reset Password"
+                    : log.action === "Lock Account"
+                      ? "Lock Account"
+                      : log.action === "Unlock Account"
+                        ? "Unlock Account"
+                        : log.action;
+
           return actionFilters.includes(consolidatedAction);
         });
       }
@@ -763,26 +769,26 @@ export const searchGroups = query({
           const adviser = group.adviser_id
             ? users.find((u) => u._id === group.adviser_id)
             : null;
-          
+
           // Check if "No Adviser" is selected
           const noAdviserSelected = adviserFilters.includes("No Adviser");
-          
+
           // If group has no adviser and "No Adviser" is selected, include it
           if (!adviser && noAdviserSelected) {
             return true;
           }
-          
+
           // If group has no adviser but "No Adviser" is not selected, exclude it
           if (!adviser && !noAdviserSelected) {
             return false;
           }
-          
+
           // If group has an adviser, check if it matches any selected adviser
           if (adviser) {
             const adviserName = `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`;
             return adviserFilters.includes(adviserName);
           }
-          
+
           return false;
         });
       }
@@ -802,7 +808,7 @@ export const searchGroups = query({
       if (gradeFilters && gradeFilters.length > 0) {
         groups = groups.filter((group) => {
           const grade = group.grade;
-          
+
           // Check if any of the selected grade filters match
           return gradeFilters.some((gradeFilter) => {
             if (gradeFilter.toLowerCase() === "no grade") {
@@ -902,7 +908,6 @@ interface DocumentWithStatus {
   _creationTime: number;
   group_id: Id<"groupsTable">;
   chapter: string;
-  room_id: string;
   title: string;
   content: string;
   student_ids: Id<"users">[];
@@ -1102,7 +1107,6 @@ interface AdviserDocumentWithStatus {
   _creationTime: number;
   group_id: Id<"groupsTable">;
   chapter: string;
-  room_id: string;
   title: string;
   content: string;
   status: number; // This represents review_status from documentStatus table
@@ -1497,23 +1501,6 @@ export const getDocument = query({
   },
 });
 
-export const getDocumentByRoomId = query({
-  args: {
-    roomId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    try {
-      const document = await ctx.db
-        .query("documents")
-        .withIndex("by_room", (q) => q.eq("room_id", args.roomId))
-        .first();
-      return document; // Returns null if not found
-    } catch {
-      return null;
-    }
-  },
-});
-
 export const getUserDocumentAccess = query({
   args: {
     documentId: v.id("documents"),
@@ -1544,8 +1531,8 @@ export const getUserDocumentAccess = query({
       const isMember = group.member_ids.includes(args.userId);
       const hasAccess = isProjectManager || isMember;
 
-      return { 
-        hasAccess, 
+      return {
+        hasAccess,
         user: {
           _id: user._id,
           first_name: user.first_name,
@@ -1554,13 +1541,15 @@ export const getUserDocumentAccess = query({
           subrole: user.subrole,
           email: user.email,
           clerk_id: user.clerk_id,
-        }, 
-        group: hasAccess ? {
-          _id: group._id,
-          capstone_title: group.capstone_title,
-          project_manager_id: group.project_manager_id,
-          member_ids: group.member_ids,
-        } : null
+        },
+        group: hasAccess
+          ? {
+              _id: group._id,
+              capstone_title: group.capstone_title,
+              project_manager_id: group.project_manager_id,
+              member_ids: group.member_ids,
+            }
+          : null,
       };
     } catch {
       return { hasAccess: false, user: null, group: null };
@@ -1584,7 +1573,7 @@ export const getDocuments = query({
       // Check if user is either project manager or a member
       const isProjectManager = group.project_manager_id === args.userId;
       const isMember = group.member_ids.includes(args.userId);
-      
+
       if (!isProjectManager && !isMember) {
         return { documents: [] }; // User doesn't have access to this group
       }
@@ -1594,10 +1583,22 @@ export const getDocuments = query({
         .query("documents")
         .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
         .collect();
-      
+
       return { documents }; // Returns array of documents for the group
     } catch {
       return { documents: [] };
+    }
+  },
+});
+
+// Get all images (for backup purposes)
+export const getAllImages = query({
+  handler: async (ctx) => {
+    try {
+      const images = await ctx.db.query("images").collect();
+      return images;
+    } catch {
+      return [];
     }
   },
 });

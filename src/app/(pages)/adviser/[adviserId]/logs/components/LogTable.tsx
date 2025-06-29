@@ -234,7 +234,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
   };
 
   const handleActionFilter = (
-    filter: (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS]
+    filter: (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS],
   ) => {
     let newFilters;
     if (tempActionFilters.includes(filter)) {
@@ -260,7 +260,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
   const getActionColors = (action: string) => {
     // Check if the action exists in our predefined colors
     const actionKey = Object.values(LOG_ACTIONS).find(
-      (logAction) => logAction === action
+      (logAction) => logAction === action,
     ) as keyof typeof ACTION_COLORS | undefined;
 
     if (actionKey && ACTION_COLORS[actionKey]) {
@@ -460,7 +460,12 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                             onChange={() => handleActionFilter(action)}
                             className="accent-blue-600"
                           />
-                          <span className="text-left" style={{ textTransform: 'none' }}>{action}</span>
+                          <span
+                            className="text-left"
+                            style={{ textTransform: "none" }}
+                          >
+                            {action}
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -557,19 +562,13 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
           <tbody>
             {!logsData ? (
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-6 py-4 text-center text-gray-500"
-                >
+                <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                   Loading...
                 </td>
               </tr>
             ) : logs.length === 0 ? (
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-6 py-4 text-center text-gray-500"
-                >
+                <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                   No logs available
                 </td>
               </tr>
@@ -584,7 +583,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                     <td className="px-6 py-4 whitespace-nowrap text-left w-32">
                       {format(
                         new Date(log._creationTime),
-                        "MMM dd, yyyy hh:mm a"
+                        "MMM dd, yyyy hh:mm a",
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center w-24">
@@ -677,4 +676,4 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
       </div>
     </div>
   );
-}; 
+};

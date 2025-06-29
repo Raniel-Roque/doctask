@@ -84,7 +84,7 @@ interface GroupsTableProps {
   hasResults: boolean;
   onAdviserFilterChange: (filters: string[]) => void;
   onGradeFilterChange: (
-    filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]
+    filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][],
   ) => void;
   isDeleting?: boolean;
   capstoneFilter: (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS];
@@ -152,7 +152,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   const capstoneDropdownRef = useRef<HTMLDivElement>(null);
   const [tempCapstoneFilter, setTempCapstoneFilter] = useState(capstoneFilter);
   const [tempCapstoneSortDirection, setTempCapstoneSortDirection] = useState(
-    capstoneSortDirection
+    capstoneSortDirection,
   );
 
   // Sync temporary state with actual state when dropdowns open
@@ -233,7 +233,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
 
   // Get unique advisers for filter dropdown
   const uniqueAdvisers = Array.from(
-    new Set(advisers.map((adviser) => getFullName(adviser)))
+    new Set(advisers.map((adviser) => getFullName(adviser))),
   ).sort();
 
   const getSortIcon = (field: string) => {
@@ -263,7 +263,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   };
 
   const handleGradeFilter = (
-    filter: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS]
+    filter: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS],
   ) => {
     let newFilters;
     if (tempGradeFilters.includes(filter)) {
@@ -364,7 +364,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       }}
                       title="Filter capstone titles"
                       ref={capstoneButtonRef}
-                      style={{ boxShadow: "none", marginLeft: 0, marginRight: 0, paddingRight: 0 }}
+                      style={{
+                        boxShadow: "none",
+                        marginLeft: 0,
+                        marginRight: 0,
+                        paddingRight: 0,
+                      }}
                     >
                       <FaFilter
                         className={
@@ -376,7 +381,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                         }
                       />
                     </button>
-                    <span style={{ marginLeft: 0, paddingLeft: 0 }}>{getCapstoneSortIcon()}</span>
+                    <span style={{ marginLeft: 0, paddingLeft: 0 }}>
+                      {getCapstoneSortIcon()}
+                    </span>
                   </span>
                 </div>
                 {showCapstoneDropdown && (
@@ -526,7 +533,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                         .filter((adviser) =>
                           adviser
                             .toLowerCase()
-                            .includes(adviserSearch.toLowerCase())
+                            .includes(adviserSearch.toLowerCase()),
                         )
                         .slice(0, 10)
                         .map((adviser) => (

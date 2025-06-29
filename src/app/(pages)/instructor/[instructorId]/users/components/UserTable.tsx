@@ -343,7 +343,8 @@ export const UserTable = ({
                     <FaFilter
                       className={
                         `w-4 h-4 transition-colors ` +
-                        (showStatusDropdown || statusFilter !== TABLE_CONSTANTS.STATUS_FILTERS.ALL
+                        (showStatusDropdown ||
+                        statusFilter !== TABLE_CONSTANTS.STATUS_FILTERS.ALL
                           ? "text-blue-500"
                           : "text-white")
                       }
@@ -354,26 +355,31 @@ export const UserTable = ({
                   <div
                     ref={statusDropdownRef}
                     className="absolute left-0 top-full z-20 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
-                      {Object.values(TABLE_CONSTANTS.STATUS_FILTERS).map((filter) => (
-                        <label key={filter} className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left">
-                          <input
-                            type="radio"
-                            name="statusFilter"
-                            checked={tempStatusFilter === filter}
-                            onChange={() => setTempStatusFilter(filter)}
-                            className="accent-blue-600"
-                          />
-                          <span className="text-left">{filter}</span>
-                        </label>
-                      ))}
+                      {Object.values(TABLE_CONSTANTS.STATUS_FILTERS).map(
+                        (filter) => (
+                          <label
+                            key={filter}
+                            className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
+                          >
+                            <input
+                              type="radio"
+                              name="statusFilter"
+                              checked={tempStatusFilter === filter}
+                              onChange={() => setTempStatusFilter(filter)}
+                              className="accent-blue-600"
+                            />
+                            <span className="text-left">{filter}</span>
+                          </label>
+                        ),
+                      )}
                     </div>
                     <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
                       <button
-                              onClick={() => {
-                                setShowStatusDropdown(false);
+                        onClick={() => {
+                          setShowStatusDropdown(false);
                           onStatusFilterChange(tempStatusFilter);
                           onPageChange(1);
                         }}
@@ -381,9 +387,9 @@ export const UserTable = ({
                       >
                         Apply
                       </button>
-                      </div>
                     </div>
-                  )}
+                  </div>
+                )}
               </th>
               {showCodeColumn && (
                 <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
@@ -409,7 +415,8 @@ export const UserTable = ({
                       <FaFilter
                         className={
                           `w-4 h-4 transition-colors ` +
-                          (showRoleDropdown || roleFilter !== TABLE_CONSTANTS.ROLE_FILTERS.ALL
+                          (showRoleDropdown ||
+                          roleFilter !== TABLE_CONSTANTS.ROLE_FILTERS.ALL
                             ? "text-blue-500"
                             : "text-white")
                         }
@@ -420,36 +427,42 @@ export const UserTable = ({
                     <div
                       ref={roleDropdownRef}
                       className="absolute left-0 top-full z-20 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                      onClick={e => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
-                        {Object.values(TABLE_CONSTANTS.ROLE_FILTERS).map((filter) => (
-                          <label key={filter} className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left">
-                            <input
-                              type="radio"
-                              name="roleFilter"
-                              checked={tempRoleFilter === filter}
-                              onChange={() => setTempRoleFilter(filter)}
-                              className="accent-blue-600"
-                            />
-                            <span className="text-left">{filter}</span>
-                          </label>
-                        ))}
+                        {Object.values(TABLE_CONSTANTS.ROLE_FILTERS).map(
+                          (filter) => (
+                            <label
+                              key={filter}
+                              className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
+                            >
+                              <input
+                                type="radio"
+                                name="roleFilter"
+                                checked={tempRoleFilter === filter}
+                                onChange={() => setTempRoleFilter(filter)}
+                                className="accent-blue-600"
+                              />
+                              <span className="text-left">{filter}</span>
+                            </label>
+                          ),
+                        )}
                       </div>
                       <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
                         <button
-                                onClick={() => {
-                                  setShowRoleDropdown(false);
-                            if (onRoleFilterChange) onRoleFilterChange(tempRoleFilter);
+                          onClick={() => {
+                            setShowRoleDropdown(false);
+                            if (onRoleFilterChange)
+                              onRoleFilterChange(tempRoleFilter);
                             onPageChange(1);
                           }}
                           className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                         >
                           Apply
                         </button>
-                        </div>
                       </div>
-                    )}
+                    </div>
+                  )}
                 </th>
               )}
               <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
@@ -615,13 +628,13 @@ export const UserTable = ({
                   })()}
                 >
                   {() => (
-                      <span
-                        className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
-                        title="Download Report"
-                        style={{ minWidth: 90, display: "inline-block" }}
-                      >
+                    <span
+                      className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
+                      title="Download Report"
+                      style={{ minWidth: 90, display: "inline-block" }}
+                    >
                       Download Report
-                      </span>
+                    </span>
                   )}
                 </PDFDownloadLink>
               </>

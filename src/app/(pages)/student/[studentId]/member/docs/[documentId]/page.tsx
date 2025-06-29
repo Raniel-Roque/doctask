@@ -13,26 +13,29 @@ import { Room } from "@/app/editor/room";
 const useSaveToDatabase = (
   documentId: string,
   document: Doc<"documents"> | null | undefined,
-  currentUser: {
-    _id: Id<"users">;
-    _creationTime: number;
-    middle_name?: string;
-    subrole?: number;
-    clerk_id: string;
-    email: string;
-    email_verified: boolean;
-    first_name: string;
-    last_name: string;
-    role: number;
-  } | null | undefined,
-  isEditable: boolean
+  currentUser:
+    | {
+        _id: Id<"users">;
+        _creationTime: number;
+        middle_name?: string;
+        subrole?: number;
+        clerk_id: string;
+        email: string;
+        email_verified: boolean;
+        first_name: string;
+        last_name: string;
+        role: number;
+      }
+    | null
+    | undefined,
+  isEditable: boolean,
 ) => {
   const { editor } = useEditorStore();
   const updateContent = useMutation(api.mutations.updateDocumentContent);
 
   const saveToDatabase = async () => {
     if (!editor || !document || !currentUser?._id || !isEditable) return;
-    
+
     const content = editor.getHTML();
     if (content !== document.content) {
       await updateContent({
@@ -56,11 +59,12 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
   const router = useRouter();
   const { editor } = useEditorStore();
   const searchParams = useSearchParams();
-  const isViewOnly = searchParams.get('viewOnly') === 'true';
+  const isViewOnly = searchParams.get("viewOnly") === "true";
 
   // Get current user by Clerk ID
-  const currentUser = useQuery(api.fetch.getUserByClerkId, 
-    user?.id ? { clerkId: user.id } : "skip"
+  const currentUser = useQuery(
+    api.fetch.getUserByClerkId,
+    user?.id ? { clerkId: user.id } : "skip",
   );
 
   // Get document data
@@ -69,33 +73,43 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
   });
 
   // Check user access using authenticated user ID
-  const userAccess = useQuery(api.fetch.getUserDocumentAccess, 
-    currentUser?._id ? {
-      documentId: documentId as Id<"documents">,
-      userId: currentUser._id,
-    } : "skip"
+  const userAccess = useQuery(
+    api.fetch.getUserDocumentAccess,
+    currentUser?._id
+      ? {
+          documentId: documentId as Id<"documents">,
+          userId: currentUser._id,
+        }
+      : "skip",
   );
 
   // Get task assignments to check if user can edit
-  const taskAssignments = useQuery(api.fetch.getTaskAssignments,
-    userAccess?.group?._id ? { groupId: userAccess.group._id } : "skip"
+  const taskAssignments = useQuery(
+    api.fetch.getTaskAssignments,
+    userAccess?.group?._id ? { groupId: userAccess.group._id } : "skip",
   );
 
   // Check if user can edit this document (members need specific task assignment)
   const canEdit = () => {
     if (!document || !currentUser || !taskAssignments?.tasks) return false;
-    
+
     // Members can only edit if they are assigned to a task that includes this document
-    return taskAssignments.tasks.some(task => 
-      task.document_id === document._id && 
-      task.assigned_user_id === currentUser._id
+    return taskAssignments.tasks.some(
+      (task) =>
+        task.document_id === document._id &&
+        task.assigned_user_id === currentUser._id,
     );
   };
 
   const isEditable = canEdit() && !isViewOnly;
 
   // Get save function
-  const saveToDatabase = useSaveToDatabase(documentId, document, currentUser, isEditable);
+  const saveToDatabase = useSaveToDatabase(
+    documentId,
+    document,
+    currentUser,
+    isEditable,
+  );
 
   // Set editor read-only state when editor and access permissions are available
   useEffect(() => {
@@ -130,11 +144,17 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
     // Start with solo editing interval
     updateSaveInterval(false);
 
-    window.addEventListener('liveblocks-room-activity', handleRoomActivity as EventListener);
+    window.addEventListener(
+      "liveblocks-room-activity",
+      handleRoomActivity as EventListener,
+    );
 
     return () => {
       clearInterval(backupInterval);
-      window.removeEventListener('liveblocks-room-activity', handleRoomActivity as EventListener);
+      window.removeEventListener(
+        "liveblocks-room-activity",
+        handleRoomActivity as EventListener,
+      );
     };
   }, [saveToDatabase, isEditable]);
 
@@ -157,14 +177,20 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       saveToDatabase();
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    globalThis.document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('liveblocks-last-user', handleLastUserInRoom);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    globalThis.document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange,
+    );
+    window.addEventListener("liveblocks-last-user", handleLastUserInRoom);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-              globalThis.document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('liveblocks-last-user', handleLastUserInRoom);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      globalThis.document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+      window.removeEventListener("liveblocks-last-user", handleLastUserInRoom);
     };
   }, [saveToDatabase, isEditable]);
 
@@ -174,8 +200,10 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-          <p className="text-muted-foreground">You don&apos;t have permission to view this document.</p>
-          <button 
+          <p className="text-muted-foreground">
+            You don&apos;t have permission to view this document.
+          </p>
+          <button
             onClick={() => router.back()}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
@@ -198,13 +226,8 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
   }
 
   return (
-    <Room 
-      title={document.title}
-      isEditable={isEditable}
-      userType="member"
-    />
+    <Room title={document.title} isEditable={isEditable} userType="member" />
   );
 };
 
 export default MemberDocumentEditor;
-
