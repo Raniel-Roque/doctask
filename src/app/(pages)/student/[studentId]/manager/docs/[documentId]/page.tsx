@@ -1,26 +1,57 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
-import dynamic from "next/dynamic";
 import { useEditorStore } from "@/store/use-editor-store";
+import { Room } from "@/app/editor/room";
 
-// Import editor components dynamically to prevent hydration mismatches
-const Editor = dynamic(() => import("../../../../../../editor/editor").then((mod) => ({ default: mod.Editor })), {
-  ssr: false,
-});
+// Custom hook for saving logic
+const useSaveToDatabase = (
+  documentId: string,
+  document: {
+    _id: Id<"documents">;
+    _creationTime: number;
+    title: string;
+    group_id: Id<"groupsTable">;
+    chapter: string;
+    content: string;
+  } | null | undefined,
+  currentUser: {
+    _id: Id<"users">;
+    _creationTime: number;
+    middle_name?: string;
+    subrole?: number;
+    clerk_id: string;
+    email: string;
+    email_verified: boolean;
+    first_name: string;
+    last_name: string;
+    role: number;
+  } | null | undefined,
+  isEditable: boolean
+) => {
+  const { editor } = useEditorStore();
+  const updateContent = useMutation(api.mutations.updateDocumentContent);
 
-const Toolbar = dynamic(() => import("../../../../../../editor/toolbar").then((mod) => ({ default: mod.Toolbar })), {
-  ssr: false,
-});
+  const saveToDatabase = async () => {
+    if (!editor || !document || !currentUser?._id || !isEditable) return;
+    
+    const content = editor.getHTML();
+    if (content !== document.content) {
+      await updateContent({
+        documentId: documentId as Id<"documents">,
+        content,
+        userId: currentUser._id,
+      });
+    }
+  };
 
-const Navbar = dynamic(() => import("../../../../../../editor/navbar").then((mod) => ({ default: mod.Navbar })), {
-  ssr: false,
-});
+  return saveToDatabase;
+};
 
 interface ManagerDocumentEditorProps {
   params: Promise<{ documentId: string }>;
@@ -31,7 +62,6 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
   const { user } = useUser();
   const router = useRouter();
   const { editor } = useEditorStore();
-  const [isLoading, setIsLoading] = useState(true);
   const searchParams = useSearchParams();
   const isViewOnly = searchParams.get('viewOnly') === 'true';
 
@@ -58,32 +88,22 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
     userAccess?.group?._id ? { groupId: userAccess.group._id } : "skip"
   );
 
-  // Mutation to update document content
-  const updateContent = useMutation(api.mutations.updateDocumentContent);
-
-  // Check if user can edit this document
+  // Check if user can edit this document (managers have broader edit access)
   const canEdit = () => {
-    if (!document || !currentUser || !userAccess?.group) return false;
+    if (!document || !currentUser || !taskAssignments?.tasks) return false;
     
-    // Project managers can edit all documents
-    if (userAccess.group.project_manager_id === currentUser._id) {
-      return true;
-    }
-    
-    // Members need to be assigned to related tasks
-    if (!taskAssignments?.tasks) return false;
-    const relatedTasks = taskAssignments.tasks.filter(task => task.chapter === document.chapter);
-    return relatedTasks.some(task => task.assigned_student_ids.includes(currentUser._id));
+    // Managers can edit documents if they are part of the group
+    return userAccess?.group?._id === document.group_id;
   };
 
   const isEditable = canEdit() && !isViewOnly;
 
-  // Load document content into editor when available
+  // Get save function
+  const saveToDatabase = useSaveToDatabase(documentId, document, currentUser, isEditable);
+
+  // Set editor read-only state when editor and access permissions are available
   useEffect(() => {
-    if (document && editor && isLoading) {
-      editor.commands.setContent(document.content || "");
-      setIsLoading(false);
-      
+    if (editor && document && currentUser) {
       // Set editor to read-only if user can't edit or is in view-only mode
       if (!isEditable) {
         editor.setEditable(false);
@@ -91,40 +111,66 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
         editor.setEditable(true);
       }
     }
-  }, [document, editor, isLoading, isEditable]);
+  }, [editor, document, currentUser, isEditable]);
 
-  // Auto-save content changes (only if editable and not view-only)
+  // Smart auto-save: frequent when solo, less frequent when collaborative
   useEffect(() => {
-    if (!editor || !document || !currentUser?._id || isLoading || !isEditable) return;
+    if (!isEditable) return;
 
-    const handleUpdate = async () => {
-      const content = editor.getHTML();
-      if (content !== document.content) {
-        try {
-          await updateContent({
-            documentId: documentId as Id<"documents">,
-            content,
-            userId: currentUser._id,
-          });
-        } catch (error) {
-          console.error("Failed to save document:", error);
-        }
+    let saveInterval = 1000; // 1 second for solo editing
+    let backupInterval: NodeJS.Timeout;
+
+    const updateSaveInterval = (isCollaborative: boolean) => {
+      if (backupInterval) clearInterval(backupInterval);
+      saveInterval = isCollaborative ? 30000 : 1000; // 30s collaborative, 1s solo
+      backupInterval = setInterval(saveToDatabase, saveInterval);
+    };
+
+    // Listen for room activity events
+    const handleRoomActivity = (event: CustomEvent) => {
+      updateSaveInterval(event.detail.hasOthers);
+    };
+
+    // Start with solo editing interval
+    updateSaveInterval(false);
+
+    window.addEventListener('liveblocks-room-activity', handleRoomActivity as EventListener);
+
+    return () => {
+      clearInterval(backupInterval);
+      window.removeEventListener('liveblocks-room-activity', handleRoomActivity as EventListener);
+    };
+  }, [saveToDatabase, isEditable]);
+
+  // Save when user leaves (if they're the last one)
+  useEffect(() => {
+    if (!isEditable) return;
+
+    const handleBeforeUnload = () => {
+      saveToDatabase();
+    };
+
+    const handleVisibilityChange = () => {
+      if (globalThis.document.hidden) {
+        saveToDatabase();
       }
     };
 
-    // Debounce the save operation
-    const timeoutId = setTimeout(handleUpdate, 1000);
+    // Listen for custom event when user is last in room
+    const handleLastUserInRoom = () => {
+      saveToDatabase();
+    };
 
-    editor.on("update", () => {
-      clearTimeout(timeoutId);
-      setTimeout(handleUpdate, 1000);
-    });
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    globalThis.document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('liveblocks-last-user', handleLastUserInRoom);
 
     return () => {
-      clearTimeout(timeoutId);
-      editor.off("update", handleUpdate);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      globalThis.document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('liveblocks-last-user', handleLastUserInRoom);
     };
-  }, [editor, document, documentId, updateContent, isLoading, currentUser?._id, isEditable]);
+  }, [saveToDatabase, isEditable]);
 
   // Handle access control
   if (userAccess?.hasAccess === false) {
@@ -156,21 +202,11 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFBFD]">
-      <div className="print:hidden">
-        <Navbar title={document.title} />  
-        <Toolbar />
-        {!isEditable && (
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center">
-            {isViewOnly 
-              ? "You are viewing this document in read-only mode." 
-              : "You are viewing this document in read-only mode. You need to be assigned to a related task to edit."
-            }
-          </div>
-        )}
-      </div>
-      <Editor />
-    </div>
+    <Room 
+      title={document.title}
+      isEditable={isEditable}
+      userType="manager"
+    />
   );
 };
 

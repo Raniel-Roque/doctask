@@ -288,7 +288,6 @@ export const createGroup = mutation({
       await ctx.db.insert("documents", {
         group_id: groupId,
         chapter,
-        room_id: "",
         title,
         content: "",
       });
@@ -1912,11 +1911,6 @@ export const updateDocumentRoomId = mutation({
       if (!isProjectManager && !isMember) {
         throw new Error("You don't have permission to edit this document");
       }
-
-      // Update the document room_id
-      await ctx.db.patch(args.documentId, {
-        room_id: args.roomId,
-      });
 
       return { success: true };
     } catch (error) {

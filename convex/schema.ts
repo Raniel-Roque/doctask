@@ -161,12 +161,10 @@ export default defineSchema({
   documents: defineTable({
     group_id: v.id("groupsTable"),
     chapter: v.string(), // e.g., "chapter_1", "acknowledgment", etc.
-    room_id: v.string(),
     title: v.string(),
     content: v.string(),
   })
-    .index("by_group_chapter", ["group_id", "chapter"])
-    .index("by_room", ["room_id"]),
+    .index("by_group_chapter", ["group_id", "chapter"]),
 
   // =========================================
   // Task Assignments Table (Member/Manager Communication)

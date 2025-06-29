@@ -88,188 +88,69 @@ body {
   }
 }
 
-.tiptap {
- /* List styles */
-ul, 
-ol {
-    padding: 0 1rem;
-    margin-left: 0.4rem;
-}
-
-ul li {
-    list-style-type: disc;
-
-    p {
-        margin: 0; 
-    }
-}
-
-ol li {
-    list-style-type: decimal;
-
-    p {
-        margin: 0; 
-    }
-}
-
-  /* Task list specific styles */
-  ul[data-type="taskList"] {
-    list-style: none;
-    margin-left: 0;
-    padding: 0;
-
-    li {
-      align-items: flex-start;
-      display: flex;
-
-      > label {
-        flex: 0 0 auto;
-        margin-right: 0.5rem;
-        user-select: none;
-      }
-
-      > div {
-        flex: 1 1 auto;
-      }
-    }
-
-    input[type="checkbox"] {
-      cursor: pointer;
-    }
-
-    ul[data-type="taskList"] {
-      margin: 0;
-    }
+/* Admin UI Overrides - Fix Liveblocks style conflicts */
+@layer utilities {
+  /* Fix search inputs in admin tables */
+  .w-full.pl-10.pr-4.py-2.border.rounded-lg,
+  input.w-full.pl-10.pr-4.py-2.border.rounded-lg {
+    border: 1px solid #d1d5db !important;
+    background-color: white !important;
+    color: #111827 !important;
+    padding: 0.5rem 1rem 0.5rem 2.5rem !important;
+    border-radius: 0.5rem !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
   }
 
-   /* Heading styles */
-   h1, 
-   h2, 
-   h3, 
-   h4, 
-   h5, 
-   h6 {
-     text-wrap: pretty;
-   }
- 
-   h1, 
-   h2 {
-     font-size: 12px;
-   }
- 
-   h3, 
-   h4, 
-   h5, 
-   h6 { 
-     font-size: 11px;
-   }
- 
-
-  /* Table-specific styling */
-  table {
-    border-collapse: collapse;
-    margin: 0;
-    overflow: hidden;
-    table-layout: fixed;
-    width: 100%;
-
-    td,
-    th {
-      border: 1px solid black;
-      box-sizing: border-box;
-      min-width: 1em;
-      padding: 6px 8px;
-      position: relative;
-      vertical-align: top;
-
-      > * {
-        margin-bottom: 0;
-      }
-    }
-
-    th {
-      background-color: #C7C7C7;
-      font-weight: bold;
-      text-align: left;
-    }
-
-    .selectedCell:after {
-      background: #959596;
-      content: "";
-      left: 0; right: 0; top: 0; bottom: 0;
-      pointer-events: none;
-      position: absolute;
-      z-index: 2;
-    }
-
-    .column-resize-handle {
-      background-color: var(--primary);
-      bottom: -2px;
-      pointer-events: none;
-      position: absolute;
-      right: -2px;
-      top: 0;
-      width: 4px;
-    }
+  .w-full.pl-10.pr-4.py-2.border.rounded-lg:focus,
+  input.w-full.pl-10.pr-4.py-2.border.rounded-lg:focus {
+    outline: 2px solid transparent !important;
+    outline-offset: 2px !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1) !important;
   }
 
-  .tableWrapper {
-    margin: 1.5rem 0;
-    overflow-x: auto;
+  /* Fix pagination dropdowns */
+  .px-2.py-1.border.rounded-md.text-sm,
+  select.px-2.py-1.border.rounded-md.text-sm {
+    border: 1px solid #d1d5db !important;
+    background-color: white !important;
+    color: #111827 !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 0.375rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
   }
 
-  &.resize-cursor {
-    cursor: ew-resize;
-    cursor: col-resize;
+  .px-2.py-1.border.rounded-md.text-sm:focus,
+  select.px-2.py-1.border.rounded-md.text-sm:focus {
+    outline: 2px solid transparent !important;
+    outline-offset: 2px !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1) !important;
   }
 
-  /* Image Styles */
-  img {
-    display: block;
-    height: auto;
-    margin: 1.5rem 0;
-    max-width: 100%;
-
-    &.ProseMirror-selectednode {
-      outline: 3px solid var(--primary);
-    }
+  /* Additional safety net for common admin form elements */
+  .container input:not(.editor-container input),
+  .container select:not(.editor-container select),
+  .mx-auto input:not(.editor-container input),
+  .mx-auto select:not(.editor-container select) {
+    border: 1px solid #d1d5db !important;
+    background-color: white !important;
+    color: inherit !important;
   }
 
-    /* Link styles */
-    a {
-      color: theme('colors.blue.600'); /* ✅ Use Tailwind's theme function */
-      cursor: pointer;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-}
-
-/* For mobile */
-.floating-threads {
-  display: none;
-}
-
-/* For desktop */
-.anchored-threads {
-  display: block;
-  max-width: 300px;
-  width: 100%;
-  position: absolute;
-  right: 12px;
-}
-
-@media (max-width: 640px) {
-  .floating-threads {
-    display: block;
+  /* Remove borders from all table cells and headers */
+  table td,
+  table th,
+  .min-w-full td,
+  .min-w-full th,
+  table.min-w-full td,
+  table.min-w-full th,
+  table.w-full td,
+  table.w-full th {
+    border: none !important;
   }
-
-  .anchored-threads {
-    display: none;
-  }
-}
-
-div[data-radix-popper-content-wrapper] {
-  z-index: 50 !important;
 }

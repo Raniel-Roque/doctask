@@ -16,21 +16,23 @@ import {
     MenubarTrigger
 } from "@/components/ui/menubar"
 
-import { BoldIcon, FileIcon, FileJsonIcon, FilePlusIcon, FileTextIcon, GlobeIcon, ItalicIcon, PrinterIcon, Redo2Icon, RemoveFormattingIcon, StrikethroughIcon, TextIcon, UnderlineIcon, Undo2Icon } from "lucide-react";
+import { BoldIcon, FileIcon, FileJsonIcon, FilePlusIcon, FileTextIcon, GlobeIcon, ItalicIcon, PrinterIcon, Redo2Icon, RemoveFormattingIcon, StrikethroughIcon, TextIcon, UnderlineIcon, Undo2Icon, DownloadIcon } from "lucide-react";
 import { BsFilePdf, BsFiletypeDocx } from "react-icons/bs";
 import { useEditorStore } from "@/store/use-editor-store";
 
 interface NavbarProps {
     title?: string;
+    viewOnly?: boolean;
 }
 
-export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
+export const Navbar = ({ title = "Untitled Document", viewOnly = false }: NavbarProps) => {
     const [selectedRows, setSelectedRows] = useState(1); 
     const [selectedCols, setSelectedCols] = useState(1);
     const { editor } = useEditorStore();
     const router = useRouter();
 
     const createTable = (rows: number, cols: number) => {
+        if (viewOnly) return;
         editor?.chain().focus().insertTable({ rows, cols, withHeaderRow: false}).run()
     };
 
@@ -77,8 +79,7 @@ export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
             }
             
             pdf.save('Document.pdf');
-        } catch (error) {
-            console.error('Error generating PDF:', error);
+        } catch {
             // Fallback to print
             window.print();
         }
@@ -87,7 +88,6 @@ export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
     const onSaveDOCX = async () => {
         if (!editor) return;
         
-        try {
             // Using the more secure 'docx' library
             const { Document, Packer, Paragraph, TextRun } = await import('docx');
             
@@ -112,9 +112,7 @@ export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
             
             const blob = await Packer.toBlob(doc);
             onDownload(blob, 'Document.docx');
-        } catch (error) {
-            console.error('Error generating DOCX:', error);
-        }
+
     };
 
     const onSaveJSON = () => {
@@ -171,8 +169,17 @@ export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
                                 <MenubarContent className="print:hidden">
                                     <MenubarSub>
                                         <MenubarSubTrigger>
+                                            {viewOnly ? (
+                                                <>
+                                                    <DownloadIcon className="mr-2 size-4" />
+                                                    Download
+                                                </>
+                                            ) : (
+                                                <>
                                             <FileIcon className="mr-2 size-4" />
                                             Save
+                                                </>
+                                            )}
                                         </MenubarSubTrigger>
                                         <MenubarSubContent>
                                             <MenubarItem onClick={onSaveJSON}>
@@ -197,11 +204,17 @@ export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
                                             </MenubarItem>
                                         </MenubarSubContent>
                                     </MenubarSub>
+                                    {/* Only show New Document in edit mode */}
+                                    {!viewOnly && (
+                                        <>
                                 <MenubarItem onClick={() => {}}>
                                         <FilePlusIcon className="mr-2 size-4"/>
                                         New Document
                                     </MenubarItem>
                                     <MenubarSeparator />
+                                        </>
+                                    )}
+                                    {viewOnly && <MenubarSeparator />}
                                     <MenubarItem onClick={() => window.print()}>
                                         <PrinterIcon className="mr-2 size-4"/>
                                         Print <MenubarShortcut>⌘P</MenubarShortcut>
@@ -209,7 +222,8 @@ export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
                                 </MenubarContent>
                             </MenubarMenu>
 
-                            {/* EDIT */}
+                            {/* EDIT - Only show in edit mode */}
+                            {!viewOnly && (
                             <MenubarMenu>
                                 <MenubarTrigger className="text-sm font-normal py-0.5 px-[7px] rounded-sm hover:bg-muted h-auto">
                                     Edit
@@ -225,8 +239,10 @@ export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
                                     </MenubarItem>
                                 </MenubarContent>
                             </MenubarMenu>
+                            )}
 
-                            {/* INSERT */}
+                            {/* INSERT - Only show in edit mode */}
+                            {!viewOnly && (
                             <MenubarMenu>
                                 <MenubarTrigger className="text-sm font-normal py-0.5 px-[7px] rounded-sm hover:bg-muted h-auto">
                                     Insert
@@ -264,8 +280,10 @@ export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
                                     </MenubarSub>
                                 </MenubarContent>
                             </MenubarMenu>
+                            )}
 
-                            {/* FORMAT */}
+                            {/* FORMAT - Only show in edit mode */}
+                            {!viewOnly && (
                             <MenubarMenu>
                                 <MenubarTrigger className="text-sm font-normal py-0.5 px-[7px] rounded-sm hover:bg-muted h-auto">
                                     Format
@@ -302,6 +320,7 @@ export const Navbar = ({ title = "Untitled Document" }: NavbarProps) => {
                                     </MenubarItem>
                                 </MenubarContent>
                             </MenubarMenu>
+                            )}
 
                         </Menubar>
                     </div>
