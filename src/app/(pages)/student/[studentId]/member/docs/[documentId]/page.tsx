@@ -93,11 +93,11 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
   const canEdit = () => {
     if (!document || !currentUser || !taskAssignments?.tasks) return false;
 
-    // Members can only edit if they are assigned to a task that includes this document
+    // Members can only edit if they are assigned to a task that matches this document's chapter
     return taskAssignments.tasks.some(
       (task) =>
-        task.document_id === document._id &&
-        task.assigned_user_id === currentUser._id,
+        task.chapter === document.chapter &&
+        task.assigned_student_ids.includes(currentUser._id),
     );
   };
 
@@ -226,7 +226,12 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
   }
 
   return (
-    <Room title={document.title} isEditable={isEditable} userType="member" />
+    <Room 
+      title={document.title} 
+      isEditable={isEditable} 
+      userType="member" 
+      capstoneTitle={userAccess?.group?.capstone_title}
+    />
   );
 };
 

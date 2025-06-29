@@ -17,6 +17,7 @@ interface RoomProps {
   title?: string;
   isEditable?: boolean;
   userType?: "manager" | "member";
+  capstoneTitle?: string;
 }
 
 type User = {
@@ -26,7 +27,7 @@ type User = {
   color: string;
 };
 
-export function Room({ children, title, isEditable, userType }: RoomProps) {
+export function Room({ children, title, isEditable, userType, capstoneTitle }: RoomProps) {
   const params = useParams();
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -146,6 +147,7 @@ export function Room({ children, title, isEditable, userType }: RoomProps) {
               title={title}
               isEditable={isEditable}
               userType={userType}
+              capstoneTitle={capstoneTitle}
             />
           ) : (
             children

@@ -20,7 +20,6 @@ import {
   BoldIcon,
   FileIcon,
   FileJsonIcon,
-  FilePlusIcon,
   FileTextIcon,
   GlobeIcon,
   ItalicIcon,
@@ -32,6 +31,7 @@ import {
   UnderlineIcon,
   Undo2Icon,
   DownloadIcon,
+  HistoryIcon,
 } from "lucide-react";
 import { BsFilePdf, BsFiletypeDocx } from "react-icons/bs";
 import { useEditorStore } from "@/store/use-editor-store";
@@ -39,11 +39,15 @@ import { useEditorStore } from "@/store/use-editor-store";
 interface NavbarProps {
   title?: string;
   viewOnly?: boolean;
+  userType?: "manager" | "member";
+  capstoneTitle?: string;
 }
 
 export const Navbar = ({
   title = "Untitled Document",
   viewOnly = false,
+  userType = "manager",
+  capstoneTitle = "",
 }: NavbarProps) => {
   const [selectedRows, setSelectedRows] = useState(1);
   const [selectedCols, setSelectedCols] = useState(1);
@@ -65,6 +69,15 @@ export const Navbar = ({
     a.href = url;
     a.download = filename;
     a.click();
+  };
+
+  // Helper function to generate consistent filename format
+  const generateFilename = (extension: string) => {
+    const now = new Date();
+    const dateTimeString = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, '');
+    const sanitizedCapstone = capstoneTitle.replace(/[^a-zA-Z0-9]/g, '');
+    return `${sanitizedTitle}-${sanitizedCapstone}-${dateTimeString}.${extension}`;
   };
 
   const onSavePDF = async () => {
@@ -101,8 +114,9 @@ export const Navbar = ({
         heightLeft -= pageHeight;
       }
 
-      pdf.save("Document.pdf");
-    } catch {
+      pdf.save(generateFilename("pdf"));
+    } catch (error) {
+      console.error('PDF export failed:', error);
       // Fallback to print
       window.print();
     }
@@ -139,7 +153,7 @@ export const Navbar = ({
     });
 
     const blob = await Packer.toBlob(doc);
-    onDownload(blob, "Document.docx");
+    onDownload(blob, generateFilename("docx"));
   };
 
   const onSaveJSON = () => {
@@ -150,7 +164,7 @@ export const Navbar = ({
       type: "application/json",
     });
 
-    onDownload(blob, `Document.json`);
+    onDownload(blob, generateFilename("json"));
   };
 
   const onSaveHTML = () => {
@@ -161,7 +175,7 @@ export const Navbar = ({
       type: "text/html",
     });
 
-    onDownload(blob, `Document.html`);
+    onDownload(blob, generateFilename("html"));
   };
 
   const onSaveText = () => {
@@ -172,7 +186,7 @@ export const Navbar = ({
       type: "text/plain",
     });
 
-    onDownload(blob, `Document.txt`);
+    onDownload(blob, generateFilename("txt"));
   };
 
   return (
@@ -208,6 +222,18 @@ export const Navbar = ({
                     )}
                   </MenubarSubTrigger>
                   <MenubarSubContent>
+                    <MenubarItem onClick={onSaveDOCX}>
+                      <BsFiletypeDocx className="mr-2 size-4" />
+                      Docx
+                    </MenubarItem>
+                    <MenubarItem onClick={onSavePDF}>
+                      <BsFilePdf className="mr-2 size-4" />
+                      PDF
+                    </MenubarItem>
+                    <MenubarItem onClick={onSaveText}>
+                      <FileTextIcon className="mr-2 size-4" />
+                      Text
+                    </MenubarItem>
                     <MenubarItem onClick={onSaveJSON}>
                       <FileJsonIcon className="mr-2 size-4" />
                       JSON
@@ -216,35 +242,22 @@ export const Navbar = ({
                       <GlobeIcon className="mr-2 size-4" />
                       HTML
                     </MenubarItem>
-                    <MenubarItem onClick={onSavePDF}>
-                      <BsFilePdf className="mr-2 size-4" />
-                      PDF
-                    </MenubarItem>
-                    <MenubarItem onClick={onSaveDOCX}>
-                      <BsFiletypeDocx className="mr-2 size-4" />
-                      Docx
-                    </MenubarItem>
-                    <MenubarItem onClick={onSaveText}>
-                      <FileTextIcon className="mr-2 size-4" />
-                      Text
-                    </MenubarItem>
                   </MenubarSubContent>
                 </MenubarSub>
-                {/* Only show New Document in edit mode */}
-                {!viewOnly && (
-                  <>
-                    <MenubarItem onClick={() => {}}>
-                      <FilePlusIcon className="mr-2 size-4" />
-                      New Document
-                    </MenubarItem>
-                    <MenubarSeparator />
-                  </>
-                )}
-                {viewOnly && <MenubarSeparator />}
                 <MenubarItem onClick={() => window.print()}>
                   <PrinterIcon className="mr-2 size-4" />
                   Print <MenubarShortcut>⌘P</MenubarShortcut>
                 </MenubarItem>
+                
+                <MenubarSeparator />
+
+                {/* Only show Version History for managers */}
+                {!viewOnly && userType === "manager" && (
+                  <MenubarItem onClick={() => {}}>
+                    <HistoryIcon className="mr-2 size-4" />
+                    Version History
+                  </MenubarItem>
+                )}
               </MenubarContent>
             </MenubarMenu>
 

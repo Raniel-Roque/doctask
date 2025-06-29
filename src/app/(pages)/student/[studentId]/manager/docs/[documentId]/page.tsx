@@ -232,7 +232,12 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
   }
 
   return (
-    <Room title={document.title} isEditable={isEditable} userType="manager" />
+    <Room 
+      title={document.title} 
+      isEditable={isEditable} 
+      userType="manager" 
+      capstoneTitle={userAccess?.group?.capstone_title}
+    />
   );
 };
 

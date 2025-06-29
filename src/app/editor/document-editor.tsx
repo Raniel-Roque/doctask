@@ -8,6 +8,7 @@ interface DocumentEditorProps {
   userType?: "manager" | "member";
   title?: string;
   initialContent?: string;
+  capstoneTitle?: string;
 }
 
 export const DocumentEditor = ({
@@ -15,10 +16,11 @@ export const DocumentEditor = ({
   userType = "manager",
   title,
   initialContent,
+  capstoneTitle,
 }: DocumentEditorProps) => {
   return (
     <div className="min-h-screen bg-[#F9F8FD]">
-      <Navbar title={title} viewOnly={!isEditable} />
+      <Navbar title={title} viewOnly={!isEditable} userType={userType} capstoneTitle={capstoneTitle} />
       {isEditable && <Toolbar />}
       <ImageDragDropWrapper>
         <div className="flex justify-center">
