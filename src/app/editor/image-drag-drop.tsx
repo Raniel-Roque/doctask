@@ -101,7 +101,6 @@ export const ImageDragDropWrapper = ({
         throw new Error("Invalid response from server");
       }
     } catch (error) {
-      console.error("Image upload failed:", error);
       showNotification(
         error instanceof Error ? error.message : "Failed to upload image",
         "error",

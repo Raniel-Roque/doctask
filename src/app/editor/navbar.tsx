@@ -35,12 +35,18 @@ import {
 } from "lucide-react";
 import { BsFilePdf, BsFiletypeDocx } from "react-icons/bs";
 import { useEditorStore } from "@/store/use-editor-store";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 
 interface NavbarProps {
   title?: string;
   viewOnly?: boolean;
   userType?: "manager" | "member";
   capstoneTitle?: string;
+}
+
+interface NotificationState {
+  message: string | null;
+  type: "error" | "success" | "warning" | "info";
 }
 
 export const Navbar = ({
@@ -53,6 +59,21 @@ export const Navbar = ({
   const [selectedCols, setSelectedCols] = useState(1);
   const { editor } = useEditorStore();
   const router = useRouter();
+  const [notification, setNotification] = useState<NotificationState>({
+    message: null,
+    type: "info",
+  });
+
+  const showNotification = (
+    message: string,
+    type: NotificationState["type"],
+  ) => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification({ message: null, type: "info" });
+  };
 
   const createTable = (rows: number, cols: number) => {
     if (viewOnly) return;
@@ -289,12 +310,7 @@ export const Navbar = ({
 
       // Save the PDF
       pdf.save(generateFilename("pdf"));
-      
-      console.log('PDF generated successfully!');
-      
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-      
+    } catch {
       // Clean up in case of error
       const tempContainer = document.querySelector('.temp-pdf-container');
       const tempStyles = document.querySelector('style');
@@ -304,7 +320,7 @@ export const Navbar = ({
       }
       
       // Fallback to print dialog
-      alert('PDF generation failed. Opening print dialog as fallback. Please select "Save as PDF" from the print options.');
+      showNotification('PDF generation failed. Opening print dialog as fallback. Please select "Save as PDF" from the print options.', 'warning');
       onPrint();
     }
   };
@@ -404,7 +420,16 @@ export const Navbar = ({
   };
 
   return (
-    <nav className="flex items-center justify-between print:hidden">
+    <>
+      <div className="print:hidden">
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      </div>
+      
+      <nav className="flex items-center justify-between print:hidden">
       <div className="pl-4 py-1 flex gap-2 items-center">
         <button
           onClick={() => router.push("/")}
@@ -604,5 +629,6 @@ export const Navbar = ({
         </div>
       </div>
     </nav>
+    </>
   );
 };

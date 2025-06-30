@@ -23,12 +23,33 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ImageIcon, UploadIcon, SearchIcon } from "lucide-react";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+
+interface NotificationState {
+  message: string | null;
+  type: "error" | "success" | "warning" | "info";
+}
 
 export const CollaborativeImageButton = () => {
   const { editor } = useEditorStore();
   const [imageUrl, setImageUrl] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [notification, setNotification] = useState<NotificationState>({
+    message: null,
+    type: "info",
+  });
+
+  const showNotification = (
+    message: string,
+    type: NotificationState["type"],
+  ) => {
+    setNotification({ message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification({ message: null, type: "info" });
+  };
 
   const onChange = (src: string) => {
     editor?.chain().focus().setImage({ src }).run();
@@ -65,14 +86,15 @@ export const CollaborativeImageButton = () => {
         if (data.success && data.image?.url) {
           // Use the shared URL from Convex storage
           onChange(data.image.url);
+          showNotification("Image uploaded successfully!", "success");
         } else {
           throw new Error("Invalid response from server");
         }
       } catch (error) {
-        console.error("Image upload failed:", error);
         // Show error to user
-        alert(
+        showNotification(
           error instanceof Error ? error.message : "Failed to upload image",
+          "error"
         );
       } finally {
         setIsUploading(false);
@@ -87,11 +109,20 @@ export const CollaborativeImageButton = () => {
       onChange(imageUrl);
       setImageUrl("");
       setIsEditing(false);
+      showNotification("Image inserted successfully!", "success");
     }
   };
 
   return (
     <>
+      <div className="print:hidden">
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      </div>
+      
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenu>

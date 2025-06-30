@@ -38,7 +38,6 @@ export function Room({ children, title, isEditable, userType, capstoneTitle }: R
         const fetchedUsers = await getUsers();
         setUsers(fetchedUsers);
       } catch (err) {
-        console.error("Failed to fetch users:", err);
         setError("Failed to load users");
       }
     };

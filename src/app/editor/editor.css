@@ -141,10 +141,36 @@
   height: auto;
   margin: 1.5rem 0;
   max-width: 100%;
+  /* Optimize for drag operations */
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  /* Prevent reload during drag */
+  image-rendering: auto;
+  transition: none;
 }
 
 .tiptap img.ProseMirror-selectednode {
   outline: 3px solid var(--primary);
+}
+
+/* Optimize image dragging performance */
+.tiptap img:active,
+.tiptap img.ProseMirror-selectednode {
+  /* Disable transitions during drag */
+  transition: none;
+  /* Use GPU acceleration */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Prevent image reload during drag operations */
+.tiptap .ProseMirror-dragging img {
+  pointer-events: none;
+  /* Keep original image in place until drag completes */
+  opacity: 0.8;
+  transform: translateZ(0);
+  transition: none;
 }
 
 /* Link styles */

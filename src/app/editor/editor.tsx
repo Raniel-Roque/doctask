@@ -170,7 +170,6 @@ export const Editor = ({
         throw new Error("Invalid response from server");
       }
     } catch (error) {
-      console.error("Image upload failed:", error);
       showNotification(
         error instanceof Error ? error.message : "Failed to upload image",
         "error",
@@ -189,8 +188,13 @@ export const Editor = ({
           "focus:outline-none bg-white border border-[#C7C7C7] print:border-none print:shadow-none print:m-0 print:p-0 flex flex-col min-h-[1054px] w-[816px] pt-10 pr-14 pb-10 cursor-text",
       },
       handleDrop: (view, event, slice, moved) => {
+        // If it's an internal move (repositioning existing content), let the default handler deal with it
+        if (moved) {
+          return false; // Let ProseMirror handle internal moves efficiently
+        }
+        
+        // Only handle external file drops
         if (
-          !moved &&
           event.dataTransfer &&
           event.dataTransfer.files &&
           event.dataTransfer.files[0]
@@ -206,7 +210,12 @@ export const Editor = ({
                   top: event.clientY,
                 });
                 if (coordinates) {
-                  const node = schema.nodes.image.create({ src: url });
+                  const node = schema.nodes.image.create({ 
+                    src: url,
+                    // Add attributes to prevent reloading
+                    loading: 'lazy',
+                    decoding: 'async'
+                  });
                   const transaction = view.state.tr.insert(
                     coordinates.pos,
                     node,
@@ -255,8 +264,23 @@ export const Editor = ({
       TableRow,
       TableCell,
       TableHeader,
-      Image,
-      ResizeImage,
+      Image.configure({
+        HTMLAttributes: {
+          loading: 'lazy',
+          decoding: 'async',
+        },
+        allowBase64: true,
+        inline: false,
+      }),
+      ResizeImage.configure({
+        allowBase64: true,
+        // Prevent unnecessary re-renders during drag operations
+        HTMLAttributes: {
+          loading: 'lazy',
+          decoding: 'async',
+          draggable: true,
+        },
+      }),
       TextStyle,
       Color,
       Highlight.configure({

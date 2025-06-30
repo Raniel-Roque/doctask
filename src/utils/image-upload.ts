@@ -82,7 +82,6 @@ export const uploadImageFile = async (
       };
     }
   } catch (error) {
-    console.error("Image upload failed:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to upload image",
