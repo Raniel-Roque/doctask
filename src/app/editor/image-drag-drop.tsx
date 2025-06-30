@@ -111,17 +111,31 @@ export const ImageDragDropWrapper = ({
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Check if dragged items contain files
+    // Only handle external file drops, not internal editor operations
     const hasFiles = Array.from(e.dataTransfer.types).includes("Files");
-    if (hasFiles) {
+    const hasEditorContent = Array.from(e.dataTransfer.types).some(type => 
+      type.includes("text/html") || type.includes("text/plain") || type.includes("application/x-pm-slice")
+    );
+    
+    // If it's internal editor content being moved, don't interfere
+    if (hasEditorContent && !hasFiles) {
+      return;
+    }
+    
+    // If it has actual files from outside, handle it
+    if (hasFiles && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
       setIsDragOver(true);
     }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
+    // Only handle if we're actually in a drag over state for file uploads
+    if (!isDragOver) {
+      return;
+    }
+    
     e.preventDefault();
     e.stopPropagation();
 
@@ -139,6 +153,21 @@ export const ImageDragDropWrapper = ({
   };
 
   const handleDrop = async (e: React.DragEvent) => {
+    // Check if this is an internal editor operation
+    const hasEditorContent = Array.from(e.dataTransfer.types).some(type => 
+      type.includes("text/html") || type.includes("text/plain") || type.includes("application/x-pm-slice")
+    );
+    
+    // If it's internal editor content being moved, don't interfere
+    if (hasEditorContent && (!e.dataTransfer.files || e.dataTransfer.files.length === 0)) {
+      return;
+    }
+    
+    // Only handle external file drops
+    if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) {
+      return;
+    }
+
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
