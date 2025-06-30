@@ -1949,3 +1949,124 @@ export const updateDocumentRoomId = mutation({
     }
   },
 });
+
+export const createDocumentVersion = mutation({
+  args: {
+    groupId: v.id("groupsTable"),
+    chapter: v.string(),
+    userId: v.id("users"), // User creating the version
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Check if user has permission (must be project manager)
+      const group = await ctx.db.get(args.groupId);
+      if (!group) {
+        throw new Error("Group not found");
+      }
+
+      // Only project manager can create versions
+      if (group.project_manager_id !== args.userId) {
+        throw new Error("Only the project manager can create document versions");
+      }
+
+      // Get the live document (oldest by creation time - the one with room ID)
+      const liveDocument = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => 
+          q.eq("group_id", args.groupId).eq("chapter", args.chapter)
+        )
+        .order("asc") // Oldest first (live document with room ID)
+        .first();
+
+      if (!liveDocument) {
+        throw new Error("No live document found to create version from");
+      }
+
+      // Create a new version by copying the live document data
+      const newVersionId = await ctx.db.insert("documents", {
+        group_id: liveDocument.group_id,
+        chapter: liveDocument.chapter,
+        title: liveDocument.title,
+        content: liveDocument.content,
+      });
+
+      return {
+        success: true,
+        versionId: newVersionId,
+        message: "Document version created successfully",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to create version",
+      };
+    }
+  },
+});
+
+export const approveDocumentVersion = mutation({
+  args: {
+    versionId: v.id("documents"), // The version to approve
+    userId: v.id("users"), // User approving (must be project manager)
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get the version to approve
+      const versionDocument = await ctx.db.get(args.versionId);
+      if (!versionDocument) {
+        throw new Error("Version document not found");
+      }
+
+      // Check if user has permission (must be project manager)
+      const group = await ctx.db.get(versionDocument.group_id);
+      if (!group) {
+        throw new Error("Group not found");
+      }
+
+      // Only project manager can approve versions
+      if (group.project_manager_id !== args.userId) {
+        throw new Error("Only the project manager can approve document versions");
+      }
+
+      // Find the live document (original/first document by creation time ASC)
+      const liveDocument = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => 
+          q.eq("group_id", versionDocument.group_id).eq("chapter", versionDocument.chapter)
+        )
+        .order("asc") // Oldest first (original document with room ID)
+        .first();
+
+      if (!liveDocument) {
+        throw new Error("Live document not found");
+      }
+
+      // Prevent approving the live document itself
+      if (liveDocument._id === args.versionId) {
+        throw new Error("Cannot approve the live document - it's already active");
+      }
+
+      // Copy content from version to live document (DATABASE UPDATE)
+      await ctx.db.patch(liveDocument._id, {
+        content: versionDocument.content,
+        title: versionDocument.title, // Also update title if changed
+      });
+
+      // NOTE: Frontend must also update the Liveblocks room content after this mutation succeeds
+      // The editor should call editor.commands.setContent(versionDocument.content) to sync Liveblocks
+
+      return {
+        success: true,
+        message: "Version approved and applied to live document",
+        liveDocumentId: liveDocument._id,
+        approvedContent: versionDocument.content, // Return content for frontend sync
+        approvedTitle: versionDocument.title,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to approve version",
+      };
+    }
+  },
+});

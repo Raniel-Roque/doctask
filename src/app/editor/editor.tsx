@@ -395,7 +395,7 @@ export const Editor = ({
   };
 
   return (
-    <div className="editor-container size-full overflow-x-auto bg-[#F9F8FD] px-4 print:p-0 print:bg-white print:overflow-visible">
+    <div className="editor-container size-full overflow-x-auto bg-white px-4 print:p-0 print:bg-white print:overflow-visible">
       <div className="print:hidden">
         <NotificationBanner
           message={notification.message}

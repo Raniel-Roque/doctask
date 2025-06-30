@@ -42,6 +42,8 @@ interface NavbarProps {
   viewOnly?: boolean;
   userType?: "manager" | "member";
   capstoneTitle?: string;
+  onOpenVersionHistory?: () => void;
+  isVersionSnapshot?: boolean;
 }
 
 interface NotificationState {
@@ -54,6 +56,8 @@ export const Navbar = ({
   viewOnly = false,
   userType = "manager",
   capstoneTitle = "",
+  onOpenVersionHistory,
+  isVersionSnapshot = false,
 }: NavbarProps) => {
   const [selectedRows, setSelectedRows] = useState(1);
   const [selectedCols, setSelectedCols] = useState(1);
@@ -429,7 +433,7 @@ export const Navbar = ({
         />
       </div>
       
-      <nav className="flex items-center justify-between print:hidden">
+    <nav className="flex items-center justify-between print:hidden">
       <div className="pl-4 py-1 flex gap-2 items-center">
         <button
           onClick={() => router.push("/")}
@@ -438,7 +442,14 @@ export const Navbar = ({
           <Image src="/doctask.ico" alt="DocTask Logo" width={40} height={40} />
         </button>
         <div className="flex flex-col">
-          <div className="text-lg font-semibold">{title}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-lg font-semibold">{title}</div>
+            {isVersionSnapshot && (
+              <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded-md border border-amber-200">
+                Version Snapshot (Read-Only)
+              </span>
+            )}
+          </div>
           <Menubar className="border-none bg-transparent shadow-none h-auto p-0">
             {/* FILE */}
             <MenubarMenu>
@@ -492,7 +503,7 @@ export const Navbar = ({
 
                 {/* Only show Version History for managers */}
                 {!viewOnly && userType === "manager" && (
-                  <MenubarItem onClick={() => {}}>
+                  <MenubarItem onClick={onOpenVersionHistory}>
                     <HistoryIcon className="mr-2 size-4" />
                     Version History
                   </MenubarItem>

@@ -1495,8 +1495,6 @@ export const getDocument = query({
   },
 });
 
-
-
 export const getUserDocumentAccess = query({
   args: {
     documentId: v.id("documents"),
@@ -1593,6 +1591,219 @@ export const getAllImages = query({
       return images;
     } catch {
       return [];
+    }
+  },
+});
+
+export const getDocumentVersions = query({
+  args: {
+    groupId: v.id("groupsTable"),
+    chapter: v.string(),
+    userId: v.id("users"), // For permission checking
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Check if user has permission (must be project manager)
+      const group = await ctx.db.get(args.groupId);
+      if (!group) {
+        return {
+          versions: [],
+          success: false,
+          error: "Group not found",
+        };
+      }
+
+      // Only project manager can view version history
+      if (group.project_manager_id !== args.userId) {
+        return {
+          versions: [],
+          success: false,
+          error: "Only the project manager can view version history",
+        };
+      }
+
+      // Get all versions of this document, ordered by creation time DESC (newest first)
+      const versions = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => 
+          q.eq("group_id", args.groupId).eq("chapter", args.chapter)
+        )
+        .order("desc") // Most recent first (LIFO stack)
+        .collect();
+
+      // The first document (oldest) is the live template with room ID
+      // The rest are version snapshots
+      const liveDocument = versions[versions.length - 1]; // Last in DESC order = oldest
+      const versionSnapshots = versions.slice(0, -1); // All except the oldest
+
+      return {
+        versions: versionSnapshots,
+        liveDocument,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        versions: [],
+        liveDocument: null,
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch versions",
+      };
+    }
+  },
+});
+
+export const getDocumentVersion = query({
+  args: {
+    documentId: v.id("documents"),
+    userId: v.id("users"), // For permission checking
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get the document version
+      const document = await ctx.db.get(args.documentId);
+      if (!document) {
+        return {
+          document: null,
+          success: false,
+          error: "Document version not found",
+        };
+      }
+
+      // Check if user has permission (must be project manager)
+      const group = await ctx.db.get(document.group_id);
+      if (!group) {
+        return {
+          document: null,
+          success: false,
+          error: "Group not found",
+        };
+      }
+
+      // Only project manager can view version details
+      if (group.project_manager_id !== args.userId) {
+        return {
+          document: null,
+          success: false,
+          error: "Only the project manager can view version details",
+        };
+      }
+
+      return {
+        document,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        document: null,
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch document version",
+      };
+    }
+  },
+});
+
+export const getCurrentDocumentVersion = query({
+  args: {
+    groupId: v.id("groupsTable"),
+    chapter: v.string(),
+    userId: v.id("users"), // For permission checking
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Check if user has access to this group
+      const group = await ctx.db.get(args.groupId);
+      if (!group) {
+        return {
+          document: null,
+          success: false,
+          error: "Group not found",
+        };
+      }
+
+      // Check if user is part of this group (project manager or member)
+      const isProjectManager = group.project_manager_id === args.userId;
+      const isMember = group.member_ids.includes(args.userId);
+      
+      if (!isProjectManager && !isMember) {
+        return {
+          document: null,
+          success: false,
+          error: "You don't have permission to access this document",
+        };
+      }
+
+      // Get the live document (original/first document with room ID)
+      const liveDocument = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => 
+          q.eq("group_id", args.groupId).eq("chapter", args.chapter)
+        )
+        .order("asc") // Oldest first (original document with room ID)
+        .first();
+
+      return {
+        document: liveDocument,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        document: null,
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch live document",
+      };
+    }
+  },
+});
+
+export const getLiveDocumentId = query({
+  args: {
+    groupId: v.id("groupsTable"),
+    chapter: v.string(),
+    userId: v.id("users"), // For permission checking
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Check if user has access to this group
+      const group = await ctx.db.get(args.groupId);
+      if (!group) {
+        return {
+          documentId: null,
+          success: false,
+          error: "Group not found",
+        };
+      }
+
+      // Check if user is part of this group (project manager or member)
+      const isProjectManager = group.project_manager_id === args.userId;
+      const isMember = group.member_ids.includes(args.userId);
+      
+      if (!isProjectManager && !isMember) {
+        return {
+          documentId: null,
+          success: false,
+          error: "You don't have permission to access this document",
+        };
+      }
+
+      // Get the live document ID (original/first document with room ID)
+      const liveDocument = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => 
+          q.eq("group_id", args.groupId).eq("chapter", args.chapter)
+        )
+        .order("asc") // Oldest first (original document with room ID)
+        .first();
+
+      return {
+        documentId: liveDocument?._id || null,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        documentId: null,
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch live document ID",
+      };
     }
   },
 });

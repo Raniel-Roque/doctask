@@ -33,13 +33,41 @@ const useSaveToDatabase = (
   const { editor } = useEditorStore();
   const updateContent = useMutation(api.mutations.updateDocumentContent);
 
+  // Get the live document ID (template document, not version snapshot)
+  const liveDocumentData = useQuery(
+    api.fetch.getLiveDocumentId,
+    document && currentUser?._id
+      ? {
+          groupId: document.group_id,
+          chapter: document.chapter,
+          userId: currentUser._id,
+        }
+      : "skip"
+  );
+
+  // Get the live document content to compare against
+  const liveDocument = useQuery(
+    api.fetch.getDocument,
+    liveDocumentData?.documentId
+      ? { documentId: liveDocumentData.documentId }
+      : "skip"
+  );
+
   const saveToDatabase = async () => {
     if (!editor || !document || !currentUser?._id || !isEditable) return;
 
+    // Always save to the live document, not the current document
+    const targetDocumentId = liveDocumentData?.documentId;
+    if (!targetDocumentId) {
+      console.error("Cannot save: Live document ID not found");
+      return;
+    }
+
     const content = editor.getHTML();
-    if (content !== document.content) {
+    // Compare against live document content, not current document content
+    if (content !== liveDocument?.content) {
       await updateContent({
-        documentId: documentId as Id<"documents">,
+        documentId: targetDocumentId,
         content,
         userId: currentUser._id,
       });
@@ -88,6 +116,36 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
     api.fetch.getTaskAssignments,
     userAccess?.group?._id ? { groupId: userAccess.group._id } : "skip",
   );
+
+  // Get the live document ID to compare with current document
+  const liveDocumentData = useQuery(
+    api.fetch.getLiveDocumentId,
+    document && currentUser?._id
+      ? {
+          groupId: document.group_id,
+          chapter: document.chapter,
+          userId: currentUser._id,
+        }
+      : "skip"
+  );
+
+  // Check if current document is a version snapshot (not the live document)
+  const isVersionSnapshot = document && liveDocumentData?.documentId 
+    ? document._id !== liveDocumentData.documentId
+    : false;
+
+  // Members cannot view version snapshots - redirect to live document
+  useEffect(() => {
+    if (isVersionSnapshot && liveDocumentData?.documentId && document) {
+      // Redirect to the live document URL
+      const currentUrl = new URL(window.location.href);
+      const liveDocumentUrl = currentUrl.pathname.replace(
+        document._id,
+        liveDocumentData.documentId
+      );
+      router.replace(liveDocumentUrl);
+    }
+  }, [isVersionSnapshot, liveDocumentData, document, router]);
 
   // Check if user can edit this document (members need specific task assignment)
   const canEdit = () => {
@@ -231,6 +289,8 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       isEditable={isEditable} 
       userType="member" 
       capstoneTitle={userAccess?.group?.capstone_title}
+      liveDocumentId={liveDocumentData?.documentId || undefined}
+      isVersionSnapshot={isVersionSnapshot}
     />
   );
 };

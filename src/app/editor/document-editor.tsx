@@ -1,7 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import { Navbar } from "./navbar";
 import { Toolbar } from "./toolbar";
 import { Editor } from "./editor";
 import { ImageDragDropWrapper } from "./image-drag-drop";
+import { VersionHistoryPanel } from "./version-history-panel";
 
 interface DocumentEditorProps {
   isEditable?: boolean;
@@ -9,6 +13,10 @@ interface DocumentEditorProps {
   title?: string;
   initialContent?: string;
   capstoneTitle?: string;
+  groupId?: string;
+  chapter?: string;
+  saveToDatabase?: () => Promise<void>;
+  isVersionSnapshot?: boolean;
 }
 
 export const DocumentEditor = ({
@@ -17,11 +25,32 @@ export const DocumentEditor = ({
   title,
   initialContent,
   capstoneTitle,
+  groupId,
+  chapter,
+  saveToDatabase,
+  isVersionSnapshot,
 }: DocumentEditorProps) => {
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+
+  const handleOpenVersionHistory = () => {
+    setIsVersionHistoryOpen(true);
+  };
+
+  const handleCloseVersionHistory = () => {
+    setIsVersionHistoryOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFBFD] print:!bg-white print:!min-h-0 print:!p-0 print:!m-0">
       <div className="print:hidden">
-        <Navbar title={title} viewOnly={!isEditable} userType={userType} capstoneTitle={capstoneTitle} />
+        <Navbar 
+          title={title} 
+          viewOnly={!isEditable} 
+          userType={userType} 
+          capstoneTitle={capstoneTitle}
+          onOpenVersionHistory={handleOpenVersionHistory}
+          isVersionSnapshot={isVersionSnapshot}
+        />
         {isEditable && <Toolbar />}
       </div>
       <ImageDragDropWrapper>
@@ -35,6 +64,15 @@ export const DocumentEditor = ({
           </div>
         </div>
       </ImageDragDropWrapper>
+
+      {/* Version History Panel */}
+      <VersionHistoryPanel
+        isOpen={isVersionHistoryOpen}
+        onClose={handleCloseVersionHistory}
+        groupId={groupId}
+        chapter={chapter}
+        saveToDatabase={saveToDatabase}
+      />
     </div>
   );
 };

@@ -18,6 +18,11 @@ interface RoomProps {
   isEditable?: boolean;
   userType?: "manager" | "member";
   capstoneTitle?: string;
+  groupId?: string;
+  chapter?: string;
+  saveToDatabase?: () => Promise<void>;
+  liveDocumentId?: string;
+  isVersionSnapshot?: boolean;
 }
 
 type User = {
@@ -27,17 +32,20 @@ type User = {
   color: string;
 };
 
-export function Room({ children, title, isEditable, userType, capstoneTitle }: RoomProps) {
+export function Room({ children, title, isEditable, userType, capstoneTitle, groupId, chapter, saveToDatabase, liveDocumentId, isVersionSnapshot }: RoomProps) {
   const params = useParams();
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Use live document ID for Liveblocks room, fallback to URL document ID
+  const roomId = liveDocumentId || (params.documentId as string);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const fetchedUsers = await getUsers();
         setUsers(fetchedUsers);
-      } catch (err) {
+      } catch {
         setError("Failed to load users");
       }
     };
@@ -135,7 +143,7 @@ export function Room({ children, title, isEditable, userType, capstoneTitle }: R
       }
     >
       <RoomProvider
-        id={params.documentId as string}
+        id={roomId}
         initialPresence={{ cursor: null, selection: null }}
       >
         <ClientSideSuspense
@@ -147,6 +155,10 @@ export function Room({ children, title, isEditable, userType, capstoneTitle }: R
               isEditable={isEditable}
               userType={userType}
               capstoneTitle={capstoneTitle}
+              groupId={groupId}
+              chapter={chapter}
+              saveToDatabase={saveToDatabase}
+              isVersionSnapshot={isVersionSnapshot}
             />
           ) : (
             children

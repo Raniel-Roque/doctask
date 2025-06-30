@@ -43,13 +43,41 @@ const useSaveToDatabase = (
   const { editor } = useEditorStore();
   const updateContent = useMutation(api.mutations.updateDocumentContent);
 
+  // Get the live document ID (template document, not version snapshot)
+  const liveDocumentData = useQuery(
+    api.fetch.getLiveDocumentId,
+    document && currentUser?._id
+      ? {
+          groupId: document.group_id,
+          chapter: document.chapter,
+          userId: currentUser._id,
+        }
+      : "skip"
+  );
+
+  // Get the live document content to compare against
+  const liveDocument = useQuery(
+    api.fetch.getDocument,
+    liveDocumentData?.documentId
+      ? { documentId: liveDocumentData.documentId }
+      : "skip"
+  );
+
   const saveToDatabase = async () => {
     if (!editor || !document || !currentUser?._id || !isEditable) return;
 
+    // Always save to the live document, not the current document
+    const targetDocumentId = liveDocumentData?.documentId;
+    if (!targetDocumentId) {
+      console.error("Cannot save: Live document ID not found");
+      return;
+    }
+
     const content = editor.getHTML();
-    if (content !== document.content) {
+    // Compare against live document content, not current document content
+    if (content !== liveDocument?.content) {
       await updateContent({
-        documentId: documentId as Id<"documents">,
+        documentId: targetDocumentId,
         content,
         userId: currentUser._id,
       });
@@ -99,9 +127,29 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
     userAccess?.group?._id ? { groupId: userAccess.group._id } : "skip",
   );
 
+  // Get the live document ID to compare with current document
+  const liveDocumentData = useQuery(
+    api.fetch.getLiveDocumentId,
+    document && currentUser?._id
+      ? {
+          groupId: document.group_id,
+          chapter: document.chapter,
+          userId: currentUser._id,
+        }
+      : "skip"
+  );
+
+  // Check if current document is a version snapshot (not the live document)
+  const isVersionSnapshot = document && liveDocumentData?.documentId 
+    ? document._id !== liveDocumentData.documentId
+    : false;
+
   // Check if user can edit this document (managers have broader edit access)
   const canEdit = () => {
     if (!document || !currentUser || !taskAssignments?.tasks) return false;
+
+    // Version snapshots are always read-only
+    if (isVersionSnapshot) return false;
 
     // Managers can edit documents if they are part of the group
     return userAccess?.group?._id === document.group_id;
@@ -237,6 +285,11 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
       isEditable={isEditable} 
       userType="manager" 
       capstoneTitle={userAccess?.group?.capstone_title}
+      groupId={document.group_id}
+      chapter={document.chapter}
+      saveToDatabase={saveToDatabase}
+      liveDocumentId={liveDocumentData?.documentId || undefined}
+      isVersionSnapshot={isVersionSnapshot}
     />
   );
 };
