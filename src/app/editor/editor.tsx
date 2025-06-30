@@ -186,7 +186,7 @@ export const Editor = ({
         style:
           "padding-left: 56px; padding-right:56px; font-family: 'Times New Roman', serif; font-size: 11px; line-height: 1.5; text-align: justify;",
         class:
-          "focus:outline-none print:border-0 bg-white border border-[#C7C7C7] flex flex-col min-h-[1054px] print:min-h-0 w-[816px] pt-10 pr-14 pb-10 print:p-0 cursor-text",
+          "focus:outline-none bg-white border border-[#C7C7C7] print:border-none print:shadow-none print:m-0 print:p-0 flex flex-col min-h-[1054px] w-[816px] pt-10 pr-14 pb-10 cursor-text",
       },
       handleDrop: (view, event, slice, moved) => {
         if (
@@ -372,19 +372,23 @@ export const Editor = ({
 
   return (
     <div className="editor-container size-full overflow-x-auto bg-[#F9F8FD] px-4 print:p-0 print:bg-white print:overflow-visible">
-      <NotificationBanner
-        message={notification.message}
-        type={notification.type}
-        onClose={closeNotification}
-      />
-      {!isEditable && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center print:hidden">
-          {getReadOnlyMessage()}
-        </div>
-      )}
-      <div className="min-w-max flex justify-center w-[816px] py-4 print:py-0 mx-auto print:w-full print:min-w-0">
+      <div className="print:hidden">
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+        {!isEditable && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center">
+            {getReadOnlyMessage()}
+          </div>
+        )}
+      </div>
+      <div className="min-w-max flex justify-center w-[816px] py-4 print:py-0 mx-auto print:w-full print:min-w-0 print:flex-none print:block">
         <EditorContent editor={editor} />
-        <Threads editor={editor} />
+        <div className="print:hidden">
+          <Threads editor={editor} />
+        </div>
       </div>
     </div>
   );

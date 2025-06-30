@@ -929,6 +929,33 @@ const ToolbarButton = ({
 export const Toolbar = () => {
   const { editor } = useEditorStore();
 
+  const onPrint = () => {
+    // Add print-specific styles to eliminate headers and footers
+    const printStyles = `
+      <style>
+        @page { margin: 0; size: letter; }
+        @media print {
+          * { -webkit-print-color-adjust: exact !important; }
+          body { margin: 0 !important; padding: 0.5in !important; }
+        }
+      </style>
+    `;
+    
+    // Inject styles into head
+    const head = document.head || document.getElementsByTagName('head')[0];
+    const printStyleElement = document.createElement('style');
+    printStyleElement.innerHTML = printStyles.replace(/<\/?style>/g, '');
+    head.appendChild(printStyleElement);
+    
+    // Trigger print
+    window.print();
+    
+    // Clean up styles after print
+    setTimeout(() => {
+      head.removeChild(printStyleElement);
+    }, 1000);
+  };
+
   const sections: {
     label: string;
     icon: LucideIcon;
@@ -949,7 +976,7 @@ export const Toolbar = () => {
       {
         label: "Print",
         icon: PrinterIcon,
-        onClick: () => window.print(),
+        onClick: onPrint,
       },
       {
         label: "Spell Check",

@@ -154,3 +154,257 @@ body {
     border: none !important;
   }
 }
+
+/* Print Styles - Google Docs Style */
+@media print {
+  /* Set page properties - Clean margins */
+  @page {
+    margin: 0.5in;
+    size: letter;
+  }
+  
+  /* Reset everything for clean print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Reset body for print */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    font-family: 'Times New Roman', serif !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* Hide navigation and toolbars */
+  nav,
+  .toolbar,
+  [class*="toolbar"],
+  [class*="nav"],
+  .menubar,
+  [class*="menubar"],
+  .print\\:hidden {
+    display: none !important;
+  }
+  
+  /* Main container adjustments */
+  .editor-container {
+    overflow: visible !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Ensure editor content is clean and matches Google Docs */
+  .ProseMirror {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    min-height: 0 !important;
+    font-family: 'Times New Roman', serif !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Container wrapping adjustments */
+  .min-w-max,
+  .flex.justify-center,
+  .max-w-screen-lg {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    justify-content: flex-start !important;
+    display: block !important;
+  }
+  
+  /* Aggressively remove ALL borders from editor elements */
+  .ProseMirror,
+  .ProseMirror *,
+  [class*="ProseMirror"],
+  .tiptap,
+  .tiptap *,
+  .editor-container,
+  .editor-container *,
+  div[data-type="content"],
+  div[data-type="content"] * {
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* Specifically target the editor wrapper */
+  .min-w-max {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* Hide all collaborative elements */
+  .floating-menu,
+  .bubble-menu,
+  [class*="floating"],
+  [class*="bubble"],
+  .floating-threads,
+  .anchored-threads,
+  
+  /* Hide collaborative cursors */
+  .lb-user-cursor,
+  [data-user-cursor],
+  .liveblocks-cursor,
+  .user-cursor,
+  
+  /* Hide comments and threads */
+  .lb-comment,
+  .lb-thread,
+  [data-thread],
+  .liveblocks-comment-mark,
+  .comment-mark,
+  
+  /* Hide collaborative avatars */
+  .lb-avatar,
+  .liveblocks-avatar,
+  .user-avatar,
+  
+  /* Hide any floating collaborative UI */
+  [data-liveblocks-portal],
+  .lb-floating-composer,
+  .lb-composer,
+  .floating-composer,
+  
+  /* Hide selection indicators */
+  .lb-selection,
+  .liveblocks-selection,
+  .user-selection,
+  
+  /* Hide presence indicators */
+  .lb-presence,
+  .liveblocks-presence,
+  .user-presence,
+  
+  /* Generic Liveblocks UI components */
+  [class*="lb-"],
+  [class*="liveblocks-"],
+  
+  /* Hide notification banners */
+  .notification-banner,
+  [class*="notification"],
+  
+  /* Hide any tooltips or overlays */
+  .tooltip,
+  [class*="tooltip"],
+  .overlay,
+  [class*="overlay"],
+  
+  /* Hide any fixed positioned UI elements */
+  .fixed:not(.ProseMirror):not(.ProseMirror *),
+  [class*="notification"]:not(.ProseMirror):not(.ProseMirror *),
+  
+  /* Hide any absolute positioned elements that might interfere */
+  .absolute.top-0:not(.ProseMirror):not(.ProseMirror *),
+  .absolute.top-1:not(.ProseMirror):not(.ProseMirror *),
+  .absolute.top-2:not(.ProseMirror):not(.ProseMirror *),
+  .absolute.top-3:not(.ProseMirror):not(.ProseMirror *),
+  .absolute.top-4:not(.ProseMirror):not(.ProseMirror *),
+  .absolute.top-5:not(.ProseMirror):not(.ProseMirror *),
+  
+  /* Hide drag and drop overlays */
+  [class*="drag"]:not(.ProseMirror):not(.ProseMirror *),
+  [class*="drop"]:not(.ProseMirror):not(.ProseMirror *) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Remove all collaborative highlights and backgrounds */
+  .collaborative-highlight,
+  .collaborative-highlight-conflict,
+  [class*="highlight"],
+  .ProseMirror-selectednode {
+    background-color: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* Print-friendly images */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
+    margin: 12pt 0 !important;
+    outline: none !important;
+    border: none !important;
+  }
+  
+  /* Typography for print - match Google Docs */
+  p {
+    orphans: 2;
+    widows: 2;
+    margin: 0 0 6pt 0 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    margin: 12pt 0 6pt 0 !important;
+    font-weight: bold !important;
+    font-size: 11pt !important;
+  }
+  
+  h1 { font-size: 14pt !important; }
+  h2 { font-size: 13pt !important; }
+  h3 { font-size: 12pt !important; }
+  
+  /* Table styles - but keep table borders */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 12pt 0 !important;
+  }
+  
+  table td, table th {
+    border: 1px solid black !important;
+    padding: 6pt 8pt !important;
+    font-size: 11pt !important;
+  }
+  
+  /* List styles */
+  ul, ol {
+    margin: 6pt 0 !important;
+    padding-left: 24pt !important;
+  }
+  
+  li {
+    margin: 0 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Remove any borders and outlines from form elements */
+  input, textarea, select, button {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+  }
+}

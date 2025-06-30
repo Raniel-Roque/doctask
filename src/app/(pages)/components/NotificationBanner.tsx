@@ -66,7 +66,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
 
   return (
     <div
-      className={`fixed top-20 left-1/2 transform -translate-x-1/2 ${bgColor} border rounded-lg p-4 shadow-lg flex items-center gap-3 z-50 transition-all duration-300 ease-in-out ${
+      className={`fixed top-20 left-1/2 transform -translate-x-1/2 ${bgColor} border rounded-lg p-4 shadow-lg flex items-center gap-3 z-50 print:hidden transition-all duration-300 ease-in-out ${
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
       }`}
     >

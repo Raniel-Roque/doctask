@@ -172,14 +172,16 @@ export const ImageDragDropWrapper = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <NotificationBanner
-        message={notification.message}
-        type={notification.type}
-        onClose={closeNotification}
-      />
+      <div className="print:hidden">
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      </div>
 
       {isDragOver && (
-        <div className="fixed inset-0 bg-blue-500/20 border-4 border-dashed border-blue-500 z-50 flex items-center justify-center pointer-events-none">
+        <div className="fixed inset-0 bg-blue-500/20 border-4 border-dashed border-blue-500 z-50 flex items-center justify-center pointer-events-none print:hidden">
           <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md">
             <div className="text-4xl mb-4">📸</div>
             <p className="text-xl font-semibold text-blue-600 mb-2">

@@ -84,41 +84,228 @@ export const Navbar = ({
     if (!editor) return;
 
     try {
-      // Dynamic import for client-side only
+      // Dynamic imports
       const jsPDF = (await import("jspdf")).default;
       const html2canvas = (await import("html2canvas")).default;
 
-      const content = editor.view.dom;
-      const canvas = await html2canvas(content, {
+      // Create a temporary container that exactly matches the editor layout
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '816px'; // Letter width (8.5 inches)
+      tempContainer.style.minHeight = '1056px'; // Letter height (11 inches)
+      tempContainer.style.background = 'white';
+      tempContainer.style.paddingLeft = '144px'; // 1.5 inches = 144px
+      tempContainer.style.paddingRight = '96px'; // 1 inch = 96px
+      tempContainer.style.paddingTop = '96px'; // 1 inch = 96px
+      tempContainer.style.paddingBottom = '96px'; // 1 inch = 96px
+      tempContainer.style.fontFamily = 'Times New Roman, serif';
+      tempContainer.style.fontSize = '11pt';
+      tempContainer.style.lineHeight = '1.5';
+      tempContainer.style.color = 'black';
+      tempContainer.style.boxSizing = 'border-box';
+      tempContainer.style.textAlign = 'justify'; // Match editor text alignment
+
+      // Create a clean version of the editor content
+      const cleanContent = document.createElement('div');
+      cleanContent.className = 'ProseMirror';
+      cleanContent.style.border = 'none';
+      cleanContent.style.outline = 'none';
+      cleanContent.style.boxShadow = 'none';
+      cleanContent.style.background = 'white';
+      cleanContent.style.margin = '0';
+      cleanContent.style.padding = '0';
+      cleanContent.style.fontFamily = 'Times New Roman, serif';
+      cleanContent.style.fontSize = '11pt';
+      cleanContent.style.lineHeight = '1.5';
+      cleanContent.style.width = '100%';
+
+      // Get the editor's HTML content and clean it
+      let editorHTML = editor.getHTML();
+      
+      // Remove any problematic attributes and classes
+      editorHTML = editorHTML
+        .replace(/class="[^"]*lb-[^"]*"/g, '')
+        .replace(/class="[^"]*liveblocks[^"]*"/g, '')
+        .replace(/class="[^"]*cursor[^"]*"/g, '')
+        .replace(/class="[^"]*floating[^"]*"/g, '')
+        .replace(/data-liveblocks[^=]*="[^"]*"/g, '')
+        .replace(/data-thread[^=]*="[^"]*"/g, '')
+        .replace(/style="[^"]*position:\s*fixed[^"]*"/g, '')
+        .replace(/style="[^"]*position:\s*absolute[^"]*"/g, '');
+
+      cleanContent.innerHTML = editorHTML;
+
+      // Apply print-specific styles to clean up the content
+      const printStyles = document.createElement('style');
+      printStyles.innerHTML = `
+        .temp-pdf-container * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        .temp-pdf-container .ProseMirror {
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+          background: white !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          font-family: 'Times New Roman', serif !important;
+          font-size: 11pt !important;
+          line-height: 1.5 !important;
+        }
+        
+        .temp-pdf-container p {
+          margin: 0 0 6pt 0 !important;
+          font-size: 11pt !important;
+          line-height: 1.5 !important;
+          color: black !important;
+        }
+        
+        .temp-pdf-container h1, .temp-pdf-container h2, .temp-pdf-container h3, 
+        .temp-pdf-container h4, .temp-pdf-container h5, .temp-pdf-container h6 {
+          margin: 12pt 0 6pt 0 !important;
+          font-weight: bold !important;
+          color: black !important;
+        }
+        
+        .temp-pdf-container h1 { font-size: 14pt !important; }
+        .temp-pdf-container h2 { font-size: 13pt !important; }
+        .temp-pdf-container h3 { font-size: 12pt !important; }
+        
+        .temp-pdf-container img {
+          max-width: 100% !important;
+          height: auto !important;
+          margin: 12pt 0 !important;
+          outline: none !important;
+          border: none !important;
+          display: block !important;
+        }
+        
+        .temp-pdf-container table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          margin: 12pt 0 !important;
+        }
+        
+        .temp-pdf-container table td, .temp-pdf-container table th {
+          border: 1px solid black !important;
+          padding: 6pt 8pt !important;
+          font-size: 11pt !important;
+        }
+        
+        /* Hide any remaining unwanted elements */
+        .temp-pdf-container [class*="lb-"],
+        .temp-pdf-container [class*="liveblocks-"],
+        .temp-pdf-container [class*="cursor"],
+        .temp-pdf-container [class*="floating"],
+        .temp-pdf-container [data-liveblocks],
+        .temp-pdf-container [data-thread] {
+          display: none !important;
+        }
+      `;
+
+      tempContainer.className = 'temp-pdf-container';
+      tempContainer.appendChild(cleanContent);
+      
+      // Add styles and container to document
+      document.head.appendChild(printStyles);
+      document.body.appendChild(tempContainer);
+
+      // Wait for fonts and images to load
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Process images to ensure they're properly loaded
+      const images = tempContainer.querySelectorAll('img');
+      await Promise.all(Array.from(images).map(img => {
+        return new Promise((resolve) => {
+          if (img.complete) {
+            resolve(null);
+          } else {
+            img.onload = () => resolve(null);
+            img.onerror = () => resolve(null);
+            setTimeout(() => resolve(null), 3000); // Timeout after 3s
+          }
+        });
+      }));
+
+      // Capture with html2canvas
+      const canvas = await html2canvas(tempContainer, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: tempContainer.offsetWidth,
+        height: tempContainer.offsetHeight,
+        windowWidth: tempContainer.offsetWidth,
+        windowHeight: tempContainer.offsetHeight,
       });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF();
-      const imgWidth = 210;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
+      // Clean up
+      document.body.removeChild(tempContainer);
+      document.head.removeChild(printStyles);
 
-      let position = 0;
+      // Create PDF with proper letter dimensions that accounts for editor's existing margins
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdf = new jsPDF('p', 'pt', 'letter');
+      
+      // Letter size in points: 612 x 792
+      const pdfWidth = 612;
+      const pdfHeight = 792;
+      
+      // Since our editor already has proper margins (1.5" left, 1" right/top/bottom),
+      // we don't need additional PDF margins - use the full page area
+      const availableWidth = pdfWidth;
+      const availableHeight = pdfHeight;
+      
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      // Calculate scaling to fit the page width exactly (since editor is designed for letter width)
+      // Editor is 816px wide, letter is 612pt wide, so scale = 612/816 = 0.75
+      const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight);
+      const scaledWidth = imgWidth * ratio;
+      const scaledHeight = imgHeight * ratio;
+      
+      // Position at top-left corner (no additional margins needed)
+      const x = (pdfWidth - scaledWidth) / 2; // Center horizontally if needed
+      const y = 0; // Start at top
 
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
+      pdf.addImage(imgData, 'PNG', x, y, scaledWidth, scaledHeight, '', 'FAST');
+      
+      // Handle multiple pages if content is longer than one page
+      let remainingHeight = scaledHeight - availableHeight;
+      let currentY = -availableHeight;
+      
+      while (remainingHeight > 0) {
         pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        pdf.addImage(imgData, 'PNG', x, currentY, scaledWidth, scaledHeight, '', 'FAST');
+        remainingHeight -= availableHeight;
+        currentY -= availableHeight;
       }
 
+      // Save the PDF
       pdf.save(generateFilename("pdf"));
+      
+      console.log('PDF generated successfully!');
+      
     } catch (error) {
-      console.error('PDF export failed:', error);
-      // Fallback to print
-      window.print();
+      console.error('PDF generation failed:', error);
+      
+      // Clean up in case of error
+      const tempContainer = document.querySelector('.temp-pdf-container');
+      const tempStyles = document.querySelector('style');
+      if (tempContainer) document.body.removeChild(tempContainer);
+      if (tempStyles && tempStyles.innerHTML.includes('temp-pdf-container')) {
+        document.head.removeChild(tempStyles);
+      }
+      
+      // Fallback to print dialog
+      alert('PDF generation failed. Opening print dialog as fallback. Please select "Save as PDF" from the print options.');
+      onPrint();
     }
   };
 
@@ -189,8 +376,35 @@ export const Navbar = ({
     onDownload(blob, generateFilename("txt"));
   };
 
+  const onPrint = () => {
+    // Add print-specific styles to eliminate headers and footers
+    const printStyles = `
+      <style>
+        @page { margin: 0; size: letter; }
+        @media print {
+          * { -webkit-print-color-adjust: exact !important; }
+          body { margin: 0 !important; padding: 0.5in !important; }
+        }
+      </style>
+    `;
+    
+    // Inject styles into head
+    const head = document.head || document.getElementsByTagName('head')[0];
+    const printStyleElement = document.createElement('style');
+    printStyleElement.innerHTML = printStyles.replace(/<\/?style>/g, '');
+    head.appendChild(printStyleElement);
+    
+    // Trigger print
+    window.print();
+    
+    // Clean up styles after print
+    setTimeout(() => {
+      head.removeChild(printStyleElement);
+    }, 1000);
+  };
+
   return (
-    <nav className="flex items-center justify-between">
+    <nav className="flex items-center justify-between print:hidden">
       <div className="pl-4 py-1 flex gap-2 items-center">
         <button
           onClick={() => router.push("/")}
@@ -244,7 +458,7 @@ export const Navbar = ({
                     </MenubarItem>
                   </MenubarSubContent>
                 </MenubarSub>
-                <MenubarItem onClick={() => window.print()}>
+                <MenubarItem onClick={onPrint}>
                   <PrinterIcon className="mr-2 size-4" />
                   Print <MenubarShortcut>⌘P</MenubarShortcut>
                 </MenubarItem>

@@ -188,35 +188,55 @@
 @media print {
   /* Hide collaborative cursors */
   .lb-user-cursor,
-    [data-user-cursor],
-    .liveblocks-cursor,
-    
-    /* Hide comments and threads */
-    .lb-comment,
-    .lb-thread,
-    [data-thread],
-    .liveblocks-comment-mark,
-    
-    /* Hide collaborative avatars */
-    .lb-avatar,
-    .liveblocks-avatar,
-    
-    /* Hide any floating collaborative UI */
-    [data-liveblocks-portal],
-    .lb-floating-composer,
-    .lb-composer,
-    
-    /* Hide selection indicators */
-    .lb-selection,
-    .liveblocks-selection,
-    
-    /* Hide any presence indicators */
-    .lb-presence,
-    .liveblocks-presence,
-    
-    /* Generic Liveblocks UI components */
-    [class*="lb-"],
-    [class*="liveblocks-"] {
+  [data-user-cursor],
+  .liveblocks-cursor,
+  .user-cursor,
+  
+  /* Hide comments and threads */
+  .lb-comment,
+  .lb-thread,
+  [data-thread],
+  .liveblocks-comment-mark,
+  .comment-mark,
+  
+  /* Hide collaborative avatars */
+  .lb-avatar,
+  .liveblocks-avatar,
+  .user-avatar,
+  
+  /* Hide any floating collaborative UI */
+  [data-liveblocks-portal],
+  .lb-floating-composer,
+  .lb-composer,
+  .floating-composer,
+  
+  /* Hide selection indicators */
+  .lb-selection,
+  .liveblocks-selection,
+  .user-selection,
+  
+  /* Hide any presence indicators */
+  .lb-presence,
+  .liveblocks-presence,
+  .user-presence,
+  
+  /* Generic Liveblocks UI components */
+  [class*="lb-"],
+  [class*="liveblocks-"],
+  
+  /* Hide floating threads */
+  .floating-threads,
+  .anchored-threads,
+  
+  /* Hide toolbar and UI elements */
+  .toolbar,
+  [class*="toolbar"],
+  .menubar,
+  [class*="menubar"],
+  
+  /* Hide notification banners */
+  .notification-banner,
+  [class*="notification"] {
     display: none !important;
     visibility: hidden !important;
   }
@@ -226,6 +246,27 @@
   .collaborative-highlight-conflict {
     background-color: transparent !important;
     border-bottom: none !important;
+    border-top: none !important;
+    animation: none !important;
+  }
+  
+  /* Remove selection outlines from images */
+  .ProseMirror-selectednode {
+    outline: none !important;
+    border: none !important;
+  }
+  
+  /* Ensure clean editor appearance */
+  .editor-container {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Remove any cursor indicators */
+  .ProseMirror::after,
+  .ProseMirror::before {
+    display: none !important;
   }
 }
 
