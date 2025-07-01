@@ -2070,3 +2070,21 @@ export const approveDocumentVersion = mutation({
     }
   },
 });
+
+export const deleteDocumentVersion = mutation({
+  args: {
+    documentId: v.id("documents"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const document = await ctx.db.get(args.documentId);
+    if (!document) throw new Error("Document not found");
+    const group = await ctx.db.get(document.group_id);
+    if (!group) throw new Error("Group not found");
+    if (group.project_manager_id !== args.userId) {
+      throw new Error("Only the project manager can delete document versions");
+    }
+    await ctx.db.delete(args.documentId);
+    return { success: true };
+  },
+});

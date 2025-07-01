@@ -43,7 +43,6 @@ interface Document {
   _creationTime: number;
   group_id: Id<"groupsTable">;
   chapter: string;
-  room_id: string;
   title: string;
   content: string;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Clock, CheckCircle, Plus } from "lucide-react";
+import { X, Clock, CheckCircle, Plus, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
@@ -9,6 +9,7 @@ import { useEditorStore } from "@/store/use-editor-store";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import type { Doc } from "../../../convex/_generated/dataModel";
 
 interface VersionHistoryPanelProps {
   isOpen: boolean;
@@ -40,6 +41,9 @@ export const VersionHistoryPanel = ({
   const [approvingVersionId, setApprovingVersionId] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [show, setShow] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [localVersions, setLocalVersions] = useState<Doc<"documents">[]>([]);
 
   const showNotification = (
     message: string,
@@ -94,6 +98,15 @@ export const VersionHistoryPanel = ({
 
   // Approve version mutation
   const approveVersion = useMutation(api.mutations.approveDocumentVersion);
+
+  // Add delete mutation
+  const deleteVersion = useMutation(api.mutations.deleteDocumentVersion);
+
+  useEffect(() => {
+    if (versionsData && versionsData.success) {
+      setLocalVersions(versionsData.versions);
+    }
+  }, [versionsData]);
 
   const handleCreateVersion = async () => {
     if (!groupId || !chapter || !currentUser?._id || !editor) {
@@ -161,6 +174,27 @@ export const VersionHistoryPanel = ({
     }
   };
 
+  const handleDeleteVersion = async (versionId: string) => {
+    if (!currentUser?._id) {
+      showNotification("Cannot delete version - missing data", "error");
+      return;
+    }
+    setDeletingId(versionId);
+    try {
+      await deleteVersion({ documentId: versionId as Id<"documents">, userId: currentUser._id as Id<"users"> });
+      showNotification("Version deleted!", "success");
+      setLocalVersions((prev) => prev.filter((v) => v._id !== versionId));
+      setDeleteConfirmId(null);
+    } catch (error) {
+      showNotification(
+        error instanceof Error ? error.message : "Failed to delete version",
+        "error"
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString("en-US", {
       year: "numeric",
@@ -222,10 +256,17 @@ export const VersionHistoryPanel = ({
     );
   }
 
-  const { versions } = versionsData;
-
   return (
     <>
+      {/* Notification Banner - Outside panel, centered at top */}
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60] print:hidden">
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      </div>
+
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/20 z-40 print:hidden"
@@ -239,15 +280,6 @@ export const VersionHistoryPanel = ({
           ${show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`
         }
       >
-        {/* Notification - Absolute positioned */}
-        <div className="absolute top-0 left-0 right-0 z-10 print:hidden">
-          <NotificationBanner
-            message={notification.message}
-            type={notification.type}
-            onClose={closeNotification}
-          />
-        </div>
-
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-lg font-semibold">Version History</h2>
@@ -280,22 +312,22 @@ export const VersionHistoryPanel = ({
             {/* Version List */}
             <div className="space-y-2">
               <div className="text-sm font-medium text-gray-700 mb-2">
-                Versions ({versions.length})
+                Versions ({localVersions.length})
               </div>
               
-              {versions.length === 0 ? (
+              {localVersions.length === 0 ? (
                 <div className="text-sm text-gray-500 text-center py-8">
                   No versions created yet.
                   <br />
                   Create your first version to start tracking changes.
                 </div>
               ) : (
-                versions.map((version, index) => (
+                localVersions.map((version, index) => (
                   <div key={version._id} className="p-3 border border-gray-200 rounded-md hover:bg-gray-50">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="text-sm font-medium">
-                          Version {versions.length - index}
+                          Version {localVersions.length - index}
                         </div>
                         <div className="text-xs text-gray-500 flex items-center mt-1">
                           <Clock className="h-3 w-3 mr-1" />
@@ -318,6 +350,15 @@ export const VersionHistoryPanel = ({
                             </>
                           )}
                         </Button>
+                        <Button
+                          onClick={() => setDeleteConfirmId(version._id)}
+                          size="icon"
+                          variant="ghost"
+                          className="text-red-600 hover:bg-red-50"
+                          title="Delete version"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -327,6 +368,47 @@ export const VersionHistoryPanel = ({
           </div>
         </div>
       </div>
+
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
+          <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <X className="h-6 w-6 text-red-600" />
+              Confirm Delete
+            </h2>
+            <p className="mb-8 text-gray-600">
+              Are you sure you want to delete this version? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-4 mt-8">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
+                disabled={deletingId === deleteConfirmId}
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteVersion(deleteConfirmId)}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                disabled={deletingId === deleteConfirmId}
+              >
+                {deletingId === deleteConfirmId ? (
+                  <>
+                    <span className="animate-spin"><Trash className="h-4 w-4" /></span>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash className="h-4 w-4" />
+                    Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }; 

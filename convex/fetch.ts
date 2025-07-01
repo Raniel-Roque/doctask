@@ -909,7 +909,7 @@ interface DocumentWithStatus {
   last_modified?: number; // This comes from documentStatus.last_modified
 }
 
-export const getLatestDocuments = query({
+export const getDocumentsWithStatus = query({
   args: {
     groupId: v.id("groupsTable"),
   },
@@ -963,18 +963,18 @@ export const getLatestDocuments = query({
       // Create a map for quick status lookup
       const statusMap = new Map(allStatuses.map((s) => [s.document_part, s]));
 
-      // 3. Get the latest version of each document part
-      const latestDocsMap = new Map<string, Doc<"documents">>();
+      // 3. Get the oldest version of each document part (this is the live document with room ID)
+      const oldestDocsMap = new Map<string, Doc<"documents">>();
       for (const doc of allDocs) {
-        const existing = latestDocsMap.get(doc.chapter);
-        if (!existing || doc._creationTime > existing._creationTime) {
-          latestDocsMap.set(doc.chapter, doc);
+        const existing = oldestDocsMap.get(doc.chapter);
+        if (!existing || doc._creationTime < existing._creationTime) {
+          oldestDocsMap.set(doc.chapter, doc);
         }
       }
 
       // 4. Combine documents with their review status
       const documentsWithStatus: DocumentWithStatus[] = Array.from(
-        latestDocsMap.values(),
+        oldestDocsMap.values(),
       ).map((doc) => {
         const statusInfo = statusMap.get(doc.chapter);
         return {
@@ -1289,12 +1289,12 @@ export const getAdviserDocuments = query({
         // Create a map for quick status lookup
         const statusMap = new Map(allStatuses.map((s) => [s.document_part, s]));
 
-        // Get the latest version of each document part
-        const latestDocsMap = new Map<string, Doc<"documents">>();
+        // Get the oldest version of each document part
+        const oldestDocsMap = new Map<string, Doc<"documents">>();
         for (const doc of allDocs) {
-          const existing = latestDocsMap.get(doc.chapter);
-          if (!existing || doc._creationTime > existing._creationTime) {
-            latestDocsMap.set(doc.chapter, doc);
+          const existing = oldestDocsMap.get(doc.chapter);
+          if (!existing || doc._creationTime < existing._creationTime) {
+            oldestDocsMap.set(doc.chapter, doc);
           }
         }
 
@@ -1320,7 +1320,7 @@ export const getAdviserDocuments = query({
 
         // Combine documents with their review status
         const documentsWithStatus: AdviserDocumentWithStatus[] = Array.from(
-          latestDocsMap.values(),
+          oldestDocsMap.values(),
         )
           .filter(
             (doc) =>

@@ -54,7 +54,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     groupDetails?.adviser_id ? { id: groupDetails.adviser_id } : "skip",
   );
   const latestDocuments = useQuery(
-    api.fetch.getLatestDocuments,
+    api.fetch.getDocumentsWithStatus,
     studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip",
   );
   const requestedAdviser = useQuery(
