@@ -117,6 +117,7 @@ export const TaskAssignmentTable = ({
   // Add Convex mutations
   const updateTaskStatus = useMutation(api.mutations.updateTaskStatus);
   const updateTaskAssignment = useMutation(api.mutations.updateTaskAssignment);
+  const updateDocumentContent = useMutation(api.mutations.updateDocumentContent);
 
   // Add state for status filter and expanded chapters
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -413,10 +414,19 @@ export const TaskAssignmentTable = ({
   };
 
   // Handle edit document navigation
-  const handleEditDocument = (task: Task) => {
+  const handleEditDocument = async (task: Task) => {
     // Find the document that matches this task's chapter
     const document = documents.find((doc) => doc.chapter === task.chapter);
     if (document) {
+      try {
+        await updateDocumentContent({
+          documentId: document._id,
+          content: document.content,
+          userId: currentUserId as Id<"users">,
+        });
+      } catch {
+        // Optionally handle error
+      }
       const path = `/student/${currentUserId}/${mode}/docs/${document._id}`;
       router.push(path);
     }

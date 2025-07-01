@@ -122,7 +122,7 @@ export const HandledGroupsTable = ({
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b !border-gray-200">
                   <th
                     className="text-left pt-1 pb-3 px-4 font-medium text-gray-600 cursor-pointer"
                     onClick={() => onSort("name")}
@@ -232,7 +232,7 @@ export const HandledGroupsTable = ({
                   const approvedPercentage = Math.round(progress.approved);
 
                   return (
-                    <tr key={group._id} className="border-b hover:bg-gray-50">
+                    <tr key={group._id} className="border-b !border-gray-200 hover:bg-gray-50">
                       <td className="py-3 px-4">{groupName}</td>
                       <td className="py-3 px-4">
                         {group.capstone_title || "No title yet"}

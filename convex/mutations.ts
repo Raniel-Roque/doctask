@@ -1901,6 +1901,25 @@ export const updateDocumentContent = mutation({
         content: args.content,
       });
 
+      // Update the documentStatus last_modified field and status
+      const documentStatus = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) =>
+          q.eq("group_id", document.group_id).eq("document_part", document.chapter)
+        )
+        .first();
+
+      if (documentStatus) {
+        // If the document was rejected (status 3), change it back to not_submitted (status 0)
+        // since the user is making changes to address the rejection
+        const newStatus = documentStatus.review_status === 3 ? 0 : documentStatus.review_status;
+        
+        await ctx.db.patch(documentStatus._id, {
+          last_modified: Date.now(),
+          review_status: newStatus,
+        });
+      }
+
       return { success: true };
     } catch (error) {
       throw error;
