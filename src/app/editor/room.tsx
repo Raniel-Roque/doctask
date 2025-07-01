@@ -16,13 +16,15 @@ interface RoomProps {
   children?: ReactNode;
   title?: string;
   isEditable?: boolean;
-  userType?: "manager" | "member";
+  userType?: "manager" | "member" | "adviser";
   capstoneTitle?: string;
   groupId?: string;
   chapter?: string;
   saveToDatabase?: () => Promise<void>;
   liveDocumentId?: string;
   isVersionSnapshot?: boolean;
+  toolbarMode?: "default" | "adviserViewOnly";
+  backUrl?: string;
 }
 
 type User = {
@@ -32,13 +34,13 @@ type User = {
   color: string;
 };
 
-export function Room({ children, title, isEditable, userType, capstoneTitle, groupId, chapter, saveToDatabase, liveDocumentId, isVersionSnapshot }: RoomProps) {
+export function Room(props: RoomProps) {
   const params = useParams();
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Use live document ID for Liveblocks room, fallback to URL document ID
-  const roomId = liveDocumentId || (params.documentId as string);
+  const roomId = props.liveDocumentId || (params.documentId as string);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -149,19 +151,10 @@ export function Room({ children, title, isEditable, userType, capstoneTitle, gro
         <ClientSideSuspense
           fallback={<FullscreenLoader label="Loading document editor..." />}
         >
-          {title && isEditable !== undefined && userType ? (
-            <DocumentEditor
-              title={title}
-              isEditable={isEditable}
-              userType={userType}
-              capstoneTitle={capstoneTitle}
-              groupId={groupId}
-              chapter={chapter}
-              saveToDatabase={saveToDatabase}
-              isVersionSnapshot={isVersionSnapshot}
-            />
+          {props.title && props.isEditable !== undefined && props.userType ? (
+            <DocumentEditor {...props} />
           ) : (
-            children
+            props.children
           )}
         </ClientSideSuspense>
       </RoomProvider>

@@ -7,7 +7,9 @@ import {
 import { Editor } from "@tiptap/react";
 
 export function Threads({ editor }: { editor: Editor | null }) {
+  console.log("Threads component rendered", { editor: !!editor });
   const { threads } = useThreads({ query: { resolved: false } });
+  console.log("Threads loaded", { threadsCount: threads.length });
 
   return (
     <>

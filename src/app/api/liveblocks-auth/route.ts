@@ -33,8 +33,8 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  // Only students (role 0) can access documents
-  if (convexUser.role !== 0) {
+  // Only students (role 0) and advisers (role 1) can access documents
+  if (convexUser.role !== 0 && convexUser.role !== 1) {
     return new Response("Unauthorized", { status: 401 });
   }
 

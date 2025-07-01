@@ -1523,7 +1523,11 @@ export const getUserDocumentAccess = query({
       // Check if user has access to this document
       const isProjectManager = group.project_manager_id === args.userId;
       const isMember = group.member_ids.includes(args.userId);
-      const hasAccess = isProjectManager || isMember;
+      
+      // Check if user is an adviser assigned to this group
+      const isAdviser = group.adviser_id === args.userId;
+      
+      const hasAccess = isProjectManager || isMember || isAdviser;
 
       return { 
         hasAccess, 
@@ -1541,6 +1545,7 @@ export const getUserDocumentAccess = query({
           capstone_title: group.capstone_title,
           project_manager_id: group.project_manager_id,
           member_ids: group.member_ids,
+          adviser_id: group.adviser_id,
         } : null
       };
     } catch {
@@ -1562,11 +1567,12 @@ export const getDocuments = query({
         return { documents: [] };
       }
 
-      // Check if user is either project manager or a member
+      // Check if user is either project manager, member, or adviser
       const isProjectManager = group.project_manager_id === args.userId;
       const isMember = group.member_ids.includes(args.userId);
+      const isAdviser = group.adviser_id === args.userId;
       
-      if (!isProjectManager && !isMember) {
+      if (!isProjectManager && !isMember && !isAdviser) {
         return { documents: [] }; // User doesn't have access to this group
       }
 
@@ -1720,11 +1726,12 @@ export const getCurrentDocumentVersion = query({
         };
       }
 
-      // Check if user is part of this group (project manager or member)
+      // Check if user is part of this group (project manager, member, or adviser)
       const isProjectManager = group.project_manager_id === args.userId;
       const isMember = group.member_ids.includes(args.userId);
+      const isAdviser = group.adviser_id === args.userId;
       
-      if (!isProjectManager && !isMember) {
+      if (!isProjectManager && !isMember && !isAdviser) {
         return {
           document: null,
           success: false,
@@ -1773,11 +1780,12 @@ export const getLiveDocumentId = query({
         };
       }
 
-      // Check if user is part of this group (project manager or member)
+      // Check if user is part of this group (project manager, member, or adviser)
       const isProjectManager = group.project_manager_id === args.userId;
       const isMember = group.member_ids.includes(args.userId);
+      const isAdviser = group.adviser_id === args.userId;
       
-      if (!isProjectManager && !isMember) {
+      if (!isProjectManager && !isMember && !isAdviser) {
         return {
           documentId: null,
           success: false,

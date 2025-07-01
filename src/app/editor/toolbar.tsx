@@ -57,6 +57,7 @@ import { Button } from "@/components/ui/button";
 import { useEditorStore } from "@/store/use-editor-store";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import { Threads } from "./threads";
 
 interface NotificationState {
   message: string | null;
@@ -925,7 +926,11 @@ const ToolbarButton = ({
   );
 };
 
-export const Toolbar = () => {
+interface ToolbarProps {
+  toolbarMode?: "default" | "adviserViewOnly";
+}
+
+export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
   const { editor } = useEditorStore();
 
   const onPrint = () => {
@@ -954,6 +959,28 @@ export const Toolbar = () => {
       head.removeChild(printStyleElement);
     }, 1000);
   };
+
+  if (toolbarMode === "adviserViewOnly") {
+    return (
+      <div className="bg-[#F1F4F9] px-2.5 py-0.5 rounded-[24px] min-h-[40px] flex items-center gap-x-2 overflow-x-auto">
+        <button
+          onClick={onPrint}
+          className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80"
+        >
+          <PrinterIcon className="size-4" />
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().addPendingComment().run()}
+          className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80"
+        >
+          <MessageSquarePlusIcon className="size-4" />
+        </button>
+        <div className="flex items-center ml-2">
+          <Threads editor={editor} />
+        </div>
+      </div>
+    );
+  }
 
   const sections: {
     label: string;

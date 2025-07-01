@@ -59,7 +59,6 @@ const useSaveToDatabase = (
     // Always save to the live document, not the current document
     const targetDocumentId = liveDocumentData?.documentId;
     if (!targetDocumentId) {
-      console.error("Cannot save: Live document ID not found");
       return;
     }
 

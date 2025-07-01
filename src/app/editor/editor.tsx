@@ -67,7 +67,8 @@ const hexToRgba = (hex: string, alpha: number): string => {
 interface EditorProps {
   initialContent?: string;
   isEditable?: boolean;
-  userType?: "manager" | "member";
+  userType?: "manager" | "member" | "adviser";
+  suppressReadOnlyBanner?: boolean;
 }
 
 interface NotificationState {
@@ -79,6 +80,7 @@ export const Editor = ({
   initialContent,
   isEditable = true,
   userType = "manager",
+  suppressReadOnlyBanner = false,
 }: EditorProps) => {
   const { setEditor } = useEditorStore();
   const liveblocks = useLiveblocksExtension({
@@ -395,25 +397,27 @@ export const Editor = ({
   };
 
   return (
-    <div className="editor-container size-full overflow-x-auto bg-white px-4 print:p-0 print:bg-white print:overflow-visible">
-      <div className="print:hidden">
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={closeNotification}
-        />
-        {!isEditable && (
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center">
-            {getReadOnlyMessage()}
-          </div>
-        )}
-      </div>
-      <div className="min-w-max flex justify-center w-[816px] py-4 print:py-0 mx-auto print:w-full print:min-w-0 print:flex-none print:block">
-        <EditorContent editor={editor} />
+    <>
+      {!isEditable && !suppressReadOnlyBanner && (
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center w-full">
+          {getReadOnlyMessage()}
+        </div>
+      )}
+      <div className="editor-container size-full overflow-x-auto bg-white px-4 print:p-0 print:bg-white print:overflow-visible">
         <div className="print:hidden">
-          <Threads editor={editor} />
+          <NotificationBanner
+            message={notification.message}
+            type={notification.type}
+            onClose={closeNotification}
+          />
+        </div>
+        <div className="min-w-max flex justify-center w-[816px] py-4 print:py-0 mx-auto print:w-full print:min-w-0 print:flex-none print:block">
+          <EditorContent editor={editor} />
+          <div className="print:hidden">
+            <Threads editor={editor} />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };

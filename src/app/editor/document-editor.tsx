@@ -9,7 +9,7 @@ import { VersionHistoryPanel } from "./version-history-panel";
 
 interface DocumentEditorProps {
   isEditable?: boolean;
-  userType?: "manager" | "member";
+  userType?: "manager" | "member" | "adviser";
   title?: string;
   initialContent?: string;
   capstoneTitle?: string;
@@ -17,6 +17,8 @@ interface DocumentEditorProps {
   chapter?: string;
   saveToDatabase?: () => Promise<void>;
   isVersionSnapshot?: boolean;
+  toolbarMode?: "default" | "adviserViewOnly";
+  backUrl?: string;
 }
 
 export const DocumentEditor = ({
@@ -28,8 +30,10 @@ export const DocumentEditor = ({
   groupId,
   chapter,
   saveToDatabase,
-  isVersionSnapshot,
+  toolbarMode = "default",
+  backUrl,
 }: DocumentEditorProps) => {
+  console.log("DocumentEditor toolbarMode", toolbarMode, "isEditable", isEditable);
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
 
   const handleOpenVersionHistory = () => {
@@ -38,6 +42,14 @@ export const DocumentEditor = ({
 
   const handleCloseVersionHistory = () => {
     setIsVersionHistoryOpen(false);
+  };
+
+  // Full-width view-only banner
+  const getReadOnlyMessage = () => {
+    if (userType === "member") {
+      return "You are viewing this document in read-only mode. You need to be assigned to a related task to edit.";
+    }
+    return "You are viewing this document in read-only mode.";
   };
 
   return (
@@ -49,9 +61,16 @@ export const DocumentEditor = ({
           userType={userType} 
           capstoneTitle={capstoneTitle}
           onOpenVersionHistory={handleOpenVersionHistory}
-          isVersionSnapshot={isVersionSnapshot}
+          isVersionSnapshot={isVersionHistoryOpen}
+          backUrl={backUrl}
         />
-        {isEditable && <Toolbar />}
+        {(isEditable || toolbarMode === "adviserViewOnly") && <Toolbar toolbarMode={toolbarMode} />}
+        {/* View-only banner directly under navbar and toolbar */}
+        {!isEditable && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center w-full">
+            {getReadOnlyMessage()}
+          </div>
+        )}
       </div>
       <ImageDragDropWrapper>
         <div className="flex justify-center print:!block print:!w-full print:!p-0 print:!m-0">
@@ -60,6 +79,7 @@ export const DocumentEditor = ({
               initialContent={initialContent}
               isEditable={isEditable}
               userType={userType}
+              suppressReadOnlyBanner={true}
             />
           </div>
         </div>

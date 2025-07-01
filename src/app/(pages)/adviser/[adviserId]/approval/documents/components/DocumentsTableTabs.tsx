@@ -12,6 +12,8 @@ import {
   FaFileAlt,
 } from "react-icons/fa";
 import { User, Group } from "./types";
+import { useRouter } from "next/navigation";
+import { Id } from "../../../../../../../../convex/_generated/dataModel";
 
 interface DocumentsTableTabsProps {
   groups: Group[];
@@ -21,6 +23,7 @@ interface DocumentsTableTabsProps {
   pageSize: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  currentUserId: Id<"users">;
 }
 
 const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
@@ -31,7 +34,9 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
   pageSize,
   onPageChange,
   onPageSizeChange,
+  currentUserId,
 }) => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<string | null>(
     groups[0]?._id || null,
   );
@@ -101,6 +106,14 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
 
       return titleMatch || chapterMatch || statusMatch;
     }) || [];
+
+  const handleViewDocument = (documentId: string) => {
+    // Get current URL to preserve state
+    const currentUrl = window.location.pathname + window.location.search;
+    
+    // Navigate to the document view page with the current page as the "from" parameter
+    router.push(`/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -206,7 +219,10 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>Modified: {formatDate(doc.lastModified)}</span>
-                    <button className="text-blue-600 hover:text-blue-800 transition-colors">
+                    <button 
+                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                      onClick={() => handleViewDocument(doc._id)}
+                    >
                       <FaEye className="w-3 h-3" />
                     </button>
                   </div>

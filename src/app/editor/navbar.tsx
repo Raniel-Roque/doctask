@@ -40,10 +40,11 @@ import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner"
 interface NavbarProps {
   title?: string;
   viewOnly?: boolean;
-  userType?: "manager" | "member";
+  userType?: "manager" | "member" | "adviser";
   capstoneTitle?: string;
   onOpenVersionHistory?: () => void;
   isVersionSnapshot?: boolean;
+  backUrl?: string;
 }
 
 interface NotificationState {
@@ -58,6 +59,7 @@ export const Navbar = ({
   capstoneTitle = "",
   onOpenVersionHistory,
   isVersionSnapshot = false,
+  backUrl,
 }: NavbarProps) => {
   const [selectedRows, setSelectedRows] = useState(1);
   const [selectedCols, setSelectedCols] = useState(1);
@@ -436,7 +438,7 @@ export const Navbar = ({
     <nav className="flex items-center justify-between print:hidden">
       <div className="pl-4 py-1 flex gap-2 items-center">
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push(backUrl || "/")}
           className="hover:opacity-80 transition-opacity"
         >
           <Image src="/doctask.ico" alt="DocTask Logo" width={40} height={40} />

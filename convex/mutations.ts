@@ -1888,11 +1888,12 @@ export const updateDocumentContent = mutation({
         throw new Error("Group not found");
       }
 
-      // Check if user is part of this group (project manager or member)
+      // Check if user is part of this group (project manager, member, or adviser)
       const isProjectManager = group.project_manager_id === args.userId;
       const isMember = group.member_ids.includes(args.userId);
+      const isAdviser = group.adviser_id === args.userId;
       
-      if (!isProjectManager && !isMember) {
+      if (!isProjectManager && !isMember && !isAdviser) {
         throw new Error("You don't have permission to edit this document");
       }
 
@@ -1954,11 +1955,12 @@ export const updateDocumentRoomId = mutation({
         throw new Error("Group not found");
       }
 
-      // Check if user is part of this group (project manager or member)
+      // Check if user is part of this group (project manager, member, or adviser)
       const isProjectManager = group.project_manager_id === args.userId;
       const isMember = group.member_ids.includes(args.userId);
+      const isAdviser = group.adviser_id === args.userId;
       
-      if (!isProjectManager && !isMember) {
+      if (!isProjectManager && !isMember && !isAdviser) {
         throw new Error("You don't have permission to edit this document");
       }
 

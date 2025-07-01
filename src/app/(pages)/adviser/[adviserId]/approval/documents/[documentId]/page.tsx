@@ -1,25 +1,89 @@
 "use client";
 
-import { Navbar } from "../../../components/navbar";
 import { use } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../../../convex/_generated/dataModel";
+import { Room } from "../../../../../../editor/room";
+import { useSearchParams } from "next/navigation";
 
 interface AdviserViewDocsPageProps {
-  params: Promise<{ adviserId: string }>;
+  params: Promise<{ adviserId: string; documentId: string }>;
 }
 
 const AdviserViewDocsPage = ({ params }: AdviserViewDocsPageProps) => {
-  const { adviserId } = use(params);
+  const { adviserId, documentId } = use(params);
+  const searchParams = useSearchParams();
+  let backUrl = searchParams.get("from");
+  if (!backUrl) {
+    backUrl = `/adviser/${adviserId}/approval/documents`;
+  }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar adviserId={adviserId} />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Adviser ViewDocs</h1>
-          <p className="text-muted-foreground">Adviser ViewDocs</p>
+  // Fetch the document
+  const document = useQuery(api.fetch.getDocument, {
+    documentId: documentId as Id<"documents">,
+  });
+
+  // Fetch the group info if document exists
+  const group = useQuery(
+    api.fetch.getGroupById,
+    document?.group_id ? { groupId: document.group_id } : "skip"
+  );
+
+  // Fetch the live document ID for Liveblocks room
+  const liveDocumentResult = useQuery(
+    api.fetch.getLiveDocumentId,
+    document?.group_id && document?.chapter 
+      ? { 
+          groupId: document.group_id, 
+          chapter: document.chapter,
+          userId: adviserId as Id<"users">
+        } 
+      : "skip"
+  );
+
+  // Loading state
+  if (document === undefined || group === undefined || liveDocumentResult === undefined) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#B54A4A] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading document...</p>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  // Error state
+  if (!document || !group) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Document Not Found</h2>
+          <p className="text-gray-600 mb-4">The document you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.</p>
+          <button
+            onClick={() => window.history.back()}
+            className="px-4 py-2 bg-[#B54A4A] text-white rounded-md hover:bg-[#A03A3A] transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Room
+      isEditable={false}
+      userType="adviser"
+      title={document.title}
+      capstoneTitle={group.capstone_title}
+      groupId={group._id.toString()}
+      chapter={document.chapter}
+      liveDocumentId={liveDocumentResult?.documentId?.toString()}
+      toolbarMode="adviserViewOnly"
+      backUrl={backUrl}
+    />
   );
 };
 

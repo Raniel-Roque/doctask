@@ -12,6 +12,7 @@ import { User, Group, Document } from "./types";
 import { useMutation } from "convex/react";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../../../convex/_generated/api";
+import { useRouter } from "next/navigation";
 
 interface DocumentsTableProps {
   groups: Group[];
@@ -50,6 +51,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   currentUserId,
   initialExpandedGroupId,
 }) => {
+  const router = useRouter();
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
     initialExpandedGroupId || null,
   );
@@ -187,6 +189,14 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     } finally {
       setUpdatingStatus(null);
     }
+  };
+
+  const handleViewDocument = (documentId: string) => {
+    // Get current URL to preserve state
+    const currentUrl = window.location.pathname + window.location.search;
+    
+    // Navigate to the document view page with the current page as the "from" parameter
+    router.push(`/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`);
   };
 
   return (
@@ -452,6 +462,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           <button
                                             className="text-blue-600 hover:text-blue-800 transition-colors p-1"
                                             title="View Document"
+                                            onClick={() => handleViewDocument(doc._id)}
                                           >
                                             <FaEye className="w-4 h-4" />
                                           </button>
