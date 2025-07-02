@@ -12,7 +12,6 @@ import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
 import ResizeImage from "tiptap-extension-resize-image";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
@@ -182,14 +181,21 @@ export const Editor = ({
 
   const editor = useEditor({
     immediatelyRender: false,
+    editable: isEditable, // Disable editing when isEditable is false
     editorProps: {
       attributes: {
         style:
           "padding-left: 56px; padding-right:56px; font-family: 'Times New Roman', serif; font-size: 11px; line-height: 1.5; text-align: justify;",
         class:
-          "focus:outline-none bg-white border border-[#C7C7C7] print:border-none print:shadow-none print:m-0 print:p-0 flex flex-col min-h-[1054px] w-[816px] pt-10 pr-14 pb-10 cursor-text",
+          `focus:outline-none bg-white border border-[#C7C7C7] print:border-none print:shadow-none print:m-0 print:p-0 flex flex-col min-h-[1054px] w-[816px] pt-10 pr-14 pb-10 ${isEditable ? 'cursor-text' : 'cursor-default'}`,
       },
       handleDrop: (view, event, slice, moved) => {
+        // Disable all drop operations in view-only mode
+        if (!isEditable) {
+          event.preventDefault();
+          return true; // Prevent default handling
+        }
+        
         // If it's an internal move (repositioning existing content), let the default handler deal with it
         if (moved) {
           return false; // Let ProseMirror handle internal moves efficiently
@@ -232,6 +238,12 @@ export const Editor = ({
         return false;
       },
       handlePaste: (view, event) => {
+        // Disable paste operations in view-only mode
+        if (!isEditable) {
+          event.preventDefault();
+          return true; // Prevent default handling
+        }
+        
         const items = Array.from(event.clipboardData?.items || []);
         for (const item of items) {
           if (item.type.startsWith("image/")) {
@@ -252,6 +264,33 @@ export const Editor = ({
         }
         return false;
       },
+      // Disable all key events in view-only mode
+      handleKeyDown: (view, event) => {
+        if (!isEditable) {
+          // Allow only navigation keys and modifier keys
+          const allowedKeys = [
+            'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+            'Home', 'End', 'PageUp', 'PageDown',
+            'Tab', 'Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+            'Control', 'Alt', 'Shift', 'Meta'
+          ];
+          
+          if (!allowedKeys.includes(event.key)) {
+            event.preventDefault();
+            return true; // Prevent default handling
+          }
+        }
+        return false; // Let default handler deal with allowed keys
+      },
+      // Disable mouse interactions that could modify content in view-only mode
+      handleClick: () => {
+        if (!isEditable) {
+          // Allow clicks for navigation but prevent any content modification
+          // The editable: false should handle most cases, but this is extra protection
+          return false; // Let default handler deal with it
+        }
+        return false; // Let default handler deal with it
+      },
     },
     extensions: [
       StarterKit.configure({
@@ -266,21 +305,13 @@ export const Editor = ({
       TableRow,
       TableCell,
       TableHeader,
-      Image.configure({
-        HTMLAttributes: {
-          loading: 'lazy',
-          decoding: 'async',
-        },
-        allowBase64: true,
-        inline: false,
-      }),
       ResizeImage.configure({
         allowBase64: true,
         // Prevent unnecessary re-renders during drag operations
         HTMLAttributes: {
           loading: 'lazy',
           decoding: 'async',
-          draggable: true,
+          draggable: isEditable, // Only allow dragging when editable
         },
       }),
       TextStyle,

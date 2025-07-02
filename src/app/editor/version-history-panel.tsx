@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Clock, CheckCircle, Plus, Trash } from "lucide-react";
+import { X, Clock, CheckCircle, Plus, Trash, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
@@ -38,12 +38,13 @@ export const VersionHistoryPanel = ({
     type: "info",
   });
   const [isCreating, setIsCreating] = useState(false);
-  const [approvingVersionId, setApprovingVersionId] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [show, setShow] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [localVersions, setLocalVersions] = useState<Doc<"documents">[]>([]);
+  const [revertConfirmId, setRevertConfirmId] = useState<string | null>(null);
+  const [revertingId, setRevertingId] = useState<string | null>(null);
 
   const showNotification = (
     message: string,
@@ -150,7 +151,7 @@ export const VersionHistoryPanel = ({
       return;
     }
 
-    setApprovingVersionId(versionId);
+    setRevertingId(versionId);
     try {
       const result = await approveVersion({
         versionId: versionId as Id<"documents">,
@@ -159,8 +160,10 @@ export const VersionHistoryPanel = ({
 
       if (result.success && result.approvedContent) {
         // Update the editor content to sync with Liveblocks
+        // This will automatically clear any threads/comments since the content changes
         editor.commands.setContent(result.approvedContent);
-        showNotification("Version reverted and applied!", "success");
+        showNotification("Version reverted successfully!", "success");
+        setRevertConfirmId(null);
       } else {
         showNotification(result.error || "Failed to revert version", "error");
       }
@@ -170,7 +173,7 @@ export const VersionHistoryPanel = ({
         "error"
       );
     } finally {
-      setApprovingVersionId(null);
+      setRevertingId(null);
     }
   };
 
@@ -336,12 +339,12 @@ export const VersionHistoryPanel = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
-                          onClick={() => handleApproveVersion(version._id)}
-                          disabled={approvingVersionId === version._id}
+                          onClick={() => setRevertConfirmId(version._id)}
+                          disabled={revertingId === version._id}
                           size="sm"
                           variant="outline"
                         >
-                          {approvingVersionId === version._id ? (
+                          {revertingId === version._id ? (
                             "Reverting..."
                           ) : (
                             <>
@@ -369,6 +372,59 @@ export const VersionHistoryPanel = ({
         </div>
       </div>
 
+      {/* Revert Confirmation Dialog */}
+      {revertConfirmId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
+          <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 text-amber-600" />
+              Confirm Revert
+            </h2>
+            <p className="mb-4 text-gray-600">
+              Are you sure you want to revert to this version? This action will:
+            </p>
+            <ul className="mb-6 text-gray-600 text-sm space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-red-500 mt-1">•</span>
+                <span>Replace all current content with the selected version</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-500 mt-1">•</span>
+                <span>This action cannot be undone</span>
+              </li>
+            </ul>
+            <div className="flex justify-end gap-4 mt-8">
+              <button
+                onClick={() => setRevertConfirmId(null)}
+                className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
+                disabled={revertingId === revertConfirmId}
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </button>
+              <button
+                onClick={() => handleApproveVersion(revertConfirmId)}
+                className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                disabled={revertingId === revertConfirmId}
+              >
+                {revertingId === revertConfirmId ? (
+                  <>
+                    <span className="animate-spin"><CheckCircle className="h-4 w-4" /></span>
+                    Reverting...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    Revert Version
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
       {deleteConfirmId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
           <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">

@@ -48,10 +48,8 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const name =
-    user.fullName ??
-    user.username ??
-    `${convexUser.first_name} ${convexUser.last_name}`;
+  // Use the full name from Convex user data for consistency
+  const name = `${convexUser.first_name} ${convexUser.last_name}`;
   const nameToNumber = name
     .split("")
     .reduce((acc, char) => acc + char.charCodeAt(0), 0);

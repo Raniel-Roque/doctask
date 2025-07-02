@@ -183,6 +183,21 @@
   text-decoration: underline;
 }
 
+/* Collaborative cursor styles - ensure app font is used */
+.lb-user-cursor,
+[data-user-cursor],
+.liveblocks-cursor,
+.user-cursor,
+.lb-cursor,
+.lb-cursor-name,
+.lb-cursor-avatar,
+.lb-cursor-body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+}
+
 /* Thread styles - scoped to editor container */
 .editor-container .floating-threads {
   display: none;

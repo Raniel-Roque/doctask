@@ -1,16 +1,17 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import {
   LiveblocksProvider,
   RoomProvider,
   ClientSideSuspense,
 } from "@liveblocks/react/suspense";
-import { getUsers } from "./actions";
 import { FullscreenLoader } from "@/components/ui/fullscreen-loader";
 import { Button } from "@/components/ui/button";
 import { DocumentEditor } from "./document-editor";
+import { getUsers } from "./actions";
+import { Id } from "../../../convex/_generated/dataModel";
 
 interface RoomProps {
   children?: ReactNode;
@@ -22,17 +23,11 @@ interface RoomProps {
   chapter?: string;
   saveToDatabase?: () => Promise<void>;
   liveDocumentId?: string;
-  isVersionSnapshot?: boolean;
   toolbarMode?: "default" | "adviserViewOnly";
   backUrl?: string;
 }
 
-type User = {
-  id: string;
-  name: string;
-  avatar: string;
-  color: string;
-};
+type User = { id: string; name: string; avatar: string; color: string; };
 
 export function Room(props: RoomProps) {
   const params = useParams();
@@ -42,18 +37,19 @@ export function Room(props: RoomProps) {
   // Use live document ID for Liveblocks room, fallback to URL document ID
   const roomId = props.liveDocumentId || (params.documentId as string);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const fetchedUsers = await getUsers();
-        setUsers(fetchedUsers);
-      } catch {
-        setError("Failed to load users");
-      }
-    };
+  const fetchUsers = useCallback(async () => {
+    try {
+      // Get document ID from props or params
+      const documentId = props.liveDocumentId || (params.documentId as string);
+      const list = await getUsers(documentId as Id<"documents">);
+      setUsers(list);
+    } catch {
+    }
+  }, [props.liveDocumentId, params.documentId]);
 
+  useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   useEffect(() => {
     // Listen for authentication errors via global error handling
@@ -132,17 +128,19 @@ export function Room(props: RoomProps) {
       throttle={16}
       authEndpoint={"/api/liveblocks-auth"}
       resolveUsers={({ userIds }) =>
-        userIds.map((userId) => {
-          const user = users.find((user) => user.id === userId);
-          return user
-            ? {
-                name: user.name,
-                avatar: user.avatar,
-                color: user.color,
-              }
-            : undefined;
-        })
+        userIds.map((userId) => users.find((user) => user.id === userId) ?? undefined)
       }
+      resolveMentionSuggestions={({ text }) => {
+        let filteredUsers = users;
+
+        if (text) {
+          filteredUsers = users.filter((user) =>
+            user.name.toLowerCase().includes(text.toLowerCase())
+          );
+        }
+
+        return filteredUsers.map((user) => user.id);
+      }}
     >
       <RoomProvider
         id={roomId}

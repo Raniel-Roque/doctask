@@ -43,7 +43,6 @@ interface NavbarProps {
   userType?: "manager" | "member" | "adviser";
   capstoneTitle?: string;
   onOpenVersionHistory?: () => void;
-  isVersionSnapshot?: boolean;
   backUrl?: string;
 }
 
@@ -58,7 +57,6 @@ export const Navbar = ({
   userType = "manager",
   capstoneTitle = "",
   onOpenVersionHistory,
-  isVersionSnapshot = false,
   backUrl,
 }: NavbarProps) => {
   const [selectedRows, setSelectedRows] = useState(1);
@@ -446,11 +444,6 @@ export const Navbar = ({
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <div className="text-lg font-semibold">{title}</div>
-            {isVersionSnapshot && (
-              <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded-md border border-amber-200">
-                Version Snapshot (Read-Only)
-              </span>
-            )}
           </div>
           <Menubar className="border-none bg-transparent shadow-none h-auto p-0">
             {/* FILE */}

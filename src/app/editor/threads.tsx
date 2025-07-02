@@ -7,14 +7,15 @@ import {
 import { Editor } from "@tiptap/react";
 
 export function Threads({ editor }: { editor: Editor | null }) {
-  console.log("Threads component rendered", { editor: !!editor });
   const { threads } = useThreads({ query: { resolved: false } });
-  console.log("Threads loaded", { threadsCount: threads.length });
 
   return (
     <>
       <div className="anchored-threads">
-        <AnchoredThreads editor={editor} threads={threads} />
+        <AnchoredThreads 
+          editor={editor} 
+          threads={threads}
+        />
       </div>
       <FloatingThreads
         editor={editor}

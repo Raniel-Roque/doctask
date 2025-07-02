@@ -12,10 +12,12 @@ interface NotificationState {
 
 interface ImageDragDropWrapperProps {
   children: React.ReactNode;
+  isEditable?: boolean;
 }
 
 export const ImageDragDropWrapper = ({
   children,
+  isEditable = true,
 }: ImageDragDropWrapperProps) => {
   const { editor } = useEditorStore();
   const [notification, setNotification] = useState<NotificationState>({
@@ -110,6 +112,11 @@ export const ImageDragDropWrapper = ({
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    // Disable all drag operations in view-only mode
+    if (!isEditable) {
+      return;
+    }
+    
     // Only handle external file drops, not internal editor operations
     const hasFiles = Array.from(e.dataTransfer.types).includes("Files");
     const hasEditorContent = Array.from(e.dataTransfer.types).some(type => 
@@ -152,6 +159,13 @@ export const ImageDragDropWrapper = ({
   };
 
   const handleDrop = async (e: React.DragEvent) => {
+    // Disable all drop operations in view-only mode
+    if (!isEditable) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    
     // Check if this is an internal editor operation
     const hasEditorContent = Array.from(e.dataTransfer.types).some(type => 
       type.includes("text/html") || type.includes("text/plain") || type.includes("application/x-pm-slice")

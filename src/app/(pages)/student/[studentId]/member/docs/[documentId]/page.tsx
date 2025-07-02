@@ -288,8 +288,10 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       isEditable={isEditable} 
       userType="member" 
       capstoneTitle={userAccess?.group?.capstone_title}
+      groupId={document.group_id}
+      chapter={document.chapter}
+      saveToDatabase={saveToDatabase}
       liveDocumentId={liveDocumentData?.documentId || undefined}
-      isVersionSnapshot={isVersionSnapshot}
     />
   );
 };

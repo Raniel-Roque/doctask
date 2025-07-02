@@ -1815,3 +1815,32 @@ export const getLiveDocumentId = query({
     }
   },
 });
+
+export const getAdviserGroups = query({
+  args: {
+    adviserId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get the adviser's assigned groups from advisersTable
+      const adviser = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+        .first();
+
+      if (!adviser?.group_ids || adviser.group_ids.length === 0) {
+        return [];
+      }
+
+      // Get all groups and filter to only those assigned to this adviser
+      const groups = await ctx.db.query("groupsTable").collect();
+      const assignedGroups = groups.filter((group) =>
+        adviser.group_ids?.includes(group._id)
+      );
+
+      return assignedGroups;
+    } catch {
+      return [];
+    }
+  },
+});
