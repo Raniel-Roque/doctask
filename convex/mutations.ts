@@ -440,7 +440,7 @@ export const createGroup = mutation({
         group_id: groupId,
         document_part: documentPart,
         review_status: isPreApproved ? 2 : 0, // 2 = approved, 0 = not_submitted
-        review_notes: undefined,
+        note_ids: undefined,
         last_modified: undefined,
       });
     }
@@ -2107,5 +2107,168 @@ export const deleteDocumentVersion = mutation({
     }
     await ctx.db.delete(args.documentId);
     return { success: true };
+  },
+});
+
+// =========================================
+// NOTES OPERATIONS
+// =========================================
+
+export const createNote = mutation({
+  args: {
+    groupId: v.id("groupsTable"),
+    documentPart: v.string(),
+    content: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Check if the user is an adviser
+      const user = await ctx.db.get(args.userId);
+      if (!user || user.role !== 1) {
+        throw new Error("Only advisers can create notes");
+      }
+
+      // Check if the adviser is assigned to this group
+      const adviser = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
+        .first();
+
+      if (!adviser?.group_ids?.includes(args.groupId)) {
+        throw new Error("Adviser is not assigned to this group");
+      }
+
+      // Create the note
+      const noteId = await ctx.db.insert("notes", {
+        group_id: args.groupId,
+        document_part: args.documentPart,
+        content: args.content,
+      });
+
+      // Update documentStatus to include the new note
+      const existingStatus = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) =>
+          q.eq("group_id", args.groupId).eq("document_part", args.documentPart)
+        )
+        .first();
+
+      if (existingStatus) {
+        // Update existing status with new note
+        await ctx.db.patch(existingStatus._id, {
+          note_ids: [...(existingStatus.note_ids || []), noteId],
+        });
+      } else {
+        // Create new status entry with note
+        await ctx.db.insert("documentStatus", {
+          group_id: args.groupId,
+          document_part: args.documentPart,
+          review_status: 0, // Default to not_submitted
+          note_ids: [noteId],
+          last_modified: Date.now(),
+        });
+      }
+
+      return { success: true, noteId };
+    } catch (error) {
+      throw error;
+    }
+  },
+});
+
+export const updateNote = mutation({
+  args: {
+    noteId: v.id("notes"),
+    content: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Check if the user is an adviser
+      const user = await ctx.db.get(args.userId);
+      if (!user || user.role !== 1) {
+        throw new Error("Only advisers can update notes");
+      }
+
+      // Get the note
+      const note = await ctx.db.get(args.noteId);
+      if (!note) {
+        throw new Error("Note not found");
+      }
+
+      // Check if the adviser is assigned to this group
+      const adviser = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
+        .first();
+
+      if (!adviser?.group_ids?.includes(note.group_id)) {
+        throw new Error("Adviser is not assigned to this group");
+      }
+
+      // Update the note
+      await ctx.db.patch(args.noteId, {
+        content: args.content,
+      });
+
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  },
+});
+
+export const deleteNote = mutation({
+  args: {
+    noteId: v.id("notes"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Check if the user is an adviser
+      const user = await ctx.db.get(args.userId);
+      if (!user || user.role !== 1) {
+        throw new Error("Only advisers can delete notes");
+      }
+
+      // Get the note
+      const note = await ctx.db.get(args.noteId);
+      if (!note) {
+        throw new Error("Note not found");
+      }
+
+      // Check if the adviser is assigned to this group
+      const adviser = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
+        .first();
+
+      if (!adviser?.group_ids?.includes(note.group_id)) {
+        throw new Error("Adviser is not assigned to this group");
+      }
+
+      // Remove the note from documentStatus
+      const existingStatus = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) =>
+          q.eq("group_id", note.group_id).eq("document_part", note.document_part)
+        )
+        .first();
+
+      if (existingStatus && existingStatus.note_ids) {
+        const updatedNoteIds = existingStatus.note_ids.filter(id => id !== args.noteId);
+        await ctx.db.patch(existingStatus._id, {
+          note_ids: updatedNoteIds.length > 0 ? updatedNoteIds : undefined,
+        });
+      }
+
+      // Delete the note
+      await ctx.db.delete(args.noteId);
+
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
   },
 });

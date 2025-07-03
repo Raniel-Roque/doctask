@@ -260,7 +260,7 @@ export const restoreDocumentStatus = mutation({
     group_id: v.id("groupsTable"),
     document_part: v.string(),
     review_status: v.number(),
-    review_notes: v.optional(v.string()),
+    note_ids: v.optional(v.array(v.id("notes"))),
     last_modified: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -268,8 +268,25 @@ export const restoreDocumentStatus = mutation({
       group_id: args.group_id,
       document_part: args.document_part,
       review_status: args.review_status,
-      review_notes: args.review_notes,
+      note_ids: args.note_ids,
       last_modified: args.last_modified,
+    });
+
+    return { success: true };
+  },
+});
+
+export const restoreNote = mutation({
+  args: {
+    group_id: v.id("groupsTable"),
+    document_part: v.string(),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("notes", {
+      group_id: args.group_id,
+      document_part: args.document_part,
+      content: args.content,
     });
 
     return { success: true };

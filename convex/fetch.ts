@@ -1844,3 +1844,37 @@ export const getAdviserGroups = query({
     }
   },
 });
+
+// =========================================
+// NOTES QUERIES
+// =========================================
+
+export const getDocumentNotes = query({
+  args: {
+    groupId: v.id("groupsTable"),
+    documentPart: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get all notes for this document, ordered by creation time (oldest first)
+      const notes = await ctx.db
+        .query("notes")
+        .withIndex("by_group_document", (q) =>
+          q.eq("group_id", args.groupId).eq("document_part", args.documentPart)
+        )
+        .order("asc") // Oldest first
+        .collect();
+
+      return {
+        notes,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        notes: [],
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch notes",
+      };
+    }
+  },
+});

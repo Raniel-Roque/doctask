@@ -214,7 +214,7 @@ export default defineSchema({
     group_id: v.id("groupsTable"),
     document_part: v.string(), // e.g., "chapter1", "appendix_a", etc.
     review_status: v.number(), // 0 = not_submitted, 1 = submitted, 2 = approved, 3 = rejected
-    review_notes: v.optional(v.string()), // Feedback from reviewer
+    note_ids: v.optional(v.array(v.id("notes"))), // Array of note IDs for this document
     last_modified: v.optional(v.number()), // timestamp (ms since epoch), optional
   })
     .index("by_group", ["group_id"])
@@ -222,4 +222,16 @@ export default defineSchema({
     .index("by_review_status", ["review_status"])
     .index("by_group_document", ["group_id", "document_part"])
     .index("by_group_review_status", ["group_id", "review_status"]),
+
+  // =========================================
+  // Notes Table (For document review notes)
+  // =========================================
+  notes: defineTable({
+    group_id: v.id("groupsTable"),
+    document_part: v.string(), // e.g., "chapter1", "appendix_a", etc.
+    content: v.string(), // The note content
+  })
+    .index("by_group", ["group_id"])
+    .index("by_document", ["document_part"])
+    .index("by_group_document", ["group_id", "document_part"]),
 });

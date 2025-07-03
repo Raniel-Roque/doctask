@@ -13,6 +13,7 @@ import { useMutation } from "convex/react";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
+import NotesPopup from "./NotesPopup";
 
 interface DocumentsTableProps {
   groups: Group[];
@@ -57,6 +58,12 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   );
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [notesPopupOpen, setNotesPopupOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<{
+    groupId: Id<"groupsTable">;
+    documentPart: string;
+    documentTitle: string;
+  } | null>(null);
   const groupRowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>(
     {},
   );
@@ -197,6 +204,20 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     
     // Navigate to the document view page with the current page as the "from" parameter
     router.push(`/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`);
+  };
+
+  const handleNotesClick = (doc: Document, group: Group) => {
+    setSelectedDocument({
+      groupId: group._id as Id<"groupsTable">,
+      documentPart: doc.chapter,
+      documentTitle: doc.title,
+    });
+    setNotesPopupOpen(true);
+  };
+
+  const closeNotesPopup = () => {
+    setNotesPopupOpen(false);
+    setSelectedDocument(null);
   };
 
   return (
@@ -469,6 +490,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           <button
                                             className="text-green-600 hover:text-green-800 transition-colors p-1"
                                             title="Add/Edit Notes"
+                                            onClick={() => handleNotesClick(doc, group)}
                                           >
                                             <FaStickyNote className="w-4 h-4" />
                                           </button>
@@ -562,6 +584,17 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
           </div>
         </div>
       </div>
+
+      {notesPopupOpen && selectedDocument && (
+        <NotesPopup
+          isOpen={notesPopupOpen}
+          onClose={closeNotesPopup}
+          groupId={selectedDocument.groupId}
+          documentPart={selectedDocument.documentPart}
+          documentTitle={selectedDocument.documentTitle}
+          currentUserId={currentUserId}
+        />
+      )}
     </div>
   );
 };

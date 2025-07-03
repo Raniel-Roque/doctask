@@ -10,10 +10,12 @@ import {
   FaClock,
   FaTimes,
   FaFileAlt,
+  FaStickyNote,
 } from "react-icons/fa";
-import { User, Group } from "./types";
+import { User, Group, Document } from "./types";
 import { useRouter } from "next/navigation";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
+import NotesPopup from "./NotesPopup";
 
 interface DocumentsTableTabsProps {
   groups: Group[];
@@ -41,6 +43,12 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
     groups[0]?._id || null,
   );
   const [searchTerm, setSearchTerm] = useState("");
+  const [notesPopupOpen, setNotesPopupOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<{
+    groupId: Id<"groupsTable">;
+    documentPart: string;
+    documentTitle: string;
+  } | null>(null);
 
   const getFullName = (user: User) => {
     return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
@@ -113,6 +121,20 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
     
     // Navigate to the document view page with the current page as the "from" parameter
     router.push(`/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`);
+  };
+
+  const handleNotesClick = (doc: Document, group: Group) => {
+    setSelectedDocument({
+      groupId: group._id as Id<"groupsTable">,
+      documentPart: doc.chapter,
+      documentTitle: doc.title,
+    });
+    setNotesPopupOpen(true);
+  };
+
+  const closeNotesPopup = () => {
+    setNotesPopupOpen(false);
+    setSelectedDocument(null);
   };
 
   return (
@@ -219,12 +241,22 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>Modified: {formatDate(doc.lastModified)}</span>
-                    <button 
-                      className="text-blue-600 hover:text-blue-800 transition-colors"
-                      onClick={() => handleViewDocument(doc._id)}
-                    >
-                      <FaEye className="w-3 h-3" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        onClick={() => handleViewDocument(doc._id)}
+                        title="View Document"
+                      >
+                        <FaEye className="w-3 h-3" />
+                      </button>
+                      <button 
+                        className="text-green-600 hover:text-green-800 transition-colors"
+                        onClick={() => handleNotesClick(doc, activeGroup)}
+                        title="Add/Edit Notes"
+                      >
+                        <FaStickyNote className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -305,6 +337,18 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Notes Popup */}
+      {notesPopupOpen && selectedDocument && (
+        <NotesPopup
+          isOpen={notesPopupOpen}
+          onClose={closeNotesPopup}
+          groupId={selectedDocument.groupId}
+          documentPart={selectedDocument.documentPart}
+          documentTitle={selectedDocument.documentTitle}
+          currentUserId={currentUserId}
+        />
+      )}
     </div>
   );
 };
