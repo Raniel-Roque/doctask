@@ -19,6 +19,7 @@ import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { UnsavedChangesConfirmation } from "@/app/(pages)/components/UnsavedChangesConfirmation";
+import DeleteNoteConfirmation from "./DeleteNoteConfirmation";
 
 interface NotesPopupProps {
   isOpen: boolean;
@@ -61,6 +62,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   const [pageSize, setPageSize] = useState(5);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<null | Id<"notes">>(null);
 
   // Fetch notes
   const notesResult = useQuery(api.fetch.getDocumentNotes, {
@@ -218,13 +220,13 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
     }
   };
 
-  const handleDeleteNote = async (noteId: Id<"notes">) => {
+  const handleDeleteNote = async () => {
+    if (!pendingDeleteNoteId) return;
     try {
       await deleteNote({
-        noteId,
+        noteId: pendingDeleteNoteId,
         userId: currentUserId,
       });
-      // Adjust current page if we're on the last page and it becomes empty
       if (currentPage > 1 && notes.length === 1) {
         setCurrentPage(currentPage - 1);
       }
@@ -232,6 +234,8 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
     } catch (error) {
       console.error("Failed to delete note:", error);
       showNotification("Failed to delete note. Please try again.", "error");
+    } finally {
+      setPendingDeleteNoteId(null);
     }
   };
 
@@ -421,7 +425,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                               <FaEdit className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteNote(note._id)}
+                              onClick={() => setPendingDeleteNoteId(note._id)}
                               className="text-red-600 hover:text-red-800 transition-colors p-1"
                               title="Delete Note"
                             >
@@ -590,6 +594,14 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
         onContinue={handleContinueAction}
         onCancel={handleCancelAction}
       />
+
+      {pendingDeleteNoteId && (
+        <DeleteNoteConfirmation
+          isOpen={true}
+          onConfirm={handleDeleteNote}
+          onCancel={() => setPendingDeleteNoteId(null)}
+        />
+      )}
     </>
   );
 };
