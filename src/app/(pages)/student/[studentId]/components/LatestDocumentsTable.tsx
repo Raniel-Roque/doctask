@@ -5,12 +5,15 @@ import {
   FaPlus,
   FaCheck,
   FaTimes,
+  FaStickyNote,
 } from "react-icons/fa";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
+import NotesPopupViewOnly from "./NotesPopupViewOnly";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 
 interface Document {
   _id: Id<"documents">;
@@ -131,11 +134,18 @@ export const LatestDocumentsTable = ({
 
   // Add state for status filter
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  // Add state for task status filter
+  const [selectedTaskStatus, setSelectedTaskStatus] = useState<string>("all");
 
   // Add state for advanced details dropdown
   const [openDetails, setOpenDetails] = useState<"documents" | "tasks" | null>(
     null,
   );
+
+  const [notesPopupOpen, setNotesPopupOpen] = useState(false);
+  const [notesPopupDoc, setNotesPopupDoc] = useState<Document | null>(null);
+
+  const [notification, setNotification] = useState<{ message: string; type: "success" | "error" | "info" | "warning" } | null>(null);
 
   const handleToggleDetails = (detailType: "documents" | "tasks") => {
     setOpenDetails((prev) => (prev === detailType ? null : detailType));
@@ -165,17 +175,33 @@ export const LatestDocumentsTable = ({
 
   // Status options for the dropdown
   const statusOptions = [
-    { value: "all", label: "STATUS" },
-    { value: "0", label: "NOT SUBMITTED" },
-    { value: "1", label: "IN REVIEW" },
-    { value: "2", label: "APPROVED" },
-    { value: "3", label: "REJECTED" },
+    { value: "all", label: "Document Status" },
+    { value: "0", label: "Not Submitted" },
+    { value: "1", label: "In Review" },
+    { value: "2", label: "Approved" },
+    { value: "3", label: "Rejected" },
   ];
 
-  // Filter documents based on selected status
+  const taskStatusOptions = [
+    { value: "all", label: "Task Status" },
+    { value: "1", label: "Complete" },
+    { value: "0", label: "Incomplete" },
+  ];
+
+  // Helper to get task status for a document
+  const getTaskStatus = (doc: Document) => {
+    if (["title_page", "appendix_a", "appendix_d"].includes(doc.chapter)) return 1;
+    const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
+    if (relatedTasks.length === 0) return 0;
+    return relatedTasks.every((task) => task.task_status === 1) ? 1 : 0;
+  };
+
+  // Filter documents based on selected status and task status
   const filteredDocuments = documents.filter((doc) => {
-    if (selectedStatus === "all") return true;
-    return doc.status === parseInt(selectedStatus);
+    const docStatusMatch = selectedStatus === "all" || doc.status === parseInt(selectedStatus);
+    const taskStatus = getTaskStatus(doc);
+    const taskStatusMatch = selectedTaskStatus === "all" || taskStatus === parseInt(selectedTaskStatus);
+    return docStatusMatch && taskStatusMatch;
   });
 
   // Documents that are view/download only
@@ -380,7 +406,7 @@ export const LatestDocumentsTable = ({
                   className="text-gray-600 hover:text-gray-800 transition-colors p-2 border border-gray-200 rounded-full shadow-sm bg-white"
                   title="Download all documents"
                 >
-                  <FaDownload className="w-5 h-5" />
+                  <FaDownload className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -634,6 +660,24 @@ export const LatestDocumentsTable = ({
                   </th>
                   <th
                     scope="col"
+                    className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider relative"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <select
+                        className="ml-2 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
+                        value={selectedTaskStatus}
+                        onChange={(e) => setSelectedTaskStatus(e.target.value)}
+                      >
+                        {taskStatusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </th>
+                  <th
+                    scope="col"
                     className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider"
                   >
                     Last Modified
@@ -650,7 +694,7 @@ export const LatestDocumentsTable = ({
                 {status === "loading" && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-6 pt-7 pb-1 text-center text-gray-500"
                     >
                       Loading...
@@ -660,7 +704,7 @@ export const LatestDocumentsTable = ({
                 {status === "no_group" && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-6 pt-7 pb-1 text-center text-red-500"
                     >
                       You are not currently assigned to a group. Please contact
@@ -671,7 +715,7 @@ export const LatestDocumentsTable = ({
                 {status === "error" && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-6 pt-7 pb-1 text-center text-red-500"
                     >
                       An error occurred while loading documents. Please try
@@ -684,7 +728,7 @@ export const LatestDocumentsTable = ({
                   documents.length === 0 && (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="px-6 pt-7 pb-1 text-center text-gray-500"
                       >
                         No documents available.
@@ -697,7 +741,7 @@ export const LatestDocumentsTable = ({
                   filteredDocuments.length === 0 && (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="px-6 pt-7 pb-1 text-center text-gray-500"
                       >
                         No documents found.
@@ -721,32 +765,33 @@ export const LatestDocumentsTable = ({
                         {STATUS_LABELS[doc.status] || STATUS_LABELS[0]}
                       </span>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTaskStatus(doc) === 1 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{getTaskStatus(doc) === 1 ? 'Complete' : 'Incomplete'}</span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                       {formatLastModified(doc.last_modified)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      <div className="flex items-center justify-center gap-3">
-                        <button
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
-                          title="View Document"
-                          onClick={() => handleViewDocument(doc)}
-                        >
-                          <FaEye className="w-5 h-5" />
-                        </button>
-                        <button
-                          className="text-green-600 hover:text-green-800 transition-colors"
-                          title="Download Document"
-                        >
-                          <FaDownload className="w-5 h-5" />
+                      <div className="flex items-center gap-2 justify-center">
+                        <button className="text-blue-600 hover:text-blue-800 transition-colors" title="View Document" onClick={() => handleViewDocument(doc)}>
+                          <FaEye className="w-4 h-4" />
                         </button>
                         {canEditDocument(doc) && (
-                          <button
-                            className="text-purple-600 hover:text-purple-800 transition-colors"
-                            title="Edit Document"
-                            onClick={() => handleEditDocument(doc)}
-                          >
-                            <FaEdit className="w-5 h-5" />
+                          <button className="text-purple-600 hover:text-purple-800 transition-colors" title="Edit Document" onClick={() => handleEditDocument(doc)}>
+                            <FaEdit className="w-4 h-4" />
                           </button>
+                        )}
+                        <button className="text-green-600 hover:text-green-800 transition-colors" title="Download Document">
+                          <FaDownload className="w-4 h-4" />
+                        </button>
+                        {/* Only show Notes and Submit for non-excluded chapters */}
+                        {!["title_page", "appendix_a", "appendix_d"].includes(doc.chapter) && (
+                          <>
+                            <span className="mx-2 text-gray-300 select-none">|</span>
+                            <button className="text-yellow-500 hover:text-yellow-600 transition-colors" title="View Notes" onClick={() => { setNotesPopupDoc(doc); setNotesPopupOpen(true); }}>
+                              <FaStickyNote className="w-4 h-4" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -757,6 +802,24 @@ export const LatestDocumentsTable = ({
           </div>
         </div>
       </div>
+
+      {notesPopupOpen && notesPopupDoc && (
+        <NotesPopupViewOnly
+          isOpen={notesPopupOpen}
+          onClose={() => setNotesPopupOpen(false)}
+          groupId={notesPopupDoc.group_id}
+          documentPart={notesPopupDoc.chapter}
+          documentTitle={notesPopupDoc.title}
+        />
+      )}
+
+      {notification && (
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };
