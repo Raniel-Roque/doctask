@@ -205,21 +205,8 @@ export const UserTable = ({
   // =========================================
   // Data Processing
   // =========================================
-  const filterAndSortUsers = () => {
-    return users;
-  };
-
-  const getPaginationInfo = (users: User[]) => {
-    return {
-      paginatedUsers: users,
-    };
-  };
-
-  // =========================================
-  // Data Processing Results
-  // =========================================
-  const filteredAndSortedUsers = filterAndSortUsers();
-  const { paginatedUsers } = getPaginationInfo(filteredAndSortedUsers);
+  // No client-side pagination: users is already paginated from parent
+  const paginatedUsers = users;
 
   // =========================================
   // Collapsible Text Component

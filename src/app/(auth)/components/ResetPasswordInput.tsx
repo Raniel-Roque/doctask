@@ -50,6 +50,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white disabled:bg-gray-50 disabled:opacity-100"
         placeholder="New Password"
         disabled={loading}
+        autoComplete={showPassword ? "off" : "new-password"}
       />
       <button
         type="button"
@@ -85,6 +86,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white disabled:bg-gray-50 disabled:opacity-100"
         placeholder="Confirm Password"
         disabled={loading}
+        autoComplete={showConfirmPassword ? "off" : "new-password"}
       />
       <button
         type="button"

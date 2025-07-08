@@ -7,7 +7,11 @@ interface DeleteNoteConfirmationProps {
   onCancel: () => void;
 }
 
-const DeleteNoteConfirmation: React.FC<DeleteNoteConfirmationProps> = ({ isOpen, onConfirm, onCancel }) => {
+const DeleteNoteConfirmation: React.FC<DeleteNoteConfirmationProps> = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+}) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -19,7 +23,8 @@ const DeleteNoteConfirmation: React.FC<DeleteNoteConfirmationProps> = ({ isOpen,
           <h3 className="text-lg font-semibold">Delete Note</h3>
         </div>
         <p className="text-gray-600 mb-6">
-          Are you sure you want to delete this note? This action cannot be undone.
+          Are you sure you want to delete this note? This action cannot be
+          undone.
         </p>
         <div className="flex justify-end gap-3">
           <button
@@ -40,4 +45,4 @@ const DeleteNoteConfirmation: React.FC<DeleteNoteConfirmationProps> = ({ isOpen,
   );
 };
 
-export default DeleteNoteConfirmation; 
+export default DeleteNoteConfirmation;

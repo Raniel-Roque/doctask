@@ -117,7 +117,9 @@ export const TaskAssignmentTable = ({
   // Add Convex mutations
   const updateTaskStatus = useMutation(api.mutations.updateTaskStatus);
   const updateTaskAssignment = useMutation(api.mutations.updateTaskAssignment);
-  const updateDocumentContent = useMutation(api.mutations.updateDocumentContent);
+  const updateDocumentContent = useMutation(
+    api.mutations.updateDocumentContent,
+  );
 
   // Add state for status filter and expanded chapters
   const [selectedStatus, setSelectedStatus] = useState<string>("all");

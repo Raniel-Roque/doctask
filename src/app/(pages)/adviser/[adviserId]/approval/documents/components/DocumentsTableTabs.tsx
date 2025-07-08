@@ -118,9 +118,11 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
   const handleViewDocument = (documentId: string) => {
     // Get current URL to preserve state
     const currentUrl = window.location.pathname + window.location.search;
-    
+
     // Navigate to the document view page with the current page as the "from" parameter
-    router.push(`/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`);
+    router.push(
+      `/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`,
+    );
   };
 
   const handleNotesClick = (doc: Document, group: Group) => {
@@ -242,14 +244,14 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>Modified: {formatDate(doc.lastModified)}</span>
                     <div className="flex items-center gap-2">
-                      <button 
+                      <button
                         className="text-blue-600 hover:text-blue-800 transition-colors"
                         onClick={() => handleViewDocument(doc._id)}
                         title="View Document"
                       >
                         <FaEye className="w-3 h-3" />
                       </button>
-                      <button 
+                      <button
                         className="text-green-600 hover:text-green-800 transition-colors"
                         onClick={() => handleNotesClick(doc, activeGroup)}
                         title="Add/Edit Notes"

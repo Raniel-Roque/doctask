@@ -201,9 +201,11 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   const handleViewDocument = (documentId: string) => {
     // Get current URL to preserve state
     const currentUrl = window.location.pathname + window.location.search;
-    
+
     // Navigate to the document view page with the current page as the "from" parameter
-    router.push(`/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`);
+    router.push(
+      `/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`,
+    );
   };
 
   const handleNotesClick = (doc: Document, group: Group) => {
@@ -483,14 +485,18 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           <button
                                             className="text-blue-600 hover:text-blue-800 transition-colors p-1"
                                             title="View Document"
-                                            onClick={() => handleViewDocument(doc._id)}
+                                            onClick={() =>
+                                              handleViewDocument(doc._id)
+                                            }
                                           >
                                             <FaEye className="w-4 h-4" />
                                           </button>
                                           <button
                                             className="text-green-600 hover:text-green-800 transition-colors p-1"
                                             title="Add/Edit Notes"
-                                            onClick={() => handleNotesClick(doc, group)}
+                                            onClick={() =>
+                                              handleNotesClick(doc, group)
+                                            }
                                           >
                                             <FaStickyNote className="w-4 h-4" />
                                           </button>

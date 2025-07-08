@@ -4,6 +4,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { clerkClient, auth } from "@clerk/nextjs/server";
 import { generatePassword } from "@/utils/passwordGeneration";
 import { Resend } from "resend";
+import { Id } from "../../../../../convex/_generated/dataModel";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -16,6 +17,124 @@ interface BackupUser {
   middle_name?: string;
   role: number;
   subrole?: number;
+  isDeleted?: boolean;
+}
+
+interface BackupGroup {
+  _id: string;
+  project_manager_id: string;
+  member_ids: string[];
+  adviser_id?: string;
+  requested_adviser?: string;
+  capstone_title?: string;
+  grade?: number;
+  isDeleted?: boolean;
+}
+
+interface BackupStudent {
+  _id: string;
+  user_id: string;
+  group_id?: string;
+  gender?: number;
+  dateOfBirth?: string;
+  placeOfBirth?: string;
+  nationality?: string;
+  civilStatus?: number;
+  religion?: string;
+  homeAddress?: string;
+  contact?: string;
+  tertiaryDegree?: string;
+  tertiarySchool?: string;
+  secondarySchool?: string;
+  secondaryAddress?: string;
+  primarySchool?: string;
+  primaryAddress?: string;
+  isDeleted?: boolean;
+}
+
+interface BackupAdviser {
+  _id: string;
+  adviser_id: string;
+  code: string;
+  group_ids?: string[];
+  requests_group_ids?: string[];
+  isDeleted?: boolean;
+}
+
+interface BackupDocument {
+  _id: string;
+  group_id: string;
+  chapter: string;
+  title: string;
+  content: string;
+  isDeleted?: boolean;
+}
+
+interface BackupDocumentStatus {
+  _id: string;
+  group_id: string;
+  document_part: string;
+  review_status: number;
+  note_ids?: string[];
+  last_modified?: number;
+  isDeleted?: boolean;
+}
+
+interface BackupTaskAssignment {
+  _id: string;
+  group_id: string;
+  chapter: string;
+  section: string;
+  title: string;
+  task_status: number;
+  assigned_student_ids: string[];
+  isDeleted?: boolean;
+}
+
+interface BackupImage {
+  _id: string;
+  file_id: string;
+  filename: string;
+  content_type: string;
+  size: number;
+  group_id: string;
+  uploaded_by: string;
+  alt_text?: string;
+  url: string;
+  isDeleted?: boolean;
+}
+
+interface BackupNote {
+  _id: string;
+  group_id: string;
+  document_part: string;
+  content: string;
+  isDeleted?: boolean;
+}
+
+interface BackupData {
+  timestamp: string;
+  version: string;
+  tables: {
+    users: BackupUser[];
+    groups: BackupGroup[];
+    students: BackupStudent[];
+    advisers: BackupAdviser[];
+    logs: unknown[];
+    documents: BackupDocument[];
+    taskAssignments: BackupTaskAssignment[];
+    documentStatus: BackupDocumentStatus[];
+    notes: BackupNote[];
+    images: BackupImage[];
+  };
+  files: Record<
+    string,
+    {
+      content: string;
+      filename: string;
+      content_type: string;
+    }
+  >;
 }
 
 export async function POST(request: Request) {
@@ -39,6 +158,8 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    const backupData = backup as BackupData;
 
     // Delete from Convex first
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -88,8 +209,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const usersToCreate = backup.tables.users.filter(
-      (user: BackupUser) => user.role !== 2,
+    const usersToCreate = backupData.tables.users.filter(
+      (user: BackupUser) => user.role !== 2 && !user.isDeleted,
     );
     const clerkResults = [];
 
@@ -159,12 +280,17 @@ export async function POST(request: Request) {
 
     const idMap = new Map(clerkResults.map((r) => [r.oldId, r.newId]));
     const oldUserIdToNewUserId = new Map();
-    for (const user of backup.tables.users) {
+    for (const user of backupData.tables.users) {
       if (user.role === 2) continue; // Skip instructor
-      const newClerkId = idMap.get(user.clerk_id);
+
+      // For deleted users, use a placeholder clerk_id since we won't create a Clerk account
+      const newClerkId = user.isDeleted
+        ? `deleted_${user._id}`
+        : idMap.get(user.clerk_id);
       if (!newClerkId) {
         continue;
       }
+
       // Insert user and keep mapping from old _id to new _id
       const result = await convex.mutation(api.restore.restoreUser, {
         clerk_id: newClerkId,
@@ -174,13 +300,14 @@ export async function POST(request: Request) {
         role: user.role,
         middle_name: user.middle_name,
         subrole: user.subrole,
+        isDeleted: user.isDeleted ?? false,
       });
       oldUserIdToNewUserId.set(user._id, result.userId);
     }
 
     // First restore all groups
     const oldGroupIdToNewGroupId = new Map();
-    for (const group of backup.tables.groups) {
+    for (const group of backupData.tables.groups) {
       const newProjectManagerId = oldUserIdToNewUserId.get(
         group.project_manager_id,
       );
@@ -195,12 +322,13 @@ export async function POST(request: Request) {
         member_ids: newMemberIds,
         adviser_id: newAdviserId,
         capstone_title: group.capstone_title,
+        isDeleted: group.isDeleted ?? false,
       });
       oldGroupIdToNewGroupId.set(group._id, result.groupId);
     }
 
     // Then restore student entries
-    for (const student of backup.tables.students) {
+    for (const student of backupData.tables.students) {
       const newUserId = oldUserIdToNewUserId.get(student.user_id);
       const newGroupId = student.group_id
         ? oldGroupIdToNewGroupId.get(student.group_id)
@@ -208,48 +336,87 @@ export async function POST(request: Request) {
       await convex.mutation(api.restore.restoreStudentEntry, {
         user_id: newUserId,
         group_id: newGroupId ?? null,
+        gender: student.gender,
+        dateOfBirth: student.dateOfBirth,
+        placeOfBirth: student.placeOfBirth,
+        nationality: student.nationality,
+        civilStatus: student.civilStatus,
+        religion: student.religion,
+        homeAddress: student.homeAddress,
+        contact: student.contact,
+        tertiaryDegree: student.tertiaryDegree,
+        tertiarySchool: student.tertiarySchool,
+        secondarySchool: student.secondarySchool,
+        secondaryAddress: student.secondaryAddress,
+        primarySchool: student.primarySchool,
+        primaryAddress: student.primaryAddress,
+        isDeleted: student.isDeleted ?? false,
       });
     }
 
     // Finally restore adviser codes
-    for (const adviser of backup.tables.advisers) {
+    for (const adviser of backupData.tables.advisers) {
       const newAdviserId = oldUserIdToNewUserId.get(adviser.adviser_id);
       const newGroupIds = (adviser.group_ids || [])
+        .map((gid: string) => oldGroupIdToNewGroupId.get(gid))
+        .filter(Boolean);
+      const newRequestsGroupIds = (adviser.requests_group_ids || [])
         .map((gid: string) => oldGroupIdToNewGroupId.get(gid))
         .filter(Boolean);
       await convex.mutation(api.restore.restoreAdviserCode, {
         adviser_id: newAdviserId,
         code: adviser.code,
         group_ids: newGroupIds,
+        requests_group_ids: newRequestsGroupIds,
+        isDeleted: adviser.isDeleted ?? false,
       });
     }
 
     // Restore documents
-    for (const doc of backup.tables.documents) {
-      const newGroupId = oldGroupIdToNewGroupId.get(doc.group_id);
-      await convex.mutation(api.restore.restoreDocument, {
-        group_id: newGroupId,
-        chapter: doc.chapter,
-        room_id: doc.room_id,
-        title: doc.title,
-        content: doc.content,
-      });
+    if (
+      backupData.tables.documents &&
+      Array.isArray(backupData.tables.documents)
+    ) {
+      for (const docRaw of backupData.tables.documents) {
+        const doc = docRaw as {
+          group_id: string;
+          chapter: string;
+          title: string;
+          content: string;
+          isDeleted?: boolean;
+        };
+        const newGroupId = oldGroupIdToNewGroupId.get(doc.group_id);
+        if (!newGroupId) continue;
+        await convex.mutation(api.restore.restoreDocument, {
+          group_id: newGroupId,
+          chapter: doc.chapter,
+          title: doc.title,
+          content: doc.content,
+          isDeleted: doc.isDeleted ?? false,
+        });
+      }
     }
 
     // Restore document status
-    for (const status of backup.tables.documentStatus) {
+    for (const status of backupData.tables.documentStatus) {
       const newGroupId = oldGroupIdToNewGroupId.get(status.group_id);
+      const newNoteIds = status.note_ids
+        ? status.note_ids
+            .map((noteId: string) => oldNoteIdToNewNoteId.get(noteId))
+            .filter(Boolean)
+        : undefined;
       await convex.mutation(api.restore.restoreDocumentStatus, {
         group_id: newGroupId,
         document_part: status.document_part,
         review_status: status.review_status,
-        review_notes: status.review_notes,
+        note_ids: newNoteIds,
         last_modified: status.last_modified,
+        isDeleted: status.isDeleted ?? false,
       });
     }
 
     // Restore task assignments
-    for (const assignment of backup.tables.taskAssignments) {
+    for (const assignment of backupData.tables.taskAssignments) {
       const newGroupId = oldGroupIdToNewGroupId.get(assignment.group_id);
       const newAssignedStudentIds = assignment.assigned_student_ids
         .map((id: string) => oldUserIdToNewUserId.get(id))
@@ -261,8 +428,128 @@ export async function POST(request: Request) {
         title: assignment.title,
         task_status: assignment.task_status,
         assigned_student_ids: newAssignedStudentIds,
+        isDeleted: assignment.isDeleted ?? false,
       });
     }
+
+    // Restore notes
+    const oldNoteIdToNewNoteId = new Map();
+    for (const note of backupData.tables.notes) {
+      const newGroupId = oldGroupIdToNewGroupId.get(note.group_id);
+      if (newGroupId) {
+        const result = await convex.mutation(api.restore.restoreNote, {
+          group_id: newGroupId,
+          document_part: note.document_part,
+          content: note.content,
+          isDeleted: note.isDeleted ?? false,
+        });
+        oldNoteIdToNewNoteId.set(note._id, result.noteId);
+      }
+    }
+
+    // Restore images with file storage
+    const oldFileIdToNewFileId = new Map();
+    for (const image of backupData.tables.images) {
+      const newGroupId = oldGroupIdToNewGroupId.get(image.group_id);
+      const newUploadedById = oldUserIdToNewUserId.get(image.uploaded_by);
+
+      if (newGroupId && newUploadedById) {
+        // Check if we have the file content in the backup
+        const fileData = backupData.files?.[image.file_id];
+        if (fileData) {
+          try {
+            // Upload the file to the new storage environment
+            const uploadUrl = await convex.mutation(
+              api.images.generateUploadUrl,
+            );
+
+            // Convert base64 back to binary
+            const fileContent = Buffer.from(fileData.content, "base64");
+
+            // Upload the file
+            const uploadResponse = await fetch(uploadUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": fileData.content_type,
+              },
+              body: fileContent,
+            });
+
+            if (uploadResponse.ok) {
+              const { storageId } = await uploadResponse.json();
+              oldFileIdToNewFileId.set(image.file_id, storageId);
+
+              // Restore the image with the new file ID
+              await convex.mutation(api.restore.restoreImage, {
+                file_id: storageId,
+                filename: image.filename,
+                content_type: image.content_type,
+                size: image.size,
+                group_id: newGroupId,
+                uploaded_by: newUploadedById,
+                alt_text: image.alt_text,
+                url: image.url,
+                isDeleted: image.isDeleted ?? false,
+              });
+            }
+          } catch {}
+        }
+      }
+    }
+
+    // Restore logs (map old user/group IDs to new ones)
+    if (backupData.tables.logs && Array.isArray(backupData.tables.logs)) {
+      for (const logRaw of backupData.tables.logs) {
+        // Explicitly type log
+        const log = logRaw as {
+          user_id: string;
+          user_role: number;
+          affected_entity_type: string;
+          affected_entity_id: string;
+          action: string;
+          details: string;
+        };
+        // Map user_id and affected_entity_id
+        const newUserId = log.user_id
+          ? oldUserIdToNewUserId.get(log.user_id)
+          : null;
+        let newAffectedEntityId: Id<"users"> | Id<"groupsTable"> | null = null;
+        if (log.affected_entity_type === "user") {
+          newAffectedEntityId = log.affected_entity_id
+            ? (oldUserIdToNewUserId.get(log.affected_entity_id) ?? null)
+            : null;
+        } else if (log.affected_entity_type === "group") {
+          newAffectedEntityId = log.affected_entity_id
+            ? (oldGroupIdToNewGroupId.get(log.affected_entity_id) ?? null)
+            : null;
+        } else if (log.affected_entity_type === "database") {
+          newAffectedEntityId = instructorId;
+        }
+        if (!newUserId || !newAffectedEntityId) continue;
+        await convex.mutation(api.mutations.logRestore, {
+          log: {
+            user_id: newUserId,
+            user_role: log.user_role,
+            affected_entity_type: log.affected_entity_type,
+            affected_entity_id: newAffectedEntityId,
+            action: log.action,
+            details: log.details,
+          },
+        });
+      }
+    }
+
+    // Log the restore action
+    await convex.mutation(api.mutations.logRestore, {
+      log: {
+        user_id: instructorId,
+        user_role: 0,
+        affected_entity_type: "database",
+        affected_entity_id: instructorId,
+        action: "Restore",
+        details: "Restored database",
+      },
+    });
 
     return NextResponse.json({
       message: "Backup restored successfully",

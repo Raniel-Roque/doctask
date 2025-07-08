@@ -12,6 +12,7 @@ import {
   logLockAccount,
   logAcceptGroupRequest,
   logRejectGroupRequest,
+  logBackup,
 } from "./utils/log";
 import { Id } from "./_generated/dataModel";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
@@ -31,6 +32,14 @@ interface ConvexBackup {
     documentStatus: unknown[];
     images: unknown[];
   };
+  files: Record<
+    string,
+    {
+      content: string; // Base64 encoded file content
+      filename: string;
+      content_type: string;
+    }
+  >;
 }
 
 function validateBackupFile(file: unknown): file is ConvexBackup {
@@ -78,6 +87,11 @@ function validateBackupFile(file: unknown): file is ConvexBackup {
     }
   }
 
+  // Validate files field exists (it can be empty)
+  if (!backup.files || typeof backup.files !== "object") {
+    throw new Error("Backup file is missing files field");
+  }
+
   return true;
 }
 
@@ -98,7 +112,7 @@ export const createUser = mutation({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{ success: boolean; userId: Id<"users"> }> => {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -124,27 +138,27 @@ export const createUser = mutation({
     // Then check by email as a fallback
     const existingUserByEmail = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .filter((q) => q.eq(q.field("email"), args.email.toLowerCase()))
       .first();
 
-    if (existingUserByEmail) {
-      // If user exists with this email but different clerk_id, something is wrong
-      throw new Error(
-        "Email already registered with a different account. Please contact support."
-      );
+    if (existingUserByEmail && !existingUserByEmail.isDeleted) {
+      // If user exists with this email and is not deleted, error
+      throw new Error("Email already registered with a different account.");
     }
+    // If user exists with this email but is deleted, allow creation to continue
 
     try {
       // Create new user in Convex
       const userId = await ctx.db.insert("users", {
         clerk_id: args.clerk_id,
-        email: args.email,
+        email: args.email, // store as entered
         email_verified: false,
         first_name: args.first_name,
         middle_name: args.middle_name,
         last_name: args.last_name,
         role: args.role,
         subrole: args.subrole,
+        isDeleted: false,
       });
 
       // If the user is a student (role 0), create an entry in studentsTable
@@ -152,6 +166,7 @@ export const createUser = mutation({
         await ctx.db.insert("studentsTable", {
           user_id: userId,
           group_id: null, // No group assigned yet
+          isDeleted: false,
           gender: undefined,
           dateOfBirth: undefined,
           placeOfBirth: undefined,
@@ -176,27 +191,16 @@ export const createUser = mutation({
           adviser_id: userId,
           code,
           group_ids: [],
+          isDeleted: false,
         });
       }
 
-      // Log the user creation with user info
+      // Log the user creation
       await logCreateUser(
         ctx,
         args.instructorId,
         0, // instructor role
         userId,
-        {
-          first_name: args.first_name,
-          middle_name: args.middle_name,
-          last_name: args.last_name,
-          email: args.email,
-        },
-        {
-          first_name: instructor.first_name,
-          middle_name: instructor.middle_name,
-          last_name: instructor.last_name,
-          email: instructor.email,
-        }
       );
       return { success: true, userId };
     } catch (error) {
@@ -228,6 +232,7 @@ export const createGroup = mutation({
       member_ids: args.member_ids,
       adviser_id: args.adviser_id,
       capstone_title: args.capstone_title,
+      isDeleted: false,
     });
 
     // Create student table entries for project manager and all members
@@ -246,6 +251,7 @@ export const createGroup = mutation({
         await ctx.db.insert("studentsTable", {
           user_id: memberId,
           group_id: groupId,
+          isDeleted: false,
           gender: undefined,
           dateOfBirth: undefined,
           placeOfBirth: undefined,
@@ -292,6 +298,7 @@ export const createGroup = mutation({
         chapter,
         title,
         content: "",
+        isDeleted: false,
       });
     }
 
@@ -405,6 +412,7 @@ export const createGroup = mutation({
         title: task.title,
         task_status: 0, // 0 = incomplete
         assigned_student_ids: [],
+        isDeleted: false,
       });
     }
 
@@ -433,7 +441,7 @@ export const createGroup = mutation({
 
     for (const documentPart of documentParts) {
       const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
-        documentPart
+        documentPart,
       );
 
       await ctx.db.insert("documentStatus", {
@@ -442,6 +450,7 @@ export const createGroup = mutation({
         review_status: isPreApproved ? 2 : 0, // 2 = approved, 0 = not_submitted
         note_ids: undefined,
         last_modified: undefined,
+        isDeleted: false,
       });
     }
 
@@ -464,18 +473,6 @@ export const createGroup = mutation({
       args.instructorId,
       0, // instructor role
       groupId,
-      {
-        first_name: instructor.first_name,
-        middle_name: instructor.middle_name,
-        last_name: instructor.last_name,
-        email: instructor.email,
-      },
-      {
-        first_name: project_manager.first_name,
-        middle_name: project_manager.middle_name,
-        last_name: project_manager.last_name,
-        email: project_manager.email,
-      }
     );
 
     return { success: true, groupId };
@@ -530,12 +527,12 @@ export const updateUser = mutation({
               const tasks = await ctx.db
                 .query("taskAssignments")
                 .withIndex("by_group", (q) =>
-                  q.eq("group_id", membership.group_id!)
+                  q.eq("group_id", membership.group_id!),
                 )
                 .collect();
               for (const task of tasks) {
                 const newAssignments = task.assigned_student_ids.filter(
-                  (id) => id !== args.userId
+                  (id) => id !== args.userId,
                 );
                 if (
                   newAssignments.length !== task.assigned_student_ids.length
@@ -556,7 +553,7 @@ export const updateUser = mutation({
         const managedGroups = await ctx.db
           .query("groupsTable")
           .withIndex("by_project_manager", (q) =>
-            q.eq("project_manager_id", args.userId)
+            q.eq("project_manager_id", args.userId),
           )
           .collect();
 
@@ -576,14 +573,14 @@ export const updateUser = mutation({
             const adviserCode = await ctx.db
               .query("advisersTable")
               .withIndex("by_adviser", (q) =>
-                q.eq("adviser_id", group.adviser_id!)
+                q.eq("adviser_id", group.adviser_id!),
               )
               .first();
 
             if (adviserCode) {
               await ctx.db.patch(adviserCode._id, {
                 group_ids: (adviserCode.group_ids || []).filter(
-                  (id) => id !== group._id
+                  (id) => id !== group._id,
                 ),
               });
             }
@@ -594,13 +591,13 @@ export const updateUser = mutation({
             const adviser = await ctx.db
               .query("advisersTable")
               .withIndex("by_adviser", (q) =>
-                q.eq("adviser_id", group.requested_adviser!)
+                q.eq("adviser_id", group.requested_adviser!),
               )
               .first();
             if (adviser && adviser.requests_group_ids) {
               await ctx.db.patch(adviser._id, {
                 requests_group_ids: adviser.requests_group_ids.filter(
-                  (id) => id !== group._id
+                  (id) => id !== group._id,
                 ),
               });
             }
@@ -718,18 +715,6 @@ export const updateUser = mutation({
         0, // instructor role
         args.userId,
         changes.join("\n"),
-        {
-          first_name: args.first_name,
-          middle_name: args.middle_name,
-          last_name: args.last_name,
-          email: args.email,
-        },
-        {
-          first_name: instructor.first_name,
-          middle_name: instructor.middle_name,
-          last_name: instructor.last_name,
-          email: instructor.email,
-        }
       );
     }
     return { success: true };
@@ -783,7 +768,7 @@ export const updateGroup = mutation({
 
       for (const task of tasks) {
         const newAssignments = task.assigned_student_ids.filter(
-          (id) => !removedMembers.includes(id)
+          (id) => !removedMembers.includes(id),
         );
         if (newAssignments.length !== task.assigned_student_ids.length) {
           await ctx.db.patch(task._id, {
@@ -809,6 +794,7 @@ export const updateGroup = mutation({
           await ctx.db.insert("studentsTable", {
             user_id: memberId,
             group_id: args.groupId,
+            isDeleted: false,
             gender: undefined,
             dateOfBirth: undefined,
             placeOfBirth: undefined,
@@ -839,7 +825,7 @@ export const updateGroup = mutation({
         if (oldAdviserCode) {
           await ctx.db.patch(oldAdviserCode._id, {
             group_ids: (oldAdviserCode.group_ids || []).filter(
-              (id) => id !== group._id
+              (id) => id !== group._id,
             ),
           });
         }
@@ -874,7 +860,7 @@ export const updateGroup = mutation({
     // Check capstone title changes
     if (args.capstone_title !== group.capstone_title) {
       changes.push(
-        `Capstone Title: ${group.capstone_title || "None"} → ${args.capstone_title}`
+        `Capstone Title: ${group.capstone_title || "None"} → ${args.capstone_title}`,
       );
     }
 
@@ -883,12 +869,12 @@ export const updateGroup = mutation({
 
     if (removedMembers.length > 0) {
       changes.push(
-        `Members: Removed ${removedMembers.length} Member${removedMembers.length > 1 ? "s" : ""}`
+        `Members: Removed ${removedMembers.length} Member${removedMembers.length > 1 ? "s" : ""}`,
       );
     }
     if (addedMembers.length > 0) {
       changes.push(
-        `Members: Added ${addedMembers.length} Member${addedMembers.length > 1 ? "s" : ""}`
+        `Members: Added ${addedMembers.length} Member${addedMembers.length > 1 ? "s" : ""}`,
       );
     }
 
@@ -897,7 +883,7 @@ export const updateGroup = mutation({
       const newAdviser = await ctx.db.get(args.adviser_id);
       if (newAdviser) {
         changes.push(
-          `Adviser: None -> ${newAdviser.first_name} ${newAdviser.last_name}`
+          `Adviser: None -> ${newAdviser.first_name} ${newAdviser.last_name}`,
         );
       }
     } else if (group.adviser_id && !args.adviser_id) {
@@ -905,7 +891,7 @@ export const updateGroup = mutation({
         const oldAdviser = await ctx.db.get(group.adviser_id);
         if (oldAdviser) {
           changes.push(
-            `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> Removed`
+            `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> Removed`,
           );
         }
       }
@@ -918,7 +904,7 @@ export const updateGroup = mutation({
       const newAdviser = await ctx.db.get(args.adviser_id);
       if (oldAdviser && newAdviser) {
         changes.push(
-          `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> ${newAdviser.first_name} ${newAdviser.last_name}`
+          `Adviser: ${oldAdviser.first_name} ${oldAdviser.last_name} -> ${newAdviser.first_name} ${newAdviser.last_name}`,
         );
       }
     }
@@ -944,18 +930,6 @@ export const updateGroup = mutation({
       0, // instructor role
       args.groupId,
       changes.join("\n"),
-      {
-        first_name: instructor.first_name,
-        middle_name: instructor.middle_name,
-        last_name: instructor.last_name,
-        email: instructor.email,
-      },
-      {
-        first_name: project_manager.first_name,
-        middle_name: project_manager.middle_name,
-        last_name: project_manager.last_name,
-        email: project_manager.email,
-      }
     );
 
     return { success: true };
@@ -1101,14 +1075,6 @@ export const deleteUser = mutation({
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
 
-    // Store user info for logging
-    const userInfo = {
-      first_name: user.first_name,
-      middle_name: user.middle_name,
-      last_name: user.last_name,
-      email: user.email,
-    };
-
     // Student (member)
     if (user.role === 0 && user.subrole === 0) {
       // Remove from studentsTable
@@ -1130,12 +1096,12 @@ export const deleteUser = mutation({
           const tasks = await ctx.db
             .query("taskAssignments")
             .withIndex("by_group", (q) =>
-              q.eq("group_id", studentEntry.group_id!)
+              q.eq("group_id", studentEntry.group_id!),
             )
             .collect();
           for (const task of tasks) {
             const newAssignments = task.assigned_student_ids.filter(
-              (id) => id !== args.userId
+              (id) => id !== args.userId,
             );
             if (newAssignments.length !== task.assigned_student_ids.length) {
               await ctx.db.patch(task._id, {
@@ -1154,7 +1120,7 @@ export const deleteUser = mutation({
       const managedGroups = await ctx.db
         .query("groupsTable")
         .withIndex("by_project_manager", (q) =>
-          q.eq("project_manager_id", args.userId)
+          q.eq("project_manager_id", args.userId),
         )
         .collect();
       for (const group of managedGroups) {
@@ -1173,13 +1139,13 @@ export const deleteUser = mutation({
           const adviserCode = await ctx.db
             .query("advisersTable")
             .withIndex("by_adviser", (q) =>
-              q.eq("adviser_id", group.adviser_id!)
+              q.eq("adviser_id", group.adviser_id!),
             )
             .first();
           if (adviserCode) {
             await ctx.db.patch(adviserCode._id, {
               group_ids: (adviserCode.group_ids || []).filter(
-                (id) => id !== group._id
+                (id) => id !== group._id,
               ),
             });
           }
@@ -1189,55 +1155,55 @@ export const deleteUser = mutation({
           const adviser = await ctx.db
             .query("advisersTable")
             .withIndex("by_adviser", (q) =>
-              q.eq("adviser_id", group.requested_adviser!)
+              q.eq("adviser_id", group.requested_adviser!),
             )
             .first();
           if (adviser && adviser.requests_group_ids) {
             await ctx.db.patch(adviser._id, {
               requests_group_ids: adviser.requests_group_ids.filter(
-                (id) => id !== group._id
+                (id) => id !== group._id,
               ),
             });
           }
         }
-        // Delete all documents associated with this group
+        // Soft delete all documents associated with this group
         const docs = await ctx.db
           .query("documents")
           .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
           .collect();
         for (const doc of docs) {
-          await ctx.db.delete(doc._id);
+          await ctx.db.patch(doc._id, { isDeleted: true });
         }
 
-        // Delete all task assignments associated with this group
+        // Soft delete all task assignments associated with this group
         const taskAssignments = await ctx.db
           .query("taskAssignments")
           .withIndex("by_group", (q) => q.eq("group_id", group._id))
           .collect();
         for (const task of taskAssignments) {
-          await ctx.db.delete(task._id);
+          await ctx.db.patch(task._id, { isDeleted: true });
         }
 
-        // Delete all document status entries associated with this group
+        // Soft delete all document status entries associated with this group
         const documentStatuses = await ctx.db
           .query("documentStatus")
           .withIndex("by_group", (q) => q.eq("group_id", group._id))
           .collect();
         for (const status of documentStatuses) {
-          await ctx.db.delete(status._id);
+          await ctx.db.patch(status._id, { isDeleted: true });
         }
 
-        // Delete all images associated with this group
+        // Soft delete all images associated with this group
         const images = await ctx.db
           .query("images")
           .withIndex("by_group", (q) => q.eq("group_id", group._id))
           .collect();
         for (const image of images) {
-          await ctx.db.delete(image._id);
+          await ctx.db.patch(image._id, { isDeleted: true });
         }
 
-        // Delete the group
-        await ctx.db.delete(group._id);
+        // Soft delete the group
+        await ctx.db.patch(group._id, { isDeleted: true });
       }
       // Delete their studentsTable entry if exists
       const studentEntry = await ctx.db
@@ -1245,7 +1211,7 @@ export const deleteUser = mutation({
         .withIndex("by_user", (q) => q.eq("user_id", args.userId))
         .first();
       if (studentEntry) {
-        await ctx.db.delete(studentEntry._id);
+        await ctx.db.patch(studentEntry._id, { isDeleted: true });
       }
     }
 
@@ -1280,15 +1246,11 @@ export const deleteUser = mutation({
     }
 
     // Delete from users table
-    await ctx.db.delete(args.userId);
+    // await ctx.db.delete(args.userId);
+    await ctx.db.patch(args.userId, { isDeleted: true });
 
-    // Log the deletion with user info
-    await logDeleteUser(ctx, args.instructorId, 0, args.userId, userInfo, {
-      first_name: instructor.first_name,
-      middle_name: instructor.middle_name,
-      last_name: instructor.last_name,
-      email: instructor.email,
-    });
+    // Log the deletion
+    await logDeleteUser(ctx, args.instructorId, 0, args.userId);
 
     return { success: true };
   },
@@ -1330,7 +1292,7 @@ export const deleteGroup = mutation({
       if (adviser) {
         await ctx.db.patch(adviser._id, {
           group_ids: (adviser.group_ids || []).filter(
-            (id) => id !== args.groupId
+            (id) => id !== args.groupId,
           ),
         });
       }
@@ -1341,75 +1303,63 @@ export const deleteGroup = mutation({
       const adviser = await ctx.db
         .query("advisersTable")
         .withIndex("by_adviser", (q) =>
-          q.eq("adviser_id", group.requested_adviser!)
+          q.eq("adviser_id", group.requested_adviser!),
         )
         .first();
       if (adviser && adviser.requests_group_ids) {
         await ctx.db.patch(adviser._id, {
           requests_group_ids: adviser.requests_group_ids.filter(
-            (id) => id !== group._id
+            (id) => id !== group._id,
           ),
         });
       }
     }
 
-    // Delete all associated documents
+    // Soft delete all associated documents
     const docs = await ctx.db
       .query("documents")
       .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
       .collect();
     for (const doc of docs) {
-      await ctx.db.delete(doc._id);
+      await ctx.db.patch(doc._id, { isDeleted: true });
     }
 
-    // Delete all task assignments associated with this group
+    // Soft delete all task assignments associated with this group
     const taskAssignments = await ctx.db
       .query("taskAssignments")
       .withIndex("by_group", (q) => q.eq("group_id", group._id))
       .collect();
     for (const task of taskAssignments) {
-      await ctx.db.delete(task._id);
+      await ctx.db.patch(task._id, { isDeleted: true });
     }
 
-    // Delete all document status entries associated with this group
+    // Soft delete all document status entries associated with this group
     const documentStatuses = await ctx.db
       .query("documentStatus")
       .withIndex("by_group", (q) => q.eq("group_id", group._id))
       .collect();
     for (const status of documentStatuses) {
-      await ctx.db.delete(status._id);
+      await ctx.db.patch(status._id, { isDeleted: true });
     }
 
-    // Delete all images associated with this group
+    // Soft delete all images associated with this group
     const images = await ctx.db
       .query("images")
       .withIndex("by_group", (q) => q.eq("group_id", group._id))
       .collect();
     for (const image of images) {
-      await ctx.db.delete(image._id);
+      await ctx.db.patch(image._id, { isDeleted: true });
     }
 
-    // Delete the group
-    await ctx.db.delete(args.groupId);
+    // Soft delete the group
+    await ctx.db.patch(args.groupId, { isDeleted: true });
 
-    // Log the deletion with instructor and project manager info
+    // Log the deletion
     await logDeleteGroup(
       ctx,
       args.instructorId,
       0, // instructor role
       args.groupId,
-      {
-        first_name: instructor.first_name,
-        middle_name: instructor.middle_name,
-        last_name: instructor.last_name,
-        email: instructor.email,
-      },
-      {
-        first_name: project_manager.first_name,
-        middle_name: project_manager.middle_name,
-        last_name: project_manager.last_name,
-        email: project_manager.email,
-      }
     );
 
     return { success: true };
@@ -1431,24 +1381,12 @@ export const resetPassword = mutation({
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
 
-    // Log the password reset with correct user and instructor info
+    // Log the password reset
     await logResetPassword(
       ctx,
       args.instructorId,
       0, // instructor role
       args.userId,
-      {
-        first_name: user.first_name,
-        middle_name: user.middle_name,
-        last_name: user.last_name,
-        email: user.email,
-      },
-      {
-        first_name: instructor.first_name,
-        middle_name: instructor.middle_name,
-        last_name: instructor.last_name,
-        email: instructor.email,
-      }
     );
     return { success: true };
   },
@@ -1466,6 +1404,9 @@ export const downloadConvexBackup = mutation({
     const instructor = await ctx.db.get(args.instructorId);
     if (!instructor) throw new Error("Instructor not found");
 
+    // Log the backup action before downloading
+    await logBackup(ctx, args.instructorId, 0);
+
     // Fetch all data from each table
     const users = await ctx.db.query("users").collect();
     const groups = await ctx.db.query("groupsTable").collect();
@@ -1476,6 +1417,35 @@ export const downloadConvexBackup = mutation({
     const taskAssignments = await ctx.db.query("taskAssignments").collect();
     const documentStatus = await ctx.db.query("documentStatus").collect();
     const images = await ctx.db.query("images").collect();
+
+    // Download all image files from storage
+    const files: Record<
+      string,
+      { content: string; filename: string; content_type: string }
+    > = {};
+
+    for (const image of images) {
+      try {
+        // Get the file URL from storage
+        const fileUrl = await ctx.storage.getUrl(image.file_id);
+        if (fileUrl) {
+          // Download the file content from the URL
+          const response = await fetch(fileUrl);
+          if (response.ok) {
+            const fileContent = await response.arrayBuffer();
+            // Convert to base64 for storage in backup
+            const base64Content = Buffer.from(fileContent).toString("base64");
+            files[image.file_id] = {
+              content: base64Content,
+              filename: image.filename,
+              content_type: image.content_type,
+            };
+          }
+        }
+      } catch {
+        // Continue with other files even if one fails
+      }
+    }
 
     // Create backup object with timestamp
     const backup: ConvexBackup = {
@@ -1492,6 +1462,7 @@ export const downloadConvexBackup = mutation({
         documentStatus,
         images,
       },
+      files,
     };
 
     // Validate the backup before returning
@@ -1525,10 +1496,10 @@ export const acceptGroupRequest = mutation({
     // Get group and user data for logging
     const group = await ctx.db.get(args.groupId);
     if (!group) throw new Error("Group not found");
-    
+
     const adviser = await ctx.db.get(args.adviserId);
     const projectManager = await ctx.db.get(group.project_manager_id);
-    
+
     if (!adviser || !projectManager) {
       throw new Error("User data not found");
     }
@@ -1542,29 +1513,13 @@ export const acceptGroupRequest = mutation({
     // Update adviser's records
     await ctx.db.patch(adviserCode._id, {
       requests_group_ids: adviserCode.requests_group_ids.filter(
-        (id) => id !== args.groupId
+        (id) => id !== args.groupId,
       ),
       group_ids: [...(adviserCode.group_ids || []), args.groupId],
     });
 
     // Log the acceptance of the group request
-    await logAcceptGroupRequest(
-      ctx,
-      args.adviserId,
-      args.groupId,
-      {
-        first_name: adviser.first_name,
-        middle_name: adviser.middle_name,
-        last_name: adviser.last_name,
-        email: adviser.email,
-      },
-      {
-        first_name: projectManager.first_name,
-        middle_name: projectManager.middle_name,
-        last_name: projectManager.last_name,
-        email: projectManager.email,
-      }
-    );
+    await logAcceptGroupRequest(ctx, args.adviserId, args.groupId);
 
     return { success: true };
   },
@@ -1594,10 +1549,10 @@ export const rejectGroupRequest = mutation({
     // Get group and user data for logging
     const group = await ctx.db.get(args.groupId);
     if (!group) throw new Error("Group not found");
-    
+
     const adviser = await ctx.db.get(args.adviserId);
     const projectManager = await ctx.db.get(group.project_manager_id);
-    
+
     if (!adviser || !projectManager) {
       throw new Error("User data not found");
     }
@@ -1605,7 +1560,7 @@ export const rejectGroupRequest = mutation({
     // Remove the group from requests_group_ids
     await ctx.db.patch(adviserCode._id, {
       requests_group_ids: adviserCode.requests_group_ids.filter(
-        (id) => id !== args.groupId
+        (id) => id !== args.groupId,
       ),
     });
 
@@ -1617,23 +1572,7 @@ export const rejectGroupRequest = mutation({
     }
 
     // Log the rejection of the group request
-    await logRejectGroupRequest(
-      ctx,
-      args.adviserId,
-      args.groupId,
-      {
-        first_name: adviser.first_name,
-        middle_name: adviser.middle_name,
-        last_name: adviser.last_name,
-        email: adviser.email,
-      },
-      {
-        first_name: projectManager.first_name,
-        middle_name: projectManager.middle_name,
-        last_name: projectManager.last_name,
-        email: projectManager.email,
-      }
-    );
+    await logRejectGroupRequest(ctx, args.adviserId, args.groupId);
 
     return { success: true };
   },
@@ -1664,8 +1603,6 @@ export const logLockAccountMutation = mutation({
       0, // instructor role
       args.affectedEntityId,
       args.action,
-      args.affectedUserInfo,
-      args.instructorInfo
     );
   },
 });
@@ -1831,7 +1768,7 @@ export const updateDocumentStatus = mutation({
       const existingStatus = await ctx.db
         .query("documentStatus")
         .withIndex("by_group_document", (q) =>
-          q.eq("group_id", groupId).eq("document_part", documentPart)
+          q.eq("group_id", groupId).eq("document_part", documentPart),
         )
         .first();
 
@@ -1847,6 +1784,7 @@ export const updateDocumentStatus = mutation({
           document_part: documentPart,
           review_status: newStatus,
           last_modified: Date.now(),
+          isDeleted: false,
         });
       }
 
@@ -1892,7 +1830,7 @@ export const updateDocumentContent = mutation({
       const isProjectManager = group.project_manager_id === args.userId;
       const isMember = group.member_ids.includes(args.userId);
       const isAdviser = group.adviser_id === args.userId;
-      
+
       if (!isProjectManager && !isMember && !isAdviser) {
         throw new Error("You don't have permission to edit this document");
       }
@@ -1906,15 +1844,18 @@ export const updateDocumentContent = mutation({
       const documentStatus = await ctx.db
         .query("documentStatus")
         .withIndex("by_group_document", (q) =>
-          q.eq("group_id", document.group_id).eq("document_part", document.chapter)
+          q
+            .eq("group_id", document.group_id)
+            .eq("document_part", document.chapter),
         )
         .first();
 
       if (documentStatus) {
         // If the document was rejected (status 3), change it back to not_submitted (status 0)
         // since the user is making changes to address the rejection
-        const newStatus = documentStatus.review_status === 3 ? 0 : documentStatus.review_status;
-        
+        const newStatus =
+          documentStatus.review_status === 3 ? 0 : documentStatus.review_status;
+
         await ctx.db.patch(documentStatus._id, {
           last_modified: Date.now(),
           review_status: newStatus,
@@ -1959,7 +1900,7 @@ export const updateDocumentRoomId = mutation({
       const isProjectManager = group.project_manager_id === args.userId;
       const isMember = group.member_ids.includes(args.userId);
       const isAdviser = group.adviser_id === args.userId;
-      
+
       if (!isProjectManager && !isMember && !isAdviser) {
         throw new Error("You don't have permission to edit this document");
       }
@@ -1987,14 +1928,16 @@ export const createDocumentVersion = mutation({
 
       // Only project manager can create versions
       if (group.project_manager_id !== args.userId) {
-        throw new Error("Only the project manager can create document versions");
+        throw new Error(
+          "Only the project manager can create document versions",
+        );
       }
 
       // Get the live document (oldest by creation time - the one with room ID)
       const liveDocument = await ctx.db
         .query("documents")
-        .withIndex("by_group_chapter", (q) => 
-          q.eq("group_id", args.groupId).eq("chapter", args.chapter)
+        .withIndex("by_group_chapter", (q) =>
+          q.eq("group_id", args.groupId).eq("chapter", args.chapter),
         )
         .order("asc") // Oldest first (live document with room ID)
         .first();
@@ -2009,6 +1952,7 @@ export const createDocumentVersion = mutation({
         chapter: liveDocument.chapter,
         title: liveDocument.title,
         content: liveDocument.content,
+        isDeleted: false,
       });
 
       return {
@@ -2019,7 +1963,8 @@ export const createDocumentVersion = mutation({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to create version",
+        error:
+          error instanceof Error ? error.message : "Failed to create version",
       };
     }
   },
@@ -2046,14 +1991,18 @@ export const approveDocumentVersion = mutation({
 
       // Only project manager can approve versions
       if (group.project_manager_id !== args.userId) {
-        throw new Error("Only the project manager can approve document versions");
+        throw new Error(
+          "Only the project manager can approve document versions",
+        );
       }
 
       // Find the live document (original/first document by creation time ASC)
       const liveDocument = await ctx.db
         .query("documents")
-        .withIndex("by_group_chapter", (q) => 
-          q.eq("group_id", versionDocument.group_id).eq("chapter", versionDocument.chapter)
+        .withIndex("by_group_chapter", (q) =>
+          q
+            .eq("group_id", versionDocument.group_id)
+            .eq("chapter", versionDocument.chapter),
         )
         .order("asc") // Oldest first (original document with room ID)
         .first();
@@ -2064,7 +2013,9 @@ export const approveDocumentVersion = mutation({
 
       // Prevent approving the live document itself
       if (liveDocument._id === args.versionId) {
-        throw new Error("Cannot approve the live document - it's already active");
+        throw new Error(
+          "Cannot approve the live document - it's already active",
+        );
       }
 
       // Copy content from version to live document (DATABASE UPDATE)
@@ -2086,7 +2037,8 @@ export const approveDocumentVersion = mutation({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to approve version",
+        error:
+          error instanceof Error ? error.message : "Failed to approve version",
       };
     }
   },
@@ -2144,13 +2096,14 @@ export const createNote = mutation({
         group_id: args.groupId,
         document_part: args.documentPart,
         content: args.content,
+        isDeleted: false,
       });
 
       // Update documentStatus to include the new note
       const existingStatus = await ctx.db
         .query("documentStatus")
         .withIndex("by_group_document", (q) =>
-          q.eq("group_id", args.groupId).eq("document_part", args.documentPart)
+          q.eq("group_id", args.groupId).eq("document_part", args.documentPart),
         )
         .first();
 
@@ -2167,6 +2120,7 @@ export const createNote = mutation({
           review_status: 0, // Default to not_submitted
           note_ids: [noteId],
           last_modified: Date.now(),
+          isDeleted: false,
         });
       }
 
@@ -2252,12 +2206,16 @@ export const deleteNote = mutation({
       const existingStatus = await ctx.db
         .query("documentStatus")
         .withIndex("by_group_document", (q) =>
-          q.eq("group_id", note.group_id).eq("document_part", note.document_part)
+          q
+            .eq("group_id", note.group_id)
+            .eq("document_part", note.document_part),
         )
         .first();
 
       if (existingStatus && existingStatus.note_ids) {
-        const updatedNoteIds = existingStatus.note_ids.filter(id => id !== args.noteId);
+        const updatedNoteIds = existingStatus.note_ids.filter(
+          (id) => id !== args.noteId,
+        );
         await ctx.db.patch(existingStatus._id, {
           note_ids: updatedNoteIds.length > 0 ? updatedNoteIds : undefined,
         });
@@ -2270,5 +2228,135 @@ export const deleteNote = mutation({
     } catch (error) {
       throw error;
     }
+  },
+});
+
+export const logRestore = mutation({
+  args: {
+    log: v.object({
+      user_id: v.id("users"),
+      user_role: v.number(),
+      affected_entity_type: v.string(),
+      affected_entity_id: v.union(v.id("users"), v.id("groupsTable")),
+      action: v.string(),
+      details: v.string(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("LogsTable", args.log);
+    return { success: true };
+  },
+});
+
+export const restoreUser = mutation({
+  args: {
+    userId: v.id("users"),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor) throw new Error("Instructor not found");
+
+    // Restore user
+    await ctx.db.patch(args.userId, { isDeleted: false });
+
+    // Restore studentsTable entry if exists
+    const studentEntry = await ctx.db
+      .query("studentsTable")
+      .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+      .first();
+    if (studentEntry) {
+      await ctx.db.patch(studentEntry._id, { isDeleted: false });
+    }
+
+    // Restore adviser entry if exists
+    if (user.role === 1) {
+      const adviserEntry = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
+        .first();
+      if (adviserEntry) {
+        await ctx.db.patch(adviserEntry._id, { isDeleted: false });
+      }
+    }
+
+    // Restore all groups managed or advised by this user
+    if (user.role === 0 && user.subrole === 1) {
+      // Project manager
+      const managedGroups = await ctx.db
+        .query("groupsTable")
+        .withIndex("by_project_manager", (q) =>
+          q.eq("project_manager_id", args.userId),
+        )
+        .collect();
+      for (const group of managedGroups) {
+        await ctx.db.patch(group._id, { isDeleted: false });
+      }
+    } else if (user.role === 1) {
+      // Adviser
+      const advisedGroups = await ctx.db
+        .query("groupsTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
+        .collect();
+      for (const group of advisedGroups) {
+        await ctx.db.patch(group._id, { isDeleted: false });
+      }
+    }
+
+    // Restore all documents, images, task assignments, and document statuses associated with the user's groups
+    const groupIds = [];
+    if (user.role === 0 && user.subrole === 1) {
+      const managedGroups = await ctx.db
+        .query("groupsTable")
+        .withIndex("by_project_manager", (q) =>
+          q.eq("project_manager_id", args.userId),
+        )
+        .collect();
+      groupIds.push(...managedGroups.map((g) => g._id));
+    } else if (user.role === 1) {
+      const advisedGroups = await ctx.db
+        .query("groupsTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
+        .collect();
+      groupIds.push(...advisedGroups.map((g) => g._id));
+    }
+    for (const groupId of groupIds) {
+      // Documents
+      const docs = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
+        .collect();
+      for (const doc of docs) {
+        await ctx.db.patch(doc._id, { isDeleted: false });
+      }
+      // Images
+      const images = await ctx.db
+        .query("images")
+        .withIndex("by_group", (q) => q.eq("group_id", groupId))
+        .collect();
+      for (const image of images) {
+        await ctx.db.patch(image._id, { isDeleted: false });
+      }
+      // Task assignments
+      const tasks = await ctx.db
+        .query("taskAssignments")
+        .withIndex("by_group", (q) => q.eq("group_id", groupId))
+        .collect();
+      for (const task of tasks) {
+        await ctx.db.patch(task._id, { isDeleted: false });
+      }
+      // Document statuses
+      const statuses = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group", (q) => q.eq("group_id", groupId))
+        .collect();
+      for (const status of statuses) {
+        await ctx.db.patch(status._id, { isDeleted: false });
+      }
+    }
+
+    return { success: true };
   },
 });

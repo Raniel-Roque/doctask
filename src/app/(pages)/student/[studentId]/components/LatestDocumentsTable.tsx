@@ -130,7 +130,9 @@ export const LatestDocumentsTable = ({
   group,
 }: LatestDocumentsTableProps) => {
   const router = useRouter();
-  const updateDocumentContent = useMutation(api.mutations.updateDocumentContent);
+  const updateDocumentContent = useMutation(
+    api.mutations.updateDocumentContent,
+  );
 
   // Add state for status filter
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -145,7 +147,10 @@ export const LatestDocumentsTable = ({
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
   const [notesPopupDoc, setNotesPopupDoc] = useState<Document | null>(null);
 
-  const [notification, setNotification] = useState<{ message: string; type: "success" | "error" | "info" | "warning" } | null>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info" | "warning";
+  } | null>(null);
 
   const handleToggleDetails = (detailType: "documents" | "tasks") => {
     setOpenDetails((prev) => (prev === detailType ? null : detailType));
@@ -190,7 +195,8 @@ export const LatestDocumentsTable = ({
 
   // Helper to get task status for a document
   const getTaskStatus = (doc: Document) => {
-    if (["title_page", "appendix_a", "appendix_d"].includes(doc.chapter)) return 1;
+    if (["title_page", "appendix_a", "appendix_d"].includes(doc.chapter))
+      return 1;
     const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
     if (relatedTasks.length === 0) return 0;
     return relatedTasks.every((task) => task.task_status === 1) ? 1 : 0;
@@ -198,9 +204,12 @@ export const LatestDocumentsTable = ({
 
   // Filter documents based on selected status and task status
   const filteredDocuments = documents.filter((doc) => {
-    const docStatusMatch = selectedStatus === "all" || doc.status === parseInt(selectedStatus);
+    const docStatusMatch =
+      selectedStatus === "all" || doc.status === parseInt(selectedStatus);
     const taskStatus = getTaskStatus(doc);
-    const taskStatusMatch = selectedTaskStatus === "all" || taskStatus === parseInt(selectedTaskStatus);
+    const taskStatusMatch =
+      selectedTaskStatus === "all" ||
+      taskStatus === parseInt(selectedTaskStatus);
     return docStatusMatch && taskStatusMatch;
   });
 
@@ -235,15 +244,19 @@ export const LatestDocumentsTable = ({
   const formatLastModified = (timestamp?: number) => {
     if (!timestamp) return "Never";
     const date = new Date(timestamp);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }) + " " + date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    return (
+      date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }) +
+      " " +
+      date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    );
   };
 
   // --- Progress Bar Logic ---
@@ -766,29 +779,55 @@ export const LatestDocumentsTable = ({
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTaskStatus(doc) === 1 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{getTaskStatus(doc) === 1 ? 'Complete' : 'Incomplete'}</span>
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTaskStatus(doc) === 1 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
+                      >
+                        {getTaskStatus(doc) === 1 ? "Complete" : "Incomplete"}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                       {formatLastModified(doc.last_modified)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                       <div className="flex items-center gap-2 justify-center">
-                        <button className="text-blue-600 hover:text-blue-800 transition-colors" title="View Document" onClick={() => handleViewDocument(doc)}>
+                        <button
+                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                          title="View Document"
+                          onClick={() => handleViewDocument(doc)}
+                        >
                           <FaEye className="w-4 h-4" />
                         </button>
                         {canEditDocument(doc) && (
-                          <button className="text-purple-600 hover:text-purple-800 transition-colors" title="Edit Document" onClick={() => handleEditDocument(doc)}>
+                          <button
+                            className="text-purple-600 hover:text-purple-800 transition-colors"
+                            title="Edit Document"
+                            onClick={() => handleEditDocument(doc)}
+                          >
                             <FaEdit className="w-4 h-4" />
                           </button>
                         )}
-                        <button className="text-green-600 hover:text-green-800 transition-colors" title="Download Document">
+                        <button
+                          className="text-green-600 hover:text-green-800 transition-colors"
+                          title="Download Document"
+                        >
                           <FaDownload className="w-4 h-4" />
                         </button>
                         {/* Only show Notes and Submit for non-excluded chapters */}
-                        {!["title_page", "appendix_a", "appendix_d"].includes(doc.chapter) && (
+                        {!["title_page", "appendix_a", "appendix_d"].includes(
+                          doc.chapter,
+                        ) && (
                           <>
-                            <span className="mx-2 text-gray-300 select-none">|</span>
-                            <button className="text-yellow-500 hover:text-yellow-600 transition-colors" title="View Notes" onClick={() => { setNotesPopupDoc(doc); setNotesPopupOpen(true); }}>
+                            <span className="mx-2 text-gray-300 select-none">
+                              |
+                            </span>
+                            <button
+                              className="text-yellow-500 hover:text-yellow-600 transition-colors"
+                              title="View Notes"
+                              onClick={() => {
+                                setNotesPopupDoc(doc);
+                                setNotesPopupOpen(true);
+                              }}
+                            >
                               <FaStickyNote className="w-4 h-4" />
                             </button>
                           </>

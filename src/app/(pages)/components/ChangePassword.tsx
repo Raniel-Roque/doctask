@@ -180,6 +180,11 @@ export default function ChangePassword({
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                   placeholder="Enter your current password"
+                  autoComplete={
+                    showCurrentPassword ? "off" : "current-password"
+                  }
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
                 <button
                   type="button"
@@ -218,6 +223,9 @@ export default function ChangePassword({
                   required
                   minLength={8}
                   placeholder="Enter your new password"
+                  autoComplete={showNewPassword ? "off" : "new-password"}
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
                 <button
                   type="button"
@@ -246,6 +254,9 @@ export default function ChangePassword({
                   required
                   minLength={8}
                   placeholder="Confirm your new password"
+                  autoComplete={showConfirmPassword ? "off" : "new-password"}
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
                 <button
                   type="button"

@@ -54,14 +54,16 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
   const filteredNotes = allNotes.filter((note) => {
     if (!startDate && !endDate) return true;
     const noteDate = new Date(note._creationTime);
-    const noteDateStr = noteDate.toISOString().split('T')[0];
+    const noteDateStr = noteDate.toISOString().split("T")[0];
     if (startDate && noteDateStr < startDate) return false;
     if (endDate && noteDateStr > endDate) return false;
     return true;
   });
 
   // Sort notes by creation time (latest first) and calculate pagination
-  const sortedNotes = [...filteredNotes].sort((a, b) => b._creationTime - a._creationTime);
+  const sortedNotes = [...filteredNotes].sort(
+    (a, b) => b._creationTime - a._creationTime,
+  );
   const totalCount = sortedNotes.length;
   const totalPages = Math.ceil(totalCount / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -71,7 +73,7 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
   const getNoteNumber = (note: Note) => {
     const chronologicalIndex = filteredNotes
       .sort((a, b) => a._creationTime - b._creationTime)
-      .findIndex(n => n._id === note._id);
+      .findIndex((n) => n._id === note._id);
     return chronologicalIndex + 1;
   };
 
@@ -133,8 +135,11 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                   <button
                     type="button"
                     className="absolute right-2 text-blue-600 hover:text-blue-800 text-xs px-1 py-0.5 bg-white rounded"
-                    style={{ top: '50%', transform: 'translateY(-50%)' }}
-                    onClick={() => { setStartDate(""); setCurrentPage(1); }}
+                    style={{ top: "50%", transform: "translateY(-50%)" }}
+                    onClick={() => {
+                      setStartDate("");
+                      setCurrentPage(1);
+                    }}
                     tabIndex={-1}
                   >
                     Clear
@@ -144,7 +149,10 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                   type="date"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-12"
                   value={startDate}
-                  onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   max={new Date().toISOString().split("T")[0]}
                 />
               </div>
@@ -154,8 +162,11 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                   <button
                     type="button"
                     className="absolute right-2 text-blue-600 hover:text-blue-800 text-xs px-1 py-0.5 bg-white rounded"
-                    style={{ top: '50%', transform: 'translateY(-50%)' }}
-                    onClick={() => { setEndDate(""); setCurrentPage(1); }}
+                    style={{ top: "50%", transform: "translateY(-50%)" }}
+                    onClick={() => {
+                      setEndDate("");
+                      setCurrentPage(1);
+                    }}
                     tabIndex={-1}
                   >
                     Clear
@@ -165,7 +176,10 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                   type="date"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-12"
                   value={endDate}
-                  onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   min={startDate || undefined}
                   max={new Date().toISOString().split("T")[0]}
                 />
@@ -247,7 +261,9 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                 <div className="flex items-center gap-2">
                   <select
                     value={pageSize}
-                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                    onChange={(e) =>
+                      handlePageSizeChange(Number(e.target.value))
+                    }
                     className="px-2 py-1 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {[5, 10, 15, 20].map((size) => (
@@ -256,7 +272,9 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                       </option>
                     ))}
                   </select>
-                  <span className="text-sm text-gray-700">entries per page</span>
+                  <span className="text-sm text-gray-700">
+                    entries per page
+                  </span>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -294,4 +312,4 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
   );
 };
 
-export default NotesPopupViewOnly; 
+export default NotesPopupViewOnly;

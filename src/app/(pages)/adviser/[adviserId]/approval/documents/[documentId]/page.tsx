@@ -27,23 +27,27 @@ const AdviserViewDocsPage = ({ params }: AdviserViewDocsPageProps) => {
   // Fetch the group info if document exists
   const group = useQuery(
     api.fetch.getGroupById,
-    document?.group_id ? { groupId: document.group_id } : "skip"
+    document?.group_id ? { groupId: document.group_id } : "skip",
   );
 
   // Fetch the live document ID for Liveblocks room
   const liveDocumentResult = useQuery(
     api.fetch.getLiveDocumentId,
-    document?.group_id && document?.chapter 
-      ? { 
-          groupId: document.group_id, 
+    document?.group_id && document?.chapter
+      ? {
+          groupId: document.group_id,
           chapter: document.chapter,
-          userId: adviserId as Id<"users">
-        } 
-      : "skip"
+          userId: adviserId as Id<"users">,
+        }
+      : "skip",
   );
 
   // Loading state
-  if (document === undefined || group === undefined || liveDocumentResult === undefined) {
+  if (
+    document === undefined ||
+    group === undefined ||
+    liveDocumentResult === undefined
+  ) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -59,8 +63,13 @@ const AdviserViewDocsPage = ({ params }: AdviserViewDocsPageProps) => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Document Not Found</h2>
-          <p className="text-gray-600 mb-4">The document you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Document Not Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            The document you&apos;re looking for doesn&apos;t exist or you
+            don&apos;t have permission to view it.
+          </p>
           <button
             onClick={() => window.history.back()}
             className="px-4 py-2 bg-[#B54A4A] text-white rounded-md hover:bg-[#A03A3A] transition-colors"

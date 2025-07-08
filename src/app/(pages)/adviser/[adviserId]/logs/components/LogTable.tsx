@@ -20,16 +20,21 @@ interface Log {
   _id: Id<"LogsTable">;
   user_id: Id<"users">;
   user_role: number;
-  user_first_name?: string;
-  user_middle_name?: string;
-  user_last_name?: string;
-  user_email?: string;
+  user?: {
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+    email: string;
+  } | null;
   affected_entity_type: string;
   affected_entity_id: Id<"users"> | Id<"groupsTable">;
-  affected_entity_first_name?: string;
-  affected_entity_middle_name?: string;
-  affected_entity_last_name?: string;
-  affected_entity_email?: string;
+  affectedEntity?: {
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
+    email?: string;
+    capstone_title?: string;
+  } | null;
   action: string;
   details: string;
   _creationTime: number;
@@ -171,47 +176,42 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showEntityDropdown]);
 
-  // Convert date strings to timestamps
-  const startTimestamp = startDate
-    ? new Date(startDate + "T00:00:00").getTime()
-    : undefined;
-  const endTimestamp = endDate
-    ? new Date(endDate + "T23:59:59").getTime()
-    : undefined;
-
-  // Fetch logs with search, pagination, sorting, and filtering - filtered by current adviser ID
-  const logsData = useQuery(api.fetch.getLogs, {
-    searchTerm: searchTerm || "",
-    pageSize: pageSize || 5,
-    pageNumber: currentPage || 1,
-    sortField: sortField || undefined,
-    sortDirection: sortDirection || undefined,
-    actionFilters:
-      appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
-    entityTypeFilter:
-      entityTypeFilter === ENTITY_TYPES.ALL ? undefined : entityTypeFilter,
-    startDate: startTimestamp,
-    endDate: endTimestamp,
+  // Fetch logs with backend multi-select filtering for action and entity type
+  const logsData = useQuery(api.fetch.getLogsWithDetails, {
     userRole: 1, // Adviser role
-    specificUserId: adviserId as Id<"users">, // Filter by current adviser ID
+    userId: adviserId as Id<"users">,
+    pageSize,
+    pageNumber: currentPage,
+    action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
+    entityType:
+      entityTypeFilter !== ENTITY_TYPES.ALL
+        ? [entityTypeFilter.toLowerCase()]
+        : undefined,
   });
+
+  const logs: Log[] =
+    logsData && "logs" in logsData
+      ? logsData.logs
+      : Array.isArray(logsData)
+        ? logsData
+        : [];
 
   const getAffectedEntityName = (log: Log) => {
     if (log.affected_entity_type === "user") {
-      if (log.affected_entity_first_name && log.affected_entity_last_name) {
+      if (log.affectedEntity?.first_name && log.affectedEntity?.last_name) {
         const shortId = log.affected_entity_id.toString().slice(-4);
         return {
-          display: `${log.affected_entity_first_name} ${log.affected_entity_middle_name ? log.affected_entity_middle_name + " " : ""}${log.affected_entity_last_name}`,
+          display: `${log.affectedEntity.first_name} ${log.affectedEntity.middle_name ? log.affectedEntity.middle_name + " " : ""}${log.affectedEntity.last_name}`,
           id: shortId,
         };
       }
       return { display: "-", id: null };
     }
-    // For groups, show the project manager's last name + et al. and include the ID
-    if (log.affected_entity_last_name) {
+    // For groups, show the capstone title and include the ID
+    if (log.affectedEntity?.capstone_title) {
       const shortId = log.affected_entity_id.toString().slice(-4);
       return {
-        display: `${log.affected_entity_last_name} et al.`,
+        display: `${log.affectedEntity.capstone_title}`,
         id: shortId,
       };
     }
@@ -327,7 +327,11 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     localStorage.setItem("adviserLogsPageSize", size.toString());
   };
 
-  const { logs = [], totalCount = 0, totalPages = 0 } = logsData || {};
+  function getLocalDateString() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().split("T")[0];
+  }
 
   return (
     <div className="mt-4">
@@ -371,7 +375,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                 setStartDate(e.target.value);
                 setCurrentPage(1);
               }}
-              max={new Date().toISOString().split("T")[0]}
+              max={getLocalDateString()}
             />
           </div>
           <span className="self-center text-gray-500">to</span>
@@ -399,7 +403,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                 setCurrentPage(1);
               }}
               min={startDate || undefined}
-              max={new Date().toISOString().split("T")[0]}
+              max={getLocalDateString()}
             />
           </div>
         </div>
@@ -619,14 +623,14 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
             <p className="text-sm text-gray-700">
               Showing{" "}
               <span className="font-medium">
-                {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+                {logs.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}
               </span>
               {" - "}
               <span className="font-medium">
-                {Math.min(currentPage * pageSize, totalCount)}
+                {Math.min(currentPage * pageSize, logs.length)}
               </span>
               {" of "}
-              <span className="font-medium">{totalCount}</span>
+              <span className="font-medium">{logs.length}</span>
               {" entries"}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
@@ -658,13 +662,14 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
               <FaChevronLeft />
             </button>
             <span className="text-sm text-gray-700">
-              Page {currentPage} of {Math.max(totalPages, 1)}
+              Page {currentPage} of{" "}
+              {Math.max(Math.ceil(logs.length / pageSize), 1)}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === Math.ceil(logs.length / pageSize)}
               className={`p-2 rounded-md ${
-                currentPage === totalPages
+                currentPage === Math.ceil(logs.length / pageSize)
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-gray-700 hover:bg-gray-100"
               }`}

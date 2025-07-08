@@ -62,7 +62,8 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   const [pageSize, setPageSize] = useState(5);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<null | Id<"notes">>(null);
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] =
+    useState<null | Id<"notes">>(null);
 
   // Fetch notes
   const notesResult = useQuery(api.fetch.getDocumentNotes, {
@@ -76,22 +77,24 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   const deleteNote = useMutation(api.mutations.deleteNote);
 
   const allNotes = notesResult?.notes || [];
-  
+
   // Filter notes by date range
   const filteredNotes = allNotes.filter((note) => {
     if (!startDate && !endDate) return true;
-    
+
     const noteDate = new Date(note._creationTime);
-    const noteDateStr = noteDate.toISOString().split('T')[0];
-    
+    const noteDateStr = noteDate.toISOString().split("T")[0];
+
     if (startDate && noteDateStr < startDate) return false;
     if (endDate && noteDateStr > endDate) return false;
-    
+
     return true;
   });
-  
+
   // Sort notes by creation time (latest first) and calculate pagination
-  const sortedNotes = [...filteredNotes].sort((a, b) => b._creationTime - a._creationTime);
+  const sortedNotes = [...filteredNotes].sort(
+    (a, b) => b._creationTime - a._creationTime,
+  );
   const totalCount = sortedNotes.length;
   const totalPages = Math.ceil(totalCount / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -101,7 +104,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   const getNoteNumber = (note: Note) => {
     const chronologicalIndex = filteredNotes
       .sort((a, b) => a._creationTime - b._creationTime)
-      .findIndex(n => n._id === note._id);
+      .findIndex((n) => n._id === note._id);
     return chronologicalIndex + 1;
   };
 
@@ -114,7 +117,10 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "error" | "success" | "warning" | "info",
+  ) => {
     setNotification({ message, type });
   };
 
@@ -184,8 +190,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
       // Reset to first page when adding a new note
       setCurrentPage(1);
       showNotification("Note added successfully", "success");
-    } catch (error) {
-      console.error("Failed to add note:", error);
+    } catch {
       showNotification("Failed to add note. Please try again.", "error");
     } finally {
       setIsAddingNote(false);
@@ -214,8 +219,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
       setEditingNoteId(null);
       setEditingContent("");
       showNotification("Note updated successfully", "success");
-    } catch (error) {
-      console.error("Failed to update note:", error);
+    } catch {
       showNotification("Failed to update note. Please try again.", "error");
     }
   };
@@ -231,8 +235,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
         setCurrentPage(currentPage - 1);
       }
       showNotification("Note deleted successfully", "success");
-    } catch (error) {
-      console.error("Failed to delete note:", error);
+    } catch {
       showNotification("Failed to delete note. Please try again.", "error");
     } finally {
       setPendingDeleteNoteId(null);
@@ -242,7 +245,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   const startEditing = (note: Note) => {
     setEditingNoteId(note._id);
     setEditingContent(note.content);
-    setExpandedNotes(prev => new Set([...prev, note._id]));
+    setExpandedNotes((prev) => new Set([...prev, note._id]));
   };
 
   const cancelEditing = () => {
@@ -369,7 +372,10 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
               {notes.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <FaPlus className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                  <p>No notes yet. Click &quot;Add Note&quot; to create your first note.</p>
+                  <p>
+                    No notes yet. Click &quot;Add Note&quot; to create your
+                    first note.
+                  </p>
                 </div>
               ) : (
                 notes.map((note) => (
@@ -446,6 +452,8 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                             rows={4}
                             placeholder="Enter your note here..."
+                            autoComplete="off"
+                            autoCorrect="off"
                           />
                         ) : (
                           <div className="text-gray-700 whitespace-pre-wrap">
@@ -481,7 +489,9 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                 <div className="flex items-center gap-2">
                   <select
                     value={pageSize}
-                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                    onChange={(e) =>
+                      handlePageSizeChange(Number(e.target.value))
+                    }
                     className="px-2 py-1 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {[5, 10, 15, 20].map((size) => (
@@ -490,7 +500,9 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                       </option>
                     ))}
                   </select>
-                  <span className="text-sm text-gray-700">entries per page</span>
+                  <span className="text-sm text-gray-700">
+                    entries per page
+                  </span>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -531,7 +543,9 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Add New Note</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Add New Note
+              </h3>
             </div>
 
             {/* Content */}
@@ -543,6 +557,9 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 rows={6}
                 disabled={isAddingNote}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </div>
 
@@ -606,4 +623,4 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   );
 };
 
-export default NotesPopup; 
+export default NotesPopup;

@@ -53,15 +53,17 @@ export const DocumentEditor = ({
   return (
     <div className="min-h-screen bg-[#FAFBFD] print:!bg-white print:!min-h-0 print:!p-0 print:!m-0">
       <div className="print:hidden">
-        <Navbar 
-          title={title} 
-          viewOnly={!isEditable} 
-          userType={userType} 
+        <Navbar
+          title={title}
+          viewOnly={!isEditable}
+          userType={userType}
           capstoneTitle={capstoneTitle}
           onOpenVersionHistory={handleOpenVersionHistory}
           backUrl={backUrl}
         />
-        {(isEditable || toolbarMode === "adviserViewOnly") && <Toolbar toolbarMode={toolbarMode} />}
+        {(isEditable || toolbarMode === "adviserViewOnly") && (
+          <Toolbar toolbarMode={toolbarMode} />
+        )}
         {/* View-only banner directly under navbar and toolbar */}
         {!isEditable && (
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center w-full">

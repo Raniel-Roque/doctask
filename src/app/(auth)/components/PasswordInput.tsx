@@ -36,7 +36,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
       id={name}
       name={name}
       type={showPassword ? "text" : "password"}
-      autoComplete={autoComplete}
+      autoComplete={showPassword ? "off" : autoComplete}
       required
       value={password}
       onChange={(e) =>

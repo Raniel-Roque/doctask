@@ -11,6 +11,7 @@ export interface User {
   last_name: string;
   role: number;
   subrole?: number;
+  isDeleted: boolean;
 }
 
 export type Group = Doc<"groupsTable"> & {

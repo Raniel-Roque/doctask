@@ -106,7 +106,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     searchResult?.groups.map((g) => g.project_manager_id) || [],
   );
   const projectManagers = users.filter(
-    (u) => u.role === 0 && u.subrole === 1 && !usedManagerIds.has(u._id),
+    (u) => u && u.role === 0 && u.subrole === 1 && !usedManagerIds.has(u._id),
   );
 
   // Filter members (role 0, subrole 0, not already in a group)
@@ -114,7 +114,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     searchResult?.groups.flatMap((g) => g.member_ids) || [],
   );
   const members = users.filter(
-    (u) => u.role === 0 && u.subrole === 0 && !usedMemberIds.has(u._id),
+    (u) => u && u.role === 0 && u.subrole === 0 && !usedMemberIds.has(u._id),
   );
 
   // Filter advisers (role 1)
@@ -371,7 +371,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const processedGroups: Group[] =
     searchResult?.groups.map((group) => {
       const projectManager = group.project_manager_id
-        ? users.find((u) => u._id === group.project_manager_id)
+        ? users.find((u) => u && u._id === group.project_manager_id)
         : undefined;
       return {
         ...group,
@@ -380,11 +380,11 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           : "Unknown Group",
         projectManager,
         adviser: group.adviser_id
-          ? users.find((u) => u._id === group.adviser_id)
+          ? users.find((u) => u && u._id === group.adviser_id)
           : undefined,
         members: group.member_ids
-          .map((id) => users.find((u) => u._id === id))
-          .filter((u): u is User => u !== undefined),
+          .map((id) => users.find((u) => u && u._id === id))
+          .filter((u): u is User => !!u),
       } as Group;
     }) || [];
 
@@ -465,8 +465,8 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
             isEditingGroup
               ? [
                   ...isEditingGroup.member_ids
-                    .map((id) => users.find((u) => u._id === id))
-                    .filter((user): user is User => user !== undefined),
+                    .map((id) => users.find((u) => u && u._id === id))
+                    .filter((user): user is User => !!user),
                   ...members,
                 ]
               : members

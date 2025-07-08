@@ -10,7 +10,7 @@ interface InstructorHomePageProps {
 }
 
 const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
-  const { instructorId } = await params;
+  const { instructorId } = params;
 
   // Fetch user data
   const user = await fetchQuery(api.fetch.getUserById, {

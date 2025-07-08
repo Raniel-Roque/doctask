@@ -12,10 +12,7 @@ export function Threads({ editor }: { editor: Editor | null }) {
   return (
     <>
       <div className="anchored-threads">
-        <AnchoredThreads 
-          editor={editor} 
-          threads={threads}
-        />
+        <AnchoredThreads editor={editor} threads={threads} />
       </div>
       <FloatingThreads
         editor={editor}

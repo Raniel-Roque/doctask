@@ -79,7 +79,11 @@ export async function getUsers(documentId?: Id<"documents">) {
   }
 }
 
-async function getStudentUsers(currentUser: { _id: Id<"users"> }, clerk: Awaited<ReturnType<typeof clerkClient>>, documentId?: Id<"documents">) {
+async function getStudentUsers(
+  currentUser: { _id: Id<"users"> },
+  clerk: Awaited<ReturnType<typeof clerkClient>>,
+  documentId?: Id<"documents">,
+) {
   // If documentId is provided, check if student has access to this specific document
   if (documentId) {
     const documentAccess = await convex.query(api.fetch.getUserDocumentAccess, {
@@ -114,7 +118,7 @@ async function getStudentUsers(currentUser: { _id: Id<"users"> }, clerk: Awaited
 
   // Get all group members (project manager + members + adviser if assigned)
   const allMemberIds = [group.project_manager_id, ...group.member_ids];
-  
+
   // Add the adviser if one is assigned to this group
   if (group.adviser_id) {
     allMemberIds.push(group.adviser_id);
@@ -159,7 +163,11 @@ async function getStudentUsers(currentUser: { _id: Id<"users"> }, clerk: Awaited
   return users;
 }
 
-async function getAdviserUsers(currentUser: { _id: Id<"users"> }, clerk: Awaited<ReturnType<typeof clerkClient>>, documentId?: Id<"documents">) {
+async function getAdviserUsers(
+  currentUser: { _id: Id<"users"> },
+  clerk: Awaited<ReturnType<typeof clerkClient>>,
+  documentId?: Id<"documents">,
+) {
   // If documentId is provided, check if adviser has access to this specific document
   if (documentId) {
     const documentAccess = await convex.query(api.fetch.getUserDocumentAccess, {
@@ -184,7 +192,7 @@ async function getAdviserUsers(currentUser: { _id: Id<"users"> }, clerk: Awaited
 
   // Get all group members from all adviser's groups
   const allMemberIds = new Set<Id<"users">>();
-  
+
   for (const group of adviserGroups) {
     // Add project manager and members from each group
     if (group.project_manager_id) {

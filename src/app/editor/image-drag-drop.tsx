@@ -116,18 +116,21 @@ export const ImageDragDropWrapper = ({
     if (!isEditable) {
       return;
     }
-    
+
     // Only handle external file drops, not internal editor operations
     const hasFiles = Array.from(e.dataTransfer.types).includes("Files");
-    const hasEditorContent = Array.from(e.dataTransfer.types).some(type => 
-      type.includes("text/html") || type.includes("text/plain") || type.includes("application/x-pm-slice")
+    const hasEditorContent = Array.from(e.dataTransfer.types).some(
+      (type) =>
+        type.includes("text/html") ||
+        type.includes("text/plain") ||
+        type.includes("application/x-pm-slice"),
     );
-    
+
     // If it's internal editor content being moved, don't interfere
     if (hasEditorContent && !hasFiles) {
       return;
     }
-    
+
     // If it has actual files from outside, handle it
     if (hasFiles && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       e.preventDefault();
@@ -141,7 +144,7 @@ export const ImageDragDropWrapper = ({
     if (!isDragOver) {
       return;
     }
-    
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -165,17 +168,23 @@ export const ImageDragDropWrapper = ({
       e.stopPropagation();
       return;
     }
-    
+
     // Check if this is an internal editor operation
-    const hasEditorContent = Array.from(e.dataTransfer.types).some(type => 
-      type.includes("text/html") || type.includes("text/plain") || type.includes("application/x-pm-slice")
+    const hasEditorContent = Array.from(e.dataTransfer.types).some(
+      (type) =>
+        type.includes("text/html") ||
+        type.includes("text/plain") ||
+        type.includes("application/x-pm-slice"),
     );
-    
+
     // If it's internal editor content being moved, don't interfere
-    if (hasEditorContent && (!e.dataTransfer.files || e.dataTransfer.files.length === 0)) {
+    if (
+      hasEditorContent &&
+      (!e.dataTransfer.files || e.dataTransfer.files.length === 0)
+    ) {
       return;
     }
-    
+
     // Only handle external file drops
     if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) {
       return;

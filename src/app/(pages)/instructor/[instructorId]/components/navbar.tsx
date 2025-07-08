@@ -13,10 +13,17 @@ import {
   FaDatabase,
   FaChevronDown,
 } from "react-icons/fa";
-import { Users, GraduationCap, User as UserIcon, LogOut } from "lucide-react";
+import {
+  Users,
+  GraduationCap,
+  User as UserIcon,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 import { LogoutConfirmation } from "../../../components/LogoutConfirmation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
+import UserAvatar from "@/app/(pages)/components/UserAvatar";
 
 interface NavbarProps {
   instructorId: string;
@@ -129,16 +136,19 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
             className="flex items-center gap-2 focus:outline-none"
             aria-label="Open profile menu"
           >
-            <Image
-              src={user?.imageUrl || "/default-profile.png"}
-              alt="Profile"
-              width={36}
-              height={36}
-              className="rounded-full border border-black shadow"
+            <UserAvatar
+              firstName={convexUser?.first_name || user?.firstName || ""}
+              lastName={convexUser?.last_name || user?.lastName || ""}
+              imageUrl={user?.imageUrl}
+              size={36}
             />
             <span className="text-gray-800 font-medium whitespace-nowrap">
               {formatName()}
             </span>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${isProfileDropdownOpen ? "rotate-180" : "rotate-0"}`}
+              aria-hidden="true"
+            />
           </button>
           {isProfileDropdownOpen && (
             <div className="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg py-1 z-50 text-gray-800">

@@ -20,16 +20,21 @@ interface Log {
   _id: Id<"LogsTable">;
   user_id: Id<"users">;
   user_role: number;
-  user_first_name?: string;
-  user_middle_name?: string;
-  user_last_name?: string;
-  user_email?: string;
+  user?: {
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+    email: string;
+  } | null;
   affected_entity_type: string;
   affected_entity_id: Id<"users"> | Id<"groupsTable">;
-  affected_entity_first_name?: string;
-  affected_entity_middle_name?: string;
-  affected_entity_last_name?: string;
-  affected_entity_email?: string;
+  affectedEntity?: {
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
+    email?: string;
+    capstone_title?: string;
+  } | null;
   action: string;
   details: string;
   _creationTime: number;
@@ -51,6 +56,8 @@ const LOG_ACTIONS = {
   UNLOCK_ACCOUNT: "Unlock account",
   ACCEPT_GROUP: "Accept Group Request",
   REJECT_GROUP: "Reject Group Request",
+  BACKUP: "Backup",
+  RESTORE: "Restore",
 } as const;
 
 const ACTION_COLORS = {
@@ -86,6 +93,14 @@ const ACTION_COLORS = {
     bg: "bg-red-100",
     text: "text-red-800",
   },
+  [LOG_ACTIONS.BACKUP]: {
+    bg: "bg-purple-100",
+    text: "text-purple-800",
+  },
+  [LOG_ACTIONS.RESTORE]: {
+    bg: "bg-orange-100",
+    text: "text-orange-800",
+  },
   // Default colors for any new actions
   default: {
     bg: "bg-gray-100",
@@ -98,6 +113,7 @@ const ENTITY_TYPES = {
   ALL: "All Entities",
   USER: "User",
   GROUP: "Group",
+  DATABASE: "Database",
 } as const;
 
 // =========================================
@@ -129,11 +145,14 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const [showActionDropdown, setShowActionDropdown] = useState(false);
   const actionDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [entityTypeFilter, setEntityTypeFilter] = useState<
-    (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES]
-  >(ENTITY_TYPES.ALL);
+  const [appliedEntityTypeFilters, setAppliedEntityTypeFilters] = useState<
+    (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES][]
+  >([]);
   const [showEntityDropdown, setShowEntityDropdown] = useState(false);
   const entityDropdownRef = useRef<HTMLDivElement>(null);
+  const [tempEntityTypeFilters, setTempEntityTypeFilters] = useState<
+    (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES][]
+  >([]);
 
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -155,10 +174,6 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const actionButtonRef = useRef<HTMLButtonElement>(null);
   const entityButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Add after state declarations
-  const [tempEntityTypeFilter, setTempEntityTypeFilter] =
-    useState(entityTypeFilter);
-
   // Sync temporary state with applied state when dropdowns open
   useEffect(() => {
     if (showActionDropdown) {
@@ -168,8 +183,8 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
 
   // Sync temp state when dropdown opens
   useEffect(() => {
-    if (showEntityDropdown) setTempEntityTypeFilter(entityTypeFilter);
-  }, [showEntityDropdown, entityTypeFilter]);
+    if (showEntityDropdown) setTempEntityTypeFilters(appliedEntityTypeFilters);
+  }, [showEntityDropdown, appliedEntityTypeFilters]);
 
   // Click outside handlers
   useEffect(() => {
@@ -204,35 +219,27 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showEntityDropdown]);
 
-  // Convert date strings to timestamps
-  const startTimestamp = startDate
-    ? new Date(startDate + "T00:00:00").getTime()
-    : undefined;
-  const endTimestamp = endDate
-    ? new Date(endDate + "T23:59:59").getTime()
-    : undefined;
-
-  // Fetch logs with search, pagination, sorting, and filtering
-  const logsData = useQuery(api.fetch.getLogs, {
-    searchTerm: searchTerm || "",
-    pageSize: pageSize || 5,
-    pageNumber: currentPage || 1,
-    sortField: sortField || undefined,
-    sortDirection: sortDirection || undefined,
-    actionFilters:
-      appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
-    entityTypeFilter:
-      entityTypeFilter === ENTITY_TYPES.ALL ? undefined : entityTypeFilter,
-    startDate: startTimestamp,
-    endDate: endTimestamp,
+  // Fetch logs with backend multi-select filtering for action and entity type
+  const logsQuery = useQuery(api.fetch.getLogsWithDetails, {
     userRole: userRole,
+    pageSize,
+    pageNumber: currentPage,
+    action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
+    entityType:
+      appliedEntityTypeFilters.length > 0
+        ? appliedEntityTypeFilters.map((e) => e.toLowerCase())
+        : undefined,
   });
 
+  const logs: Log[] = logsQuery?.logs || [];
+  const totalCount = logsQuery?.totalCount || 0;
+  const totalPages = logsQuery?.totalPages || 1;
+
   const getUserName = (log: Log) => {
-    if (log.user_first_name && log.user_last_name) {
+    if (log.user?.first_name && log.user?.last_name) {
       const shortId = log.user_id.toString().slice(-4);
       return {
-        display: `${log.user_first_name} ${log.user_middle_name ? log.user_middle_name + " " : ""}${log.user_last_name}`,
+        display: `${log.user.first_name} ${log.user.middle_name ? log.user.middle_name + " " : ""}${log.user.last_name}`,
         id: shortId,
       };
     }
@@ -244,22 +251,28 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
 
   const getAffectedEntityName = (log: Log) => {
     if (log.affected_entity_type === "user") {
-      if (log.affected_entity_first_name && log.affected_entity_last_name) {
+      if (log.affectedEntity?.first_name && log.affectedEntity?.last_name) {
         const shortId = log.affected_entity_id.toString().slice(-4);
         return {
-          display: `${log.affected_entity_first_name} ${log.affected_entity_middle_name ? log.affected_entity_middle_name + " " : ""}${log.affected_entity_last_name}`,
+          display: `${log.affectedEntity.first_name} ${log.affectedEntity.middle_name ? log.affectedEntity.middle_name + " " : ""}${log.affectedEntity.last_name}`,
           id: shortId,
         };
       }
       return { display: "-", id: null };
     }
-    // For groups, show the project manager's last name + et al. and include the ID
-    if (log.affected_entity_last_name) {
+    // For groups, show the capstone title and include the ID
+    if (
+      log.affected_entity_type === "group" &&
+      log.affectedEntity?.capstone_title
+    ) {
       const shortId = log.affected_entity_id.toString().slice(-4);
       return {
-        display: `${log.affected_entity_last_name} et al.`,
+        display: `${log.affectedEntity.capstone_title}`,
         id: shortId,
       };
+    }
+    if (log.affected_entity_type === "database") {
+      return { display: "Database", id: null };
     }
     return { display: "-", id: null };
   };
@@ -384,7 +397,151 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     localStorage.setItem("logsPageSize", size.toString());
   };
 
-  const { logs = [], totalCount = 0, totalPages = 0 } = logsData || {};
+  // Helper: normalize string for search
+  const normalize = (str: string | undefined | null) =>
+    (str || "").toLowerCase();
+
+  // Add this helper function near the top of the component (after hooks, before return):
+  function getLocalDateString() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().split("T")[0];
+  }
+
+  // Apply all filters and sorting before pagination
+  const filteredAndSortedLogs = logs
+    .filter((log) => {
+      // Action filter
+      if (
+        appliedActionFilters.length > 0 &&
+        !appliedActionFilters.includes(
+          log.action as (typeof LOG_ACTIONS)[keyof typeof LOG_ACTIONS],
+        )
+      ) {
+        return false;
+      }
+      // Entity type filter (multi-select)
+      if (
+        appliedEntityTypeFilters.length > 0 &&
+        !appliedEntityTypeFilters.includes(
+          log.affected_entity_type === "user"
+            ? ENTITY_TYPES.USER
+            : log.affected_entity_type === "group"
+              ? ENTITY_TYPES.GROUP
+              : log.affected_entity_type === "database"
+                ? ENTITY_TYPES.DATABASE
+                : ("" as never),
+        )
+      ) {
+        return false;
+      }
+      // Date filter (inclusive)
+      if (startDate) {
+        const start = new Date(startDate).setHours(0, 0, 0, 0);
+        if (log._creationTime < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate).setHours(23, 59, 59, 999);
+        if (log._creationTime > end) return false;
+      }
+      // Search term filter (existing logic)
+      const term = searchTerm.trim().toLowerCase();
+      if (!term) return true;
+      // Log ID
+      if (log._id.toString().toLowerCase().includes(term)) return true;
+      // User ID (who performed the action)
+      if (log.user_id.toString().toLowerCase().includes(term)) return true;
+      // Affected entity ID
+      if (log.affected_entity_id?.toString().toLowerCase().includes(term))
+        return true;
+      // Action (exact or partial match)
+      if (normalize(log.action).includes(term)) return true;
+      // --- Frontend-only: names/capstone ---
+      // User name (who performed the action)
+      const userName = [
+        log.user?.first_name,
+        log.user?.middle_name,
+        log.user?.last_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (userName.includes(term)) return true;
+      // Affected entity (user or group)
+      let affectedName = "";
+      if (log.affected_entity_type === "user") {
+        affectedName = [
+          log.affectedEntity?.first_name,
+          log.affectedEntity?.middle_name,
+          log.affectedEntity?.last_name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+      } else if (log.affected_entity_type === "group") {
+        affectedName = normalize(log.affectedEntity?.capstone_title);
+      }
+      if (affectedName.includes(term)) return true;
+      return false;
+    })
+    .sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+      switch (sortField) {
+        case "_creationTime":
+          aValue = a._creationTime;
+          bValue = b._creationTime;
+          break;
+        case "instructor":
+          aValue = normalize(
+            [a.user?.first_name, a.user?.middle_name, a.user?.last_name]
+              .filter(Boolean)
+              .join(" "),
+          );
+          bValue = normalize(
+            [b.user?.first_name, b.user?.middle_name, b.user?.last_name]
+              .filter(Boolean)
+              .join(" "),
+          );
+          break;
+        case "affectedEntity":
+          aValue =
+            a.affected_entity_type === "user"
+              ? normalize(
+                  [
+                    a.affectedEntity?.first_name,
+                    a.affectedEntity?.middle_name,
+                    a.affectedEntity?.last_name,
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                )
+              : normalize(a.affectedEntity?.capstone_title);
+          bValue =
+            b.affected_entity_type === "user"
+              ? normalize(
+                  [
+                    b.affectedEntity?.first_name,
+                    b.affectedEntity?.middle_name,
+                    b.affectedEntity?.last_name,
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                )
+              : normalize(b.affectedEntity?.capstone_title);
+          break;
+        case "action":
+          aValue = normalize(a.action);
+          bValue = normalize(b.action);
+          break;
+        default:
+          aValue = a._creationTime;
+          bValue = b._creationTime;
+      }
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
 
   return (
     <div className="mt-4">
@@ -428,7 +585,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                 setStartDate(e.target.value);
                 setCurrentPage(1);
               }}
-              max={new Date().toISOString().split("T")[0]}
+              max={getLocalDateString()}
             />
           </div>
           <span className="self-center text-gray-500">to</span>
@@ -456,7 +613,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                 setCurrentPage(1);
               }}
               min={startDate || undefined}
-              max={new Date().toISOString().split("T")[0]}
+              max={getLocalDateString()}
             />
           </div>
         </div>
@@ -645,7 +802,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                         className={
                           `w-4 h-4 transition-colors ` +
                           (showEntityDropdown ||
-                          entityTypeFilter !== ENTITY_TYPES.ALL
+                          appliedEntityTypeFilters.length > 0
                             ? "text-blue-500"
                             : "text-white")
                         }
@@ -659,38 +816,62 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
-                        {Object.values(ENTITY_TYPES).map((type) => (
-                          <label
-                            key={type}
-                            className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
-                          >
-                            <input
-                              type="radio"
-                              name="entityTypeFilter"
-                              checked={tempEntityTypeFilter === type}
-                              onChange={() => setTempEntityTypeFilter(type)}
-                              className="accent-blue-600"
-                            />
-                            <span className="text-left">
-                              {type === ENTITY_TYPES.ALL
-                                ? "All Entities"
-                                : type === ENTITY_TYPES.USER
+                        {Object.values(ENTITY_TYPES)
+                          .filter((type) => type !== ENTITY_TYPES.ALL)
+                          .map((type) => (
+                            <label
+                              key={type}
+                              className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={tempEntityTypeFilters.includes(type)}
+                                onChange={() => {
+                                  if (tempEntityTypeFilters.includes(type)) {
+                                    setTempEntityTypeFilters(
+                                      tempEntityTypeFilters.filter(
+                                        (t) => t !== type,
+                                      ),
+                                    );
+                                  } else {
+                                    setTempEntityTypeFilters([
+                                      ...tempEntityTypeFilters,
+                                      type,
+                                    ]);
+                                  }
+                                }}
+                                className="accent-blue-600"
+                              />
+                              <span className="text-left">
+                                {type === ENTITY_TYPES.USER
                                   ? "Users"
-                                  : "Groups"}
-                            </span>
-                          </label>
-                        ))}
+                                  : type === ENTITY_TYPES.GROUP
+                                    ? "Groups"
+                                    : "Database"}
+                              </span>
+                            </label>
+                          ))}
                       </div>
                       <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
                         <button
                           onClick={() => {
                             setShowEntityDropdown(false);
-                            setEntityTypeFilter(tempEntityTypeFilter);
+                            setAppliedEntityTypeFilters(tempEntityTypeFilters);
                             setCurrentPage(1);
                           }}
                           className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                         >
                           Apply
+                        </button>
+                        <button
+                          onClick={() => {
+                            setTempEntityTypeFilters([]);
+                            setAppliedEntityTypeFilters([]);
+                            setCurrentPage(1);
+                          }}
+                          className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
+                        >
+                          Reset
                         </button>
                       </div>
                     </div>
@@ -708,7 +889,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             </tr>
           </thead>
           <tbody>
-            {!logsData ? (
+            {!logsQuery ? (
               <tr>
                 <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                   Loading...
@@ -720,8 +901,14 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                   No logs available
                 </td>
               </tr>
+            ) : filteredAndSortedLogs.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                  No entries found
+                </td>
+              </tr>
             ) : (
-              logs.map((log: Log, index: number) => {
+              filteredAndSortedLogs.map((log: Log, index: number) => {
                 const instructor = getUserName(log);
                 const affectedEntity = getAffectedEntityName(log);
                 return (
@@ -774,17 +961,11 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
         <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
           <div className="flex items-center gap-4">
             <p className="text-sm text-gray-700">
-              Showing{" "}
-              <span className="font-medium">
-                {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
-              </span>
+              Showing {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
               {" - "}
-              <span className="font-medium">
-                {Math.min(currentPage * pageSize, totalCount)}
-              </span>
+              {Math.min(currentPage * pageSize, totalCount)}
               {" of "}
-              <span className="font-medium">{totalCount}</span>
-              {" entries"}
+              {totalCount} entries
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
             <div className="flex items-center gap-2">
@@ -819,9 +1000,9 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === Math.max(totalPages, 1)}
               className={`p-2 rounded-md ${
-                currentPage === totalPages
+                currentPage === Math.max(totalPages, 1)
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-gray-700 hover:bg-gray-100"
               }`}

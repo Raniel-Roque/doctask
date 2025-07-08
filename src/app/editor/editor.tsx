@@ -186,8 +186,7 @@ export const Editor = ({
       attributes: {
         style:
           "padding-left: 56px; padding-right:56px; font-family: 'Times New Roman', serif; font-size: 11px; line-height: 1.5; text-align: justify;",
-        class:
-          `focus:outline-none bg-white border border-[#C7C7C7] print:border-none print:shadow-none print:m-0 print:p-0 flex flex-col min-h-[1054px] w-[816px] pt-10 pr-14 pb-10 ${isEditable ? 'cursor-text' : 'cursor-default'}`,
+        class: `focus:outline-none bg-white border border-[#C7C7C7] print:border-none print:shadow-none print:m-0 print:p-0 flex flex-col min-h-[1054px] w-[816px] pt-10 pr-14 pb-10 ${isEditable ? "cursor-text" : "cursor-default"}`,
       },
       handleDrop: (view, event, slice, moved) => {
         // Disable all drop operations in view-only mode
@@ -195,12 +194,12 @@ export const Editor = ({
           event.preventDefault();
           return true; // Prevent default handling
         }
-        
+
         // If it's an internal move (repositioning existing content), let the default handler deal with it
         if (moved) {
           return false; // Let ProseMirror handle internal moves efficiently
         }
-        
+
         // Only handle external file drops
         if (
           event.dataTransfer &&
@@ -218,11 +217,11 @@ export const Editor = ({
                   top: event.clientY,
                 });
                 if (coordinates) {
-                  const node = schema.nodes.image.create({ 
+                  const node = schema.nodes.image.create({
                     src: url,
                     // Add attributes to prevent reloading
-                    loading: 'lazy',
-                    decoding: 'async'
+                    loading: "lazy",
+                    decoding: "async",
                   });
                   const transaction = view.state.tr.insert(
                     coordinates.pos,
@@ -243,7 +242,7 @@ export const Editor = ({
           event.preventDefault();
           return true; // Prevent default handling
         }
-        
+
         const items = Array.from(event.clipboardData?.items || []);
         for (const item of items) {
           if (item.type.startsWith("image/")) {
@@ -269,12 +268,34 @@ export const Editor = ({
         if (!isEditable) {
           // Allow only navigation keys and modifier keys
           const allowedKeys = [
-            'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-            'Home', 'End', 'PageUp', 'PageDown',
-            'Tab', 'Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
-            'Control', 'Alt', 'Shift', 'Meta'
+            "ArrowUp",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "Home",
+            "End",
+            "PageUp",
+            "PageDown",
+            "Tab",
+            "Escape",
+            "F1",
+            "F2",
+            "F3",
+            "F4",
+            "F5",
+            "F6",
+            "F7",
+            "F8",
+            "F9",
+            "F10",
+            "F11",
+            "F12",
+            "Control",
+            "Alt",
+            "Shift",
+            "Meta",
           ];
-          
+
           if (!allowedKeys.includes(event.key)) {
             event.preventDefault();
             return true; // Prevent default handling
@@ -309,8 +330,8 @@ export const Editor = ({
         allowBase64: true,
         // Prevent unnecessary re-renders during drag operations
         HTMLAttributes: {
-          loading: 'lazy',
-          decoding: 'async',
+          loading: "lazy",
+          decoding: "async",
           draggable: isEditable, // Only allow dragging when editable
         },
       }),

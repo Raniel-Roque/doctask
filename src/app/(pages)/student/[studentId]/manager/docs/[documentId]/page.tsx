@@ -52,7 +52,7 @@ const useSaveToDatabase = (
           chapter: document.chapter,
           userId: currentUser._id,
         }
-      : "skip"
+      : "skip",
   );
 
   // Get the live document content to compare against
@@ -60,7 +60,7 @@ const useSaveToDatabase = (
     api.fetch.getDocument,
     liveDocumentData?.documentId
       ? { documentId: liveDocumentData.documentId }
-      : "skip"
+      : "skip",
   );
 
   const saveToDatabase = async () => {
@@ -135,13 +135,14 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
           chapter: document.chapter,
           userId: currentUser._id,
         }
-      : "skip"
+      : "skip",
   );
 
   // Check if current document is a version snapshot (not the live document)
-  const isVersionSnapshot = document && liveDocumentData?.documentId 
-    ? document._id !== liveDocumentData.documentId
-    : false;
+  const isVersionSnapshot =
+    document && liveDocumentData?.documentId
+      ? document._id !== liveDocumentData.documentId
+      : false;
 
   // Check if user can edit this document (managers have broader edit access)
   const canEdit = () => {
@@ -279,10 +280,10 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
   }
 
   return (
-    <Room 
-      title={document.title} 
-      isEditable={isEditable} 
-      userType="manager" 
+    <Room
+      title={document.title}
+      isEditable={isEditable}
+      userType="manager"
       capstoneTitle={userAccess?.group?.capstone_title}
       groupId={document.group_id}
       chapter={document.chapter}

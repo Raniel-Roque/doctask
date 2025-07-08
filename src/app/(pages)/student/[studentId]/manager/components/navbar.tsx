@@ -6,11 +6,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { useState, useRef, useEffect } from "react";
 import { FaHome, FaClipboardList } from "react-icons/fa";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon, ChevronDown } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { LogoutConfirmation } from "@/app/(pages)/components/LogoutConfirmation";
-
+import UserAvatar from "@/app/(pages)/components/UserAvatar";
 interface NavbarProps {
   studentId: string;
 }
@@ -104,16 +104,19 @@ export const Navbar = ({ studentId }: NavbarProps) => {
               className="flex items-center gap-2 focus:outline-none"
               aria-label="Open profile menu"
             >
-              <Image
-                src={user?.imageUrl || "/default-profile.png"}
-                alt="Profile"
-                width={36}
-                height={36}
-                className="rounded-full border border-black shadow"
+              <UserAvatar
+                firstName={convexUser?.first_name || user?.firstName || ""}
+                lastName={convexUser?.last_name || user?.lastName || ""}
+                imageUrl={user?.imageUrl}
+                size={36}
               />
               <span className="text-gray-800 font-medium whitespace-nowrap">
                 {formatName()}
               </span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${isProfileDropdownOpen ? "rotate-180" : "rotate-0"}`}
+                aria-hidden="true"
+              />
             </button>
             {isProfileDropdownOpen && (
               <div className="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg py-1 z-50 text-gray-800">

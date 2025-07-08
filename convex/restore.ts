@@ -111,20 +111,21 @@ export const restoreUser = mutation({
     role: v.number(),
     middle_name: v.optional(v.string()),
     subrole: v.optional(v.number()),
+    isDeleted: v.optional(v.boolean()),
+    email_verified: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    // Create user directly without any additional logic
     const userId = await ctx.db.insert("users", {
       clerk_id: args.clerk_id,
       email: args.email,
-      email_verified: false,
+      email_verified: args.role === 2 ? true : false,
       first_name: args.first_name,
       middle_name: args.middle_name,
       last_name: args.last_name,
       role: args.role,
       subrole: args.subrole,
+      isDeleted: args.isDeleted ?? false,
     });
-
     return { success: true, userId };
   },
 });
@@ -136,6 +137,7 @@ export const restoreGroup = mutation({
     adviser_id: v.optional(v.id("users")),
     requested_adviser: v.optional(v.id("users")),
     capstone_title: v.optional(v.string()),
+    isDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     // Create group directly without any additional logic
@@ -145,6 +147,7 @@ export const restoreGroup = mutation({
       adviser_id: args.adviser_id,
       requested_adviser: args.requested_adviser,
       capstone_title: args.capstone_title,
+      isDeleted: args.isDeleted ?? false,
     });
 
     return { success: true, groupId };
@@ -169,6 +172,7 @@ export const restoreStudentEntry = mutation({
     secondaryAddress: v.optional(v.string()),
     primarySchool: v.optional(v.string()),
     primaryAddress: v.optional(v.string()),
+    isDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("studentsTable", {
@@ -188,6 +192,7 @@ export const restoreStudentEntry = mutation({
       secondaryAddress: args.secondaryAddress,
       primarySchool: args.primarySchool,
       primaryAddress: args.primaryAddress,
+      isDeleted: args.isDeleted ?? false,
     });
     return { success: true };
   },
@@ -199,6 +204,7 @@ export const restoreAdviserCode = mutation({
     code: v.string(),
     group_ids: v.optional(v.array(v.id("groupsTable"))),
     requests_group_ids: v.optional(v.array(v.id("groupsTable"))),
+    isDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("advisersTable", {
@@ -206,6 +212,7 @@ export const restoreAdviserCode = mutation({
       code: args.code,
       group_ids: args.group_ids || [],
       requests_group_ids: args.requests_group_ids || [],
+      isDeleted: args.isDeleted ?? false,
     });
 
     return { success: true };
@@ -216,9 +223,9 @@ export const restoreDocument = mutation({
   args: {
     group_id: v.id("groupsTable"),
     chapter: v.string(),
-    room_id: v.string(),
     title: v.string(),
     content: v.string(),
+    isDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("documents", {
@@ -226,8 +233,8 @@ export const restoreDocument = mutation({
       chapter: args.chapter,
       title: args.title,
       content: args.content,
+      isDeleted: args.isDeleted ?? false,
     });
-
     return { success: true };
   },
 });
@@ -240,6 +247,7 @@ export const restoreTaskAssignment = mutation({
     title: v.string(),
     task_status: v.number(),
     assigned_student_ids: v.array(v.id("users")),
+    isDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("taskAssignments", {
@@ -249,6 +257,7 @@ export const restoreTaskAssignment = mutation({
       title: args.title,
       task_status: args.task_status,
       assigned_student_ids: args.assigned_student_ids,
+      isDeleted: args.isDeleted ?? false,
     });
 
     return { success: true };
@@ -262,6 +271,7 @@ export const restoreDocumentStatus = mutation({
     review_status: v.number(),
     note_ids: v.optional(v.array(v.id("notes"))),
     last_modified: v.optional(v.number()),
+    isDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("documentStatus", {
@@ -270,6 +280,7 @@ export const restoreDocumentStatus = mutation({
       review_status: args.review_status,
       note_ids: args.note_ids,
       last_modified: args.last_modified,
+      isDeleted: args.isDeleted ?? false,
     });
 
     return { success: true };
@@ -281,15 +292,17 @@ export const restoreNote = mutation({
     group_id: v.id("groupsTable"),
     document_part: v.string(),
     content: v.string(),
+    isDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.insert("notes", {
+    const noteId = await ctx.db.insert("notes", {
       group_id: args.group_id,
       document_part: args.document_part,
       content: args.content,
+      isDeleted: args.isDeleted ?? false,
     });
 
-    return { success: true };
+    return { success: true, noteId };
   },
 });
 
@@ -303,6 +316,7 @@ export const restoreImage = mutation({
     uploaded_by: v.id("users"),
     alt_text: v.optional(v.string()),
     url: v.string(),
+    isDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("images", {
@@ -314,6 +328,7 @@ export const restoreImage = mutation({
       uploaded_by: args.uploaded_by,
       alt_text: args.alt_text,
       url: args.url,
+      isDeleted: args.isDeleted ?? false,
     });
 
     return { success: true };

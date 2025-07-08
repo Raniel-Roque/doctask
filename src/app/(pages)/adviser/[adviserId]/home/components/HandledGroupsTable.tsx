@@ -146,7 +146,10 @@ export const HandledGroupsTable = ({
                   <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600">
                     Progress
                   </th>
-                  <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600" style={{width: '5.5rem'}}>
+                  <th
+                    className="text-center pt-1 pb-3 px-4 font-medium text-gray-600"
+                    style={{ width: "5.5rem" }}
+                  >
                     Submitted
                   </th>
                   <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600">
@@ -230,7 +233,10 @@ export const HandledGroupsTable = ({
                   };
 
                   return (
-                    <tr key={group._id} className="border-b !border-gray-200 hover:bg-gray-50">
+                    <tr
+                      key={group._id}
+                      className="border-b !border-gray-200 hover:bg-gray-50"
+                    >
                       <td className="py-3 px-4">{groupName}</td>
                       <td className="py-3 px-4">
                         {group.capstone_title || "No title yet"}
@@ -260,7 +266,10 @@ export const HandledGroupsTable = ({
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-center" style={{width: '5.5rem'}}>
+                      <td
+                        className="py-3 px-4 text-center"
+                        style={{ width: "5.5rem" }}
+                      >
                         <span>{statusCounts.in_review}</span>
                       </td>
                       <td className="py-3 px-4 text-center">

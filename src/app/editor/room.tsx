@@ -27,7 +27,7 @@ interface RoomProps {
   backUrl?: string;
 }
 
-type User = { id: string; name: string; avatar: string; color: string; };
+type User = { id: string; name: string; avatar: string; color: string };
 
 export function Room(props: RoomProps) {
   const params = useParams();
@@ -43,8 +43,7 @@ export function Room(props: RoomProps) {
       const documentId = props.liveDocumentId || (params.documentId as string);
       const list = await getUsers(documentId as Id<"documents">);
       setUsers(list);
-    } catch {
-    }
+    } catch {}
   }, [props.liveDocumentId, params.documentId]);
 
   useEffect(() => {
@@ -128,14 +127,16 @@ export function Room(props: RoomProps) {
       throttle={16}
       authEndpoint={"/api/liveblocks-auth"}
       resolveUsers={({ userIds }) =>
-        userIds.map((userId) => users.find((user) => user.id === userId) ?? undefined)
+        userIds.map(
+          (userId) => users.find((user) => user.id === userId) ?? undefined,
+        )
       }
       resolveMentionSuggestions={({ text }) => {
         let filteredUsers = users;
 
         if (text) {
           filteredUsers = users.filter((user) =>
-            user.name.toLowerCase().includes(text.toLowerCase())
+            user.name.toLowerCase().includes(text.toLowerCase()),
           );
         }
 

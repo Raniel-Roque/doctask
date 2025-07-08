@@ -67,7 +67,7 @@ export const sanitizeInput = (
 
   // Preserve case if enabled
   if (!preserveCase) {
-    sanitizedValue = sanitizedValue.toLowerCase();
+    // sanitizedValue = sanitizedValue.toLowerCase();
   }
 
   return sanitizedValue;

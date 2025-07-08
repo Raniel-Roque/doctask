@@ -11,6 +11,7 @@ import VerifyCodeInput from "../components/VerifyCodeInput";
 import PasswordInput from "../components/PasswordInput";
 import ResetCodeInput from "../components/ResetCodeInput";
 import ResetPasswordInput from "../components/ResetPasswordInput";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 
 interface ClerkError {
   errors: Array<{
@@ -26,17 +27,19 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [step, setStep] = useState(1); // 1: Email, 2: Verification Code, 3: Password, 4: Reset Password
   const [resentSuccess, setResentSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "error" | "success" | "warning" | "info";
+  } | null>(null);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [forgotStep, setForgotStep] = useState(false); // false: login, true: forgot password
   const [forgotStepIndex, setForgotStepIndex] = useState(0); // 0: code, 1: reset password
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     if (isSignedIn) {
@@ -59,6 +62,11 @@ const LoginPage = () => {
     setResentSuccess(false);
   }, [step]);
 
+  useEffect(() => {
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  }, [step, forgotStep, forgotStepIndex]);
+
   if (isMobile) {
     return (
       <div className="min-h-screen bg-[#B54A4A] flex items-center justify-center p-4">
@@ -79,7 +87,6 @@ const LoginPage = () => {
 
     try {
       setLoading(true);
-      setError("");
 
       // Convert email to lowercase only when submitting
       const emailToCheck = email.toLowerCase();
@@ -94,7 +101,7 @@ const LoginPage = () => {
       const data = await response.json();
 
       if (!data.exists) {
-        setError("Email not found");
+        setNotification({ message: "Email not found", type: "error" });
         return;
       }
 
@@ -123,13 +130,19 @@ const LoginPage = () => {
 
         if (result.status === "needs_first_factor") {
           setStep(2);
-          setError(""); // Clear any previous errors
         } else {
-          setError("Failed to send verification code. Please try again.");
+          setNotification({
+            message: "Failed to send verification code. Please try again.",
+            type: "error",
+          });
         }
       }
-    } catch {
-      setError("An error occurred. Please try again.");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "";
+      setNotification({
+        message: errorMessage || "An error occurred. Please try again.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -140,7 +153,7 @@ const LoginPage = () => {
 
     try {
       setLoading(true);
-      setError("");
+
       setEmail(email);
 
       // Check if email exists in our database
@@ -153,7 +166,7 @@ const LoginPage = () => {
       const data = await response.json();
 
       if (!data.exists) {
-        setError("Email not found");
+        setNotification({ message: "Email not found", type: "error" });
         return;
       }
 
@@ -176,7 +189,6 @@ const LoginPage = () => {
           // Try to log in
           setLoading(true);
           setStep(3); // Show password step in case login fails
-          setError("");
           try {
             const result = await signIn.create({
               identifier: email,
@@ -190,14 +202,19 @@ const LoginPage = () => {
               );
               return; // Success, user will be redirected
             } else {
-              setError("Incorrect password. Please try again.");
+              setNotification({
+                message: "Incorrect password. Please try again.",
+                type: "error",
+              });
             }
           } catch (err) {
             const clerkError = err as ClerkError;
-            setError(
-              clerkError.errors?.[0]?.message ||
+            setNotification({
+              message:
+                clerkError.errors?.[0]?.message ||
                 "An error occurred during sign in",
-            );
+              type: "error",
+            });
           } finally {
             setLoading(false);
           }
@@ -214,13 +231,19 @@ const LoginPage = () => {
 
         if (result.status === "needs_first_factor") {
           setStep(2);
-          setError(""); // Clear any previous errors
         } else {
-          setError("Failed to send verification code. Please try again.");
+          setNotification({
+            message: "Failed to send verification code. Please try again.",
+            type: "error",
+          });
         }
       }
-    } catch {
-      setError("An error occurred. Please try again.");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "";
+      setNotification({
+        message: errorMessage || "An error occurred. Please try again.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -233,7 +256,6 @@ const LoginPage = () => {
 
     try {
       setLoading(true);
-      setError("");
 
       const result = await signIn.attemptFirstFactor({
         strategy: "email_code",
@@ -252,28 +274,21 @@ const LoginPage = () => {
           throw new Error("Failed to fetch user for verification update");
         }
 
-        const user = await userRes.json();
-
         // Update email_verified status
-        const verifyRes = await fetch("/api/convex/mark-email-verified", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user._id }),
-        });
-
-        if (!verifyRes.ok) {
-          throw new Error("Failed to update verification status");
-        }
-
-        // Sign out to clear the session before moving to password step
-        setError(""); // Clear any errors
         await signOut();
         localStorage.setItem("lastActivityTimestamp", Date.now().toString());
       } else {
-        setError("Invalid code. Please try again.");
+        setNotification({
+          message: "Invalid code. Please try again.",
+          type: "error",
+        });
       }
-    } catch {
-      setError("Invalid code. Please try again.");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "";
+      setNotification({
+        message: errorMessage || "Invalid code. Please try again.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -285,7 +300,6 @@ const LoginPage = () => {
 
     try {
       setLoading(true);
-      setError("");
 
       const result = await signIn.create({
         identifier: email,
@@ -296,23 +310,32 @@ const LoginPage = () => {
         await setActive({ session: result.createdSessionId });
         localStorage.setItem("lastActivityTimestamp", Date.now().toString());
       } else {
-        setError("Incorrect password. Please try again.");
+        setNotification({
+          message: "Incorrect password. Please try again.",
+          type: "error",
+        });
       }
     } catch (err) {
-      const errorMessage = (err as Error).message || "";
-
+      const errorMessage = err instanceof Error ? err.message : "";
       if (errorMessage.includes("Your account is locked")) {
-        setError(
-          `Your account is locked. Please try again later or contact your capstone instructor.`,
-        );
+        setNotification({
+          message: `Your account is locked. Please try again later or contact your capstone instructor.`,
+          type: "error",
+        });
       } else if (
         errorMessage.toLowerCase().includes("password") ||
         errorMessage.toLowerCase().includes("invalid credentials") ||
         errorMessage.toLowerCase().includes("incorrect")
       ) {
-        setError("Incorrect password. Please try again.");
+        setNotification({
+          message: "Incorrect password. Please try again.",
+          type: "error",
+        });
       } else {
-        setError("An error occurred during sign in");
+        setNotification({
+          message: "An error occurred during sign in",
+          type: "error",
+        });
       }
     } finally {
       setLoading(false);
@@ -324,7 +347,6 @@ const LoginPage = () => {
 
     try {
       setLoading(true);
-      setError("");
 
       const result = await signIn.create({
         strategy: "email_code",
@@ -332,20 +354,26 @@ const LoginPage = () => {
       });
 
       if (result.status === "needs_first_factor") {
-        setError(""); // Clear any previous errors
         setResentSuccess(true);
-        setSuccessMessage(
-          "A new verification code has been sent to your email. Please check your inbox and spam folder.",
-        );
+        setNotification({
+          message:
+            "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+          type: "success",
+        });
       } else {
-        setError("Failed to resend code. Please try again.");
+        setNotification({
+          message: "Failed to resend code. Please try again.",
+          type: "error",
+        });
         setResentSuccess(false);
-        setSuccessMessage("");
       }
-    } catch {
-      setError("An error occurred. Please try again.");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "";
+      setNotification({
+        message: errorMessage || "An error occurred. Please try again.",
+        type: "error",
+      });
       setResentSuccess(false);
-      setSuccessMessage("");
     } finally {
       setLoading(false);
     }
@@ -355,7 +383,7 @@ const LoginPage = () => {
     setForgotStep(true);
     setStep(4);
     setForgotStepIndex(0);
-    setError("");
+    setNotification({ message: "", type: "info" });
     setCode("");
     setPassword("");
     setConfirmPassword("");
@@ -367,17 +395,23 @@ const LoginPage = () => {
         identifier: email,
       });
       if (result.status === "needs_first_factor") {
-        setSuccessMessage(
-          "A password reset code has been sent to your email. Please check your inbox and spam folder.",
-        );
-        setError("");
+        setNotification({
+          message:
+            "A password reset code has been sent to your email. Please check your inbox and spam folder.",
+          type: "success",
+        });
       } else {
-        setError("Failed to send reset code. Please try again.");
-        setSuccessMessage("");
+        setNotification({
+          message: "Failed to send reset code. Please try again.",
+          type: "error",
+        });
       }
-    } catch {
-      setError("Failed to send reset code. Please try again.");
-      setSuccessMessage("");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "";
+      setNotification({
+        message: errorMessage || "Failed to send reset code. Please try again.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -388,19 +422,19 @@ const LoginPage = () => {
       // If on reset password input, go back to password input (step 3)
       setForgotStep(false);
       setStep(3);
-      setError("");
+      setNotification({ message: "", type: "info" });
       setCode("");
       setPassword("");
       setConfirmPassword("");
     } else if (step === 3 && !forgotStep) {
       // If on password step, go back to email input
       setStep(1);
-      setError("");
+      setNotification({ message: "", type: "info" });
       setPassword("");
     } else {
       setForgotStep(false);
       setStep(3);
-      setError("");
+      setNotification({ message: "", type: "info" });
       setCode("");
       setPassword("");
       setConfirmPassword("");
@@ -430,6 +464,11 @@ const LoginPage = () => {
 
       {/* Right Section */}
       <div className="w-full md:w-[35%] bg-[#B54A4A] flex flex-col items-center justify-center p-8 md:p-12 relative shadow-2xl">
+        <NotificationBanner
+          message={notification?.message || null}
+          type={notification?.type || "info"}
+          onClose={() => setNotification(null)}
+        />
         <div className="max-w-sm w-full space-y-8 z-10 relative pb-16">
           {/* Back Button for steps 2, 3, 4 */}
           {step > 1 && (
@@ -462,20 +501,13 @@ const LoginPage = () => {
               action="#"
               method="post"
             >
-              <input type="hidden" name="username" value={email} />
               <EmailInput
                 email={email}
                 setEmail={setEmail}
                 loading={loading}
                 name="email"
-                autoComplete="username"
                 onAutocomplete={handleAutocomplete}
               />
-              {error && (
-                <div className="text-red-300 text-sm text-center mt-4">
-                  {error}
-                </div>
-              )}
               <div className="mt-6">
                 <button
                   type="submit"
@@ -505,11 +537,8 @@ const LoginPage = () => {
           {step === 2 && (
             <form className="mt-8 space-y-6" onSubmit={handleCodeSubmit}>
               {resentSuccess && (
-                <div
-                  className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs"
-                  role="alert"
-                >
-                  <span className="block sm:inline">{successMessage}</span>
+                <div className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs">
+                  {notification?.message}
                 </div>
               )}
               <VerifyCodeInput
@@ -517,11 +546,6 @@ const LoginPage = () => {
                 setCode={setCode}
                 loading={loading}
               />
-              {error && (
-                <div className="text-red-300 text-sm text-center mt-4">
-                  {error}
-                </div>
-              )}
               <div className="mt-6">
                 <button
                   type="submit"
@@ -564,7 +588,6 @@ const LoginPage = () => {
               onSubmit={handlePasswordSubmit}
               autoComplete="on"
             >
-              <input type="hidden" name="username" value={email} />
               <PasswordInput
                 password={password}
                 setPassword={setPassword}
@@ -574,11 +597,6 @@ const LoginPage = () => {
                 name="password"
                 autoComplete="current-password"
               />
-              {error && (
-                <div className="text-red-300 text-sm text-center mt-4">
-                  {error}
-                </div>
-              )}
               <div className="mt-6">
                 <button
                   type="submit"
@@ -627,25 +645,21 @@ const LoginPage = () => {
               </button>
               {forgotStepIndex === 0 && (
                 <>
-                  {successMessage && (
-                    <div
-                      className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs"
-                      role="alert"
-                    >
-                      <span className="block sm:inline">{successMessage}</span>
+                  {notification?.message && (
+                    <div className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs">
+                      {notification.message}
                     </div>
                   )}
                   <ResetCodeInput
                     code={code}
                     setCode={setCode}
                     loading={loading}
-                    error={error}
+                    error={notification?.message}
                     onResendCode={handleResendCode}
                     onSubmit={async (e) => {
                       e.preventDefault();
                       if (!isLoaded) return;
                       setLoading(true);
-                      setError("");
                       try {
                         const result = await signIn.attemptFirstFactor({
                           strategy: "reset_password_email_code",
@@ -653,12 +667,17 @@ const LoginPage = () => {
                         });
                         if (result.status === "needs_new_password") {
                           setForgotStepIndex(1);
-                          setError("");
                         } else {
-                          setError("Invalid code. Please try again.");
+                          setNotification({
+                            message: "Invalid code. Please try again.",
+                            type: "error",
+                          });
                         }
                       } catch {
-                        setError("Invalid code. Please try again.");
+                        setNotification({
+                          message: "Invalid code. Please try again.",
+                          type: "error",
+                        });
                       } finally {
                         setLoading(false);
                       }
@@ -677,20 +696,25 @@ const LoginPage = () => {
                   showConfirmPassword={showConfirmPassword}
                   setShowConfirmPassword={setShowConfirmPassword}
                   loading={loading}
-                  error={error}
+                  error={notification?.message}
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!isLoaded) return;
                     if (password !== confirmPassword) {
-                      setError("Passwords do not match");
+                      setNotification({
+                        message: "Passwords do not match",
+                        type: "error",
+                      });
                       return;
                     }
                     if (password.length < 8) {
-                      setError("Password must be at least 8 characters long");
+                      setNotification({
+                        message: "Password must be at least 8 characters long",
+                        type: "error",
+                      });
                       return;
                     }
                     setLoading(true);
-                    setError("");
                     try {
                       const result = await signIn.resetPassword({ password });
                       if (result.status === "complete") {
@@ -718,10 +742,17 @@ const LoginPage = () => {
                           Date.now().toString(),
                         );
                       } else {
-                        setError("Failed to reset password. Please try again.");
+                        setNotification({
+                          message:
+                            "Failed to reset password. Please try again.",
+                          type: "error",
+                        });
                       }
                     } catch {
-                      setError("Failed to reset password. Please try again.");
+                      setNotification({
+                        message: "Failed to reset password. Please try again.",
+                        type: "error",
+                      });
                     } finally {
                       setLoading(false);
                     }

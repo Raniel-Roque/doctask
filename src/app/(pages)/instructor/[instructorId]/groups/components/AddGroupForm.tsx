@@ -573,7 +573,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             value={projectManagerSearch}
                             onChange={handleProjectManagerSearch}
                             placeholder="Search project manager..."
-                            className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            className="w-full pl-8 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 border-0 shadow-none bg-white"
                             autoFocus
                           />
                           <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
@@ -681,7 +681,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             value={adviserSearch}
                             onChange={handleAdviserSearch}
                             placeholder="Search adviser..."
-                            className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            className="w-full pl-8 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 border-0 shadow-none bg-white"
                             autoFocus
                           />
                           <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
@@ -802,7 +802,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           value={memberSearch}
                           onChange={handleMemberSearch}
                           placeholder="Search members..."
-                          className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full pl-8 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 border-0 shadow-none bg-white"
                           autoFocus
                         />
                         <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">

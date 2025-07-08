@@ -25,9 +25,10 @@ export const createImage = mutation({
       throw new ConvexError("Group not found");
     }
 
-    const userInGroup = group.project_manager_id === args.uploaded_by || 
-                       group.member_ids.includes(args.uploaded_by);
-    
+    const userInGroup =
+      group.project_manager_id === args.uploaded_by ||
+      group.member_ids.includes(args.uploaded_by);
+
     if (!userInGroup) {
       throw new ConvexError("User does not have access to this group");
     }
@@ -48,6 +49,7 @@ export const createImage = mutation({
       uploaded_by: args.uploaded_by,
       alt_text: args.alt_text,
       url: url,
+      isDeleted: false,
     });
 
     return imageId;
@@ -69,9 +71,10 @@ export const getImage = query({
       return null;
     }
 
-    const userInGroup = group.project_manager_id === args.userId || 
-                       group.member_ids.includes(args.userId);
-    
+    const userInGroup =
+      group.project_manager_id === args.userId ||
+      group.member_ids.includes(args.userId);
+
     if (!userInGroup) {
       return null;
     }
@@ -90,9 +93,10 @@ export const getGroupImages = query({
       return [];
     }
 
-    const userInGroup = group.project_manager_id === args.userId || 
-                       group.member_ids.includes(args.userId);
-    
+    const userInGroup =
+      group.project_manager_id === args.userId ||
+      group.member_ids.includes(args.userId);
+
     if (!userInGroup) {
       return [];
     }
@@ -135,9 +139,10 @@ export const deleteImage = mutation({
       throw new ConvexError("Group not found");
     }
 
-    const userInGroup = group.project_manager_id === args.userId || 
-                       group.member_ids.includes(args.userId);
-    
+    const userInGroup =
+      group.project_manager_id === args.userId ||
+      group.member_ids.includes(args.userId);
+
     if (!userInGroup) {
       throw new ConvexError("User does not have access to this image");
     }
@@ -147,7 +152,7 @@ export const deleteImage = mutation({
 
     // Note: We don't delete the file from storage here to preserve it for version history
     // The file will remain in storage but won't be accessible through the images table
-    
+
     return { success: true };
   },
-}); 
+});

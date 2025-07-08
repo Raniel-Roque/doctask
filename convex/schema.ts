@@ -13,6 +13,7 @@ export default defineSchema({
     clerk_id: v.string(),
     email: v.string(),
     email_verified: v.boolean(),
+    isDeleted: v.boolean(),
 
     // User Information
     first_name: v.string(),
@@ -40,6 +41,7 @@ export default defineSchema({
     // Group Information
     capstone_title: v.optional(v.string()),
     grade: v.optional(v.number()),
+    isDeleted: v.boolean(),
 
     // Relationships
     project_manager_id: v.id("users"), // Reference to user with role 0 and subrole 1
@@ -70,6 +72,7 @@ export default defineSchema({
     // Foreign Keys
     user_id: v.id("users"), // Reference to user table
     group_id: v.union(v.id("groupsTable"), v.null()), // Reference to group table or null
+    isDeleted: v.boolean(),
 
     // Secondary Profile Fields
     gender: v.optional(v.number()), // 0 = Male, 1 = Female, 2 = Other
@@ -96,6 +99,7 @@ export default defineSchema({
   advisersTable: defineTable({
     // Adviser Identification
     adviser_id: v.id("users"),
+    isDeleted: v.boolean(),
 
     // Code Information
     code: v.string(), // Format: XXXX-XXXX-XXXX where X is a capital letter
@@ -114,44 +118,18 @@ export default defineSchema({
     // Log Identification
     user_id: v.id("users"), // The user who performed the action
     user_role: v.number(), // 0 = instructor, 1 = adviser
-    user_first_name: v.optional(v.string()),
-    user_middle_name: v.optional(v.string()),
-    user_last_name: v.optional(v.string()),
-    user_email: v.optional(v.string()),
+    action: v.string(), // The action performed
+    details: v.string(), // JSON stringified details of the action
 
     // Affected Entity Information
     affected_entity_type: v.string(), // "user" or "group"
     affected_entity_id: v.union(v.id("users"), v.id("groupsTable")), // ID of affected entity
-    affected_entity_first_name: v.optional(v.string()),
-    affected_entity_middle_name: v.optional(v.string()),
-    affected_entity_last_name: v.optional(v.string()),
-    affected_entity_email: v.optional(v.string()),
-
-    // Log Details
-    action: v.string(),
-    details: v.string(), // JSON stringified details of the action
   })
     .index("by_user", ["user_id"])
     .index("by_user_role", ["user_role"])
     .index("by_action", ["action"])
     .index("by_affected_entity", ["affected_entity_id"])
-    .index("by_user_and_role", ["user_id", "user_role"])
-    .searchIndex("search_by_user_name", {
-      searchField: "user_first_name",
-      filterFields: ["action", "affected_entity_type", "user_role"],
-    })
-    .searchIndex("search_by_user_last_name", {
-      searchField: "user_last_name",
-      filterFields: ["action", "affected_entity_type", "user_role"],
-    })
-    .searchIndex("search_by_affected_entity_name", {
-      searchField: "affected_entity_first_name",
-      filterFields: ["action", "affected_entity_type", "user_role"],
-    })
-    .searchIndex("search_by_affected_entity_last_name", {
-      searchField: "affected_entity_last_name",
-      filterFields: ["action", "affected_entity_type", "user_role"],
-    }),
+    .index("by_user_and_role", ["user_id", "user_role"]),
 
   // =========================================
   // Documents Table (Normalized Versioning)
@@ -163,6 +141,7 @@ export default defineSchema({
     chapter: v.string(), // e.g., "chapter_1", "acknowledgment", etc.
     title: v.string(),
     content: v.string(),
+    isDeleted: v.boolean(),
   }).index("by_group_chapter", ["group_id", "chapter"]),
 
   // =========================================
@@ -174,6 +153,7 @@ export default defineSchema({
     filename: v.string(),
     content_type: v.string(),
     size: v.number(),
+    isDeleted: v.boolean(),
 
     // Access Control
     group_id: v.id("groupsTable"), // Only group members can access
@@ -196,6 +176,7 @@ export default defineSchema({
     chapter: v.string(), // e.g., "chapter_1", "acknowledgment", etc.
     section: v.string(), // e.g., "1.1 Project Context", "acknowledgment", etc.
     title: v.string(), // Display title for the task
+    isDeleted: v.boolean(),
 
     // Task Status and Assignment (for member/manager communication)
     task_status: v.number(), // 0 = incomplete, 1 = completed
@@ -216,6 +197,7 @@ export default defineSchema({
     review_status: v.number(), // 0 = not_submitted, 1 = submitted, 2 = approved, 3 = rejected
     note_ids: v.optional(v.array(v.id("notes"))), // Array of note IDs for this document
     last_modified: v.optional(v.number()), // timestamp (ms since epoch), optional
+    isDeleted: v.boolean(),
   })
     .index("by_group", ["group_id"])
     .index("by_document", ["document_part"])
@@ -230,6 +212,7 @@ export default defineSchema({
     group_id: v.id("groupsTable"),
     document_part: v.string(), // e.g., "chapter1", "appendix_a", etc.
     content: v.string(), // The note content
+    isDeleted: v.boolean(),
   })
     .index("by_group", ["group_id"])
     .index("by_document", ["document_part"])

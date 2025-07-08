@@ -20,10 +20,10 @@ import {
   SortField,
   SortDirection,
   Notification as NotificationType,
-  LogDetails,
 } from "../components/types";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import { apiRequest } from "@/lib/utils";
 
 // =========================================
 // Types
@@ -103,9 +103,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   // Mutations
   // =========================================
-  const updateUser = useMutation(api.mutations.updateUser);
-  const createUser = useMutation(api.mutations.createUser);
-  const deleteUserMutation = useMutation(api.mutations.deleteUser);
+  // No direct Convex mutations for create/update/delete user. Use API routes only.
   const resetPassword = useMutation(api.mutations.resetPassword);
 
   // =========================================
@@ -233,16 +231,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     return null;
   };
 
-  const validateEditForm = (formData: EditFormData): string | null => {
-    if (!formData.first_name.trim()) return "First name is required";
-    if (!formData.last_name.trim()) return "Last name is required";
-    if (!formData.email.trim()) return "Email is required";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      return "Invalid email format";
-    if (formData.subrole === undefined) return "Role is required";
-    return null;
-  };
-
   // =========================================
   // User Actions
   // =========================================
@@ -257,8 +245,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const logUserAction = (_action: string, _details: LogDetails) => {
+  const logUserAction = () => {
     // No-op in production
   };
 
@@ -267,136 +254,37 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   const handleEditSubmit = async () => {
     if (!editingUser) return;
-
-    const error = validateEditForm(editFormData);
-    if (error) {
-      logUserAction("Edit Validation Failed", { error, user: editingUser });
-      setValidationError(error);
-      return;
-    }
-
-    // Check if there are any changes
-    const hasChanges =
-      editFormData.first_name !== editingUser.first_name ||
-      editFormData.middle_name !== (editingUser.middle_name || "") ||
-      editFormData.last_name !== editingUser.last_name ||
-      editFormData.email !== editingUser.email ||
-      editFormData.subrole !== editingUser.subrole;
-
-    if (!hasChanges) {
-      setEditingUser(null);
-      return;
-    }
-
     setIsSubmitting(true);
     setEditNetworkError(null);
-
     try {
-      logUserAction("Edit Started", {
-        userId: editingUser._id,
-        oldEmail: editingUser.email,
-        newEmail: editFormData.email,
-        changes: {
-          firstName: editFormData.first_name !== editingUser.first_name,
-          lastName: editFormData.last_name !== editingUser.last_name,
-          email: editFormData.email !== editingUser.email,
-          subrole: editFormData.subrole !== editingUser.subrole,
-        },
-      });
-
-      // If email is changed, update in Clerk first
-      if (editFormData.email !== editingUser.email) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-        const response = await fetch("/api/clerk/update-user", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            clerkId: editingUser.clerk_id,
-            email: editFormData.email.trim(),
-            firstName: editFormData.first_name.trim(),
-            lastName: editFormData.last_name.trim(),
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          if (response.status === 0) {
-            throw new Error(
-              "Network error - please check your internet connection",
-            );
-          }
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to update user email");
-        }
-
-        const data = await response.json();
-
-        // Send update email
-        await fetch("/api/resend/update-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-            password: data.password,
-          }),
-        });
-
-        // Update in Convex with all changed fields
-        await updateUser({
-          userId: editingUser._id,
-          instructorId: instructorId as Id<"users">,
-          first_name: editFormData.first_name.trim(),
-          middle_name: editFormData.middle_name?.trim() || undefined,
-          last_name: editFormData.last_name.trim(),
+      // Use apiRequest for robust error handling
+      await apiRequest("/api/clerk/update-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clerkId: editingUser.clerk_id,
           email: editFormData.email.trim(),
+          firstName: editFormData.first_name.trim(),
+          middleName: editFormData.middle_name?.trim() || "",
+          lastName: editFormData.last_name.trim(),
           subrole: editFormData.subrole,
-          clerk_id: data.clerkId,
-        });
-      } else {
-        // Update in Convex without changing Clerk ID
-        await updateUser({
-          userId: editingUser._id,
-          instructorId: instructorId as Id<"users">,
-          first_name: editFormData.first_name.trim(),
-          middle_name: editFormData.middle_name?.trim() || undefined,
-          last_name: editFormData.last_name.trim(),
-          email: editFormData.email.trim(),
-          subrole: editFormData.subrole,
-        });
-      }
-
-      logUserAction("Edit Success", {
-        userId: editingUser._id,
-        changes: {
-          firstName: editFormData.first_name !== editingUser.first_name,
-          lastName: editFormData.last_name !== editingUser.last_name,
-          email: editFormData.email !== editingUser.email,
-          subrole: editFormData.subrole !== editingUser.subrole,
-        },
+        }),
       });
-
-      // Only show success message if there were changes
       setNotification({
         type: "success",
         message: "User updated successfully",
       });
       setEditingUser(null);
     } catch (error) {
-      logUserAction("Edit Failed", {
-        userId: editingUser._id,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
       setEditNetworkError(
         error instanceof Error ? error.message : "Failed to update user",
       );
+      setNotification({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to update user",
+      });
+      // Do NOT close the modal
     } finally {
       setIsSubmitting(false);
     }
@@ -415,12 +303,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setDeleteNetworkError(null);
 
     try {
-      logUserAction("Delete Started", {
-        userId: deleteUser._id,
-        email: deleteUser.email,
-      });
+      logUserAction();
 
-      // First delete from Clerk
+      // Call distributed-safe API route for deletion
       const response = await fetch("/api/clerk/delete-user", {
         method: "POST",
         headers: {
@@ -428,6 +313,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         },
         body: JSON.stringify({
           clerkId: deleteUser.clerk_id,
+          instructorClerkId: undefined, // TODO: Pass instructor Clerk ID if available
         }),
       });
 
@@ -436,36 +322,17 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         throw new Error(errorData.error || "Failed to delete user from Clerk");
       }
 
-      // Then delete from Convex
-      await deleteUserMutation({
-        userId: deleteUser._id as Id<"users">,
-        instructorId: instructorId as Id<"users">,
-        clerkId: deleteUser.clerk_id,
-      });
-
-      logUserAction("Delete Success", {
-        userId: deleteUser._id,
-        email: deleteUser.email,
-      });
+      logUserAction();
 
       setDeleteUser(null);
     } catch (error) {
-      logUserAction("Delete Failed", {
-        userId: deleteUser._id,
-        error: error instanceof Error ? error.message : "Unknown error",
+      setNotification({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message || "Failed to delete student. Please try again."
+            : "An unexpected error occurred. Please try again.",
       });
-      if (error instanceof Error) {
-        setNotification({
-          type: "error",
-          message:
-            error.message || "Failed to delete student. Please try again.",
-        });
-      } else {
-        setNotification({
-          type: "error",
-          message: "An unexpected error occurred. Please try again.",
-        });
-      }
     } finally {
       setIsDeleting(false);
     }
@@ -491,7 +358,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setAddNetworkError(null);
 
     try {
-      // Step 1: Create user in Clerk first
+      // Call distributed-safe API route for creation
       const response = await fetch("/api/clerk/create-user", {
         method: "POST",
         headers: {
@@ -513,7 +380,16 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             trim: true,
             removeHtml: true,
           }),
+          middleName: addFormData.middle_name
+            ? sanitizeInput(addFormData.middle_name, {
+                maxLength: 50,
+                trim: true,
+                removeHtml: true,
+              })
+            : undefined,
           role: 0, // 0 = student
+          subrole: addFormData.subrole,
+          instructorId: instructorId,
         }),
       });
 
@@ -524,37 +400,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
       const data = await response.json();
 
-      // Step 2: Create in Convex with the Clerk ID
-      await createUser({
-        first_name: sanitizeInput(addFormData.first_name, {
-          maxLength: 50,
-          trim: true,
-          removeHtml: true,
-        }),
-        middle_name: addFormData.middle_name
-          ? sanitizeInput(addFormData.middle_name, {
-              maxLength: 50,
-              trim: true,
-              removeHtml: true,
-            })
-          : undefined,
-        last_name: sanitizeInput(addFormData.last_name, {
-          maxLength: 50,
-          trim: true,
-          removeHtml: true,
-        }),
-        email: sanitizeInput(addFormData.email, {
-          maxLength: 100,
-          trim: true,
-          removeHtml: true,
-        }),
-        role: 0, // 0 = student
-        subrole: addFormData.subrole,
-        instructorId: instructorId as Id<"users">,
-        clerk_id: data.user.id, // Pass the Clerk ID to Convex
-      });
-
-      // Step 3: Send welcome email via Resend
+      // Send welcome email via Resend
       await fetch("/api/resend/welcome-email", {
         method: "POST",
         headers: {
@@ -580,7 +426,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         }),
       });
 
-      // Only show success message if there were values
       setNotification({
         type: "success",
         message: "Student added successfully",
@@ -594,18 +439,13 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         subrole: 0,
       });
     } catch (error) {
-      if (error instanceof Error) {
-        setNotification({
-          type: "error",
-          message:
-            error.message || "Failed to create student. Please try again.",
-        });
-      } else {
-        setNotification({
-          type: "error",
-          message: "An unexpected error occurred. Please try again.",
-        });
-      }
+      setNotification({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message || "Failed to create student. Please try again."
+            : "An unexpected error occurred. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -618,10 +458,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setResetPasswordNetworkError(null);
 
     try {
-      logUserAction("reset_password_started", {
-        userId: resetPasswordUser._id,
-        email: resetPasswordUser.email,
-      });
+      logUserAction();
 
       // Step 1: Call Clerk API to reset password
       const controller = new AbortController();

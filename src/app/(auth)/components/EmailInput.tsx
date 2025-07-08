@@ -9,7 +9,6 @@ interface EmailInputProps {
   loading?: boolean;
   placeholder?: string;
   name?: string;
-  autoComplete?: string;
   onAutocomplete?: (email: string) => void;
 }
 
@@ -20,7 +19,6 @@ const EmailInput: React.FC<EmailInputProps> = ({
   loading = false,
   placeholder = "Email",
   name = "email",
-  autoComplete = "username",
   onAutocomplete,
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,7 +52,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
         id={name}
         name={name}
         type="email"
-        autoComplete={autoComplete}
+        autoComplete="email"
         required
         value={email}
         onChange={handleChange}

@@ -944,16 +944,16 @@ export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
         }
       </style>
     `;
-    
+
     // Inject styles into head
-    const head = document.head || document.getElementsByTagName('head')[0];
-    const printStyleElement = document.createElement('style');
-    printStyleElement.innerHTML = printStyles.replace(/<\/?style>/g, '');
+    const head = document.head || document.getElementsByTagName("head")[0];
+    const printStyleElement = document.createElement("style");
+    printStyleElement.innerHTML = printStyles.replace(/<\/?style>/g, "");
     head.appendChild(printStyleElement);
-    
+
     // Trigger print
     window.print();
-    
+
     // Clean up styles after print
     setTimeout(() => {
       head.removeChild(printStyleElement);

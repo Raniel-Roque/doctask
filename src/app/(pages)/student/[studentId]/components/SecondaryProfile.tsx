@@ -363,6 +363,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               disabled
               placeholder="Auto-calculated from Date of Birth"
               className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm cursor-not-allowed"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div className="relative">
@@ -400,6 +403,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               placeholder={userData?.dateOfBirth ? undefined : "YYYY-MM-DD"}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               max={todayStr}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div>
@@ -413,6 +419,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your place of birth"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div>
@@ -426,6 +435,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your nationality"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div className="relative">
@@ -463,6 +475,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your religion"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div>
@@ -476,6 +491,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your home address"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div>
@@ -492,6 +510,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               maxLength={11}
               inputMode="numeric"
               pattern="[0-9]*"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
         </div>
@@ -533,6 +554,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your tertiary school name"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div>
@@ -546,6 +570,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your bachelor degree"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div>
@@ -559,6 +586,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your secondary school name"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div>
@@ -572,6 +602,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your secondary school address"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div>
@@ -585,6 +618,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your primary school name"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
           <div>
@@ -598,6 +634,9 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               onChange={handleChange}
               placeholder="Enter your primary school address"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
           </div>
         </div>

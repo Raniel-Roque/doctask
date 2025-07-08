@@ -2,10 +2,7 @@
 
 import { Navbar } from "../components/navbar";
 import { Download, Upload, Database, Loader2, Eye, EyeOff } from "lucide-react";
-import { useMutation } from "convex/react";
-import { api } from "../../../../../../convex/_generated/api";
 import { useState, use } from "react";
-import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useAuth } from "@clerk/nextjs";
 import {
   Dialog,
@@ -53,8 +50,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     "download" | "restore" | null
   >(null);
   const { getToken } = useAuth();
-
-  const downloadConvexBackup = useMutation(api.mutations.downloadConvexBackup);
 
   const verifyPassword = async () => {
     if (!user) return;
@@ -118,9 +113,24 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         throw new Error("Not authenticated");
       }
 
-      const backup = await downloadConvexBackup({
-        instructorId: instructorId as Id<"users">,
+      // Call API route for backup
+      const response = await fetch("/api/convex/backup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ instructorId }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || "Failed to download database backup",
+        );
+      }
+
+      const backup = await response.json();
 
       const key = await generateEncryptionKey();
       const keyString = await exportKey(key);
@@ -128,17 +138,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
       // Create a new ZIP file
       const zip = new JSZip();
-
-      // Add the encrypted backup file
       zip.file("backup.enc", encryptedData);
-
-      // Add the key file
       zip.file("backup.key", keyString);
-
-      // Generate the ZIP file
       const zipBlob = await zip.generateAsync({ type: "blob" });
-
-      // Create download link for the ZIP file
       const zipUrl = window.URL.createObjectURL(zipBlob);
       const zipLink = document.createElement("a");
       zipLink.href = zipUrl;

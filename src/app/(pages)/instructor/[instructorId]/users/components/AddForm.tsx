@@ -124,18 +124,15 @@ export const AddForm = ({
         [name]: parseInt(value),
       });
     } else {
-      const sanitizedValue = sanitizeInput(
-        name === "email" ? value.toLowerCase() : value,
-        {
-          trim: true,
-          removeHtml: true,
-          escapeSpecialChars: true,
-          maxLength:
-            name === "email"
-              ? VALIDATION_RULES.email.maxLength
-              : VALIDATION_RULES.name.maxLength,
-        },
-      );
+      const sanitizedValue = sanitizeInput(value, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength:
+          name === "email"
+            ? VALIDATION_RULES.email.maxLength
+            : VALIDATION_RULES.name.maxLength,
+      });
 
       onFormDataChange({
         ...formData,
@@ -287,6 +284,9 @@ export const AddForm = ({
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                   required
                   disabled={isSubmitting}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
 
@@ -308,6 +308,9 @@ export const AddForm = ({
                       : "border-gray-300"
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                   disabled={isSubmitting}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
 
@@ -330,6 +333,9 @@ export const AddForm = ({
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                   required
                   disabled={isSubmitting}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
             </div>
@@ -352,6 +358,9 @@ export const AddForm = ({
                 } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                 required
                 disabled={isSubmitting}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </div>
 

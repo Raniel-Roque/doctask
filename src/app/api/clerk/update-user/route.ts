@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { clerkClient } from "@clerk/nextjs/server";
+import { clerkClient, auth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
-import { generatePassword } from "@/utils/passwordGeneration";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import { generatePassword } from "@/utils/passwordGeneration";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -14,7 +14,27 @@ interface ClerkError {
 }
 
 export async function POST(request: Request) {
+  let newUser = null;
+  let newPassword = undefined;
   try {
+    // Get acting instructor's Clerk ID from session
+    const { userId: instructorClerkId } = await auth();
+    if (!instructorClerkId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // Map to Convex user ID
+    const instructorConvexUser = await convex.query(
+      api.fetch.getUserByClerkId,
+      {
+        clerkId: instructorClerkId,
+      },
+    );
+    if (!instructorConvexUser) {
+      return NextResponse.json(
+        { error: "Instructor not found in database" },
+        { status: 404 },
+      );
+    }
     const body = await request.json();
 
     // Validate request body
@@ -25,7 +45,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { clerkId, email, firstName, lastName } = body;
+    const { clerkId, email, firstName, lastName, middleName } = body;
 
     // Validate required fields before sanitization
     if (!clerkId || !email || !firstName || !lastName) {
@@ -56,6 +76,13 @@ export async function POST(request: Request) {
       removeHtml: true,
       escapeSpecialChars: true,
     });
+    const sanitizedMiddleName = middleName
+      ? sanitizeInput(middleName, {
+          trim: true,
+          removeHtml: true,
+          escapeSpecialChars: true,
+        })
+      : undefined;
 
     // Validate required fields after sanitization
     if (
@@ -81,32 +108,16 @@ export async function POST(request: Request) {
 
     const client = await clerkClient();
 
-    // Check if the new email already exists in Clerk (excluding the current user)
-    const existingUsers = await client.users.getUserList({
-      emailAddress: [sanitizedEmail],
-    });
-
-    const emailExists = existingUsers.data.some(
-      (user) =>
-        user.id !== sanitizedClerkId &&
-        user.emailAddresses.some((e) => e.emailAddress === sanitizedEmail),
-    );
-
-    if (emailExists) {
-      return NextResponse.json(
-        {
-          error:
-            "This email is already registered in the system. Please use a different email address.",
-        },
-        { status: 400 },
-      );
-    }
-
     // Get the current user to verify it exists
     const currentUser = await client.users.getUser(sanitizedClerkId);
     if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+    // Normalize emails for robust comparison
+    const oldEmail = currentUser.emailAddresses[0]?.emailAddress
+      .trim()
+      .toLowerCase();
+    const sanitizedEmailNormalized = sanitizedEmail.trim().toLowerCase();
 
     // Get the Convex user record
     const convexUser = await convex.query(api.fetch.getUserByClerkId, {
@@ -119,65 +130,77 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if a new user was already created for this email
-    const existingNewUser = await client.users.getUserList({
-      emailAddress: [sanitizedEmail],
-    });
+    // If email is unchanged, only update Convex and return
+    if (oldEmail === sanitizedEmailNormalized) {
+      await convex.mutation(api.mutations.updateUser, {
+        userId: convexUser._id,
+        instructorId: instructorConvexUser._id,
+        first_name: sanitizedFirstName,
+        middle_name: sanitizedMiddleName,
+        last_name: sanitizedLastName,
+        email: oldEmail, // keep as is
+      });
+      return NextResponse.json({ success: true });
+    }
 
-    let newUser;
-    let newPassword;
-    if (existingNewUser.data.some((user) => user.id !== sanitizedClerkId)) {
-      // A new user was already created but the process didn't complete
-      newUser = existingNewUser.data.find(
-        (user) => user.id !== sanitizedClerkId,
-      );
-    } else {
-      // Generate a new password using the shared utility
+    // --- Clerk update: create new user, then Convex, then delete old Clerk user ---
+    try {
+      // 1. Create new user in Clerk (only email and password)
       newPassword = generatePassword(
         sanitizedFirstName,
         sanitizedLastName,
         Date.now(),
       );
-
-      // Create new user with the new email
       newUser = await client.users.createUser({
-        emailAddress: [sanitizedEmail],
+        emailAddress: [sanitizedEmailNormalized],
         password: newPassword,
+        skipPasswordChecks: true,
       });
-
-      // Set email as unverified
-      const emailAddress = newUser.emailAddresses[0];
-      await client.emailAddresses.updateEmailAddress(emailAddress.id, {
-        primary: true,
-        verified: false,
-      });
-    }
-
-    if (!newUser) {
+    } catch (clerkError) {
       return NextResponse.json(
-        { error: "Failed to create or find new user" },
+        {
+          error:
+            "Failed to create new Clerk user: " +
+            (clerkError instanceof Error ? clerkError.message : clerkError),
+        },
         { status: 500 },
       );
     }
 
-    const oldUser = await client.users.getUser(sanitizedClerkId);
-    if (oldUser) {
-      await client.users.deleteUser(sanitizedClerkId);
+    // 2. Try to update Convex with new email and Clerk ID
+    try {
+      await convex.mutation(api.mutations.updateUser, {
+        userId: convexUser._id,
+        instructorId: instructorConvexUser._id,
+        first_name: sanitizedFirstName,
+        middle_name: sanitizedMiddleName,
+        last_name: sanitizedLastName,
+        email: sanitizedEmailNormalized,
+        clerk_id: newUser.id,
+      });
+    } catch {
+      // 3. Rollback: delete new Clerk user
+      try {
+        if (newUser) await client.users.deleteUser(newUser.id);
+      } catch {
+        // Optionally log rollback failure
+      }
+      return NextResponse.json(
+        {
+          error:
+            "Failed to update user in database. Clerk changes rolled back.",
+        },
+        { status: 500 },
+      );
     }
 
-    // Set email_verified to false in Convex
-    await convex.mutation(api.mutations.updateEmailStatus, {
-      userId: convexUser._id,
-    });
-
-    return NextResponse.json({
-      success: true,
-      clerkId: newUser.id, // Return the new clerkId
-      email: sanitizedEmail,
-      firstName: sanitizedFirstName,
-      lastName: sanitizedLastName,
-      password: newPassword, // Return password if it was generated
-    });
+    // 4. If Convex succeeded, delete the old Clerk user
+    try {
+      await client.users.deleteUser(sanitizedClerkId);
+    } catch {
+      // Optionally log failure to delete old user, but still return success
+    }
+    return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const clerkError = error as ClerkError;
 

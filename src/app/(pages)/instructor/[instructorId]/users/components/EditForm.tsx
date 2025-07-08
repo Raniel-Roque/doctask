@@ -132,18 +132,15 @@ export default function EditForm({
         [name]: parseInt(value),
       });
     } else {
-      const sanitizedValue = sanitizeInput(
-        name === "email" ? value.toLowerCase() : value,
-        {
-          trim: true,
-          removeHtml: true,
-          escapeSpecialChars: true,
-          maxLength:
-            name === "email"
-              ? VALIDATION_RULES.email.maxLength
-              : VALIDATION_RULES.name.maxLength,
-        },
-      );
+      const sanitizedValue = sanitizeInput(value, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength:
+          name === "email"
+            ? VALIDATION_RULES.email.maxLength
+            : VALIDATION_RULES.name.maxLength,
+      });
 
       onFormDataChange({
         ...formData,
@@ -295,6 +292,9 @@ export default function EditForm({
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                   required
                   disabled={isSubmitting}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
 
@@ -316,6 +316,9 @@ export default function EditForm({
                       : "border-gray-300"
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                   disabled={isSubmitting}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
 
@@ -338,6 +341,9 @@ export default function EditForm({
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                   required
                   disabled={isSubmitting}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
             </div>
@@ -360,6 +366,9 @@ export default function EditForm({
                 } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                 required
                 disabled={isSubmitting}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </div>
 

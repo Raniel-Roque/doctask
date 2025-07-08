@@ -94,7 +94,7 @@ export const CollaborativeImageButton = () => {
         // Show error to user
         showNotification(
           error instanceof Error ? error.message : "Failed to upload image",
-          "error"
+          "error",
         );
       } finally {
         setIsUploading(false);
@@ -122,7 +122,7 @@ export const CollaborativeImageButton = () => {
           onClose={closeNotification}
         />
       </div>
-      
+
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenu>

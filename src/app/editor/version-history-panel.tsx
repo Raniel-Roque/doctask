@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Clock, CheckCircle, Plus, Trash, AlertTriangle } from "lucide-react";
+import {
+  X,
+  Clock,
+  CheckCircle,
+  Plus,
+  Trash,
+  AlertTriangle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
@@ -91,7 +98,7 @@ export const VersionHistoryPanel = ({
           chapter,
           userId: currentUser._id,
         }
-      : "skip"
+      : "skip",
   );
 
   // Create version mutation
@@ -138,7 +145,7 @@ export const VersionHistoryPanel = ({
     } catch (error) {
       showNotification(
         error instanceof Error ? error.message : "Failed to create version",
-        "error"
+        "error",
       );
     } finally {
       setIsCreating(false);
@@ -170,7 +177,7 @@ export const VersionHistoryPanel = ({
     } catch (error) {
       showNotification(
         error instanceof Error ? error.message : "Failed to revert version",
-        "error"
+        "error",
       );
     } finally {
       setRevertingId(null);
@@ -184,14 +191,17 @@ export const VersionHistoryPanel = ({
     }
     setDeletingId(versionId);
     try {
-      await deleteVersion({ documentId: versionId as Id<"documents">, userId: currentUser._id as Id<"users"> });
+      await deleteVersion({
+        documentId: versionId as Id<"documents">,
+        userId: currentUser._id as Id<"users">,
+      });
       showNotification("Version deleted!", "success");
       setLocalVersions((prev) => prev.filter((v) => v._id !== versionId));
       setDeleteConfirmId(null);
     } catch (error) {
       showNotification(
         error instanceof Error ? error.message : "Failed to delete version",
-        "error"
+        "error",
       );
     } finally {
       setDeletingId(null);
@@ -214,14 +224,19 @@ export const VersionHistoryPanel = ({
   if (!versionsData) {
     return (
       <>
-        <div 
+        <div
           className="fixed inset-0 bg-black/20 z-40 print:hidden"
           onClick={onClose}
         />
         <div className="fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-lg z-50 print:hidden flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
             <h2 className="text-lg font-semibold">Version History</h2>
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 w-8 p-0"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -238,14 +253,19 @@ export const VersionHistoryPanel = ({
   if (!versionsData.success) {
     return (
       <>
-        <div 
+        <div
           className="fixed inset-0 bg-black/20 z-40 print:hidden"
           onClick={onClose}
         />
         <div className="fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-lg z-50 print:hidden flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
             <h2 className="text-lg font-semibold">Version History</h2>
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 w-8 p-0"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -271,17 +291,15 @@ export const VersionHistoryPanel = ({
       </div>
 
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/20 z-40 print:hidden"
         onClick={onClose}
       />
-      
+
       {/* Panel */}
-      <div 
-        className={
-          `fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-lg z-50 print:hidden flex flex-col transition-all duration-300 ease-in-out
-          ${show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`
-        }
+      <div
+        className={`fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-lg z-50 print:hidden flex flex-col transition-all duration-300 ease-in-out
+          ${show ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
@@ -301,10 +319,10 @@ export const VersionHistoryPanel = ({
           <div className="p-4">
             {/* Create Version Button */}
             <div className="mb-4">
-              <Button 
+              <Button
                 onClick={handleCreateVersion}
                 disabled={isCreating}
-                size="sm" 
+                size="sm"
                 className="w-full"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -317,7 +335,7 @@ export const VersionHistoryPanel = ({
               <div className="text-sm font-medium text-gray-700 mb-2">
                 Versions ({localVersions.length})
               </div>
-              
+
               {localVersions.length === 0 ? (
                 <div className="text-sm text-gray-500 text-center py-8">
                   No versions created yet.
@@ -326,7 +344,10 @@ export const VersionHistoryPanel = ({
                 </div>
               ) : (
                 localVersions.map((version, index) => (
-                  <div key={version._id} className="p-3 border border-gray-200 rounded-md hover:bg-gray-50">
+                  <div
+                    key={version._id}
+                    className="p-3 border border-gray-200 rounded-md hover:bg-gray-50"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="text-sm font-medium">
@@ -386,7 +407,9 @@ export const VersionHistoryPanel = ({
             <ul className="mb-6 text-gray-600 text-sm space-y-2">
               <li className="flex items-start gap-2">
                 <span className="text-red-500 mt-1">•</span>
-                <span>Replace all current content with the selected version</span>
+                <span>
+                  Replace all current content with the selected version
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-amber-500 mt-1">•</span>
@@ -409,7 +432,9 @@ export const VersionHistoryPanel = ({
               >
                 {revertingId === revertConfirmId ? (
                   <>
-                    <span className="animate-spin"><CheckCircle className="h-4 w-4" /></span>
+                    <span className="animate-spin">
+                      <CheckCircle className="h-4 w-4" />
+                    </span>
                     Reverting...
                   </>
                 ) : (
@@ -433,7 +458,8 @@ export const VersionHistoryPanel = ({
               Confirm Delete
             </h2>
             <p className="mb-8 text-gray-600">
-              Are you sure you want to delete this version? This action cannot be undone.
+              Are you sure you want to delete this version? This action cannot
+              be undone.
             </p>
             <div className="flex justify-end gap-4 mt-8">
               <button
@@ -451,7 +477,9 @@ export const VersionHistoryPanel = ({
               >
                 {deletingId === deleteConfirmId ? (
                   <>
-                    <span className="animate-spin"><Trash className="h-4 w-4" /></span>
+                    <span className="animate-spin">
+                      <Trash className="h-4 w-4" />
+                    </span>
                     Deleting...
                   </>
                 ) : (
@@ -467,4 +495,4 @@ export const VersionHistoryPanel = ({
       )}
     </>
   );
-}; 
+};
