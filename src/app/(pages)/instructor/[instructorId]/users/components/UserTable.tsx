@@ -138,7 +138,6 @@ export const UserTable = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showRoleDropdown]);
 
-  // Sync temp state when dropdown opens
   useEffect(() => {
     if (showStatusDropdown) setTempStatusFilter(statusFilter);
   }, [showStatusDropdown, statusFilter]);

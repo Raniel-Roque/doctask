@@ -33,7 +33,9 @@ interface Log {
     middle_name?: string;
     last_name?: string;
     email?: string;
-    capstone_title?: string;
+    projectManager?: {
+      last_name: string;
+    };
   } | null;
   action: string;
   details: string;
@@ -174,14 +176,12 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const actionButtonRef = useRef<HTMLButtonElement>(null);
   const entityButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Sync temporary state with applied state when dropdowns open
   useEffect(() => {
     if (showActionDropdown) {
       setTempActionFilters(appliedActionFilters);
     }
   }, [showActionDropdown, appliedActionFilters]);
 
-  // Sync temp state when dropdown opens
   useEffect(() => {
     if (showEntityDropdown) setTempEntityTypeFilters(appliedEntityTypeFilters);
   }, [showEntityDropdown, appliedEntityTypeFilters]);
@@ -260,16 +260,20 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       }
       return { display: "-", id: null };
     }
-    // For groups, show the capstone title and include the ID
-    if (
-      log.affected_entity_type === "group" &&
-      log.affectedEntity?.capstone_title
-    ) {
+    // For groups, show "Project manager last name + et al." if project manager info is available
+    if (log.affected_entity_type === "group") {
       const shortId = log.affected_entity_id.toString().slice(-4);
+      if (log.affectedEntity?.projectManager?.last_name) {
       return {
-        display: `${log.affectedEntity.capstone_title}`,
+          display: `${log.affectedEntity.projectManager.last_name} et al`,
+          id: shortId,
+        };
+      } else {
+        return {
+          display: "Unknown Group",
         id: shortId,
       };
+      }
     }
     if (log.affected_entity_type === "database") {
       return { display: "Database", id: null };
@@ -479,7 +483,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
           .join(" ")
           .toLowerCase();
       } else if (log.affected_entity_type === "group") {
-        affectedName = normalize(log.affectedEntity?.capstone_title);
+        affectedName = normalize(log.affectedEntity?.projectManager?.last_name);
       }
       if (affectedName.includes(term)) return true;
       return false;
@@ -516,7 +520,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                     .filter(Boolean)
                     .join(" "),
                 )
-              : normalize(a.affectedEntity?.capstone_title);
+              : normalize(a.affectedEntity?.projectManager?.last_name);
           bValue =
             b.affected_entity_type === "user"
               ? normalize(
@@ -528,7 +532,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                     .filter(Boolean)
                     .join(" "),
                 )
-              : normalize(b.affectedEntity?.capstone_title);
+              : normalize(b.affectedEntity?.projectManager?.last_name);
           break;
         case "action":
           aValue = normalize(a.action);

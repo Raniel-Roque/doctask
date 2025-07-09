@@ -176,7 +176,12 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-red-500 text-lg font-semibold">{error}</div>
+        <div className="text-center">
+          <div className="text-red-500 text-lg font-semibold mb-2">
+            Authorization Error
+          </div>
+          <div className="text-gray-600">{error}</div>
+        </div>
       </div>
     );
   }

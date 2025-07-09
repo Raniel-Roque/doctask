@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
@@ -24,6 +25,21 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Clerk ID and image data are required" },
         { status: 400 },
+      );
+    }
+
+    // Apply rate limiting
+    const rateLimit = createRateLimiter(RATE_LIMITS.PROFILE_PICTURE_UPDATE);
+    const rateLimitResult = rateLimit(request, clerkId);
+
+    if (!rateLimitResult.success) {
+      const headers: Record<string, string> = {};
+      if (rateLimitResult.retryAfter) {
+        headers["Retry-After"] = rateLimitResult.retryAfter.toString();
+      }
+      return NextResponse.json(
+        { error: rateLimitResult.message },
+        { status: 429, headers },
       );
     }
 

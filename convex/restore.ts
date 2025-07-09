@@ -39,14 +39,11 @@ export const deleteAllGroups = mutation({
 });
 
 export const deleteAllUsers = mutation({
-  args: {
-    instructorId: v.id("users"),
-  },
+  args: { currentUserId: v.string() },
   handler: async (ctx, args) => {
     const users = await ctx.db.query("users").collect();
     for (const user of users) {
-      // Skip deleting the instructor
-      if (user._id !== args.instructorId) {
+      if (user.clerk_id !== args.currentUserId) {
         await ctx.db.delete(user._id);
       }
     }
@@ -94,6 +91,37 @@ export const deleteAllImages = mutation({
     for (const image of images) {
       await ctx.db.delete(image._id);
     }
+    return { success: true };
+  },
+});
+
+// Add missing delete operations
+export const deleteAllNotes = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const notes = await ctx.db.query("notes").collect();
+    for (const note of notes) {
+      await ctx.db.delete(note._id);
+    }
+    return { success: true };
+  },
+});
+
+export const deleteAllLogs = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const logs = await ctx.db.query("LogsTable").collect();
+    for (const log of logs) {
+      await ctx.db.delete(log._id);
+    }
+    return { success: true };
+  },
+});
+
+export const deleteInstructor = mutation({
+  args: { instructorId: v.id("users") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.instructorId);
     return { success: true };
   },
 });

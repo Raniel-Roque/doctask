@@ -38,3 +38,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# security testing
+test-security.js
+
+# other
+RATE_LIMITING.md
+SECURITY.md

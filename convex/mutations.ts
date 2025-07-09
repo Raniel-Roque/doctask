@@ -16,6 +16,7 @@ import {
 } from "./utils/log";
 import { Id } from "./_generated/dataModel";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import { validateRateLimit } from "./utils/mutationRateLimit";
 
 // Backup types and validation
 interface ConvexBackup {
@@ -31,6 +32,7 @@ interface ConvexBackup {
     taskAssignments: unknown[];
     documentStatus: unknown[];
     images: unknown[];
+    notes: unknown[];
   };
   files: Record<
     string,
@@ -63,6 +65,7 @@ function validateBackupFile(file: unknown): file is ConvexBackup {
     "taskAssignments",
     "documentStatus",
     "images",
+    "notes",
   ];
   for (const table of requiredTables) {
     if (
@@ -603,44 +606,44 @@ export const updateUser = mutation({
             }
           }
 
-          // Delete all documents associated with this group
+          // Soft delete all documents associated with this group
           const docs = await ctx.db
             .query("documents")
             .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
             .collect();
           for (const doc of docs) {
-            await ctx.db.delete(doc._id);
+            await ctx.db.patch(doc._id, { isDeleted: true });
           }
 
-          // Delete all task assignments associated with this group
+          // Soft delete all task assignments associated with this group
           const taskAssignments = await ctx.db
             .query("taskAssignments")
             .withIndex("by_group", (q) => q.eq("group_id", group._id))
             .collect();
           for (const task of taskAssignments) {
-            await ctx.db.delete(task._id);
+            await ctx.db.patch(task._id, { isDeleted: true });
           }
 
-          // Delete all document status entries associated with this group
+          // Soft delete all document status entries associated with this group
           const documentStatuses = await ctx.db
             .query("documentStatus")
             .withIndex("by_group", (q) => q.eq("group_id", group._id))
             .collect();
           for (const status of documentStatuses) {
-            await ctx.db.delete(status._id);
+            await ctx.db.patch(status._id, { isDeleted: true });
           }
 
-          // Delete all images associated with this group
+          // Soft delete all images associated with this group
           const images = await ctx.db
             .query("images")
             .withIndex("by_group", (q) => q.eq("group_id", group._id))
             .collect();
           for (const image of images) {
-            await ctx.db.delete(image._id);
+            await ctx.db.patch(image._id, { isDeleted: true });
           }
 
-          // Delete the group
-          await ctx.db.delete(group._id);
+          // Soft delete the group
+          await ctx.db.patch(group._id, { isDeleted: true });
         }
       }
     }
@@ -975,6 +978,9 @@ export const updateStudentProfile = mutation({
     primaryAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Apply rate limiting
+    validateRateLimit(args.userId, "student:update_secondary_profile");
+
     // Find the student row
     const student = await ctx.db
       .query("studentsTable")
@@ -992,8 +998,10 @@ export const updateStudentProfile = mutation({
       });
 
     const updates: Record<string, unknown> = {};
+
     if (args.section === "secondary") {
-      if (args.gender !== undefined) updates.gender = args.gender;
+      if (args.gender !== undefined)
+        updates.gender = args.gender === 0 ? undefined : args.gender;
       if (args.dateOfBirth !== undefined)
         updates.dateOfBirth =
           args.dateOfBirth === "" ? undefined : sanitize(args.dateOfBirth);
@@ -1004,23 +1012,17 @@ export const updateStudentProfile = mutation({
         updates.nationality =
           args.nationality === "" ? undefined : sanitize(args.nationality);
       if (args.civilStatus !== undefined)
-        updates.civilStatus = args.civilStatus;
+        updates.civilStatus =
+          args.civilStatus === 0 ? undefined : args.civilStatus;
       if (args.religion !== undefined)
         updates.religion =
           args.religion === "" ? undefined : sanitize(args.religion);
       if (args.homeAddress !== undefined)
         updates.homeAddress =
           args.homeAddress === "" ? undefined : sanitize(args.homeAddress);
-      if (args.contact !== undefined) {
-        const contact = args.contact.replace(/[^0-9]/g, "");
-        if (contact.length !== 0 && contact.length !== 11) {
-          return {
-            success: false,
-            message: "Contact number must be 11 digits (Philippines).",
-          };
-        }
-        updates.contact = contact === "" ? undefined : contact;
-      }
+      if (args.contact !== undefined)
+        updates.contact =
+          args.contact === "" ? undefined : sanitize(args.contact);
     } else if (args.section === "education") {
       if (args.tertiaryDegree !== undefined)
         updates.tertiaryDegree =
@@ -1235,13 +1237,13 @@ export const deleteUser = mutation({
         await ctx.db.patch(group._id, { requested_adviser: undefined });
       }
 
-      // Delete advisersTable entry
+      // Soft delete advisersTable entry
       const adviserCode = await ctx.db
         .query("advisersTable")
         .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
         .first();
       if (adviserCode) {
-        await ctx.db.delete(adviserCode._id);
+        await ctx.db.patch(adviserCode._id, { isDeleted: true });
       }
     }
 
@@ -1417,6 +1419,7 @@ export const downloadConvexBackup = mutation({
     const taskAssignments = await ctx.db.query("taskAssignments").collect();
     const documentStatus = await ctx.db.query("documentStatus").collect();
     const images = await ctx.db.query("images").collect();
+    const notes = await ctx.db.query("notes").collect();
 
     // Download all image files from storage
     const files: Record<
@@ -1461,6 +1464,7 @@ export const downloadConvexBackup = mutation({
         taskAssignments,
         documentStatus,
         images,
+        notes,
       },
       files,
     };
@@ -1478,6 +1482,9 @@ export const acceptGroupRequest = mutation({
     groupId: v.id("groupsTable"),
   },
   handler: async (ctx, args) => {
+    // Rate limiting for adviser actions
+    validateRateLimit(args.adviserId, "adviser:accept_group");
+
     // Get the adviser's record
     const adviserCode = await ctx.db
       .query("advisersTable")
@@ -1531,6 +1538,9 @@ export const rejectGroupRequest = mutation({
     groupId: v.id("groupsTable"),
   },
   handler: async (ctx, args) => {
+    // Rate limiting for adviser actions
+    validateRateLimit(args.adviserId, "adviser:reject_group");
+
     // Get the adviser's record
     const adviserCode = await ctx.db
       .query("advisersTable")
@@ -1613,6 +1623,16 @@ export const requestAdviserCode = mutation({
     groupId: v.id("groupsTable"),
   },
   handler: async (ctx, args) => {
+    // Rate limiting for student actions
+    // Note: We need to get the group's project manager ID for rate limiting
+    const groupForRateLimit = await ctx.db.get(args.groupId);
+    if (groupForRateLimit) {
+      validateRateLimit(
+        groupForRateLimit.project_manager_id,
+        "student:request_adviser",
+      );
+    }
+
     const adviser = await ctx.db
       .query("advisersTable")
       .withIndex("by_code", (q) => q.eq("code", args.adviserCode))
@@ -1639,6 +1659,16 @@ export const cancelAdviserRequest = mutation({
     groupId: v.id("groupsTable"),
   },
   handler: async (ctx, args) => {
+    // Rate limiting for student actions
+    // Note: We need to get the group's project manager ID for rate limiting
+    const groupForRateLimit = await ctx.db.get(args.groupId);
+    if (groupForRateLimit) {
+      validateRateLimit(
+        groupForRateLimit.project_manager_id,
+        "student:cancel_adviser_request",
+      );
+    }
+
     const adviser = await ctx.db
       .query("advisersTable")
       .withIndex("by_code", (q) => q.eq("code", args.adviserCode))
@@ -1670,6 +1700,9 @@ export const updateTaskStatus = mutation({
     userId: v.id("users"), // User making the change
   },
   handler: async (ctx, args) => {
+    // Rate limiting for student actions
+    validateRateLimit(args.userId, "student:update_task_status");
+
     // Get the task
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
@@ -1703,6 +1736,9 @@ export const updateTaskAssignment = mutation({
     userId: v.id("users"), // User making the change (should be manager)
   },
   handler: async (ctx, args) => {
+    // Rate limiting for student actions
+    validateRateLimit(args.userId, "student:update_task_assignment");
+
     // Get the task
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
@@ -1748,6 +1784,9 @@ export const updateDocumentStatus = mutation({
     const { groupId, documentPart, newStatus, userId } = args;
 
     try {
+      // Rate limiting for adviser actions
+      validateRateLimit(userId, "adviser:update_document_status");
+
       // Check if the user is an adviser
       const user = await ctx.db.get(userId);
       if (!user || user.role !== 1) {
@@ -1807,6 +1846,23 @@ export const updateDocumentContent = mutation({
   },
   handler: async (ctx, args) => {
     try {
+      // Rate limiting for student actions
+      validateRateLimit(args.userId, "student:update_document_content");
+
+      // Security validation: Content size limit
+      if (args.content.length > 1000000) {
+        // 1MB limit
+        throw new Error("Document content too large");
+      }
+
+      // Security validation: Sanitize content to prevent XSS
+      const sanitizedContent = sanitizeInput(args.content, {
+        trim: false,
+        removeHtml: false, // Allow HTML for rich text
+        escapeSpecialChars: true,
+        maxLength: 1000000,
+      });
+
       // Get the document
       const document = await ctx.db.get(args.documentId);
       if (!document) {
@@ -1819,11 +1875,21 @@ export const updateDocumentContent = mutation({
         throw new Error("User not found");
       }
 
+      // Security validation: Check if user is deleted
+      if (user.isDeleted) {
+        throw new Error("User account is deleted");
+      }
+
       // Check if user has permission to edit this document
       // Get the group to check membership
       const group = await ctx.db.get(document.group_id);
       if (!group) {
         throw new Error("Group not found");
+      }
+
+      // Security validation: Check if group is deleted
+      if (group.isDeleted) {
+        throw new Error("Group is deleted");
       }
 
       // Check if user is part of this group (project manager, member, or adviser)
@@ -1835,9 +1901,9 @@ export const updateDocumentContent = mutation({
         throw new Error("You don't have permission to edit this document");
       }
 
-      // Update the document content
+      // Update the document content with sanitized content
       await ctx.db.patch(args.documentId, {
-        content: args.content,
+        content: sanitizedContent,
       });
 
       // Update the documentStatus last_modified field and status
@@ -2075,13 +2141,36 @@ export const createNote = mutation({
   },
   handler: async (ctx, args) => {
     try {
-      // Check if the user is an adviser
+      // Rate limiting for adviser actions
+      validateRateLimit(args.userId, "adviser:create_note");
+
+      if (args.content.length > 10000) {
+        throw new Error("Note content too large");
+      }
+
+      const sanitizedContent = sanitizeInput(args.content, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength: 10000,
+      });
+
+      const sanitizedDocumentPart = sanitizeInput(args.documentPart, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength: 100,
+      });
+
       const user = await ctx.db.get(args.userId);
       if (!user || user.role !== 1) {
         throw new Error("Only advisers can create notes");
       }
 
-      // Check if the adviser is assigned to this group
+      if (user.isDeleted) {
+        throw new Error("User account is deleted");
+      }
+
       const adviser = await ctx.db
         .query("advisersTable")
         .withIndex("by_adviser", (q) => q.eq("adviser_id", args.userId))
@@ -2091,15 +2180,21 @@ export const createNote = mutation({
         throw new Error("Adviser is not assigned to this group");
       }
 
-      // Create the note
+      const group = await ctx.db.get(args.groupId);
+      if (!group) {
+        throw new Error("Group not found");
+      }
+      if (group.isDeleted) {
+        throw new Error("Group is deleted");
+      }
+
       const noteId = await ctx.db.insert("notes", {
         group_id: args.groupId,
-        document_part: args.documentPart,
-        content: args.content,
+        document_part: sanitizedDocumentPart,
+        content: sanitizedContent,
         isDeleted: false,
       });
 
-      // Update documentStatus to include the new note
       const existingStatus = await ctx.db
         .query("documentStatus")
         .withIndex("by_group_document", (q) =>
@@ -2108,16 +2203,14 @@ export const createNote = mutation({
         .first();
 
       if (existingStatus) {
-        // Update existing status with new note
         await ctx.db.patch(existingStatus._id, {
           note_ids: [...(existingStatus.note_ids || []), noteId],
         });
       } else {
-        // Create new status entry with note
         await ctx.db.insert("documentStatus", {
           group_id: args.groupId,
           document_part: args.documentPart,
-          review_status: 0, // Default to not_submitted
+          review_status: 0,
           note_ids: [noteId],
           last_modified: Date.now(),
           isDeleted: false,
@@ -2139,6 +2232,9 @@ export const updateNote = mutation({
   },
   handler: async (ctx, args) => {
     try {
+      // Rate limiting for adviser actions
+      validateRateLimit(args.userId, "adviser:update_note");
+
       // Check if the user is an adviser
       const user = await ctx.db.get(args.userId);
       if (!user || user.role !== 1) {
@@ -2180,6 +2276,9 @@ export const deleteNote = mutation({
   },
   handler: async (ctx, args) => {
     try {
+      // Rate limiting for adviser actions
+      validateRateLimit(args.userId, "adviser:delete_note");
+
       // Check if the user is an adviser
       const user = await ctx.db.get(args.userId);
       if (!user || user.role !== 1) {

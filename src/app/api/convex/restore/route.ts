@@ -161,9 +161,21 @@ export async function POST(request: Request) {
 
     const backupData = backup as BackupData;
 
-    // Delete from Convex first
+    // The instructorId is already the Convex _id of the instructor
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    
+    // Verify the instructor exists and is valid
+    const instructorConvexUser = await convex.query(api.fetch.getUserById, {
+      id: instructorId as Id<"users">,
+    });
+    if (!instructorConvexUser || instructorConvexUser.role !== 2) {
+      return NextResponse.json(
+        { error: "Instructor not found or invalid" },
+        { status: 404 },
+      );
+    }
 
+    // Delete from Convex first
     // Delete students
     await convex.mutation(api.restore.deleteAllStudents);
 
@@ -182,8 +194,16 @@ export async function POST(request: Request) {
     // Delete document status
     await convex.mutation(api.restore.deleteAllDocumentStatus);
 
-    // Delete users (except instructor)
-    await convex.mutation(api.restore.deleteAllUsers, { instructorId });
+    // Delete notes
+    await convex.mutation(api.restore.deleteAllNotes);
+
+    // Delete logs
+    await convex.mutation(api.restore.deleteAllLogs);
+
+    // Delete users (except current user)
+    await convex.mutation(api.restore.deleteAllUsers, {
+      currentUserId: userId,
+    });
 
     // Get all users from Clerk
     const { data: existingClerkUsers } = await clerk.users.getUserList();
@@ -202,7 +222,7 @@ export async function POST(request: Request) {
         if (convexUser) {
           await convex.mutation(api.mutations.deleteUser, {
             userId: convexUser._id,
-            instructorId,
+            instructorId: instructorConvexUser._id,
             clerkId: clerkUser.id,
           });
         }
@@ -523,7 +543,7 @@ export async function POST(request: Request) {
             ? (oldGroupIdToNewGroupId.get(log.affected_entity_id) ?? null)
             : null;
         } else if (log.affected_entity_type === "database") {
-          newAffectedEntityId = instructorId;
+          newAffectedEntityId = instructorConvexUser._id;
         }
         if (!newUserId || !newAffectedEntityId) continue;
         await convex.mutation(api.mutations.logRestore, {
@@ -542,14 +562,17 @@ export async function POST(request: Request) {
     // Log the restore action
     await convex.mutation(api.mutations.logRestore, {
       log: {
-        user_id: instructorId,
+        user_id: instructorConvexUser._id,
         user_role: 0,
         affected_entity_type: "database",
-        affected_entity_id: instructorId,
+        affected_entity_id: instructorConvexUser._id,
         action: "Restore",
         details: "Restored database",
       },
     });
+
+    // Note: Instructor will be handled by the frontend after showing success popup
+    // This ensures the user sees the success message before being logged out
 
     return NextResponse.json({
       message: "Backup restored successfully",

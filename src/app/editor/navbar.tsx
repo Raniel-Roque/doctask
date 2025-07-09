@@ -113,7 +113,6 @@ export const Navbar = ({
       const jsPDF = (await import("jspdf")).default;
       const html2canvas = (await import("html2canvas")).default;
 
-      // Create a temporary container that exactly matches the editor layout
       const tempContainer = document.createElement("div");
       tempContainer.style.position = "absolute";
       tempContainer.style.left = "-9999px";

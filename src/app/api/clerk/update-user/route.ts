@@ -4,6 +4,18 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { generatePassword } from "@/utils/passwordGeneration";
+import { Id } from "../../../../../convex/_generated/dataModel";
+
+type UpdateUserArgs = {
+  userId: Id<"users">;
+  instructorId: Id<"users">;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  email: string;
+  clerk_id?: string;
+  subrole?: number;
+};
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -17,6 +29,15 @@ export async function POST(request: Request) {
   let newUser = null;
   let newPassword = undefined;
   try {
+    // Request size validation
+    const contentLength = parseInt(
+      request.headers.get("content-length") || "0",
+    );
+    if (contentLength > 1024 * 1024) {
+      // 1MB limit
+      return NextResponse.json({ error: "Request too large" }, { status: 413 });
+    }
+
     // Get acting instructor's Clerk ID from session
     const { userId: instructorClerkId } = await auth();
     if (!instructorClerkId) {
@@ -132,14 +153,19 @@ export async function POST(request: Request) {
 
     // If email is unchanged, only update Convex and return
     if (oldEmail === sanitizedEmailNormalized) {
-      await convex.mutation(api.mutations.updateUser, {
-        userId: convexUser._id,
-        instructorId: instructorConvexUser._id,
+      // Only set subrole if student
+      const updateArgs: UpdateUserArgs = {
+        userId: convexUser._id as Id<"users">,
+        instructorId: instructorConvexUser._id as Id<"users">,
         first_name: sanitizedFirstName,
         middle_name: sanitizedMiddleName,
         last_name: sanitizedLastName,
         email: oldEmail, // keep as is
-      });
+      };
+      if (convexUser.role === 0 && typeof body.subrole !== "undefined") {
+        updateArgs.subrole = body.subrole;
+      }
+      await convex.mutation(api.mutations.updateUser, updateArgs);
       return NextResponse.json({ success: true });
     }
 
@@ -169,15 +195,19 @@ export async function POST(request: Request) {
 
     // 2. Try to update Convex with new email and Clerk ID
     try {
-      await convex.mutation(api.mutations.updateUser, {
-        userId: convexUser._id,
-        instructorId: instructorConvexUser._id,
+      const updateArgs: UpdateUserArgs = {
+        userId: convexUser._id as Id<"users">,
+        instructorId: instructorConvexUser._id as Id<"users">,
         first_name: sanitizedFirstName,
         middle_name: sanitizedMiddleName,
         last_name: sanitizedLastName,
         email: sanitizedEmailNormalized,
         clerk_id: newUser.id,
-      });
+      };
+      if (convexUser.role === 0 && typeof body.subrole !== "undefined") {
+        updateArgs.subrole = body.subrole;
+      }
+      await convex.mutation(api.mutations.updateUser, updateArgs);
     } catch {
       // 3. Rollback: delete new Clerk user
       try {

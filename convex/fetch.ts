@@ -263,9 +263,10 @@ export const getPendingGroupIdsForAdviser = query({
         .collect()
         .then((results) => results.filter((u) => !u.isDeleted));
 
-      // Filter groups to only include pending ones
-      let filteredGroups = groups.filter((group) =>
-        adviser.requests_group_ids?.includes(group._id),
+      // Filter groups to only include pending ones AND not deleted
+      let filteredGroups = groups.filter(
+        (group) =>
+          adviser.requests_group_ids?.includes(group._id) && !group.isDeleted,
       );
 
       // Apply search if searchTerm is provided
@@ -279,9 +280,9 @@ export const getPendingGroupIdsForAdviser = query({
           .collect()
           .then((results) => results.filter((g) => !g.isDeleted));
 
-        // Filter capstone results to only include groups assigned to this adviser
-        const capstoneFiltered = capstoneResults.filter((group) =>
-          adviser.group_ids?.includes(group._id),
+        // Filter capstone results to only include groups assigned to this adviser AND not deleted
+        const capstoneFiltered = capstoneResults.filter(
+          (group) => adviser.group_ids?.includes(group._id) && !group.isDeleted,
         );
 
         // Also search by project manager names
@@ -1058,9 +1059,9 @@ export const getAdviserDocuments = query({
       const groups = await ctx.db.query("groupsTable").collect();
       const users = await ctx.db.query("users").collect();
 
-      // Filter groups to only include those assigned to this adviser
-      let filteredGroups = groups.filter((group) =>
-        adviser.group_ids?.includes(group._id),
+      // Filter groups to only include those assigned to this adviser AND not deleted
+      let filteredGroups = groups.filter(
+        (group) => adviser.group_ids?.includes(group._id) && !group.isDeleted,
       );
 
       // Apply search if searchTerm is provided
@@ -1484,7 +1485,7 @@ export const getAllImages = query({
   handler: async (ctx) => {
     try {
       const images = await ctx.db.query("images").collect();
-      return images;
+      return images.filter((image) => !image.isDeleted);
     } catch {
       return [];
     }
@@ -1634,15 +1635,14 @@ export const getCurrentDocumentVersion = query({
         };
       }
 
-      // Get the live document (original/first document with room ID)
+      // Get the live document (oldest by creation time - the one with room ID)
       const liveDocument = await ctx.db
         .query("documents")
         .withIndex("by_group_chapter", (q) =>
           q.eq("group_id", args.groupId).eq("chapter", args.chapter),
         )
-        .order("asc") // Oldest first (original document with room ID)
-        .first()
-        .then((d) => (d && !d.isDeleted ? d : null));
+        .order("asc") // Oldest first (live document with room ID)
+        .first();
 
       return {
         document: liveDocument,
@@ -1737,8 +1737,8 @@ export const getAdviserGroups = query({
 
       // Get all groups and filter to only those assigned to this adviser
       const groups = await ctx.db.query("groupsTable").collect();
-      const assignedGroups = groups.filter((group) =>
-        adviser.group_ids?.includes(group._id),
+      const assignedGroups = groups.filter(
+        (group) => adviser.group_ids?.includes(group._id) && !group.isDeleted,
       );
 
       return assignedGroups;
@@ -1877,9 +1877,20 @@ export const getLogsWithDetails = query({
             log.affected_entity_id as Id<"users">,
           );
         } else if (log.affected_entity_type === "group") {
-          affectedEntity = await ctx.db.get(
+          const group = await ctx.db.get(
             log.affected_entity_id as Id<"groupsTable">,
           );
+          if (group) {
+            // Fetch the project manager to construct the group name
+            const projectManager = await ctx.db.get(group.project_manager_id);
+            affectedEntity = {
+              projectManager: projectManager
+                ? {
+                    last_name: projectManager.last_name,
+                  }
+                : undefined,
+            };
+          }
         }
 
         return {
@@ -1901,9 +1912,9 @@ export const getLogsWithDetails = query({
                   last_name: affectedEntity.last_name,
                   email: affectedEntity.email,
                 }
-              : "capstone_title" in affectedEntity
+              : "projectManager" in affectedEntity
                 ? {
-                    capstone_title: affectedEntity.capstone_title,
+                    projectManager: affectedEntity.projectManager,
                   }
                 : null
             : null,

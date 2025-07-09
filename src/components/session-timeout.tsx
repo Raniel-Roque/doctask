@@ -68,23 +68,53 @@ export function SessionTimeout() {
     // Check for timeout
     const checkTimeout = () => {
       const currentTime = Date.now();
-      const timeSinceLastActivity = currentTime - lastActivity;
+      const storedTime = localStorage.getItem(LAST_ACTIVITY_KEY);
 
-      if (timeSinceLastActivity >= TIMEOUT_DURATION) {
-        localStorage.removeItem(LAST_ACTIVITY_KEY);
-        signOut();
-        router.push("/login");
+      if (storedTime) {
+        const timeSinceLastActivity = currentTime - parseInt(storedTime);
+
+        if (timeSinceLastActivity >= TIMEOUT_DURATION) {
+          localStorage.removeItem(LAST_ACTIVITY_KEY);
+          signOut();
+          router.push("/login");
+        }
       }
     };
 
     // Check every 10 seconds
     const intervalId = setInterval(checkTimeout, 10000);
 
-    // Handle tab/window close
-    const handleBeforeUnload = () => {
-      localStorage.setItem(LAST_ACTIVITY_KEY, lastActivity.toString());
+    // Handle tab/window visibility changes
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab is hidden or window is minimized - don't update activity
+        // The timeout will still work based on the last activity timestamp
+      } else {
+        // Tab becomes visible again - check if session expired while hidden
+        checkTimeout();
+      }
     };
 
+    // Handle window focus/blur
+    const handleFocus = () => {
+      // Window gains focus - check if session expired while unfocused
+      checkTimeout();
+    };
+
+    const handleBlur = () => {
+      // Window loses focus - don't update activity
+      // The timeout will still work based on the last activity timestamp
+    };
+
+    // Handle tab/window close - save current time
+    const handleBeforeUnload = () => {
+      localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+    };
+
+    // Add visibility and focus event listeners
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     // Cleanup
@@ -92,6 +122,9 @@ export function SessionTimeout() {
       events.forEach((event) => {
         window.removeEventListener(event, updateLastActivity);
       });
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       clearInterval(intervalId);
     };

@@ -7,12 +7,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import type { Doc, Id } from "../../../../../../convex/_generated/dataModel";
 
-interface SecondaryProfileProps {
-  userData?: Doc<"studentsTable">;
-}
-
-// Type for updateStudentProfile mutation args
-type UpdateStudentProfileArgs = {
+interface UpdateStudentProfileArgs {
   userId: Id<"users">;
   section: "secondary" | "education";
   gender?: number;
@@ -29,7 +24,11 @@ type UpdateStudentProfileArgs = {
   secondaryAddress?: string;
   primarySchool?: string;
   primaryAddress?: string;
-};
+}
+
+interface SecondaryProfileProps {
+  userData?: Doc<"studentsTable">;
+}
 
 export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
   userData,

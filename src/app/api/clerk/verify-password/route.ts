@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
+import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
@@ -20,6 +21,21 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Clerk ID and current password are required" },
         { status: 400 },
+      );
+    }
+
+    // Apply rate limiting
+    const rateLimit = createRateLimiter(RATE_LIMITS.PASSWORD_VERIFY);
+    const rateLimitResult = rateLimit(request, clerkId);
+
+    if (!rateLimitResult.success) {
+      const headers: Record<string, string> = {};
+      if (rateLimitResult.retryAfter) {
+        headers["Retry-After"] = rateLimitResult.retryAfter.toString();
+      }
+      return NextResponse.json(
+        { error: rateLimitResult.message },
+        { status: 429, headers },
       );
     }
 

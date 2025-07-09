@@ -6,11 +6,11 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 import Link from "next/link";
 
 interface InstructorHomePageProps {
-  params: { instructorId: string };
+  params: Promise<{ instructorId: string }>;
 }
 
 const InstructorHomePage = async ({ params }: InstructorHomePageProps) => {
-  const { instructorId } = params;
+  const { instructorId } = await params;
 
   // Fetch user data
   const user = await fetchQuery(api.fetch.getUserById, {

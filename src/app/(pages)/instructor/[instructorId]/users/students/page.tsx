@@ -109,6 +109,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   // Queries
   // =========================================
+  const instructor = useQuery(api.fetch.getUserById, {
+    id: instructorId as Id<"users">,
+  });
+
   const queryData = useQuery(api.fetch.searchUsers, {
     searchTerm,
     role: 0, // 0 for students
@@ -313,7 +317,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         },
         body: JSON.stringify({
           clerkId: deleteUser.clerk_id,
-          instructorClerkId: undefined, // TODO: Pass instructor Clerk ID if available
+          instructorClerkId: instructor?.clerk_id, // Pass instructor Clerk ID for Convex lookup
         }),
       });
 
@@ -490,7 +494,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       });
 
       // Step 3: Send reset password email
-      await fetch("/api/resend/reset-password-email", {
+      const emailRes = await fetch("/api/resend/reset-password-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -500,7 +504,16 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           password: data.password,
         }),
       });
-
+      const emailData = await emailRes.json();
+      if (!emailRes.ok) {
+        throw new Error(
+          emailData.error || "Failed to send reset password email",
+        );
+      }
+      setNotification({
+        message: "Password reset and email sent successfully.",
+        type: "success",
+      });
       setResetPasswordUser(null);
     } catch (error) {
       if (error instanceof Error) {

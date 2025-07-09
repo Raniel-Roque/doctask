@@ -33,7 +33,9 @@ interface Log {
     middle_name?: string;
     last_name?: string;
     email?: string;
-    capstone_title?: string;
+    projectManager?: {
+      last_name: string;
+    };
   } | null;
   action: string;
   details: string;
@@ -131,14 +133,12 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
   const [tempEntityTypeFilter, setTempEntityTypeFilter] =
     useState(entityTypeFilter);
 
-  // Sync temporary state with applied state when dropdowns open
   useEffect(() => {
     if (showActionDropdown) {
       setTempActionFilters(appliedActionFilters);
     }
   }, [showActionDropdown, appliedActionFilters]);
 
-  // Sync temp state when dropdown opens
   useEffect(() => {
     if (showEntityDropdown) setTempEntityTypeFilter(entityTypeFilter);
   }, [showEntityDropdown, entityTypeFilter]);
@@ -207,13 +207,20 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
       }
       return { display: "-", id: null };
     }
-    // For groups, show the capstone title and include the ID
-    if (log.affectedEntity?.capstone_title) {
+    // For groups, show "Project manager last name + et al." if project manager info is available
+    if (log.affected_entity_type === "group") {
       const shortId = log.affected_entity_id.toString().slice(-4);
+      if (log.affectedEntity?.projectManager?.last_name) {
+        return {
+          display: `${log.affectedEntity.projectManager.last_name} et al`,
+          id: shortId,
+        };
+      } else {
       return {
-        display: `${log.affectedEntity.capstone_title}`,
+          display: "Unknown Group",
         id: shortId,
       };
+      }
     }
     return { display: "-", id: null };
   };

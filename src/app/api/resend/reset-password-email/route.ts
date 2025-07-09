@@ -20,12 +20,29 @@ export async function POST(request: Request) {
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
       return NextResponse.json(
-        { error: "Required fields are missing" },
+        {
+          error: "Required fields are missing",
+          missing: {
+            firstName: !firstName,
+            lastName: !lastName,
+            email: !email,
+            password: !password,
+          },
+        },
         { status: 400 },
       );
     }
 
-    await resend.emails.send({
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 },
+      );
+    }
+
+    const emailResult = await resend.emails.send({
       from: "DocTask <onboarding@resend.dev>",
       to: email,
       subject: "DocTask - Your Password Has Been Reset",
@@ -61,7 +78,21 @@ export async function POST(request: Request) {
       `,
     });
 
-    return NextResponse.json({ success: true });
+    // Check if email was actually sent
+    if (!emailResult || emailResult.error) {
+      return NextResponse.json(
+        {
+          error: "Failed to send email",
+          details: emailResult?.error || "Unknown error",
+        },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Password reset email sent successfully",
+    });
   } catch (error) {
     return NextResponse.json(
       {

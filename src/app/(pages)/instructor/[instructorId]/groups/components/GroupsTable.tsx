@@ -155,7 +155,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     capstoneSortDirection,
   );
 
-  // Sync temporary state with actual state when dropdowns open
   useEffect(() => {
     if (showAdviserDropdown) {
       setTempAdviserFilters(adviserFilters);

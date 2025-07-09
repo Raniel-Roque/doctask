@@ -61,7 +61,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Memoize query parameters to prevent unnecessary re-renders during temporary filter selections
   const queryParams = useMemo(() => {
     // Determine which sort to use
     let finalSortField = sortField;

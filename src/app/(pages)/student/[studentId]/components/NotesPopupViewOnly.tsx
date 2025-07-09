@@ -42,17 +42,24 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  // Fetch notes
+  const toggleNoteExpansion = (noteId: string) => {
+    const newExpanded = new Set(expandedNotes);
+    if (newExpanded.has(noteId)) {
+      newExpanded.delete(noteId);
+    } else {
+      newExpanded.add(noteId);
+    }
+    setExpandedNotes(newExpanded);
+  };
+
   const notesResult = useQuery(api.fetch.getDocumentNotes, {
-    groupId,
-    documentPart,
+    groupId: groupId as Id<"groupsTable">,
+    documentPart: documentPart,
   });
 
   const allNotes = notesResult?.notes || [];
 
-  // Filter notes by date range
   const filteredNotes = allNotes.filter((note) => {
-    if (!startDate && !endDate) return true;
     const noteDate = new Date(note._creationTime);
     const noteDateStr = noteDate.toISOString().split("T")[0];
     if (startDate && noteDateStr < startDate) return false;
@@ -60,16 +67,15 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
     return true;
   });
 
-  // Sort notes by creation time (latest first) and calculate pagination
   const sortedNotes = [...filteredNotes].sort(
     (a, b) => b._creationTime - a._creationTime,
   );
   const totalCount = sortedNotes.length;
   const totalPages = Math.ceil(totalCount / pageSize);
+
   const startIndex = (currentPage - 1) * pageSize;
   const notes = sortedNotes.slice(startIndex, startIndex + pageSize);
 
-  // Calculate the correct note numbers (oldest = 1, regardless of display order)
   const getNoteNumber = (note: Note) => {
     const chronologicalIndex = filteredNotes
       .sort((a, b) => a._creationTime - b._creationTime)
@@ -84,16 +90,6 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1);
-  };
-
-  const toggleNoteExpansion = (noteId: string) => {
-    const newExpanded = new Set(expandedNotes);
-    if (newExpanded.has(noteId)) {
-      newExpanded.delete(noteId);
-    } else {
-      newExpanded.add(noteId);
-    }
-    setExpandedNotes(newExpanded);
   };
 
   const formatDate = (timestamp: number) => {

@@ -1,9 +1,10 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { Download, Upload, Database, Loader2, Eye, EyeOff } from "lucide-react";
+import { Download, Upload, Database, Loader2, Eye, EyeOff, X } from "lucide-react";
 import { useState, use } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -23,7 +25,7 @@ import {
   decryptData,
 } from "@/utils/encryption";
 import JSZip from "jszip";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useClerk } from "@clerk/clerk-react";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface BackupAndRestorePageProps {
@@ -40,8 +42,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedKeyFile, setSelectedKeyFile] = useState<File | null>(null);
+  const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
   const [notification, setNotification] = useState<{
     message: string;
     type: "error" | "success" | "warning" | "info";
@@ -49,7 +50,10 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const [pendingAction, setPendingAction] = useState<
     "download" | "restore" | null
   >(null);
+  const [showRestoreSuccess, setShowRestoreSuccess] = useState(false);
   const { getToken } = useAuth();
+  const { signOut } = useClerk();
+  const router = useRouter();
 
   const verifyPassword = async () => {
     if (!user) return;
@@ -175,19 +179,15 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (event.target.id === "backup-file") {
-        setSelectedFile(file);
-      } else if (event.target.id === "key-file") {
-        setSelectedKeyFile(file);
-      }
+      setSelectedZipFile(file);
     }
   };
 
   const confirmRestore = async () => {
-    if (!selectedFile || !selectedKeyFile) {
+    if (!selectedZipFile) {
       setNotification({
         type: "error",
-        message: "Please select both backup and key files",
+        message: "Please select a backup ZIP file",
       });
       return;
     }
@@ -200,11 +200,13 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         throw new Error("Not authenticated");
       }
 
-      // Read the files
-      const [encryptedData, keyString] = await Promise.all([
-        selectedFile.text(),
-        selectedKeyFile.text(),
-      ]);
+      // Read and extract the ZIP file
+      const zip = await JSZip.loadAsync(selectedZipFile);
+      const encryptedData = await zip.file("backup.enc")?.async("text");
+      const keyString = await zip.file("backup.key")?.async("text");
+      if (!encryptedData || !keyString) {
+        throw new Error("ZIP file must contain both backup.enc and backup.key");
+      }
 
       // Import the key
       const key = await importKey(keyString);
@@ -229,21 +231,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         throw new Error(errorData.error || "Failed to restore database backup");
       }
 
-      const result = await response.json();
+      await response.json();
       setShowRestoreConfirm(false);
-
-      if (result.users && result.users.length > 0) {
-        setNotification({
-          type: "success",
-          message:
-            "Database has been successfully restored. New user credentials have been generated.",
-        });
-      } else {
-        setNotification({
-          type: "success",
-          message: "Database has been successfully restored.",
-        });
-      }
+      setShowRestoreSuccess(true);
     } catch (error: unknown) {
       setNotification({
         type: "error",
@@ -361,6 +351,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             setShowPasswordVerify(open);
             if (!open) {
               setPassword("");
+              setShowPassword(false);
               setPendingAction(null);
             }
           }
@@ -434,14 +425,13 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           if (!isRestoring) {
             setShowRestoreConfirm(open);
             if (!open) {
-              setSelectedFile(null);
-              setSelectedKeyFile(null);
+              setSelectedZipFile(null);
             }
           }
         }}
       >
         <DialogContent
-          className="sm:max-w-[425px]"
+          className={`sm:max-w-[425px] ${isRestoring ? '[&>button]:hidden' : ''}`}
           onPointerDownOutside={(e) => {
             if (isRestoring) {
               e.preventDefault();
@@ -453,19 +443,27 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             }
           }}
         >
+          {/* Custom close button that's only shown when not restoring */}
+          {!isRestoring && (
+            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </DialogClose>
+          )}
+          
           <DialogHeader>
             <DialogTitle>Restore Database</DialogTitle>
             <DialogDescription>
-              Select your backup file and its corresponding key file to restore
-              the database. This will delete all existing data.
+              Select your backup ZIP file to restore the database. This will
+              delete all existing data.
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-2 space-y-4">
             <div>
-              <Label htmlFor="backup-file">Select Backup File</Label>
+              <Label htmlFor="backup-zip-file">Select Backup ZIP File</Label>
               <label
-                htmlFor="backup-file"
+                htmlFor="backup-zip-file"
                 className={`flex items-center gap-2 mt-2 px-3 py-2 border rounded-md bg-white cursor-pointer transition-colors ${isRestoring ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"} border-gray-300 w-full`}
                 style={{ minHeight: 40 }}
               >
@@ -473,39 +471,14 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
                 <span
                   className="truncate text-sm text-gray-700 overflow-hidden whitespace-nowrap"
                   style={{ maxWidth: 180, display: "inline-block" }}
-                  title={selectedFile?.name || ""}
+                  title={selectedZipFile?.name || ""}
                 >
-                  {selectedFile ? selectedFile.name : "No file selected"}
+                  {selectedZipFile ? selectedZipFile.name : "No file selected"}
                 </span>
                 <input
-                  id="backup-file"
+                  id="backup-zip-file"
                   type="file"
-                  accept=".enc"
-                  onChange={handleFileSelect}
-                  disabled={isRestoring}
-                  className="hidden"
-                />
-              </label>
-            </div>
-            <div>
-              <Label htmlFor="key-file">Select Key File</Label>
-              <label
-                htmlFor="key-file"
-                className={`flex items-center gap-2 mt-2 px-3 py-2 border rounded-md bg-white cursor-pointer transition-colors ${isRestoring ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"} border-gray-300 w-full`}
-                style={{ minHeight: 40 }}
-              >
-                <Upload className="w-5 h-5 text-gray-400" />
-                <span
-                  className="truncate text-sm text-gray-700 overflow-hidden whitespace-nowrap"
-                  style={{ maxWidth: 180, display: "inline-block" }}
-                  title={selectedKeyFile?.name || ""}
-                >
-                  {selectedKeyFile ? selectedKeyFile.name : "No file selected"}
-                </span>
-                <input
-                  id="key-file"
-                  type="file"
-                  accept=".key"
+                  accept=".zip"
                   onChange={handleFileSelect}
                   disabled={isRestoring}
                   className="hidden"
@@ -518,8 +491,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               variant="outline"
               onClick={() => {
                 setShowRestoreConfirm(false);
-                setSelectedFile(null);
-                setSelectedKeyFile(null);
+                setSelectedZipFile(null);
               }}
               disabled={isRestoring}
             >
@@ -527,7 +499,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             </Button>
             <Button
               onClick={confirmRestore}
-              disabled={!selectedFile || !selectedKeyFile || isRestoring}
+              disabled={!selectedZipFile || isRestoring}
               className="bg-red-600 hover:bg-red-700"
             >
               {isRestoring ? (
@@ -538,6 +510,67 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               ) : (
                 "Confirm Restore"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Restore Success Dialog */}
+      <Dialog open={showRestoreSuccess} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-green-600">Restore Successful!</DialogTitle>
+            <DialogDescription>
+              Your database has been successfully restored.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              All your data has been restored from the backup. You will now be automatically logged out.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={async () => {
+                setShowRestoreSuccess(false);
+                
+                try {
+                  // Handle instructor deletion and recreation
+                  const token = await getToken();
+                  if (!token) {
+                    throw new Error("Not authenticated");
+                  }
+
+                  // Call a separate API to handle instructor restoration
+                  const response = await fetch("/api/convex/restore-instructor", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ instructorId }),
+                  });
+
+                  if (!response.ok) {
+                    throw new Error("Failed to restore instructor");
+                  }
+
+                  // Now sign out and redirect
+                  signOut(() => {
+                    router.push("/");
+                  });
+                } catch {
+                  setNotification({
+                    type: "error",
+                    message: "Failed to complete restore process. Please try again.",
+                  });
+                }
+              }}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              OK, Log Me Out
             </Button>
           </DialogFooter>
         </DialogContent>
