@@ -163,7 +163,7 @@ export async function POST(request: Request) {
 
     // The instructorId is already the Convex _id of the instructor
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-    
+
     // Verify the instructor exists and is valid
     const instructorConvexUser = await convex.query(api.fetch.getUserById, {
       id: instructorId as Id<"users">,

@@ -1,7 +1,15 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { Download, Upload, Database, Loader2, Eye, EyeOff, X } from "lucide-react";
+import {
+  Download,
+  Upload,
+  Database,
+  Loader2,
+  Eye,
+  EyeOff,
+  X,
+} from "lucide-react";
 import { useState, use } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -431,7 +439,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         }}
       >
         <DialogContent
-          className={`sm:max-w-[425px] ${isRestoring ? '[&>button]:hidden' : ''}`}
+          className={`sm:max-w-[425px] ${isRestoring ? "[&>button]:hidden" : ""}`}
           onPointerDownOutside={(e) => {
             if (isRestoring) {
               e.preventDefault();
@@ -450,7 +458,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               <span className="sr-only">Close</span>
             </DialogClose>
           )}
-          
+
           <DialogHeader>
             <DialogTitle>Restore Database</DialogTitle>
             <DialogDescription>
@@ -519,7 +527,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       <Dialog open={showRestoreSuccess} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-green-600">Restore Successful!</DialogTitle>
+            <DialogTitle className="text-green-600">
+              Restore Successful!
+            </DialogTitle>
             <DialogDescription>
               Your database has been successfully restored.
             </DialogDescription>
@@ -527,7 +537,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
           <div className="py-4">
             <p className="text-sm text-gray-600">
-              All your data has been restored from the backup. You will now be automatically logged out.
+              All your data has been restored from the backup. You will now be
+              automatically logged out.
             </p>
           </div>
 
@@ -535,7 +546,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             <Button
               onClick={async () => {
                 setShowRestoreSuccess(false);
-                
+
                 try {
                   // Handle instructor deletion and recreation
                   const token = await getToken();
@@ -544,14 +555,17 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
                   }
 
                   // Call a separate API to handle instructor restoration
-                  const response = await fetch("/api/convex/restore-instructor", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${token}`,
+                  const response = await fetch(
+                    "/api/convex/restore-instructor",
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ instructorId }),
                     },
-                    body: JSON.stringify({ instructorId }),
-                  });
+                  );
 
                   if (!response.ok) {
                     throw new Error("Failed to restore instructor");
@@ -564,7 +578,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
                 } catch {
                   setNotification({
                     type: "error",
-                    message: "Failed to complete restore process. Please try again.",
+                    message:
+                      "Failed to complete restore process. Please try again.",
                   });
                 }
               }}

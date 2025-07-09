@@ -55,7 +55,7 @@ export const RATE_LIMITS = {
     windowMs: 300000,
     keyPrefix: "adviser_request",
   }, // 3 per 5 minutes
-  
+
   // Adviser operations (moderate)
   ADVISER_NOTE_CREATE: {
     maxRequests: 15,
@@ -99,7 +99,7 @@ export const RATE_LIMITS = {
     windowMs: 60000,
     keyPrefix: "student_secondary_profile",
   }, // 10 updates per minute
-  
+
   // General operations
   GENERAL_API: { maxRequests: 100, windowMs: 60000, keyPrefix: "general" }, // 100 per minute
 } as const;
@@ -108,7 +108,7 @@ export function createRateLimiter(config: RateLimitConfig) {
   return function rateLimit(req: NextRequest, userId: string) {
     const key = `${config.keyPrefix}:${userId}`;
     const now = Date.now();
-    
+
     // Clean up expired entries
     if (rateLimitStore.has(key)) {
       const entry = rateLimitStore.get(key)!;
@@ -116,14 +116,14 @@ export function createRateLimiter(config: RateLimitConfig) {
         rateLimitStore.delete(key);
       }
     }
-    
+
     // Get or create rate limit entry
     let entry = rateLimitStore.get(key);
     if (!entry) {
       entry = { count: 0, resetTime: now + config.windowMs };
       rateLimitStore.set(key, entry);
     }
-    
+
     // Check if limit exceeded
     if (entry.count >= config.maxRequests) {
       return {
@@ -132,10 +132,10 @@ export function createRateLimiter(config: RateLimitConfig) {
         retryAfter: Math.ceil((entry.resetTime - now) / 1000),
       };
     }
-    
+
     // Increment counter
     entry.count++;
-    
+
     return { success: true };
   };
 }
@@ -173,7 +173,7 @@ export function getRateLimitConfig(userRole: number, operation: string) {
         return RATE_LIMITS.GENERAL_API;
     }
   }
-  
+
   return RATE_LIMITS.GENERAL_API;
 }
 
@@ -190,11 +190,11 @@ export function withRateLimit(operation: string) {
       const config = getRateLimitConfig(userRole, operation);
       const rateLimiter = createRateLimiter(config);
       const result = rateLimiter(req, userId);
-      
+
       if (!result.success) {
         return NextResponse.json(
           { error: result.message },
-          { 
+          {
             status: 429,
             headers: {
               "Retry-After": (result.retryAfter || 60).toString(),
@@ -205,8 +205,8 @@ export function withRateLimit(operation: string) {
           },
         );
       }
-      
+
       return handler(req, userId, userRole);
     };
   };
-} 
+}

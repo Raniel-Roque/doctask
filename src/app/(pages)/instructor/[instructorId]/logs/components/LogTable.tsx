@@ -264,15 +264,15 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     if (log.affected_entity_type === "group") {
       const shortId = log.affected_entity_id.toString().slice(-4);
       if (log.affectedEntity?.projectManager?.last_name) {
-      return {
+        return {
           display: `${log.affectedEntity.projectManager.last_name} et al`,
           id: shortId,
         };
       } else {
         return {
           display: "Unknown Group",
-        id: shortId,
-      };
+          id: shortId,
+        };
       }
     }
     if (log.affected_entity_type === "database") {

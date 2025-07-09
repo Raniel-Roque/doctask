@@ -216,10 +216,10 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
           id: shortId,
         };
       } else {
-      return {
+        return {
           display: "Unknown Group",
-        id: shortId,
-      };
+          id: shortId,
+        };
       }
     }
     return { display: "-", id: null };

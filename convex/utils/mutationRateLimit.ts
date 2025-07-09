@@ -39,7 +39,7 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   "adviser:create_note": { maxRequests: 20, windowMs: 60000 }, // 20 requests per minute
   "adviser:update_note": { maxRequests: 30, windowMs: 60000 }, // 30 requests per minute
   "adviser:delete_note": { maxRequests: 15, windowMs: 60000 }, // 15 requests per minute
-  
+
   // Student actions
   "student:request_adviser": { maxRequests: 5, windowMs: 300000 }, // 5 requests per 5 minutes
   "student:cancel_adviser_request": { maxRequests: 5, windowMs: 300000 }, // 5 requests per 5 minutes
@@ -56,10 +56,10 @@ export function checkRateLimit(
 ): { allowed: boolean; retryAfter?: number; remaining?: number } {
   const key = `${userId}:${action}`;
   const now = Date.now();
-  
+
   // Get or create rate limit entry
   let entry = rateLimitStore.get(key);
-  
+
   if (!entry || now > entry.resetTime) {
     // Create new rate limit window
     entry = {
@@ -67,7 +67,7 @@ export function checkRateLimit(
       resetTime: now + config.windowMs,
     };
   }
-  
+
   // Check if rate limit exceeded
   if (entry.count >= config.maxRequests) {
     const retryAfter = Math.ceil((entry.resetTime - now) / 1000);
@@ -77,16 +77,16 @@ export function checkRateLimit(
       remaining: 0,
     };
   }
-  
+
   // Increment count
   entry.count++;
   rateLimitStore.set(key, entry);
-  
+
   // Clean up old entries periodically (1% chance)
   if (Math.random() < 0.01) {
     cleanupExpiredEntries();
   }
-  
+
   return {
     allowed: true,
     remaining: config.maxRequests - entry.count,
@@ -127,11 +127,11 @@ export function validateRateLimit(userId: string, action: string): void {
     // No rate limit configured for this action
     return;
   }
-  
+
   const result = checkRateLimit(userId, action, config);
   if (!result.allowed) {
     throw new Error(
       `Rate limit exceeded. Try again in ${result.retryAfter} seconds.`,
     );
   }
-} 
+}
