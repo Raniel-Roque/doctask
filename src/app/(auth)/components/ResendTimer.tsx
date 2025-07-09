@@ -4,26 +4,49 @@ interface ResendTimerProps {
   onResend: () => void;
   disabled?: boolean;
   loading?: boolean;
+  email: string;
 }
 
 const ResendTimer: React.FC<ResendTimerProps> = ({
   onResend,
   disabled = false,
   loading = false,
+  email,
 }) => {
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
-  const [canResend, setCanResend] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [canResend, setCanResend] = useState(true);
+  const [rateLimited, setRateLimited] = useState(false);
+
+  useEffect(() => {
+    const storedTimer = localStorage.getItem(`resendTimer_${email}`);
+    if (storedTimer) {
+      const { resetTime } = JSON.parse(storedTimer);
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((resetTime - now) / 1000));
+      if (remaining > 0) {
+        setTimeLeft(remaining);
+        setCanResend(false);
+      } else {
+        localStorage.removeItem(`resendTimer_${email}`);
+      }
+    }
+  }, [email]);
 
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            localStorage.removeItem(`resendTimer_${email}`);
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
       return () => clearInterval(timer);
-    } else {
-      setCanResend(true);
     }
-  }, [timeLeft]);
+  }, [timeLeft, email]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -31,25 +54,78 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const handleResend = () => {
-    if (canResend && !loading) {
-      onResend();
-      setTimeLeft(300);
+  const handleResend = async () => {
+    if (!canResend || loading || disabled) return;
+    try {
+      // Rate limit logic
+      const rateLimitKey = `rateLimit_${email}`;
+      const rateLimitData = localStorage.getItem(rateLimitKey);
+      if (rateLimitData) {
+        const { count, resetTime } = JSON.parse(rateLimitData);
+        const now = Date.now();
+        if (now < resetTime && count >= 3) {
+          setRateLimited(true);
+          const remainingTime = Math.ceil((resetTime - now) / 1000);
+          setTimeLeft(remainingTime);
+          setCanResend(false);
+          return;
+        }
+      }
+      await onResend();
+      // 2 minute timer
+      const resetTime = Date.now() + 120000;
+      setTimeLeft(120);
       setCanResend(false);
+      localStorage.setItem(
+        `resendTimer_${email}`,
+        JSON.stringify({ resetTime }),
+      );
+      // Update rate limit
+      const storedRateLimitData = localStorage.getItem(rateLimitKey);
+      const now = Date.now();
+      if (storedRateLimitData) {
+        const { count, resetTime: oldResetTime } =
+          JSON.parse(storedRateLimitData);
+        if (now < oldResetTime) {
+          localStorage.setItem(
+            rateLimitKey,
+            JSON.stringify({ count: count + 1, resetTime: oldResetTime }),
+          );
+        } else {
+          localStorage.setItem(
+            rateLimitKey,
+            JSON.stringify({ count: 1, resetTime: now + 300000 }),
+          );
+        }
+      } else {
+        localStorage.setItem(
+          rateLimitKey,
+          JSON.stringify({ count: 1, resetTime: now + 300000 }),
+        );
+      }
+      setRateLimited(false);
+    } catch (error) {
+      console.error("Resend failed:", error);
     }
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleResend}
-      disabled={!canResend || loading || disabled}
-      className="font-medium text-red-200 hover:text-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+    <div
+      className="text-sm text-center mt-4"
+      style={{
+        cursor: canResend && !loading && !disabled ? "pointer" : "default",
+        color: "#fff",
+      }}
+      onClick={() => {
+        if (canResend && !loading && !disabled) handleResend();
+      }}
     >
       {canResend
-        ? "Didn't receive a code? Click here to resend"
+        ? rateLimited
+          ? "Rate limit exceeded. Please wait."
+          : "Didn't receive a code? Click here to resend"
         : `Resend code in ${formatTime(timeLeft)}`}
-    </button>
+    </div>
   );
 };
 

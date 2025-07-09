@@ -139,9 +139,10 @@ export const createUser = mutation({
     }
 
     // Then check by email as a fallback
+    const emailLower = args.email.toLowerCase();
     const existingUserByEmail = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email.toLowerCase()))
+      .filter((q) => q.eq(q.field("email"), emailLower))
       .first();
 
     if (existingUserByEmail && !existingUserByEmail.isDeleted) {
@@ -154,7 +155,7 @@ export const createUser = mutation({
       // Create new user in Convex
       const userId = await ctx.db.insert("users", {
         clerk_id: args.clerk_id,
-        email: args.email, // store as entered
+        email: emailLower, // store as lowercase
         email_verified: false,
         first_name: args.first_name,
         middle_name: args.middle_name,
@@ -648,10 +649,11 @@ export const updateUser = mutation({
       }
     }
 
+    const emailLower = args.email.toLowerCase();
     const updates: Record<string, unknown> = {
       first_name: args.first_name,
       last_name: args.last_name,
-      email: args.email,
+      email: emailLower, // store as lowercase
     };
     // Only update middle_name if it has been changed
     if (args.middle_name !== user.middle_name) {

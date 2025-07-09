@@ -13,8 +13,14 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
   message,
   type,
   onClose,
-  autoClose = type === "success",
-  duration = 3000,
+  autoClose = true,
+  duration = type === "error"
+    ? 7000
+    : type === "warning"
+      ? 5000
+      : type === "info"
+        ? 5000
+        : 3000,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 

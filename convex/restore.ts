@@ -147,9 +147,10 @@ export const restoreUser = mutation({
     privacy_agreed_at: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const emailLower = args.email.toLowerCase();
     const userId = await ctx.db.insert("users", {
       clerk_id: args.clerk_id,
-      email: args.email,
+      email: emailLower, // store as lowercase
       email_verified: args.role === 2 ? true : false,
       first_name: args.first_name,
       middle_name: args.middle_name,

@@ -31,7 +31,6 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [step, setStep] = useState(1); // 1: Email, 2: Verification Code, 3: Password, 4: Reset Password
-  const [resentSuccess, setResentSuccess] = useState(false);
   const [notification, setNotification] = useState<{
     message: string;
     type: "error" | "success" | "warning" | "info";
@@ -59,10 +58,6 @@ const LoginPage = () => {
   }, []);
 
   useEffect(() => {
-    setResentSuccess(false);
-  }, [step]);
-
-  useEffect(() => {
     setShowPassword(false);
     setShowConfirmPassword(false);
   }, [step, forgotStep, forgotStepIndex]);
@@ -81,9 +76,88 @@ const LoginPage = () => {
     );
   }
 
+  const checkCodeRateLimit = (
+    email: string,
+  ): { allowed: boolean; message?: string } => {
+    const rateLimitKey = `rateLimit_${email}`;
+    const timerKey = `resendTimer_${email}`;
+    const now = Date.now();
+    // Timer check (2 min)
+    const storedTimer = localStorage.getItem(timerKey);
+    if (storedTimer) {
+      const { resetTime } = JSON.parse(storedTimer);
+      if (now < resetTime) {
+        const remaining = Math.ceil((resetTime - now) / 1000);
+        const min = Math.floor(remaining / 60);
+        const sec = (remaining % 60).toString().padStart(2, "0");
+        return {
+          allowed: false,
+          message: `Please wait ${min}:${sec} before requesting another code.`,
+        };
+      }
+    }
+    // Rate limit check (3 per 5 min)
+    const rateLimitData = localStorage.getItem(rateLimitKey);
+    if (rateLimitData) {
+      const { count, resetTime } = JSON.parse(rateLimitData);
+      if (now < resetTime && count >= 3) {
+        const remaining = Math.ceil((resetTime - now) / 1000);
+        const min = Math.floor(remaining / 60);
+        const sec = (remaining % 60).toString().padStart(2, "0");
+        return {
+          allowed: false,
+          message: `Rate limit exceeded. Try again in ${min}:${sec}.`,
+        };
+      }
+    }
+    return { allowed: true };
+  };
+
+  const updateCodeRateLimit = (email: string) => {
+    const rateLimitKey = `rateLimit_${email}`;
+    const timerKey = `resendTimer_${email}`;
+    const now = Date.now();
+    // Set 2 min timer
+    localStorage.setItem(timerKey, JSON.stringify({ resetTime: now + 120000 }));
+    // Update rate limit (3 per 5 min)
+    const rateLimitData = localStorage.getItem(rateLimitKey);
+    if (rateLimitData) {
+      const { count, resetTime: oldResetTime } = JSON.parse(rateLimitData);
+      if (now < oldResetTime) {
+        localStorage.setItem(
+          rateLimitKey,
+          JSON.stringify({ count: count + 1, resetTime: oldResetTime }),
+        );
+      } else {
+        localStorage.setItem(
+          rateLimitKey,
+          JSON.stringify({ count: 1, resetTime: now + 300000 }),
+        );
+      }
+    } else {
+      localStorage.setItem(
+        rateLimitKey,
+        JSON.stringify({ count: 1, resetTime: now + 300000 }),
+      );
+    }
+  };
+
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoaded) return;
+
+    // Rate limit check
+    const emailToCheck = email.toLowerCase();
+    const rateLimitResult = checkCodeRateLimit(emailToCheck);
+    if (!rateLimitResult.allowed) {
+      setNotification({
+        message:
+          rateLimitResult.message ||
+          "Please wait before requesting another code.",
+        type: "error",
+      });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -129,6 +203,7 @@ const LoginPage = () => {
         });
 
         if (result.status === "needs_first_factor") {
+          updateCodeRateLimit(emailToCheck);
           setStep(2);
         } else {
           setNotification({
@@ -252,7 +327,6 @@ const LoginPage = () => {
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoaded) return;
-    setResentSuccess(false);
 
     try {
       setLoading(true);
@@ -354,7 +428,6 @@ const LoginPage = () => {
       });
 
       if (result.status === "needs_first_factor") {
-        setResentSuccess(true);
         setNotification({
           message:
             "A new verification code has been sent to your email. Please check your inbox and spam folder.",
@@ -365,7 +438,6 @@ const LoginPage = () => {
           message: "Failed to resend code. Please try again.",
           type: "error",
         });
-        setResentSuccess(false);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
@@ -373,13 +445,24 @@ const LoginPage = () => {
         message: errorMessage || "An error occurred. Please try again.",
         type: "error",
       });
-      setResentSuccess(false);
     } finally {
       setLoading(false);
     }
   };
 
   const handleForgotPassword = async () => {
+    // Rate limit check
+    const emailToCheck = email.toLowerCase();
+    const rateLimitResult = checkCodeRateLimit(emailToCheck);
+    if (!rateLimitResult.allowed) {
+      setNotification({
+        message:
+          rateLimitResult.message ||
+          "Please wait before requesting another code.",
+        type: "error",
+      });
+      return;
+    }
     setForgotStep(true);
     setStep(4);
     setForgotStepIndex(0);
@@ -392,9 +475,10 @@ const LoginPage = () => {
       if (!signIn) throw new Error("SignIn is not loaded");
       const result = await signIn.create({
         strategy: "reset_password_email_code",
-        identifier: email,
+        identifier: emailToCheck,
       });
       if (result.status === "needs_first_factor") {
+        updateCodeRateLimit(emailToCheck);
         setNotification({
           message:
             "A password reset code has been sent to your email. Please check your inbox and spam folder.",
@@ -536,15 +620,12 @@ const LoginPage = () => {
           {/* Step 2: Verification Code */}
           {step === 2 && (
             <form className="mt-8 space-y-6" onSubmit={handleCodeSubmit}>
-              {resentSuccess && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs">
-                  {notification?.message}
-                </div>
-              )}
               <VerifyCodeInput
                 code={code}
                 setCode={setCode}
                 loading={loading}
+                email={email}
+                onResendCode={handleResendCode}
               />
               <div className="mt-6">
                 <button
@@ -568,16 +649,6 @@ const LoginPage = () => {
                     />
                   </svg>
                 </button>
-                <div className="text-sm text-center mt-4">
-                  <button
-                    type="button"
-                    onClick={handleResendCode}
-                    disabled={loading}
-                    className="font-medium text-red-200 hover:text-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Didn&apos;t receive a code? Click here to resend
-                  </button>
-                </div>
               </div>
             </form>
           )}
@@ -645,16 +716,16 @@ const LoginPage = () => {
               </button>
               {forgotStepIndex === 0 && (
                 <>
-                  {notification?.message && (
-                    <div className="bg-green-100 border border-green-400 text-green-700 px-2 py-1 rounded relative mb-2 text-xs">
-                      {notification.message}
-                    </div>
-                  )}
                   <ResetCodeInput
                     code={code}
                     setCode={setCode}
                     loading={loading}
-                    error={notification?.message}
+                    error={
+                      notification?.type === "error"
+                        ? notification.message
+                        : undefined
+                    }
+                    email={email}
                     onResendCode={handleResendCode}
                     onSubmit={async (e) => {
                       e.preventDefault();
