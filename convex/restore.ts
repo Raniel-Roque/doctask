@@ -362,3 +362,26 @@ export const restoreImage = mutation({
     return { success: true };
   },
 });
+
+export const restoreLog = mutation({
+  args: {
+    user_id: v.id("users"),
+    user_role: v.number(),
+    action: v.string(),
+    details: v.string(),
+    affected_entity_type: v.string(),
+    affected_entity_id: v.union(v.id("users"), v.id("groupsTable")),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("LogsTable", {
+      user_id: args.user_id,
+      user_role: args.user_role,
+      action: args.action,
+      details: args.details,
+      affected_entity_type: args.affected_entity_type,
+      affected_entity_id: args.affected_entity_id,
+    });
+
+    return { success: true };
+  },
+});

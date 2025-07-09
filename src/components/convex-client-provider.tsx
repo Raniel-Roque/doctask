@@ -8,6 +8,7 @@ import { ConvexReactClient, useQuery } from "convex/react";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { SessionTimeout } from "./session-timeout";
+import { TermsAgreementWrapper } from "@/app/(pages)/components/TermsAgreementWrapper";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -169,7 +170,7 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
     isAuthorizedPath() &&
     convexUser.email_verified
   ) {
-    return <>{children}</>;
+    return <TermsAgreementWrapper>{children}</TermsAgreementWrapper>;
   }
 
   // Show error message if there's an authorization error

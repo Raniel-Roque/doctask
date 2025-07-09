@@ -1931,3 +1931,50 @@ export const getLogsWithDetails = query({
     };
   },
 });
+
+// =========================================
+// TERMS AGREEMENT QUERIES
+// =========================================
+
+export const getUserTermsAgreement = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const user = await ctx.db.get(args.userId);
+      if (!user) {
+        return {
+          hasAgreed: false,
+          termsAgreed: false,
+          privacyAgreed: false,
+          user: null,
+        };
+      }
+
+      const hasAgreed =
+        user.terms_agreed === true && user.privacy_agreed === true;
+
+      return {
+        hasAgreed,
+        termsAgreed: user.terms_agreed === true,
+        privacyAgreed: user.privacy_agreed === true,
+        user: {
+          _id: user._id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          role: user.role,
+          subrole: user.subrole,
+        },
+      };
+    } catch {
+      return {
+        hasAgreed: false,
+        termsAgreed: false,
+        privacyAgreed: false,
+        user: null,
+      };
+    }
+  },
+});

@@ -112,6 +112,16 @@ interface BackupNote {
   isDeleted?: boolean;
 }
 
+interface BackupLog {
+  _id: string;
+  user_id: string;
+  user_role: number;
+  affected_entity_type: string;
+  affected_entity_id: string;
+  action: string;
+  details: string;
+}
+
 interface BackupData {
   timestamp: string;
   version: string;
@@ -120,7 +130,7 @@ interface BackupData {
     groups: BackupGroup[];
     students: BackupStudent[];
     advisers: BackupAdviser[];
-    logs: unknown[];
+    logs: BackupLog[];
     documents: BackupDocument[];
     taskAssignments: BackupTaskAssignment[];
     documentStatus: BackupDocumentStatus[];
@@ -517,59 +527,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Restore logs (map old user/group IDs to new ones)
-    if (backupData.tables.logs && Array.isArray(backupData.tables.logs)) {
-      for (const logRaw of backupData.tables.logs) {
-        // Explicitly type log
-        const log = logRaw as {
-          user_id: string;
-          user_role: number;
-          affected_entity_type: string;
-          affected_entity_id: string;
-          action: string;
-          details: string;
-        };
-        // Map user_id and affected_entity_id
-        const newUserId = log.user_id
-          ? oldUserIdToNewUserId.get(log.user_id)
-          : null;
-        let newAffectedEntityId: Id<"users"> | Id<"groupsTable"> | null = null;
-        if (log.affected_entity_type === "user") {
-          newAffectedEntityId = log.affected_entity_id
-            ? (oldUserIdToNewUserId.get(log.affected_entity_id) ?? null)
-            : null;
-        } else if (log.affected_entity_type === "group") {
-          newAffectedEntityId = log.affected_entity_id
-            ? (oldGroupIdToNewGroupId.get(log.affected_entity_id) ?? null)
-            : null;
-        } else if (log.affected_entity_type === "database") {
-          newAffectedEntityId = instructorConvexUser._id;
-        }
-        if (!newUserId || !newAffectedEntityId) continue;
-        await convex.mutation(api.mutations.logRestore, {
-          log: {
-            user_id: newUserId,
-            user_role: log.user_role,
-            affected_entity_type: log.affected_entity_type,
-            affected_entity_id: newAffectedEntityId,
-            action: log.action,
-            details: log.details,
-          },
-        });
-      }
-    }
-
-    // Log the restore action
-    await convex.mutation(api.mutations.logRestore, {
-      log: {
-        user_id: instructorConvexUser._id,
-        user_role: 0,
-        affected_entity_type: "database",
-        affected_entity_id: instructorConvexUser._id,
-        action: "Restore",
-        details: "Restored database",
-      },
-    });
+    // Note: Logs will be restored after instructor recreation in restore-instructor route
+    // This ensures all ID mappings are available, including the new instructor ID
 
     // Note: Instructor will be handled by the frontend after showing success popup
     // This ensures the user sees the success message before being logged out
@@ -577,6 +536,16 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: "Backup restored successfully",
       users: clerkResults,
+      idMappings: {
+        oldUserIdToNewUserId: Object.fromEntries(oldUserIdToNewUserId),
+        oldGroupIdToNewGroupId: Object.fromEntries(oldGroupIdToNewGroupId),
+      },
+      backupData: {
+        tables: {
+          logs: backupData.tables.logs || [],
+          users: backupData.tables.users,
+        },
+      },
     });
   } catch (error) {
     return new NextResponse(

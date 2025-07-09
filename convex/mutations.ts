@@ -2459,3 +2459,35 @@ export const restoreUser = mutation({
     return { success: true };
   },
 });
+
+// =========================================
+// TERMS AGREEMENT OPERATIONS
+// =========================================
+
+export const updateTermsAgreement = mutation({
+  args: {
+    userId: v.id("users"),
+    termsAgreed: v.boolean(),
+    privacyAgreed: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+
+    const updates: Record<string, unknown> = {};
+
+    if (args.termsAgreed) {
+      updates.terms_agreed = true;
+      updates.terms_agreed_at = Date.now();
+    }
+
+    if (args.privacyAgreed) {
+      updates.privacy_agreed = true;
+      updates.privacy_agreed_at = Date.now();
+    }
+
+    await ctx.db.patch(args.userId, updates);
+
+    return { success: true };
+  },
+});

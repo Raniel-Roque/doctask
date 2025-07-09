@@ -8,6 +8,18 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+interface BackupUser {
+  _id: string;
+  clerk_id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  middle_name?: string;
+  role: number;
+  subrole?: number;
+  isDeleted?: boolean;
+}
+
 export async function POST(request: Request) {
   try {
     const { userId } = await auth();
@@ -15,7 +27,7 @@ export async function POST(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { instructorId } = await request.json();
+    const { instructorId, backupData, idMappings } = await request.json();
     if (!instructorId) {
       return new NextResponse("Missing instructorId", { status: 400 });
     }
@@ -99,7 +111,7 @@ export async function POST(request: Request) {
     });
 
     // 4. Re-create the Convex instructor with new Clerk ID
-    await convex.mutation(api.restore.restoreUser, {
+    const newInstructorResult = await convex.mutation(api.restore.restoreUser, {
       clerk_id: newClerkUser.id, // Use new Clerk ID
       first_name: instructorConvexUser.first_name,
       last_name: instructorConvexUser.last_name,
@@ -110,6 +122,60 @@ export async function POST(request: Request) {
       isDeleted: false, // Always ensure instructor is not deleted
       email_verified: true,
     });
+
+    // 5. Restore logs after instructor recreation (if backup data and mappings are provided)
+    if (backupData?.tables?.logs && idMappings) {
+      const { oldUserIdToNewUserId, oldGroupIdToNewGroupId } = idMappings;
+
+      // Add the new instructor ID to the mapping
+      const instructorUser = backupData.tables.users.find(
+        (u: BackupUser) => u.role === 2,
+      );
+      if (instructorUser) {
+        oldUserIdToNewUserId.set(
+          instructorUser._id,
+          newInstructorResult.userId,
+        );
+      }
+
+      for (const log of backupData.tables.logs) {
+        // Map user_id and affected_entity_id
+        const newUserId = log.user_id
+          ? oldUserIdToNewUserId.get(log.user_id)
+          : null;
+        let newAffectedEntityId: Id<"users"> | Id<"groupsTable"> | null = null;
+        if (log.affected_entity_type === "user") {
+          newAffectedEntityId = log.affected_entity_id
+            ? (oldUserIdToNewUserId.get(log.affected_entity_id) ?? null)
+            : null;
+        } else if (log.affected_entity_type === "group") {
+          newAffectedEntityId = log.affected_entity_id
+            ? (oldGroupIdToNewGroupId.get(log.affected_entity_id) ?? null)
+            : null;
+        } else if (log.affected_entity_type === "database") {
+          newAffectedEntityId = newInstructorResult.userId;
+        }
+        if (!newUserId || !newAffectedEntityId) continue;
+        await convex.mutation(api.restore.restoreLog, {
+          user_id: newUserId,
+          user_role: log.user_role,
+          affected_entity_type: log.affected_entity_type,
+          affected_entity_id: newAffectedEntityId,
+          action: log.action,
+          details: log.details,
+        });
+      }
+
+      // Log the restore action
+      await convex.mutation(api.restore.restoreLog, {
+        user_id: newInstructorResult.userId,
+        user_role: 0,
+        affected_entity_type: "database",
+        affected_entity_id: newInstructorResult.userId,
+        action: "Restore",
+        details: "Restored database",
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

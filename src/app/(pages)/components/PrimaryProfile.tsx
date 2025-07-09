@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import type { UserResource } from "@clerk/types";
 import type { Doc } from "../../../../convex/_generated/dataModel";
 import ChangePassword from "./ChangePassword";
+import { PrivacyPolicy } from "./PrivacyPolicy";
+import { TermsOfService } from "./TermsOfService";
 
 interface PrimaryProfileProps {
   user: UserResource | null | undefined;
@@ -18,6 +20,8 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
   onError,
 }) => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
+  const [isTermsOfServiceOpen, setIsTermsOfServiceOpen] = useState(false);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 mt-4">
@@ -103,13 +107,19 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
           {/* Privacy and Terms */}
           <div className="text-sm text-gray-500 flex justify-center items-center mt-2">
             <span>By using this service, you agree to our&nbsp;</span>
-            <span className="text-[#B54A4A] hover:text-[#A43A3A] underline cursor-pointer">
+            <button
+              onClick={() => setIsPrivacyPolicyOpen(true)}
+              className="text-[#B54A4A] hover:text-[#A43A3A] underline cursor-pointer"
+            >
               Privacy Policy
-            </span>
+            </button>
             <span>&nbsp;and&nbsp;</span>
-            <span className="text-[#B54A4A] hover:text-[#A43A3A] underline cursor-pointer">
+            <button
+              onClick={() => setIsTermsOfServiceOpen(true)}
+              className="text-[#B54A4A] hover:text-[#A43A3A] underline cursor-pointer"
+            >
               Terms of Service
-            </span>
+            </button>
           </div>
         </div>
       </div>
@@ -118,6 +128,18 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
       <ChangePassword
         isOpen={isChangePasswordOpen}
         onClose={() => setIsChangePasswordOpen(false)}
+      />
+
+      {/* Privacy Policy Modal */}
+      <PrivacyPolicy
+        isOpen={isPrivacyPolicyOpen}
+        onClose={() => setIsPrivacyPolicyOpen(false)}
+      />
+
+      {/* Terms of Service Modal */}
+      <TermsOfService
+        isOpen={isTermsOfServiceOpen}
+        onClose={() => setIsTermsOfServiceOpen(false)}
       />
     </div>
   );

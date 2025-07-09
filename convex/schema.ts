@@ -23,6 +23,12 @@ export default defineSchema({
     // User Roles
     role: v.number(), // 0 = student, 1 = adviser, 2 = instructor
     subrole: v.optional(v.number()), // 0 = member, 1 = manager
+
+    // Terms Agreement
+    terms_agreed: v.optional(v.boolean()), // Whether user has agreed to terms of service
+    privacy_agreed: v.optional(v.boolean()), // Whether user has agreed to privacy policy
+    terms_agreed_at: v.optional(v.number()), // Timestamp when terms were agreed to
+    privacy_agreed_at: v.optional(v.number()), // Timestamp when privacy policy was agreed to
   })
     .index("by_clerk_id", ["clerk_id"])
     .searchIndex("search_by_first_name", {
