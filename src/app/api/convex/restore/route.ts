@@ -18,6 +18,10 @@ interface BackupUser {
   role: number;
   subrole?: number;
   isDeleted?: boolean;
+  terms_agreed?: boolean;
+  privacy_agreed?: boolean;
+  terms_agreed_at?: number;
+  privacy_agreed_at?: number;
 }
 
 interface BackupGroup {
@@ -331,6 +335,10 @@ export async function POST(request: Request) {
         middle_name: user.middle_name,
         subrole: user.subrole,
         isDeleted: user.isDeleted ?? false,
+        terms_agreed: user.terms_agreed ?? false,
+        privacy_agreed: user.privacy_agreed ?? false,
+        terms_agreed_at: user.terms_agreed_at ?? undefined,
+        privacy_agreed_at: user.privacy_agreed_at ?? undefined,
       });
       oldUserIdToNewUserId.set(user._id, result.userId);
     }

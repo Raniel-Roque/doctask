@@ -60,8 +60,7 @@ export const TermsAgreementWrapper: React.FC<TermsAgreementWrapperProps> = ({
   const handleDisagree = async () => {
     try {
       await signOut();
-    } catch {
-    }
+    } catch {}
   };
 
   // Show loading state while checking

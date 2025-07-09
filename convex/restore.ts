@@ -141,6 +141,10 @@ export const restoreUser = mutation({
     subrole: v.optional(v.number()),
     isDeleted: v.optional(v.boolean()),
     email_verified: v.optional(v.boolean()),
+    terms_agreed: v.optional(v.boolean()),
+    privacy_agreed: v.optional(v.boolean()),
+    terms_agreed_at: v.optional(v.number()),
+    privacy_agreed_at: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await ctx.db.insert("users", {
@@ -153,6 +157,10 @@ export const restoreUser = mutation({
       role: args.role,
       subrole: args.subrole,
       isDeleted: args.isDeleted ?? false,
+      terms_agreed: args.terms_agreed ?? false,
+      privacy_agreed: args.privacy_agreed ?? false,
+      terms_agreed_at: args.terms_agreed_at ?? undefined,
+      privacy_agreed_at: args.privacy_agreed_at ?? undefined,
     });
     return { success: true, userId };
   },

@@ -18,6 +18,10 @@ interface BackupUser {
   role: number;
   subrole?: number;
   isDeleted?: boolean;
+  terms_agreed?: boolean;
+  privacy_agreed?: boolean;
+  terms_agreed_at?: number;
+  privacy_agreed_at?: number;
 }
 
 export async function POST(request: Request) {
@@ -111,6 +115,10 @@ export async function POST(request: Request) {
     });
 
     // 4. Re-create the Convex instructor with new Clerk ID
+    // Find the instructor's backup data
+    const backupInstructor = backupData?.tables?.users?.find(
+      (u: BackupUser) => u.role === 2 && u.email === instructorConvexUser.email,
+    );
     const newInstructorResult = await convex.mutation(api.restore.restoreUser, {
       clerk_id: newClerkUser.id, // Use new Clerk ID
       first_name: instructorConvexUser.first_name,
@@ -121,6 +129,10 @@ export async function POST(request: Request) {
       subrole: instructorConvexUser.subrole,
       isDeleted: false, // Always ensure instructor is not deleted
       email_verified: true,
+      terms_agreed: backupInstructor?.terms_agreed ?? false,
+      privacy_agreed: backupInstructor?.privacy_agreed ?? false,
+      terms_agreed_at: backupInstructor?.terms_agreed_at ?? null,
+      privacy_agreed_at: backupInstructor?.privacy_agreed_at ?? null,
     });
 
     // 5. Restore logs after instructor recreation (if backup data and mappings are provided)
