@@ -5,6 +5,7 @@ import { clerkClient, auth } from "@clerk/nextjs/server";
 import { generatePassword } from "@/utils/passwordGeneration";
 import { Resend } from "resend";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import { Liveblocks } from "@liveblocks/node";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -201,6 +202,19 @@ export async function POST(request: Request) {
 
     // Delete documents
     await convex.mutation(api.restore.deleteAllDocuments);
+
+    // Delete all Liveblocks rooms
+    try {
+      const liveblocks = new Liveblocks({
+        secret: process.env.LIVEBLOCKS_SECRET_KEY!,
+      });
+
+      // Get all rooms and delete them
+      const rooms = await liveblocks.getRooms();
+      for (const room of rooms.data) {
+        await liveblocks.deleteRoom(room.id);
+      }
+    } catch {}
 
     // Delete task assignments
     await convex.mutation(api.restore.deleteAllTaskAssignments);
