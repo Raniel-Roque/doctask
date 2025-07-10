@@ -1020,12 +1020,6 @@ export const TaskAssignmentTable = ({
                                   >
                                     <FaEye className="w-5 h-5" />
                                   </button>
-                                  <button
-                                    className="text-download-600 hover:text-download-800 transition-colors"
-                                    title="Download Document"
-                                  >
-                                    <FaDownload className="w-5 h-5" />
-                                  </button>
                                   {canEditTask(chapterTasks[0]) && (
                                     <button
                                       onClick={(e) => {
@@ -1038,6 +1032,12 @@ export const TaskAssignmentTable = ({
                                       <FaEdit className="w-5 h-5" />
                                     </button>
                                   )}
+                                  <button
+                                    className="text-download-600 hover:text-download-800 transition-colors"
+                                    title="Download Document"
+                                  >
+                                    <FaDownload className="w-5 h-5" />
+                                  </button>
                                   {mode === "manager" &&
                                     getChapterStatus(chapter, chapterTasks) ===
                                       1 && (
@@ -1104,12 +1104,6 @@ export const TaskAssignmentTable = ({
                                 >
                                   <FaEye className="w-5 h-5" />
                                 </button>
-                                <button
-                                  className="text-download-600 hover:text-download-800 transition-colors"
-                                  title="Download Document"
-                                >
-                                  <FaDownload className="w-5 h-5" />
-                                </button>
                                 {canEditTask(chapterTasks[0]) && (
                                   <button
                                     onClick={(e) => {
@@ -1122,6 +1116,12 @@ export const TaskAssignmentTable = ({
                                     <FaEdit className="w-5 h-5" />
                                   </button>
                                 )}
+                                <button
+                                  className="text-download-600 hover:text-download-800 transition-colors"
+                                  title="Download Document"
+                                >
+                                  <FaDownload className="w-5 h-5" />
+                                </button>
                                 {mode === "manager" &&
                                   chapterTasks[0].task_status === 1 && (
                                     <button

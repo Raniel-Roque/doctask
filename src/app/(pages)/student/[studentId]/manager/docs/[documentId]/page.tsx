@@ -98,7 +98,9 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
   const { editor } = useEditorStore();
   const searchParams = useSearchParams();
   const isViewOnly = searchParams.get("viewOnly") === "true";
-  const updateLastModified = useMutation(api.mutations.updateDocumentLastModified);
+  const updateLastModified = useMutation(
+    api.mutations.updateDocumentLastModified,
+  );
 
   // Get current user by Clerk ID
   const currentUser = useQuery(
@@ -147,7 +149,9 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
       : false;
 
   // State to track unauthorized access
-  const [unauthorizedReason, setUnauthorizedReason] = useState<"deleted" | "version_snapshot" | null>(null);
+  const [unauthorizedReason, setUnauthorizedReason] = useState<
+    "deleted" | "version_snapshot" | null
+  >(null);
 
   // Block access to non-live or soft-deleted documents
   useEffect(() => {
@@ -276,7 +280,8 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
       liveDocumentData?.documentId &&
       currentUser?._id &&
       !isVersionSnapshot &&
-      document && !document.isDeleted
+      document &&
+      !document.isDeleted
     ) {
       updateLastModified({
         documentId: liveDocumentData.documentId,
@@ -284,11 +289,24 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveDocumentData?.documentId, currentUser?._id, isViewOnly, isVersionSnapshot, document]);
+  }, [
+    liveDocumentData?.documentId,
+    currentUser?._id,
+    isViewOnly,
+    isVersionSnapshot,
+    document,
+  ]);
 
   // Update last_modified when the last user leaves the editor
   useEffect(() => {
-    if (!isViewOnly && liveDocumentData?.documentId && currentUser?._id && !isVersionSnapshot && document && !document.isDeleted) {
+    if (
+      !isViewOnly &&
+      liveDocumentData?.documentId &&
+      currentUser?._id &&
+      !isVersionSnapshot &&
+      document &&
+      !document.isDeleted
+    ) {
       const handleLastUserInRoom = () => {
         if (liveDocumentData.documentId) {
           updateLastModified({
@@ -299,10 +317,20 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
       };
       window.addEventListener("liveblocks-last-user", handleLastUserInRoom);
       return () => {
-        window.removeEventListener("liveblocks-last-user", handleLastUserInRoom);
+        window.removeEventListener(
+          "liveblocks-last-user",
+          handleLastUserInRoom,
+        );
       };
     }
-  }, [liveDocumentData?.documentId, currentUser?._id, isViewOnly, isVersionSnapshot, updateLastModified, document]);
+  }, [
+    liveDocumentData?.documentId,
+    currentUser?._id,
+    isViewOnly,
+    isVersionSnapshot,
+    updateLastModified,
+    document,
+  ]);
 
   // Show unauthorized access screen if needed
   if (unauthorizedReason) {

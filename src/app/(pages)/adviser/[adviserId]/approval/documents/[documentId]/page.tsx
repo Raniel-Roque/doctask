@@ -32,7 +32,9 @@ const AdviserViewDocsPage = ({ params }: AdviserViewDocsPageProps) => {
   );
 
   // State to track unauthorized access
-  const [unauthorizedReason, setUnauthorizedReason] = useState<"deleted" | "version_snapshot" | null>(null);
+  const [unauthorizedReason, setUnauthorizedReason] = useState<
+    "deleted" | "version_snapshot" | null
+  >(null);
 
   // Fetch the live document ID for Liveblocks room
   const liveDocumentResult = useQuery(

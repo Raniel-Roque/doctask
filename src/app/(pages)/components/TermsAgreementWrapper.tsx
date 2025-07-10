@@ -80,7 +80,6 @@ export const TermsAgreementWrapper: React.FC<TermsAgreementWrapperProps> = ({
     return (
       <TermsAndService
         isOpen={showTerms}
-        onClose={() => setShowTerms(false)}
         onAgree={handleAgree}
         onDisagree={handleDisagree}
       />

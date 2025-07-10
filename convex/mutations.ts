@@ -2510,7 +2510,9 @@ export const updateDocumentLastModified = mutation({
     const documentStatus = await ctx.db
       .query("documentStatus")
       .withIndex("by_group_document", (q) =>
-        q.eq("group_id", document.group_id).eq("document_part", document.chapter),
+        q
+          .eq("group_id", document.group_id)
+          .eq("document_part", document.chapter),
       )
       .first();
 

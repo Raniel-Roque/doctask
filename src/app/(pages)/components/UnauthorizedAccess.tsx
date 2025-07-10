@@ -6,7 +6,9 @@ interface UnauthorizedAccessProps {
   reason?: "deleted" | "version_snapshot" | "unauthorized";
 }
 
-const UnauthorizedAccess = ({ reason = "unauthorized" }: UnauthorizedAccessProps) => {
+const UnauthorizedAccess = ({
+  reason = "unauthorized",
+}: UnauthorizedAccessProps) => {
   const router = useRouter();
 
   const getMessage = () => {
@@ -43,9 +45,7 @@ const UnauthorizedAccess = ({ reason = "unauthorized" }: UnauthorizedAccessProps
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Unauthorized Access
           </h1>
-          <p className="text-gray-600 mb-6">
-            {getMessage()}
-          </p>
+          <p className="text-gray-600 mb-6">{getMessage()}</p>
         </div>
         <button
           onClick={() => router.push("/")}
@@ -58,4 +58,4 @@ const UnauthorizedAccess = ({ reason = "unauthorized" }: UnauthorizedAccessProps
   );
 };
 
-export default UnauthorizedAccess; 
+export default UnauthorizedAccess;

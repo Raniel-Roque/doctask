@@ -211,7 +211,9 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
         {showPrivacyPolicy ? (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Privacy Policy</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Privacy Policy
+              </h2>
               <button
                 onClick={() => setShowPrivacyPolicy(false)}
                 className="text-blue-600 hover:text-blue-800 font-medium"
@@ -224,7 +226,9 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
         ) : showTermsOfService ? (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Terms of Service</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Terms of Service
+              </h2>
               <button
                 onClick={() => setShowTermsOfService(false)}
                 className="text-blue-600 hover:text-blue-800 font-medium"
@@ -237,7 +241,9 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
         ) : (
           <div>
             <div className="flex justify-center items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Terms of Service & Privacy Policy</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Terms of Service & Privacy Policy
+              </h2>
             </div>
             <div className="mb-6">
               <p className="text-gray-600 mb-4">

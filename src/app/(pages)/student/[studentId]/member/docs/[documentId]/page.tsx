@@ -136,7 +136,9 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       : false;
 
   // State to track unauthorized access
-  const [unauthorizedReason, setUnauthorizedReason] = useState<"deleted" | "version_snapshot" | null>(null);
+  const [unauthorizedReason, setUnauthorizedReason] = useState<
+    "deleted" | "version_snapshot" | null
+  >(null);
 
   // Block access to non-live or soft-deleted documents
   useEffect(() => {
