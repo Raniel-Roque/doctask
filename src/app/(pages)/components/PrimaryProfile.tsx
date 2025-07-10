@@ -134,12 +134,14 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
       <PrivacyPolicy
         isOpen={isPrivacyPolicyOpen}
         onClose={() => setIsPrivacyPolicyOpen(false)}
+        context="profile"
       />
 
       {/* Terms of Service Modal */}
       <TermsOfService
         isOpen={isTermsOfServiceOpen}
         onClose={() => setIsTermsOfServiceOpen(false)}
+        context="profile"
       />
     </div>
   );

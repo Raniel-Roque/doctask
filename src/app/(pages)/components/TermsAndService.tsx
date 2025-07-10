@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaTimes, FaCheck, FaSpinner } from "react-icons/fa";
+import { FaCheck, FaSpinner } from "react-icons/fa";
 import { useUser } from "@clerk/clerk-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -7,14 +7,12 @@ import { NotificationBanner } from "./NotificationBanner";
 
 interface TermsAndServiceProps {
   isOpen: boolean;
-  onClose: () => void;
   onAgree: () => void;
   onDisagree: () => void;
 }
 
 export const TermsAndService: React.FC<TermsAndServiceProps> = ({
   isOpen,
-  onClose,
   onAgree,
   onDisagree,
 }) => {
@@ -210,41 +208,37 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Terms of Service & Privacy Policy
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-            disabled={isLoading}
-          >
-            <FaTimes />
-          </button>
-        </div>
-
         {showPrivacyPolicy ? (
           <div>
-            <button
-              onClick={() => setShowPrivacyPolicy(false)}
-              className="mb-4 text-[#B54A4A] hover:text-[#A43A3A] underline"
-            >
-              ← Back to Agreement
-            </button>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Privacy Policy</h2>
+              <button
+                onClick={() => setShowPrivacyPolicy(false)}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Back
+              </button>
+            </div>
             <PrivacyPolicyContent />
           </div>
         ) : showTermsOfService ? (
           <div>
-            <button
-              onClick={() => setShowTermsOfService(false)}
-              className="mb-4 text-[#B54A4A] hover:text-[#A43A3A] underline"
-            >
-              ← Back to Agreement
-            </button>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Terms of Service</h2>
+              <button
+                onClick={() => setShowTermsOfService(false)}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Back
+              </button>
+            </div>
             <TermsOfServiceContent />
           </div>
         ) : (
-          <>
+          <div>
+            <div className="flex justify-center items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Terms of Service & Privacy Policy</h2>
+            </div>
             <div className="mb-6">
               <p className="text-gray-600 mb-4">
                 Welcome to DocTask! Before you can access our services, please
@@ -328,7 +322,7 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
                 )}
               </button>
             </div>
-          </>
+          </div>
         )}
 
         <NotificationBanner

@@ -1,16 +1,27 @@
 import React from "react";
-import { FaTimes } from "react-icons/fa";
 
 interface PrivacyPolicyProps {
   isOpen: boolean;
   onClose: () => void;
+  context?: "profile" | "terms"; // "profile" = close popup, "terms" = go back to agreement
+  onBackToTerms?: () => void; // Callback for going back to terms agreement
 }
 
 export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
   isOpen,
   onClose,
+  context = "profile",
+  onBackToTerms,
 }) => {
   if (!isOpen) return null;
+
+  const handleBackClick = () => {
+    if (context === "terms" && onBackToTerms) {
+      onBackToTerms();
+    } else {
+      onClose();
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -18,10 +29,10 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Privacy Policy</h2>
           <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            onClick={handleBackClick}
+            className="text-blue-600 hover:text-blue-800 font-medium"
           >
-            <FaTimes />
+            Back
           </button>
         </div>
 
