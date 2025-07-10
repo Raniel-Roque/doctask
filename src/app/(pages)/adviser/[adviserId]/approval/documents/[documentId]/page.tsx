@@ -1,11 +1,12 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import { Room } from "../../../../../../editor/room";
 import { useSearchParams } from "next/navigation";
+import UnauthorizedAccess from "@/app/(pages)/components/UnauthorizedAccess";
 
 interface AdviserViewDocsPageProps {
   params: Promise<{ adviserId: string; documentId: string }>;
@@ -30,6 +31,9 @@ const AdviserViewDocsPage = ({ params }: AdviserViewDocsPageProps) => {
     document?.group_id ? { groupId: document.group_id } : "skip",
   );
 
+  // State to track unauthorized access
+  const [unauthorizedReason, setUnauthorizedReason] = useState<"deleted" | "version_snapshot" | null>(null);
+
   // Fetch the live document ID for Liveblocks room
   const liveDocumentResult = useQuery(
     api.fetch.getLiveDocumentId,
@@ -41,6 +45,35 @@ const AdviserViewDocsPage = ({ params }: AdviserViewDocsPageProps) => {
         }
       : "skip",
   );
+
+  // Check if current document is a version snapshot (not the live document)
+  const isVersionSnapshot =
+    document && liveDocumentResult?.documentId
+      ? document._id !== liveDocumentResult.documentId
+      : false;
+
+  // Block access to non-live or soft-deleted documents
+  useEffect(() => {
+    if (document && document.isDeleted) {
+      // Show unauthorized access screen for soft-deleted documents
+      setUnauthorizedReason("deleted");
+      return;
+    }
+    if (isVersionSnapshot && liveDocumentResult?.documentId && document) {
+      // Redirect to the live document URL
+      const currentUrl = new URL(window.location.href);
+      const liveDocumentUrl = currentUrl.pathname.replace(
+        document._id,
+        liveDocumentResult.documentId,
+      );
+      window.location.href = liveDocumentUrl;
+    }
+  }, [isVersionSnapshot, liveDocumentResult, document]);
+
+  // Show unauthorized access screen if needed
+  if (unauthorizedReason) {
+    return <UnauthorizedAccess reason={unauthorizedReason} />;
+  }
 
   // Loading state
   if (

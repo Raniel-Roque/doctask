@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { use, useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { Id, Doc } from "../../../../../../../../convex/_generated/dataModel";
@@ -8,6 +8,7 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEditorStore } from "@/store/use-editor-store";
 import { Room } from "@/app/editor/room";
+import UnauthorizedAccess from "@/app/(pages)/components/UnauthorizedAccess";
 
 // Custom hook for saving logic
 const useSaveToDatabase = (
@@ -134,8 +135,16 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       ? document._id !== liveDocumentData.documentId
       : false;
 
-  // Members cannot view version snapshots - redirect to live document
+  // State to track unauthorized access
+  const [unauthorizedReason, setUnauthorizedReason] = useState<"deleted" | "version_snapshot" | null>(null);
+
+  // Block access to non-live or soft-deleted documents
   useEffect(() => {
+    if (document && document.isDeleted) {
+      // Show unauthorized access screen for soft-deleted documents
+      setUnauthorizedReason("deleted");
+      return;
+    }
     if (isVersionSnapshot && liveDocumentData?.documentId && document) {
       // Redirect to the live document URL
       const currentUrl = new URL(window.location.href);
@@ -150,7 +159,8 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
   // Check if user can edit this document (members need specific task assignment)
   const canEdit = () => {
     if (!document || !currentUser || !taskAssignments?.tasks) return false;
-
+    // Only allow editing if this is the live, non-deleted document
+    if (isVersionSnapshot || document.isDeleted) return false;
     // Members can only edit if they are assigned to a task that matches this document's chapter
     return taskAssignments.tasks.some(
       (task) =>
@@ -252,24 +262,14 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
     };
   }, [saveToDatabase, isEditable]);
 
+  // Show unauthorized access screen if needed
+  if (unauthorizedReason) {
+    return <UnauthorizedAccess reason={unauthorizedReason} />;
+  }
+
   // Handle access control
   if (userAccess?.hasAccess === false) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-          <p className="text-muted-foreground">
-            You don&apos;t have permission to view this document.
-          </p>
-          <button
-            onClick={() => router.back()}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
+    return <UnauthorizedAccess reason="unauthorized" />;
   }
 
   if (!document || !userAccess || !currentUser) {

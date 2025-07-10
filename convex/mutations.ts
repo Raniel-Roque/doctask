@@ -2493,3 +2493,43 @@ export const updateTermsAgreement = mutation({
     return { success: true };
   },
 });
+
+export const updateDocumentLastModified = mutation({
+  args: {
+    documentId: v.id("documents"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Get the document to find its group_id and chapter
+    const document = await ctx.db.get(args.documentId);
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    // Find the corresponding documentStatus entry
+    const documentStatus = await ctx.db
+      .query("documentStatus")
+      .withIndex("by_group_document", (q) =>
+        q.eq("group_id", document.group_id).eq("document_part", document.chapter),
+      )
+      .first();
+
+    if (documentStatus) {
+      // Update the last_modified field in documentStatus table
+      await ctx.db.patch(documentStatus._id, {
+        last_modified: Date.now(),
+      });
+    } else {
+      // Create a new documentStatus entry if it doesn't exist
+      await ctx.db.insert("documentStatus", {
+        group_id: document.group_id,
+        document_part: document.chapter,
+        review_status: 0, // Default to not_submitted
+        last_modified: Date.now(),
+        isDeleted: false,
+      });
+    }
+
+    return { success: true };
+  },
+});

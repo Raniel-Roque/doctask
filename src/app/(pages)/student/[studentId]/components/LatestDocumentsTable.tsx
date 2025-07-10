@@ -10,8 +10,6 @@ import {
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "convex/react";
-import { api } from "../../../../../../convex/_generated/api";
 import NotesPopupViewOnly from "./NotesPopupViewOnly";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 
@@ -130,9 +128,6 @@ export const LatestDocumentsTable = ({
   group,
 }: LatestDocumentsTableProps) => {
   const router = useRouter();
-  const updateDocumentContent = useMutation(
-    api.mutations.updateDocumentContent,
-  );
 
   // Add state for status filter
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -158,16 +153,6 @@ export const LatestDocumentsTable = ({
 
   // Handle edit document navigation
   const handleEditDocument = async (document: Document) => {
-    // Update last_modified before navigating
-    try {
-      await updateDocumentContent({
-        documentId: document._id,
-        content: document.content,
-        userId: currentUserId,
-      });
-    } catch {
-      // Optionally handle error
-    }
     const path = `/student/${currentUserId}/${mode}/docs/${document._id}`;
     router.push(path);
   };
