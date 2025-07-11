@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
@@ -187,8 +187,10 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
     if (!document || !currentUser || !taskAssignments?.tasks) return false;
     // Only allow editing if this is the live, non-deleted document
     if (isVersionSnapshot || document.isDeleted) return false;
-    // Don't allow editing if document is submitted
-    if (currentDocumentStatus && currentDocumentStatus.status === 1)
+    if (
+      currentDocumentStatus &&
+      (currentDocumentStatus.status === 1 || currentDocumentStatus.status === 2)
+    )
       return false;
     // Managers can edit documents if they are part of the group
     return userAccess?.group?._id === document.group_id;
@@ -202,6 +204,14 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
     document,
     currentUser,
     isEditable,
+  );
+
+  // Memoize the updateLastModified function to make it stable
+  const handleUpdateLastModified = useCallback(
+    (documentId: Id<"documents">, userId: Id<"users">) => {
+      updateLastModified({ documentId, userId });
+    },
+    [updateLastModified],
   );
 
   // Set editor read-only state when editor and access permissions are available
@@ -287,34 +297,31 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
     };
   }, [saveToDatabase, isEditable]);
 
-  // Update last_modified when entering the editor (mount)
+  // Update last_modified when entering the editor (mount) - only in edit mode
   useEffect(() => {
     if (
-      !isViewOnly &&
+      isEditable && // Only update when in edit mode
       liveDocumentData?.documentId &&
       currentUser?._id &&
       !isVersionSnapshot &&
       document &&
       !document.isDeleted
     ) {
-      updateLastModified({
-        documentId: liveDocumentData.documentId,
-        userId: currentUser._id,
-      });
+      handleUpdateLastModified(liveDocumentData.documentId, currentUser._id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     liveDocumentData?.documentId,
     currentUser?._id,
-    isViewOnly,
+    isEditable, // Changed from isViewOnly to isEditable
     isVersionSnapshot,
     document,
+    handleUpdateLastModified,
   ]);
 
-  // Update last_modified when the last user leaves the editor
+  // Update last_modified when the last user leaves the editor - only in edit mode
   useEffect(() => {
     if (
-      !isViewOnly &&
+      isEditable && // Only update when in edit mode
       liveDocumentData?.documentId &&
       currentUser?._id &&
       !isVersionSnapshot &&
@@ -323,10 +330,10 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
     ) {
       const handleLastUserInRoom = () => {
         if (liveDocumentData.documentId) {
-          updateLastModified({
-            documentId: liveDocumentData.documentId,
-            userId: currentUser._id,
-          });
+          handleUpdateLastModified(
+            liveDocumentData.documentId,
+            currentUser._id,
+          );
         }
       };
       window.addEventListener("liveblocks-last-user", handleLastUserInRoom);
@@ -340,9 +347,9 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
   }, [
     liveDocumentData?.documentId,
     currentUser?._id,
-    isViewOnly,
+    isEditable, // Changed from isViewOnly to isEditable
     isVersionSnapshot,
-    updateLastModified,
+    handleUpdateLastModified,
     document,
   ]);
 

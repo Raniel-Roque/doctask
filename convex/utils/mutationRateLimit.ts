@@ -49,6 +49,7 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   "student:update_secondary_profile": { maxRequests: 10, windowMs: 60000 }, // 10 requests per minute
   "student:submit_document": { maxRequests: 5, windowMs: 60000 }, // 5 requests per minute
   "student:cancel_submission": { maxRequests: 5, windowMs: 60000 }, // 5 requests per minute
+  "student:reset_task_status": { maxRequests: 5, windowMs: 60000 }, // 5 requests per minute
 };
 
 export function checkRateLimit(

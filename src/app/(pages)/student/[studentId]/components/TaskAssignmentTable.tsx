@@ -137,6 +137,24 @@ export const TaskAssignmentTable = ({
     api.mutations.cancelDocumentSubmission,
   );
 
+  // Memoize mutation functions to avoid dependency issues
+  const memoizedUpdateTaskStatus = useCallback(updateTaskStatus, [
+    updateTaskStatus,
+  ]);
+  const memoizedUpdateTaskAssignment = useCallback(updateTaskAssignment, [
+    updateTaskAssignment,
+  ]);
+  const memoizedUpdateDocumentContent = useCallback(updateDocumentContent, [
+    updateDocumentContent,
+  ]);
+  const memoizedSubmitDocumentForReview = useCallback(submitDocumentForReview, [
+    submitDocumentForReview,
+  ]);
+  const memoizedCancelDocumentSubmission = useCallback(
+    cancelDocumentSubmission,
+    [cancelDocumentSubmission],
+  );
+
   // Add state for status filter and expanded chapters
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
@@ -225,8 +243,7 @@ export const TaskAssignmentTable = ({
     if (memberIds) {
       fetchImages();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memberIds]);
+  }, [memberIds, groupMembers]);
 
   useEffect(() => {
     if (showMemberSelector && searchInputRef.current) {
@@ -339,7 +356,7 @@ export const TaskAssignmentTable = ({
       const newAssignments = [...currentAssignments, memberId];
 
       // Call the Convex mutation
-      await updateTaskAssignment({
+      await memoizedUpdateTaskAssignment({
         taskId: task._id,
         assignedStudentIds: newAssignments,
         userId: currentUserId as Id<"users">,
@@ -368,7 +385,7 @@ export const TaskAssignmentTable = ({
       const newAssignments = currentAssignments.filter((id) => id !== memberId);
 
       // Call the Convex mutation
-      await updateTaskAssignment({
+      await memoizedUpdateTaskAssignment({
         taskId: task._id,
         assignedStudentIds: newAssignments,
         userId: currentUserId as Id<"users">,
@@ -433,11 +450,11 @@ export const TaskAssignmentTable = ({
     return document?.status || 0; // Default to 0 (not_submitted)
   };
 
-  // Check if document can be submitted (all tasks completed and not already submitted)
+  // Check if document can be submitted (all tasks completed and not already submitted or approved)
   const canSubmitDocument = (chapter: string, chapterTasks: Task[]) => {
     const taskStatus = getChapterStatus(chapter, chapterTasks);
     const documentStatus = getDocumentStatus(chapter);
-    return taskStatus === 1 && documentStatus === 0; // Tasks completed and document not submitted
+    return taskStatus === 1 && documentStatus === 0; // Tasks completed and document not submitted (approved documents cannot be submitted)
   };
 
   // Check if document can be cancelled (currently submitted)
@@ -446,13 +463,21 @@ export const TaskAssignmentTable = ({
     return documentStatus === 1; // Currently submitted
   };
 
+  // Check if document can be edited (not submitted, approved, or rejected)
+  const canEditDocument = (task: Task) => {
+    const documentStatus = getDocumentStatus(task.chapter);
+    // Can edit if document is not submitted (0), approved (2), or rejected (3)
+    // For approved documents, task status doesn't matter
+    return documentStatus === 0 || documentStatus === 2 || documentStatus === 3;
+  };
+
   // Handle status change
   const handleStatusChange = async (taskId: string, newStatus: number) => {
     try {
       setUpdatingStatus(taskId);
 
       // Call the Convex mutation
-      await updateTaskStatus({
+      await memoizedUpdateTaskStatus({
         taskId: taskId as Id<"taskAssignments">,
         newStatus,
         userId: currentUserId as Id<"users">,
@@ -479,7 +504,7 @@ export const TaskAssignmentTable = ({
       }
 
       // Call the Convex mutation
-      await submitDocumentForReview({
+      await memoizedSubmitDocumentForReview({
         groupId: document.group_id,
         documentPart: chapter,
         userId: currentUserId as Id<"users">,
@@ -514,7 +539,7 @@ export const TaskAssignmentTable = ({
       }
 
       // Call the Convex mutation
-      await cancelDocumentSubmission({
+      await memoizedCancelDocumentSubmission({
         groupId: document.group_id,
         documentPart: chapter,
         userId: currentUserId as Id<"users">,
@@ -543,7 +568,7 @@ export const TaskAssignmentTable = ({
     const document = documents.find((doc) => doc.chapter === task.chapter);
     if (document) {
       try {
-        await updateDocumentContent({
+        await memoizedUpdateDocumentContent({
           documentId: document._id,
           content: document.content,
           userId: currentUserId as Id<"users">,
@@ -1158,9 +1183,7 @@ export const TaskAssignmentTable = ({
                                     </>
                                   )}
                                   {canEditTask(chapterTasks[0]) &&
-                                    getDocumentStatus(
-                                      chapterTasks[0].chapter,
-                                    ) !== 1 && (
+                                    canEditDocument(chapterTasks[0]) && (
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -1198,6 +1221,9 @@ export const TaskAssignmentTable = ({
                                       "appendix_a",
                                       "appendix_d",
                                     ].includes(chapterTasks[0].chapter) &&
+                                    getDocumentStatus(
+                                      chapterTasks[0].chapter,
+                                    ) !== 3 && // Hide for rejected documents
                                     (canSubmitDocument(
                                       chapterTasks[0].chapter,
                                       chapterTasks,
@@ -1336,29 +1362,19 @@ export const TaskAssignmentTable = ({
                                     </span>
                                   </>
                                 )}
-                                {canEditTask(chapterTasks[0]) && (
-                                  <button
-                                    onClick={(e) => {
-                                      if (
-                                        getDocumentStatus(
-                                          chapterTasks[0].chapter,
-                                        ) !== 1
-                                      ) {
+                                {canEditTask(chapterTasks[0]) &&
+                                  canEditDocument(chapterTasks[0]) && (
+                                    <button
+                                      onClick={(e) => {
                                         e.stopPropagation();
                                         handleEditDocument(chapterTasks[0]);
-                                      }
-                                    }}
-                                    className={`text-purple-600 hover:text-purple-800 transition-colors${getDocumentStatus(chapterTasks[0].chapter) === 1 ? " opacity-50 cursor-not-allowed" : ""}`}
-                                    title="Edit Document"
-                                    disabled={
-                                      getDocumentStatus(
-                                        chapterTasks[0].chapter,
-                                      ) === 1
-                                    }
-                                  >
-                                    <FaEdit className="w-5 h-5" />
-                                  </button>
-                                )}
+                                      }}
+                                      className="text-purple-600 hover:text-purple-800 transition-colors"
+                                      title="Edit Document"
+                                    >
+                                      <FaEdit className="w-5 h-5" />
+                                    </button>
+                                  )}
                                 <button
                                   className="text-yellow-500 hover:text-yellow-600 transition-colors"
                                   title="View Notes"

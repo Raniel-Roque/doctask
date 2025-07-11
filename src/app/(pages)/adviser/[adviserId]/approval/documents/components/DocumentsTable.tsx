@@ -164,31 +164,43 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 
   // Check if adviser can change document status
   const canChangeStatus = (doc: Document) => {
-    // Adviser can only change status if document is submitted (status = 1)
-    // Cannot change not_submitted (0), approved (2), or rejected (3) documents
-    return doc.status === 1; // Only submitted documents can be approved/rejected
+    return doc.status !== 0; // Allow changes for all statuses except not_submitted
   };
 
   const handleStatusChange = async (documentId: string, newStatus: number) => {
+    // Find the document to get its chapter and group info
+    let targetDoc: Document | null = null;
+    let targetGroup: Group | null = null;
+
+    for (const group of groups) {
+      const doc = group.documents.find((d) => d._id === documentId);
+      if (doc) {
+        targetDoc = doc;
+        targetGroup = group;
+        break;
+      }
+    }
+
+    if (!targetDoc || !targetGroup) {
+      setNotification({
+        message: "Document not found",
+        type: "error",
+      });
+      return;
+    }
+
+    // Perform status change directly
+    await performStatusChange(documentId, newStatus, targetDoc, targetGroup);
+  };
+
+  const performStatusChange = async (
+    documentId: string,
+    newStatus: number,
+    targetDoc: Document,
+    targetGroup: Group,
+  ) => {
     try {
       setUpdatingStatus(documentId);
-
-      // Find the document to get its chapter and group info
-      let targetDoc: Document | null = null;
-      let targetGroup: Group | null = null;
-
-      for (const group of groups) {
-        const doc = group.documents.find((d) => d._id === documentId);
-        if (doc) {
-          targetDoc = doc;
-          targetGroup = group;
-          break;
-        }
-      }
-
-      if (!targetDoc || !targetGroup) {
-        throw new Error("Document not found");
-      }
 
       // Call the Convex mutation
       await updateDocumentStatus({
@@ -448,36 +460,29 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                               <option
                                                 value={doc.status}
                                                 disabled
-                                                className={
-                                                  doc.status === 1
-                                                    ? "hidden"
-                                                    : ""
-                                                }
                                               >
-                                                {doc.status === 1
-                                                  ? "Submitted"
-                                                  : doc.status === 2
-                                                    ? "Approved"
-                                                    : doc.status === 3
-                                                      ? "Rejected"
-                                                      : "Unknown"}
+                                                {doc.status === 0
+                                                  ? "Not Submitted"
+                                                  : doc.status === 1
+                                                    ? "Submitted"
+                                                    : doc.status === 2
+                                                      ? "Approved"
+                                                      : doc.status === 3
+                                                        ? "Rejected"
+                                                        : "Unknown"}
                                               </option>
-                                              {doc.status !== 2 && (
-                                                <option
-                                                  value={2}
-                                                  className="bg-green-100 text-green-800"
-                                                >
-                                                  Approved
-                                                </option>
-                                              )}
-                                              {doc.status !== 3 && (
-                                                <option
-                                                  value={3}
-                                                  className="bg-red-100 text-red-800"
-                                                >
-                                                  Rejected
-                                                </option>
-                                              )}
+                                              <option
+                                                value={2}
+                                                className="bg-green-100 text-green-800"
+                                              >
+                                                Approve
+                                              </option>
+                                              <option
+                                                value={3}
+                                                className="bg-red-100 text-red-800"
+                                              >
+                                                Reject
+                                              </option>
                                             </select>
                                             <FaChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs pointer-events-none" />
                                             {updatingStatus === doc._id && (
@@ -504,7 +509,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                       </td>
                                       <td className="px-4 py-3 whitespace-nowrap text-center">
                                         <div className="flex items-center justify-center gap-2">
-                                          {doc.status === 1 && (
+                                          {doc.status !== 0 && (
                                             <>
                                               <button
                                                 className="text-blue-600 hover:text-blue-800 transition-colors p-1"

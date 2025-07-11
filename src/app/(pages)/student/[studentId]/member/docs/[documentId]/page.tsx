@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useState, use, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { Id, Doc } from "../../../../../../../../convex/_generated/dataModel";
@@ -88,6 +88,9 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
   const { editor } = useEditorStore();
   const searchParams = useSearchParams();
   const isViewOnly = searchParams.get("viewOnly") === "true";
+  const updateLastModified = useMutation(
+    api.mutations.updateDocumentLastModified,
+  );
 
   // Get current user by Clerk ID
   const currentUser = useQuery(
@@ -115,6 +118,17 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
   const taskAssignments = useQuery(
     api.fetch.getTaskAssignments,
     userAccess?.group?._id ? { groupId: userAccess.group._id } : "skip",
+  );
+
+  // Fetch all document statuses for the group
+  const documentsWithStatus = useQuery(
+    api.fetch.getDocumentsWithStatus,
+    document && document.group_id ? { groupId: document.group_id } : "skip",
+  );
+
+  // Find the status for the current document's chapter
+  const currentDocumentStatus = documentsWithStatus?.documents?.find(
+    (doc) => doc.chapter === document?.chapter,
   );
 
   // Get the live document ID to compare with current document
@@ -163,6 +177,13 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
     if (!document || !currentUser || !taskAssignments?.tasks) return false;
     // Only allow editing if this is the live, non-deleted document
     if (isVersionSnapshot || document.isDeleted) return false;
+    // Don't allow editing if document is submitted (status 1) or approved (status 2)
+    // Allow editing if document is not submitted (status 0) or rejected (status 3)
+    if (
+      currentDocumentStatus &&
+      (currentDocumentStatus.status === 1 || currentDocumentStatus.status === 2)
+    )
+      return false;
     // Members can only edit if they are assigned to a task that matches this document's chapter
     return taskAssignments.tasks.some(
       (task) =>
@@ -179,6 +200,14 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
     document,
     currentUser,
     isEditable,
+  );
+
+  // Memoize the updateLastModified function to make it stable
+  const handleUpdateLastModified = useCallback(
+    (documentId: Id<"documents">, userId: Id<"users">) => {
+      updateLastModified({ documentId, userId });
+    },
+    [updateLastModified],
   );
 
   // Set editor read-only state when editor and access permissions are available
@@ -263,6 +292,62 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       window.removeEventListener("liveblocks-last-user", handleLastUserInRoom);
     };
   }, [saveToDatabase, isEditable]);
+
+  // Update last_modified when entering the editor (mount) - only in edit mode
+  useEffect(() => {
+    if (
+      isEditable && // Only update when in edit mode
+      liveDocumentData?.documentId &&
+      currentUser?._id &&
+      !isVersionSnapshot &&
+      document &&
+      !document.isDeleted
+    ) {
+      handleUpdateLastModified(liveDocumentData.documentId, currentUser._id);
+    }
+  }, [
+    liveDocumentData?.documentId,
+    currentUser?._id,
+    isEditable, // Only update when in edit mode
+    isVersionSnapshot,
+    document,
+    handleUpdateLastModified,
+  ]);
+
+  // Update last_modified when the last user leaves the editor - only in edit mode
+  useEffect(() => {
+    if (
+      isEditable && // Only update when in edit mode
+      liveDocumentData?.documentId &&
+      currentUser?._id &&
+      !isVersionSnapshot &&
+      document &&
+      !document.isDeleted
+    ) {
+      const handleLastUserInRoom = () => {
+        if (liveDocumentData.documentId) {
+          handleUpdateLastModified(
+            liveDocumentData.documentId,
+            currentUser._id,
+          );
+        }
+      };
+      window.addEventListener("liveblocks-last-user", handleLastUserInRoom);
+      return () => {
+        window.removeEventListener(
+          "liveblocks-last-user",
+          handleLastUserInRoom,
+        );
+      };
+    }
+  }, [
+    liveDocumentData?.documentId,
+    currentUser?._id,
+    isEditable, // Only update when in edit mode
+    isVersionSnapshot,
+    document,
+    handleUpdateLastModified,
+  ]);
 
   // Show unauthorized access screen if needed
   if (unauthorizedReason) {

@@ -252,7 +252,7 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>Modified: {formatDate(doc.lastModified)}</span>
                     <div className="flex items-center gap-2">
-                      {doc.status === 1 && (
+                      {doc.status !== 0 && (
                         <>
                           <button
                             className="text-blue-600 hover:text-blue-800 transition-colors"

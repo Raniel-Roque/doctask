@@ -1829,6 +1829,32 @@ export const updateDocumentStatus = mutation({
         });
       }
 
+      // Update task statuses based on document status
+      const tasks = await ctx.db
+        .query("taskAssignments")
+        .withIndex("by_group_chapter", (q) =>
+          q.eq("group_id", groupId).eq("chapter", documentPart),
+        )
+        .collect();
+
+      // Update all tasks for this chapter based on new status
+      for (const task of tasks) {
+        if (!task.isDeleted) {
+          if (newStatus === 2) {
+            // Approved: set tasks to complete
+            await ctx.db.patch(task._id, {
+              task_status: 1, // Set to complete
+            });
+          } else if (newStatus === 3) {
+            // Rejected: set tasks to incomplete
+            await ctx.db.patch(task._id, {
+              task_status: 0, // Set to incomplete
+            });
+          }
+          // For submitted (1) and not_submitted (0), don't change task status
+        }
+      }
+
       return { success: true };
     } catch (error) {
       throw error;
@@ -2036,8 +2062,6 @@ export const updateDocumentContent = mutation({
         .first();
 
       if (documentStatus) {
-        // If the document was rejected (status 3), change it back to not_submitted (status 0)
-        // since the user is making changes to address the rejection
         const newStatus =
           documentStatus.review_status === 3 ? 0 : documentStatus.review_status;
 
@@ -2650,5 +2674,56 @@ export const updateDocumentLastModified = mutation({
     }
 
     return { success: true };
+  },
+});
+
+// =========================================
+// TASK RESET OPERATIONS
+// =========================================
+
+export const resetTaskStatusForChapter = mutation({
+  args: {
+    groupId: v.id("groupsTable"),
+    chapter: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Rate limiting for student actions
+      validateRateLimit(args.userId, "student:reset_task_status");
+
+      // Get the user making the change
+      const user = await ctx.db.get(args.userId);
+      if (!user) throw new Error("User not found");
+
+      // Check if the user is a project manager for this group
+      const group = await ctx.db.get(args.groupId);
+      if (!group) throw new Error("Group not found");
+
+      if (group.project_manager_id !== args.userId) {
+        throw new Error("Only project managers can reset task status");
+      }
+
+      // Get all tasks for this chapter
+      const tasks = await ctx.db
+        .query("taskAssignments")
+        .withIndex("by_group_chapter", (q) =>
+          q.eq("group_id", args.groupId).eq("chapter", args.chapter),
+        )
+        .collect();
+
+      // Reset all tasks for this chapter to incomplete
+      for (const task of tasks) {
+        if (!task.isDeleted) {
+          await ctx.db.patch(task._id, {
+            task_status: 0, // Set to incomplete
+          });
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
   },
 });

@@ -208,12 +208,34 @@ export const LatestDocumentsTable = ({
   // Check if document can be submitted (all tasks completed and not already submitted)
   const canSubmitDocument = (doc: Document) => {
     const taskStatus = getTaskStatus(doc);
-    return taskStatus === 1 && doc.status === 0; // Tasks completed and document not submitted
+    return taskStatus === 1 && doc.status === 0; // Tasks completed and document not submitted (approved documents cannot be submitted)
   };
 
   // Check if document can be cancelled (currently submitted)
   const canCancelSubmission = (doc: Document) => {
     return doc.status === 1; // Currently submitted
+  };
+
+  // Check if document can be edited (not submitted, not approved, or rejected)
+  const canEditDocument = (doc: Document) => {
+    if (viewOnlyDocuments.includes(doc.chapter)) return false;
+
+    // If no group information available, default to false
+    if (!group) return false;
+
+    // Project managers can edit documents that are not submitted (0), approved (2), or rejected (3)
+    if (group.project_manager_id === currentUserId) {
+      return doc.status === 0 || doc.status === 2 || doc.status === 3; // Can edit not submitted, approved, or rejected documents
+    }
+
+    // Members need to be assigned to related tasks and document is not submitted, approved, or rejected
+    const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
+    const isAssigned = relatedTasks.some((task) =>
+      task.assigned_student_ids.includes(currentUserId),
+    );
+    return (
+      isAssigned && (doc.status === 0 || doc.status === 2 || doc.status === 3)
+    ); // Can edit not submitted, approved, or rejected documents
   };
 
   // Handle submit document for review
@@ -285,25 +307,6 @@ export const LatestDocumentsTable = ({
 
   // Documents that are view/download only
   const viewOnlyDocuments = ["title_page", "appendix_a", "appendix_d"];
-
-  // Check if user can edit the document
-  const canEditDocument = (doc: Document) => {
-    if (viewOnlyDocuments.includes(doc.chapter)) return false;
-
-    // If no group information available, default to false
-    if (!group) return false;
-
-    // Project managers can edit all documents
-    if (group.project_manager_id === currentUserId) {
-      return true;
-    }
-
-    // Members need to be assigned to related tasks
-    const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
-    return relatedTasks.some((task) =>
-      task.assigned_student_ids.includes(currentUserId),
-    );
-  };
 
   const displayCapstoneTitle =
     capstoneTitle && capstoneTitle.trim() !== ""
@@ -867,7 +870,7 @@ export const LatestDocumentsTable = ({
                         >
                           <FaEye className="w-4 h-4" />
                         </button>
-                        {canEditDocument(doc) && doc.status !== 1 && (
+                        {canEditDocument(doc) && (
                           <button
                             className="text-purple-600 hover:text-purple-800 transition-colors"
                             title="Edit Document"
@@ -908,6 +911,7 @@ export const LatestDocumentsTable = ({
                           !["title_page", "appendix_a", "appendix_d"].includes(
                             doc.chapter,
                           ) &&
+                          doc.status !== 3 && // Hide for rejected documents
                           (canSubmitDocument(doc) ||
                             canCancelSubmission(doc)) && (
                             <>
