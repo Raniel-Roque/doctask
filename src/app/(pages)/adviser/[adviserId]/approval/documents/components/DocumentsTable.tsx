@@ -7,6 +7,7 @@ import {
   FaChevronDown,
   FaEye,
   FaStickyNote,
+  FaDownload,
 } from "react-icons/fa";
 import { User, Group, Document } from "./types";
 import { useMutation } from "convex/react";
@@ -14,6 +15,7 @@ import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import NotesPopup from "./NotesPopup";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 
 interface DocumentsTableProps {
   groups: Group[];
@@ -67,6 +69,12 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   const groupRowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>(
     {},
   );
+
+  // Add notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info" | "warning";
+  } | null>(null);
 
   // Add Convex mutation
   const updateDocumentStatus = useMutation(api.mutations.updateDocumentStatus);
@@ -156,8 +164,9 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 
   // Check if adviser can change document status
   const canChangeStatus = (doc: Document) => {
-    // Adviser can only change status if document is submitted (not "not_submitted")
-    return doc.status !== 0; // 0 = not_submitted
+    // Adviser can only change status if document is submitted (status = 1)
+    // Cannot change not_submitted (0), approved (2), or rejected (3) documents
+    return doc.status === 1; // Only submitted documents can be approved/rejected
   };
 
   const handleStatusChange = async (documentId: string, newStatus: number) => {
@@ -193,6 +202,19 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
       if (onStatusChange) {
         onStatusChange(documentId, newStatus);
       }
+
+      setNotification({
+        message: `Document ${newStatus === 2 ? "approved" : "rejected"} successfully!`,
+        type: "success",
+      });
+    } catch (error) {
+      setNotification({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to update document status.",
+        type: "error",
+      });
     } finally {
       setUpdatingStatus(null);
     }
@@ -482,17 +504,30 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                       </td>
                                       <td className="px-4 py-3 whitespace-nowrap text-center">
                                         <div className="flex items-center justify-center gap-2">
+                                          {doc.status === 1 && (
+                                            <>
+                                              <button
+                                                className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                                                title="View Document"
+                                                onClick={() =>
+                                                  handleViewDocument(doc._id)
+                                                }
+                                              >
+                                                <FaEye className="w-4 h-4" />
+                                              </button>
+                                              <button
+                                                className="text-green-600 hover:text-green-800 transition-colors p-1"
+                                                title="Download Document"
+                                              >
+                                                <FaDownload className="w-4 h-4" />
+                                              </button>
+                                              <span className="mx-2 text-gray-300 select-none">
+                                                |
+                                              </span>
+                                            </>
+                                          )}
                                           <button
-                                            className="text-blue-600 hover:text-blue-800 transition-colors p-1"
-                                            title="View Document"
-                                            onClick={() =>
-                                              handleViewDocument(doc._id)
-                                            }
-                                          >
-                                            <FaEye className="w-4 h-4" />
-                                          </button>
-                                          <button
-                                            className="text-green-600 hover:text-green-800 transition-colors p-1"
+                                            className="text-yellow-500 hover:text-yellow-700 transition-colors p-1"
                                             title="Add/Edit Notes"
                                             onClick={() =>
                                               handleNotesClick(doc, group)
@@ -599,6 +634,14 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
           documentPart={selectedDocument.documentPart}
           documentTitle={selectedDocument.documentTitle}
           currentUserId={currentUserId}
+        />
+      )}
+
+      {notification && (
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
         />
       )}
     </div>

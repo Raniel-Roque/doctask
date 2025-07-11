@@ -35,7 +35,7 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   // Adviser actions
   "adviser:accept_group": { maxRequests: 10, windowMs: 60000 }, // 10 requests per minute
   "adviser:reject_group": { maxRequests: 10, windowMs: 60000 }, // 10 requests per minute
-  "adviser:update_document_status": { maxRequests: 30, windowMs: 60000 }, // 30 requests per minute
+  "adviser:update_document_status": { maxRequests: 15, windowMs: 60000 }, // 15 requests per minute (reduced from 30)
   "adviser:create_note": { maxRequests: 20, windowMs: 60000 }, // 20 requests per minute
   "adviser:update_note": { maxRequests: 30, windowMs: 60000 }, // 30 requests per minute
   "adviser:delete_note": { maxRequests: 15, windowMs: 60000 }, // 15 requests per minute
@@ -47,6 +47,8 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   "student:update_task_assignment": { maxRequests: 15, windowMs: 60000 }, // 15 requests per minute
   "student:update_document_content": { maxRequests: 10, windowMs: 60000 }, // 10 requests per minute
   "student:update_secondary_profile": { maxRequests: 10, windowMs: 60000 }, // 10 requests per minute
+  "student:submit_document": { maxRequests: 5, windowMs: 60000 }, // 5 requests per minute
+  "student:cancel_submission": { maxRequests: 5, windowMs: 60000 }, // 5 requests per minute
 };
 
 export function checkRateLimit(

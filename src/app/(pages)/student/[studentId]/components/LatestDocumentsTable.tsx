@@ -10,6 +10,8 @@ import {
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
 import NotesPopupViewOnly from "./NotesPopupViewOnly";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 
@@ -129,6 +131,14 @@ export const LatestDocumentsTable = ({
 }: LatestDocumentsTableProps) => {
   const router = useRouter();
 
+  // Add Convex mutations
+  const submitDocumentForReview = useMutation(
+    api.mutations.submitDocumentForReview,
+  );
+  const cancelDocumentSubmission = useMutation(
+    api.mutations.cancelDocumentSubmission,
+  );
+
   // Add state for status filter
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   // Add state for task status filter
@@ -146,6 +156,14 @@ export const LatestDocumentsTable = ({
     message: string;
     type: "success" | "error" | "info" | "warning";
   } | null>(null);
+
+  // Add loading states for submit/cancel
+  const [submittingDocument, setSubmittingDocument] = useState<string | null>(
+    null,
+  );
+  const [cancelingSubmission, setCancelingSubmission] = useState<string | null>(
+    null,
+  );
 
   const handleToggleDetails = (detailType: "documents" | "tasks") => {
     setOpenDetails((prev) => (prev === detailType ? null : detailType));
@@ -185,6 +203,73 @@ export const LatestDocumentsTable = ({
     const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
     if (relatedTasks.length === 0) return 0;
     return relatedTasks.every((task) => task.task_status === 1) ? 1 : 0;
+  };
+
+  // Check if document can be submitted (all tasks completed and not already submitted)
+  const canSubmitDocument = (doc: Document) => {
+    const taskStatus = getTaskStatus(doc);
+    return taskStatus === 1 && doc.status === 0; // Tasks completed and document not submitted
+  };
+
+  // Check if document can be cancelled (currently submitted)
+  const canCancelSubmission = (doc: Document) => {
+    return doc.status === 1; // Currently submitted
+  };
+
+  // Handle submit document for review
+  const handleSubmitDocument = async (doc: Document) => {
+    try {
+      setSubmittingDocument(doc._id);
+
+      await submitDocumentForReview({
+        groupId: doc.group_id,
+        documentPart: doc.chapter,
+        userId: currentUserId as Id<"users">,
+      });
+
+      setNotification({
+        message: "Document submitted for review successfully!",
+        type: "success",
+      });
+    } catch (error) {
+      setNotification({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to submit document for review.",
+        type: "error",
+      });
+    } finally {
+      setSubmittingDocument(null);
+    }
+  };
+
+  // Handle cancel document submission
+  const handleCancelSubmission = async (doc: Document) => {
+    try {
+      setCancelingSubmission(doc._id);
+
+      await cancelDocumentSubmission({
+        groupId: doc.group_id,
+        documentPart: doc.chapter,
+        userId: currentUserId as Id<"users">,
+      });
+
+      setNotification({
+        message: "Document submission cancelled successfully!",
+        type: "success",
+      });
+    } catch (error) {
+      setNotification({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to cancel document submission.",
+        type: "error",
+      });
+    } finally {
+      setCancelingSubmission(null);
+    }
   };
 
   // Filter documents based on selected status and task status
@@ -782,7 +867,7 @@ export const LatestDocumentsTable = ({
                         >
                           <FaEye className="w-4 h-4" />
                         </button>
-                        {canEditDocument(doc) && (
+                        {canEditDocument(doc) && doc.status !== 1 && (
                           <button
                             className="text-purple-600 hover:text-purple-800 transition-colors"
                             title="Edit Document"
@@ -817,6 +902,49 @@ export const LatestDocumentsTable = ({
                             </button>
                           </>
                         )}
+                        {/* Submit/Cancel button for project managers */}
+                        {group &&
+                          group.project_manager_id === currentUserId &&
+                          !["title_page", "appendix_a", "appendix_d"].includes(
+                            doc.chapter,
+                          ) &&
+                          (canSubmitDocument(doc) ||
+                            canCancelSubmission(doc)) && (
+                            <>
+                              <button
+                                className={`transition-colors ${
+                                  canCancelSubmission(doc)
+                                    ? "text-red-600 hover:text-red-800"
+                                    : "text-green-600 hover:text-green-800"
+                                }`}
+                                title={
+                                  canCancelSubmission(doc)
+                                    ? "Cancel Submission"
+                                    : "Submit Document"
+                                }
+                                onClick={() => {
+                                  if (canSubmitDocument(doc)) {
+                                    handleSubmitDocument(doc);
+                                  } else if (canCancelSubmission(doc)) {
+                                    handleCancelSubmission(doc);
+                                  }
+                                }}
+                                disabled={
+                                  submittingDocument === doc._id ||
+                                  cancelingSubmission === doc._id
+                                }
+                              >
+                                {submittingDocument === doc._id ||
+                                cancelingSubmission === doc._id ? (
+                                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                ) : canCancelSubmission(doc) ? (
+                                  <FaTimes className="w-4 h-4" />
+                                ) : (
+                                  <FaCheck className="w-4 h-4" />
+                                )}
+                              </button>
+                            </>
+                          )}
                       </div>
                     </td>
                   </tr>

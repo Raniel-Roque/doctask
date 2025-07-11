@@ -29,11 +29,10 @@ const MemberTasksPage = ({ params }: MemberTasksPageProps) => {
 
   // Get documents for the group using studentId directly
   const documents = useQuery(
-    api.fetch.getDocuments,
+    api.fetch.getDocumentsWithStatus,
     groupId
       ? {
           groupId: groupId as Id<"groupsTable">,
-          userId: studentId as Id<"users">,
         }
       : "skip",
   );

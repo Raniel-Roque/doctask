@@ -12,7 +12,6 @@ interface ResetPasswordInputProps {
   showConfirmPassword: boolean;
   setShowConfirmPassword: (show: boolean) => void;
   loading?: boolean;
-  error?: string;
   onSubmit: (e: React.FormEvent) => void;
 }
 
@@ -26,7 +25,6 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
   showConfirmPassword,
   setShowConfirmPassword,
   loading = false,
-  error,
   onSubmit,
 }) => (
   <form className="mt-8 space-y-6" onSubmit={onSubmit}>
@@ -102,7 +100,6 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         )}
       </button>
     </div>
-    {error && <div className="text-red-300 text-sm text-center">{error}</div>}
     <div>
       <button
         type="submit"

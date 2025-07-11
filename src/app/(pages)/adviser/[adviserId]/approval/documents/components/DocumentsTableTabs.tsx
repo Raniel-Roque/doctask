@@ -11,11 +11,13 @@ import {
   FaTimes,
   FaFileAlt,
   FaStickyNote,
+  FaDownload,
 } from "react-icons/fa";
 import { User, Group, Document } from "./types";
 import { useRouter } from "next/navigation";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import NotesPopup from "./NotesPopup";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 
 interface DocumentsTableTabsProps {
   groups: Group[];
@@ -48,6 +50,12 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
     groupId: Id<"groupsTable">;
     documentPart: string;
     documentTitle: string;
+  } | null>(null);
+
+  // Add notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info" | "warning";
   } | null>(null);
 
   const getFullName = (user: User) => {
@@ -244,15 +252,28 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>Modified: {formatDate(doc.lastModified)}</span>
                     <div className="flex items-center gap-2">
+                      {doc.status === 1 && (
+                        <>
+                          <button
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            onClick={() => handleViewDocument(doc._id)}
+                            title="View Document"
+                          >
+                            <FaEye className="w-3 h-3" />
+                          </button>
+                          <button
+                            className="text-green-600 hover:text-green-800 transition-colors"
+                            title="Download Document"
+                          >
+                            <FaDownload className="w-3 h-3" />
+                          </button>
+                          <span className="mx-2 text-gray-300 select-none">
+                            |
+                          </span>
+                        </>
+                      )}
                       <button
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
-                        onClick={() => handleViewDocument(doc._id)}
-                        title="View Document"
-                      >
-                        <FaEye className="w-3 h-3" />
-                      </button>
-                      <button
-                        className="text-green-600 hover:text-green-800 transition-colors"
+                        className="text-yellow-500 hover:text-yellow-700 transition-colors"
                         onClick={() => handleNotesClick(doc, activeGroup)}
                         title="Add/Edit Notes"
                       >
@@ -349,6 +370,14 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
           documentPart={selectedDocument.documentPart}
           documentTitle={selectedDocument.documentTitle}
           currentUserId={currentUserId}
+        />
+      )}
+
+      {notification && (
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
         />
       )}
     </div>

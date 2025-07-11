@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 
-interface ResendTimerProps {
+interface ForgotPasswordResendTimerProps {
   onResend: () => void;
   disabled?: boolean;
   loading?: boolean;
   email: string;
 }
 
-const ResendTimer: React.FC<ResendTimerProps> = ({
+const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
   onResend,
   disabled = false,
   loading = false,
@@ -16,31 +16,50 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
   const [timeLeft, setTimeLeft] = useState(0);
   const [canResend, setCanResend] = useState(true);
   const [rateLimited, setRateLimited] = useState(false);
-  const [hasResentBefore, setHasResentBefore] = useState(false);
 
+  // Check timer on mount and when loading state changes
   useEffect(() => {
-    const storedTimer = localStorage.getItem(`resendTimer_${email}`);
-    if (storedTimer) {
-      const { resetTime } = JSON.parse(storedTimer);
-      const now = Date.now();
-      const remaining = Math.max(0, Math.ceil((resetTime - now) / 1000));
-      if (remaining > 0) {
-        setTimeLeft(remaining);
-        setCanResend(false);
-        setHasResentBefore(true);
-      } else {
-        localStorage.removeItem(`resendTimer_${email}`);
+    const checkTimer = () => {
+      const storedTimer = localStorage.getItem(
+        `forgotPasswordResendTimer_${email}`,
+      );
+      if (storedTimer) {
+        const { resetTime } = JSON.parse(storedTimer);
+        const now = Date.now();
+        const remaining = Math.max(0, Math.ceil((resetTime - now) / 1000));
+        if (remaining > 0) {
+          setTimeLeft(remaining);
+          setCanResend(false);
+          return true; // Timer found and active
+        } else {
+          localStorage.removeItem(`forgotPasswordResendTimer_${email}`);
+        }
       }
-    }
-  }, [email]);
+      setTimeLeft(0);
+      setCanResend(true);
+      return false; // No active timer
+    };
 
+    // Check immediately
+    checkTimer();
+
+    // Check after loading state changes to catch async timer setting
+    if (!loading) {
+      const timer = setTimeout(() => {
+        checkTimer();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [email, loading]);
+
+  // Countdown timer
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             setCanResend(true);
-            localStorage.removeItem(`resendTimer_${email}`);
+            localStorage.removeItem(`forgotPasswordResendTimer_${email}`);
             return 0;
           }
           return prev - 1;
@@ -60,7 +79,7 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
     if (!canResend || loading || disabled) return;
     try {
       // Rate limit logic
-      const rateLimitKey = `rateLimit_${email}`;
+      const rateLimitKey = `forgotPasswordRateLimit_${email}`;
       const rateLimitData = localStorage.getItem(rateLimitKey);
       if (rateLimitData) {
         const { count, resetTime } = JSON.parse(rateLimitData);
@@ -75,20 +94,14 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
       }
       await onResend();
 
-      // Only start timer if this is not the first resend
-      if (hasResentBefore) {
-        // 2 minute timer
-        const resetTime = Date.now() + 120000;
-        setTimeLeft(120);
-        setCanResend(false);
-        localStorage.setItem(
-          `resendTimer_${email}`,
-          JSON.stringify({ resetTime }),
-        );
-      } else {
-        // First resend - mark that we've resent before but don't start timer
-        setHasResentBefore(true);
-      }
+      // Start timer immediately for forgot password (no first resend exception)
+      const resetTime = Date.now() + 120000;
+      setTimeLeft(120);
+      setCanResend(false);
+      localStorage.setItem(
+        `forgotPasswordResendTimer_${email}`,
+        JSON.stringify({ resetTime }),
+      );
 
       // Update rate limit
       const storedRateLimitData = localStorage.getItem(rateLimitKey);
@@ -137,4 +150,4 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
   );
 };
 
-export default ResendTimer;
+export default ForgotPasswordResendTimer;

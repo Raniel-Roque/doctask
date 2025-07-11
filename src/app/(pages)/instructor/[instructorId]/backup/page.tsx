@@ -573,7 +573,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
                   // Now sign out and redirect
                   signOut(() => {
-                    router.push("/");
+                    router.push("/login?successrestore=true");
                   });
                 } catch {
                   setNotification({

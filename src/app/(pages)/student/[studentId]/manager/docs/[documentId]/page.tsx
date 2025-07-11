@@ -171,11 +171,25 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
     }
   }, [isVersionSnapshot, liveDocumentData, document, router]);
 
+  // Fetch all document statuses for the group
+  const documentsWithStatus = useQuery(
+    api.fetch.getDocumentsWithStatus,
+    document && document.group_id ? { groupId: document.group_id } : "skip",
+  );
+
+  // Find the status for the current document's chapter
+  const currentDocumentStatus = documentsWithStatus?.documents?.find(
+    (doc) => doc.chapter === document?.chapter,
+  );
+
   // Check if user can edit this document (managers have broader edit access)
   const canEdit = () => {
     if (!document || !currentUser || !taskAssignments?.tasks) return false;
     // Only allow editing if this is the live, non-deleted document
     if (isVersionSnapshot || document.isDeleted) return false;
+    // Don't allow editing if document is submitted
+    if (currentDocumentStatus && currentDocumentStatus.status === 1)
+      return false;
     // Managers can edit documents if they are part of the group
     return userAccess?.group?._id === document.group_id;
   };

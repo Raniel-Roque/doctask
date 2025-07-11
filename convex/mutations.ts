@@ -1836,6 +1836,124 @@ export const updateDocumentStatus = mutation({
   },
 });
 
+export const submitDocumentForReview = mutation({
+  args: {
+    groupId: v.id("groupsTable"),
+    documentPart: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const { groupId, documentPart, userId } = args;
+
+    try {
+      // Rate limiting for student actions
+      validateRateLimit(userId, "student:submit_document");
+
+      // Get the user making the change
+      const user = await ctx.db.get(userId);
+      if (!user) throw new Error("User not found");
+
+      // Check if the user is a project manager for this group
+      const group = await ctx.db.get(groupId);
+      if (!group) throw new Error("Group not found");
+
+      if (group.project_manager_id !== userId) {
+        throw new Error(
+          "Only project managers can submit documents for review",
+        );
+      }
+
+      // Check if document status already exists
+      const existingStatus = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) =>
+          q.eq("group_id", groupId).eq("document_part", documentPart),
+        )
+        .first();
+
+      if (existingStatus) {
+        // Update existing status to submitted (1)
+        await ctx.db.patch(existingStatus._id, {
+          review_status: 1, // submitted
+          last_modified: Date.now(),
+        });
+      } else {
+        // Create new status entry as submitted
+        await ctx.db.insert("documentStatus", {
+          group_id: groupId,
+          document_part: documentPart,
+          review_status: 1, // submitted
+          last_modified: Date.now(),
+          isDeleted: false,
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  },
+});
+
+export const cancelDocumentSubmission = mutation({
+  args: {
+    groupId: v.id("groupsTable"),
+    documentPart: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const { groupId, documentPart, userId } = args;
+
+    try {
+      // Rate limiting for student actions
+      validateRateLimit(userId, "student:cancel_submission");
+
+      // Get the user making the change
+      const user = await ctx.db.get(userId);
+      if (!user) throw new Error("User not found");
+
+      // Check if the user is a project manager for this group
+      const group = await ctx.db.get(groupId);
+      if (!group) throw new Error("Group not found");
+
+      if (group.project_manager_id !== userId) {
+        throw new Error(
+          "Only project managers can cancel document submissions",
+        );
+      }
+
+      // Check if document status exists
+      const existingStatus = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) =>
+          q.eq("group_id", groupId).eq("document_part", documentPart),
+        )
+        .first();
+
+      if (existingStatus) {
+        // Only allow cancellation if status is submitted (1)
+        if (existingStatus.review_status !== 1) {
+          throw new Error(
+            "Can only cancel documents that are currently submitted",
+          );
+        }
+
+        // Update status back to not_submitted (0)
+        await ctx.db.patch(existingStatus._id, {
+          review_status: 0, // not_submitted
+          last_modified: Date.now(),
+        });
+      } else {
+        throw new Error("Document status not found");
+      }
+
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  },
+});
+
 // =========================================
 // DOCUMENT OPERATIONS
 // =========================================

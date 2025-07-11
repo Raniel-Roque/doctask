@@ -123,9 +123,14 @@ export const getUserByEmail = query({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email.toLowerCase()))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("email"), args.email.toLowerCase()),
+          q.neq(q.field("isDeleted"), true),
+        ),
+      )
       .first();
-    return user && !user.isDeleted ? user : null;
+    return user; // No need to check isDeleted since we filtered it out
   },
 });
 

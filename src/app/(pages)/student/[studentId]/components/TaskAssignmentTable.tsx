@@ -6,6 +6,7 @@ import {
   FaTimes,
   FaDownload,
   FaChevronDown,
+  FaStickyNote,
 } from "react-icons/fa";
 import {
   useState,
@@ -21,6 +22,8 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import NotesPopupViewOnly from "./NotesPopupViewOnly";
 
 interface Task {
   _id: Id<"taskAssignments">;
@@ -45,6 +48,7 @@ interface Document {
   chapter: string;
   title: string;
   content: string;
+  status: number; // Document review status: 0=not_submitted, 1=submitted, 2=approved, 3=rejected
 }
 
 interface TaskAssignmentTableProps {
@@ -61,6 +65,11 @@ interface TaskAssignmentTableProps {
     isProjectManager: boolean;
   }>;
   documents?: Document[];
+  group?: {
+    _id: Id<"groupsTable">;
+    project_manager_id: Id<"users">;
+    member_ids: Id<"users">[];
+  };
   onStatusChange?: (taskId: string, newStatus: number) => void;
 }
 
@@ -111,6 +120,7 @@ export const TaskAssignmentTable = ({
   mode,
   groupMembers,
   documents = [],
+  group,
   onStatusChange,
 }: TaskAssignmentTableProps) => {
   const router = useRouter();
@@ -119,6 +129,12 @@ export const TaskAssignmentTable = ({
   const updateTaskAssignment = useMutation(api.mutations.updateTaskAssignment);
   const updateDocumentContent = useMutation(
     api.mutations.updateDocumentContent,
+  );
+  const submitDocumentForReview = useMutation(
+    api.mutations.submitDocumentForReview,
+  );
+  const cancelDocumentSubmission = useMutation(
+    api.mutations.cancelDocumentSubmission,
   );
 
   // Add state for status filter and expanded chapters
@@ -146,6 +162,13 @@ export const TaskAssignmentTable = ({
   const [updatingAssignment, setUpdatingAssignment] = useState<string | null>(
     null,
   );
+  // Add loading states for submit/cancel
+  const [submittingDocument, setSubmittingDocument] = useState<string | null>(
+    null,
+  );
+  const [cancelingSubmission, setCancelingSubmission] = useState<string | null>(
+    null,
+  );
 
   // Add state for profile images
   const [profileImages, setProfileImages] = useState<Record<string, string>>(
@@ -153,6 +176,16 @@ export const TaskAssignmentTable = ({
   );
   const [profileImagesLoading, setProfileImagesLoading] = useState(true);
   const [memberOverviewExpanded, setMemberOverviewExpanded] = useState(false);
+
+  // Add notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info" | "warning";
+  } | null>(null);
+
+  // Add state for notes popup
+  const [notesPopupOpen, setNotesPopupOpen] = useState(false);
+  const [notesPopupDoc, setNotesPopupDoc] = useState<Document | null>(null);
 
   // Create a stable dependency from the members list
   const memberIds = useMemo(() => {
@@ -394,6 +427,25 @@ export const TaskAssignmentTable = ({
     return allCompleted ? 1 : 0;
   };
 
+  // Get document review status
+  const getDocumentStatus = (chapter: string) => {
+    const document = documents.find((doc) => doc.chapter === chapter);
+    return document?.status || 0; // Default to 0 (not_submitted)
+  };
+
+  // Check if document can be submitted (all tasks completed and not already submitted)
+  const canSubmitDocument = (chapter: string, chapterTasks: Task[]) => {
+    const taskStatus = getChapterStatus(chapter, chapterTasks);
+    const documentStatus = getDocumentStatus(chapter);
+    return taskStatus === 1 && documentStatus === 0; // Tasks completed and document not submitted
+  };
+
+  // Check if document can be cancelled (currently submitted)
+  const canCancelSubmission = (chapter: string) => {
+    const documentStatus = getDocumentStatus(chapter);
+    return documentStatus === 1; // Currently submitted
+  };
+
   // Handle status change
   const handleStatusChange = async (taskId: string, newStatus: number) => {
     try {
@@ -412,6 +464,76 @@ export const TaskAssignmentTable = ({
       }
     } finally {
       setUpdatingStatus(null);
+    }
+  };
+
+  // Handle submit document for review
+  const handleSubmitDocument = async (chapter: string) => {
+    try {
+      setSubmittingDocument(chapter);
+
+      // Find the document to get its group info
+      const document = documents.find((doc) => doc.chapter === chapter);
+      if (!document) {
+        throw new Error("Document not found");
+      }
+
+      // Call the Convex mutation
+      await submitDocumentForReview({
+        groupId: document.group_id,
+        documentPart: chapter,
+        userId: currentUserId as Id<"users">,
+      });
+
+      setNotification({
+        message: "Document submitted for review successfully!",
+        type: "success",
+      });
+    } catch (error) {
+      setNotification({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to submit document for review.",
+        type: "error",
+      });
+    } finally {
+      setSubmittingDocument(null);
+    }
+  };
+
+  // Handle cancel document submission
+  const handleCancelSubmission = async (chapter: string) => {
+    try {
+      setCancelingSubmission(chapter);
+
+      // Find the document to get its group info
+      const document = documents.find((doc) => doc.chapter === chapter);
+      if (!document) {
+        throw new Error("Document not found");
+      }
+
+      // Call the Convex mutation
+      await cancelDocumentSubmission({
+        groupId: document.group_id,
+        documentPart: chapter,
+        userId: currentUserId as Id<"users">,
+      });
+
+      setNotification({
+        message: "Document submission cancelled successfully!",
+        type: "success",
+      });
+    } catch (error) {
+      setNotification({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to cancel document submission.",
+        type: "error",
+      });
+    } finally {
+      setCancelingSubmission(null);
     }
   };
 
@@ -1009,44 +1131,140 @@ export const TaskAssignmentTable = ({
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                <div className="flex items-center justify-center gap-3">
-                                  <button
-                                    className="text-blue-600 hover:text-blue-800 transition-colors"
-                                    title="View Document"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleViewDocument(chapterTasks[0]);
-                                    }}
-                                  >
-                                    <FaEye className="w-5 h-5" />
-                                  </button>
-                                  {canEditTask(chapterTasks[0]) && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditDocument(chapterTasks[0]);
-                                      }}
-                                      className="text-purple-600 hover:text-purple-800 transition-colors"
-                                      title="Edit Document"
-                                    >
-                                      <FaEdit className="w-5 h-5" />
-                                    </button>
-                                  )}
-                                  <button
-                                    className="text-download-600 hover:text-download-800 transition-colors"
-                                    title="Download Document"
-                                  >
-                                    <FaDownload className="w-5 h-5" />
-                                  </button>
-                                  {mode === "manager" &&
-                                    getChapterStatus(chapter, chapterTasks) ===
-                                      1 && (
+                                <div className="flex items-center gap-2 justify-center">
+                                  {getDocumentStatus(
+                                    chapterTasks[0].chapter,
+                                  ) === 1 && (
+                                    <>
+                                      <button
+                                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                                        title="View Document"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleViewDocument(chapterTasks[0]);
+                                        }}
+                                      >
+                                        <FaEye className="w-5 h-5" />
+                                      </button>
                                       <button
                                         className="text-green-600 hover:text-green-800 transition-colors"
-                                        title="Submit Document"
+                                        title="Download Document"
                                       >
-                                        <FaCheck className="w-5 h-5" />
+                                        <FaDownload className="w-5 h-5" />
                                       </button>
+                                      <span className="mx-2 text-gray-300 select-none">
+                                        |
+                                      </span>
+                                    </>
+                                  )}
+                                  {canEditTask(chapterTasks[0]) &&
+                                    getDocumentStatus(
+                                      chapterTasks[0].chapter,
+                                    ) !== 1 && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditDocument(chapterTasks[0]);
+                                        }}
+                                        className="text-purple-600 hover:text-purple-800 transition-colors"
+                                        title="Edit Document"
+                                      >
+                                        <FaEdit className="w-5 h-5" />
+                                      </button>
+                                    )}
+                                  <button
+                                    className="text-yellow-500 hover:text-yellow-600 transition-colors"
+                                    title="View Notes"
+                                    onClick={() => {
+                                      const document = documents.find(
+                                        (doc) =>
+                                          doc.chapter ===
+                                          chapterTasks[0].chapter,
+                                      );
+                                      if (document) {
+                                        setNotesPopupDoc(document);
+                                        setNotesPopupOpen(true);
+                                      }
+                                    }}
+                                  >
+                                    <FaStickyNote className="w-4 h-4" />
+                                  </button>
+                                  {/* Submit/Cancel button for project managers */}
+                                  {group &&
+                                    group.project_manager_id ===
+                                      currentUserId &&
+                                    ![
+                                      "title_page",
+                                      "appendix_a",
+                                      "appendix_d",
+                                    ].includes(chapterTasks[0].chapter) &&
+                                    (canSubmitDocument(
+                                      chapterTasks[0].chapter,
+                                      chapterTasks,
+                                    ) ||
+                                      canCancelSubmission(
+                                        chapterTasks[0].chapter,
+                                      )) && (
+                                      <>
+                                        <span className="mx-2 text-gray-300 select-none">
+                                          |
+                                        </span>
+                                        <button
+                                          className={`transition-colors ${
+                                            canCancelSubmission(
+                                              chapterTasks[0].chapter,
+                                            )
+                                              ? "text-red-600 hover:text-red-800"
+                                              : "text-green-600 hover:text-green-800"
+                                          }`}
+                                          title={
+                                            canCancelSubmission(
+                                              chapterTasks[0].chapter,
+                                            )
+                                              ? "Cancel Submission"
+                                              : "Submit Document"
+                                          }
+                                          onClick={() => {
+                                            if (
+                                              canSubmitDocument(
+                                                chapterTasks[0].chapter,
+                                                chapterTasks,
+                                              )
+                                            ) {
+                                              handleSubmitDocument(
+                                                chapterTasks[0].chapter,
+                                              );
+                                            } else if (
+                                              canCancelSubmission(
+                                                chapterTasks[0].chapter,
+                                              )
+                                            ) {
+                                              handleCancelSubmission(
+                                                chapterTasks[0].chapter,
+                                              );
+                                            }
+                                          }}
+                                          disabled={
+                                            submittingDocument ===
+                                              chapterTasks[0].chapter ||
+                                            cancelingSubmission ===
+                                              chapterTasks[0].chapter
+                                          }
+                                        >
+                                          {submittingDocument ===
+                                            chapterTasks[0].chapter ||
+                                          cancelingSubmission ===
+                                            chapterTasks[0].chapter ? (
+                                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                          ) : canCancelSubmission(
+                                              chapterTasks[0].chapter,
+                                            ) ? (
+                                            <FaTimes className="w-4 h-4" />
+                                          ) : (
+                                            <FaCheck className="w-4 h-4" />
+                                          )}
+                                        </button>
+                                      </>
                                     )}
                                 </div>
                               </td>
@@ -1093,43 +1311,145 @@ export const TaskAssignmentTable = ({
                               {renderMemberAssignment(chapterTasks[0])}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                              <div className="flex items-center justify-center gap-3">
-                                <button
-                                  className="text-blue-600 hover:text-blue-800 transition-colors"
-                                  title="View Document"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleViewDocument(chapterTasks[0]);
-                                  }}
-                                >
-                                  <FaEye className="w-5 h-5" />
-                                </button>
+                              <div className="flex items-center gap-2 justify-center">
+                                {getDocumentStatus(chapterTasks[0].chapter) ===
+                                  1 && (
+                                  <>
+                                    <button
+                                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                                      title="View Document"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleViewDocument(chapterTasks[0]);
+                                      }}
+                                    >
+                                      <FaEye className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                      className="text-green-600 hover:text-green-800 transition-colors"
+                                      title="Download Document"
+                                    >
+                                      <FaDownload className="w-5 h-5" />
+                                    </button>
+                                    <span className="mx-2 text-gray-300 select-none">
+                                      |
+                                    </span>
+                                  </>
+                                )}
                                 {canEditTask(chapterTasks[0]) && (
                                   <button
                                     onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditDocument(chapterTasks[0]);
+                                      if (
+                                        getDocumentStatus(
+                                          chapterTasks[0].chapter,
+                                        ) !== 1
+                                      ) {
+                                        e.stopPropagation();
+                                        handleEditDocument(chapterTasks[0]);
+                                      }
                                     }}
-                                    className="text-purple-600 hover:text-purple-800 transition-colors"
+                                    className={`text-purple-600 hover:text-purple-800 transition-colors${getDocumentStatus(chapterTasks[0].chapter) === 1 ? " opacity-50 cursor-not-allowed" : ""}`}
                                     title="Edit Document"
+                                    disabled={
+                                      getDocumentStatus(
+                                        chapterTasks[0].chapter,
+                                      ) === 1
+                                    }
                                   >
                                     <FaEdit className="w-5 h-5" />
                                   </button>
                                 )}
                                 <button
-                                  className="text-download-600 hover:text-download-800 transition-colors"
-                                  title="Download Document"
+                                  className="text-yellow-500 hover:text-yellow-600 transition-colors"
+                                  title="View Notes"
+                                  onClick={() => {
+                                    const document = documents.find(
+                                      (doc) =>
+                                        doc.chapter === chapterTasks[0].chapter,
+                                    );
+                                    if (document) {
+                                      setNotesPopupDoc(document);
+                                      setNotesPopupOpen(true);
+                                    }
+                                  }}
                                 >
-                                  <FaDownload className="w-5 h-5" />
+                                  <FaStickyNote className="w-4 h-4" />
                                 </button>
-                                {mode === "manager" &&
-                                  chapterTasks[0].task_status === 1 && (
-                                    <button
-                                      className="text-green-600 hover:text-green-800 transition-colors"
-                                      title="Submit Document"
-                                    >
-                                      <FaCheck className="w-5 h-5" />
-                                    </button>
+                                {/* Submit/Cancel button for project managers */}
+                                {group &&
+                                  group.project_manager_id === currentUserId &&
+                                  ![
+                                    "title_page",
+                                    "appendix_a",
+                                    "appendix_d",
+                                  ].includes(chapterTasks[0].chapter) &&
+                                  (canSubmitDocument(
+                                    chapterTasks[0].chapter,
+                                    chapterTasks,
+                                  ) ||
+                                    canCancelSubmission(
+                                      chapterTasks[0].chapter,
+                                    )) && (
+                                    <>
+                                      <span className="mx-2 text-gray-300 select-none">
+                                        |
+                                      </span>
+                                      <button
+                                        className={`transition-colors ${
+                                          canCancelSubmission(
+                                            chapterTasks[0].chapter,
+                                          )
+                                            ? "text-red-600 hover:text-red-800"
+                                            : "text-green-600 hover:text-green-800"
+                                        }`}
+                                        title={
+                                          canCancelSubmission(
+                                            chapterTasks[0].chapter,
+                                          )
+                                            ? "Cancel Submission"
+                                            : "Submit Document"
+                                        }
+                                        onClick={() => {
+                                          if (
+                                            canSubmitDocument(
+                                              chapterTasks[0].chapter,
+                                              chapterTasks,
+                                            )
+                                          ) {
+                                            handleSubmitDocument(
+                                              chapterTasks[0].chapter,
+                                            );
+                                          } else if (
+                                            canCancelSubmission(
+                                              chapterTasks[0].chapter,
+                                            )
+                                          ) {
+                                            handleCancelSubmission(
+                                              chapterTasks[0].chapter,
+                                            );
+                                          }
+                                        }}
+                                        disabled={
+                                          submittingDocument ===
+                                            chapterTasks[0].chapter ||
+                                          cancelingSubmission ===
+                                            chapterTasks[0].chapter
+                                        }
+                                      >
+                                        {submittingDocument ===
+                                          chapterTasks[0].chapter ||
+                                        cancelingSubmission ===
+                                          chapterTasks[0].chapter ? (
+                                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                        ) : canCancelSubmission(
+                                            chapterTasks[0].chapter,
+                                          ) ? (
+                                          <FaTimes className="w-4 h-4" />
+                                        ) : (
+                                          <FaCheck className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                    </>
                                   )}
                               </div>
                             </td>
@@ -1143,6 +1463,20 @@ export const TaskAssignmentTable = ({
           </div>
         </div>
       </div>
+      <NotificationBanner
+        message={notification?.message || ""}
+        type={notification?.type || "info"}
+        onClose={() => setNotification(null)}
+      />
+      {notesPopupOpen && notesPopupDoc && (
+        <NotesPopupViewOnly
+          isOpen={notesPopupOpen}
+          onClose={() => setNotesPopupOpen(false)}
+          groupId={notesPopupDoc.group_id}
+          documentPart={notesPopupDoc.chapter}
+          documentTitle={notesPopupDoc.title}
+        />
+      )}
     </div>
   );
 };

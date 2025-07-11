@@ -11,6 +11,7 @@ import VerifyCodeInput from "../components/VerifyCodeInput";
 import PasswordInput from "../components/PasswordInput";
 import ResetCodeInput from "../components/ResetCodeInput";
 import ResetPasswordInput from "../components/ResetPasswordInput";
+import ResendTimer from "../components/ResendTimer";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 
 interface ClerkError {
@@ -28,6 +29,7 @@ const LoginPage = () => {
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [step, setStep] = useState(1); // 1: Email, 2: Verification Code, 3: Password, 4: Reset Password
@@ -45,6 +47,34 @@ const LoginPage = () => {
       router.push("/");
     }
   }, [isSignedIn, router]);
+
+  useEffect(() => {
+    // Check for success parameters in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const successPassword = urlParams.get("successpassword");
+    const successVerify = urlParams.get("successverify");
+    const successRestore = urlParams.get("successrestore");
+
+    if (successPassword === "true") {
+      setNotification({
+        message:
+          "Password reset successful! Please log in with your new password.",
+        type: "success",
+      });
+    } else if (successVerify === "true") {
+      setNotification({
+        message:
+          "Email verified successfully! Please log in with your password.",
+        type: "success",
+      });
+    } else if (successRestore === "true") {
+      setNotification({
+        message:
+          "Database has been restored successfully! Please check your email for the new password.",
+        type: "success",
+      });
+    }
+  }, [router]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -165,11 +195,11 @@ const LoginPage = () => {
       // Convert email to lowercase only when submitting
       const emailToCheck = email.toLowerCase();
 
-      // First check if email exists in our database
-      const response = await fetch("/api/check-email", {
+      // Check if email exists in our database
+      const response = await fetch("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailToCheck }),
+        body: JSON.stringify({ email: emailToCheck, checkOnly: true }),
       });
 
       const data = await response.json();
@@ -179,7 +209,7 @@ const LoginPage = () => {
         return;
       }
 
-      // Check if email is verified in Convex
+      // Get full user info for verification status
       const userRes = await fetch("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -195,21 +225,52 @@ const LoginPage = () => {
       if (user.email_verified) {
         // If email is verified, proceed to password step
         setStep(3);
+        setNotification({ message: "", type: "info" });
+        setCode("");
       } else {
-        // If email is not verified, send verification code
-        const result = await signIn.create({
-          strategy: "email_code",
-          identifier: emailToCheck,
-        });
+        // If email is not verified, check if there's an active timer
+        const timerKey = `resendTimer_${emailToCheck}`;
+        const storedTimer = localStorage.getItem(timerKey);
+        let shouldSendCode = true;
 
-        if (result.status === "needs_first_factor") {
-          updateCodeRateLimit(emailToCheck);
-          setStep(2);
-        } else {
-          setNotification({
-            message: "Failed to send verification code. Please try again.",
-            type: "error",
+        if (storedTimer) {
+          const { resetTime } = JSON.parse(storedTimer);
+          const now = Date.now();
+          if (now < resetTime) {
+            // Timer is still active, don't send code automatically
+            shouldSendCode = false;
+          }
+        }
+
+        // Store flag to indicate if we should send code when verify input loads
+        localStorage.setItem(
+          `shouldSendCode_${emailToCheck}`,
+          shouldSendCode.toString(),
+        );
+
+        if (shouldSendCode) {
+          // Send verification code only if no active timer
+          const result = await signIn.create({
+            strategy: "email_code",
+            identifier: emailToCheck,
           });
+
+          if (result.status === "needs_first_factor") {
+            updateCodeRateLimit(emailToCheck);
+            setStep(2);
+            setNotification({ message: "", type: "info" });
+            setCode("");
+          } else {
+            setNotification({
+              message: "Failed to send verification code. Please try again.",
+              type: "error",
+            });
+          }
+        } else {
+          // Just proceed to verification step without sending code
+          setStep(2);
+          setNotification({ message: "", type: "info" });
+          setCode("");
         }
       }
     } catch (err) {
@@ -232,10 +293,10 @@ const LoginPage = () => {
       setEmail(email);
 
       // Check if email exists in our database
-      const response = await fetch("/api/check-email", {
+      const response = await fetch("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, checkOnly: true }),
       });
 
       const data = await response.json();
@@ -245,7 +306,7 @@ const LoginPage = () => {
         return;
       }
 
-      // Check if email is verified in Convex
+      // Get full user info for verification status
       const userRes = await fetch("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -298,19 +359,48 @@ const LoginPage = () => {
           setStep(3);
         }
       } else {
-        // If email is not verified, send verification code
-        const result = await signIn.create({
-          strategy: "email_code",
-          identifier: email,
-        });
+        // If email is not verified, check if there's an active timer
+        const timerKey = `resendTimer_${email}`;
+        const storedTimer = localStorage.getItem(timerKey);
+        let shouldSendCode = true;
 
-        if (result.status === "needs_first_factor") {
-          setStep(2);
-        } else {
-          setNotification({
-            message: "Failed to send verification code. Please try again.",
-            type: "error",
+        if (storedTimer) {
+          const { resetTime } = JSON.parse(storedTimer);
+          const now = Date.now();
+          if (now < resetTime) {
+            // Timer is still active, don't send code automatically
+            shouldSendCode = false;
+          }
+        }
+
+        // Store flag to indicate if we should send code when verify input loads
+        localStorage.setItem(
+          `shouldSendCode_${email}`,
+          shouldSendCode.toString(),
+        );
+
+        if (shouldSendCode) {
+          // Send verification code only if no active timer
+          const result = await signIn.create({
+            strategy: "email_code",
+            identifier: email,
           });
+
+          if (result.status === "needs_first_factor") {
+            setStep(2);
+            setNotification({ message: "", type: "info" });
+            setCode("");
+          } else {
+            setNotification({
+              message: "Failed to send verification code. Please try again.",
+              type: "error",
+            });
+          }
+        } else {
+          // Just proceed to verification step without sending code
+          setStep(2);
+          setNotification({ message: "", type: "info" });
+          setCode("");
         }
       }
     } catch (err) {
@@ -348,8 +438,21 @@ const LoginPage = () => {
           throw new Error("Failed to fetch user for verification update");
         }
 
-        // Update email_verified status
+        const user = await userRes.json();
+
+        // Call the mark-email-verified API to update the user's email verification status
+        await fetch("/api/convex/mark-email-verified", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user._id }),
+        });
+
+        // Clear resend timer to allow resending on subsequent attempts
+        const timerKey = `resendTimer_${email}`;
+        localStorage.removeItem(timerKey);
+
         await signOut();
+        router.push("/login?successverify=true");
         localStorage.setItem("lastActivityTimestamp", Date.now().toString());
       } else {
         setNotification({
@@ -419,8 +522,20 @@ const LoginPage = () => {
   const handleResendCode = async () => {
     if (!isLoaded) return;
 
+    // Check if there's an existing timer
+    const timerKey = `resendTimer_${email}`;
+    const storedTimer = localStorage.getItem(timerKey);
+    if (storedTimer) {
+      const { resetTime } = JSON.parse(storedTimer);
+      const now = Date.now();
+      if (now < resetTime) {
+        // Timer is still active, skip sending but don't show error
+        return;
+      }
+    }
+
     try {
-      setLoading(true);
+      setSendingCode(true);
 
       const result = await signIn.create({
         strategy: "email_code",
@@ -428,6 +543,9 @@ const LoginPage = () => {
       });
 
       if (result.status === "needs_first_factor") {
+        // Clear the shouldSendCode flag since we just sent a code
+        localStorage.removeItem(`shouldSendCode_${email}`);
+
         setNotification({
           message:
             "A new verification code has been sent to your email. Please check your inbox and spam folder.",
@@ -446,23 +564,69 @@ const LoginPage = () => {
         type: "error",
       });
     } finally {
-      setLoading(false);
+      setSendingCode(false);
+    }
+  };
+
+  const handleForgotPasswordResendCode = async () => {
+    if (!isLoaded) return;
+
+    // Check if there's an existing timer for forgot password
+    const timerKey = `forgotPasswordResendTimer_${email}`;
+    const storedTimer = localStorage.getItem(timerKey);
+    if (storedTimer) {
+      const { resetTime } = JSON.parse(storedTimer);
+      const now = Date.now();
+      if (now < resetTime) {
+        // Timer is still active, skip sending but don't show error
+        return;
+      }
+    }
+
+    try {
+      setSendingCode(true);
+
+      const result = await signIn.create({
+        strategy: "reset_password_email_code",
+        identifier: email,
+      });
+
+      if (result.status === "needs_first_factor") {
+        // Clear the shouldSendForgotPasswordCode flag since we just sent a code
+        localStorage.removeItem(`shouldSendForgotPasswordCode_${email}`);
+
+        // Start the timer immediately for forgot password
+        const resetTime = Date.now() + 120000;
+        localStorage.setItem(
+          `forgotPasswordResendTimer_${email}`,
+          JSON.stringify({ resetTime }),
+        );
+
+        updateCodeRateLimit(email);
+
+        setNotification({
+          message:
+            "A new password reset code has been sent to your email. Please check your inbox and spam folder.",
+          type: "success",
+        });
+      } else {
+        setNotification({
+          message: "Failed to resend code. Please try again.",
+          type: "error",
+        });
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "";
+      setNotification({
+        message: errorMessage || "An error occurred. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setSendingCode(false);
     }
   };
 
   const handleForgotPassword = async () => {
-    // Rate limit check
-    const emailToCheck = email.toLowerCase();
-    const rateLimitResult = checkCodeRateLimit(emailToCheck);
-    if (!rateLimitResult.allowed) {
-      setNotification({
-        message:
-          rateLimitResult.message ||
-          "Please wait before requesting another code.",
-        type: "error",
-      });
-      return;
-    }
     setForgotStep(true);
     setStep(4);
     setForgotStepIndex(0);
@@ -470,34 +634,69 @@ const LoginPage = () => {
     setCode("");
     setPassword("");
     setConfirmPassword("");
-    setLoading(true);
-    try {
-      if (!signIn) throw new Error("SignIn is not loaded");
-      const result = await signIn.create({
-        strategy: "reset_password_email_code",
-        identifier: emailToCheck,
-      });
-      if (result.status === "needs_first_factor") {
-        updateCodeRateLimit(emailToCheck);
+
+    // Check if there's an active timer for forgot password
+    const timerKey = `forgotPasswordResendTimer_${email}`;
+    const storedTimer = localStorage.getItem(timerKey);
+    let shouldSendCode = true;
+
+    if (storedTimer) {
+      const { resetTime } = JSON.parse(storedTimer);
+      const now = Date.now();
+      if (now < resetTime) {
+        // Timer is still active, don't send code automatically
+        shouldSendCode = false;
+      }
+    }
+
+    // Store flag to indicate if we should send code when reset input loads
+    localStorage.setItem(
+      `shouldSendForgotPasswordCode_${email}`,
+      shouldSendCode.toString(),
+    );
+
+    if (shouldSendCode) {
+      // Send reset code only if no active timer
+      setSendingCode(true);
+      try {
+        if (!signIn) throw new Error("SignIn is not loaded");
+        const result = await signIn.create({
+          strategy: "reset_password_email_code",
+          identifier: email,
+        });
+        if (result.status === "needs_first_factor") {
+          // Clear the shouldSendForgotPasswordCode flag since we just sent a code
+          localStorage.removeItem(`shouldSendForgotPasswordCode_${email}`);
+
+          // Start the timer immediately for forgot password
+          const resetTime = Date.now() + 120000;
+          localStorage.setItem(
+            `forgotPasswordResendTimer_${email}`,
+            JSON.stringify({ resetTime }),
+          );
+
+          updateCodeRateLimit(email);
+          setNotification({
+            message:
+              "A password reset code has been sent to your email. Please check your inbox and spam folder.",
+            type: "success",
+          });
+        } else {
+          setNotification({
+            message: "Failed to send reset code. Please try again.",
+            type: "error",
+          });
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "";
         setNotification({
           message:
-            "A password reset code has been sent to your email. Please check your inbox and spam folder.",
-          type: "success",
-        });
-      } else {
-        setNotification({
-          message: "Failed to send reset code. Please try again.",
+            errorMessage || "Failed to send reset code. Please try again.",
           type: "error",
         });
+      } finally {
+        setSendingCode(false);
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "";
-      setNotification({
-        message: errorMessage || "Failed to send reset code. Please try again.",
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -510,6 +709,11 @@ const LoginPage = () => {
       setCode("");
       setPassword("");
       setConfirmPassword("");
+    } else if (step === 2) {
+      // If on verification code step, go back to email input (step 1)
+      setStep(1);
+      setNotification({ message: "", type: "info" });
+      setCode("");
     } else if (step === 3 && !forgotStep) {
       // If on password step, go back to email input
       setStep(1);
@@ -559,7 +763,8 @@ const LoginPage = () => {
             <button
               type="button"
               onClick={handleForgotBack}
-              className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20"
+              disabled={sendingCode}
+              className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ marginTop: "-2rem", marginLeft: "-1rem" }}
             >
               <FaArrowLeft className="mr-2" /> Back
@@ -633,7 +838,7 @@ const LoginPage = () => {
                   disabled={loading}
                   className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                 >
-                  {loading ? "Processing..." : "Verify Code"}
+                  {loading ? "Verifying..." : "Verify Code"}
                   <svg
                     className="ml-2 w-5 h-5"
                     fill="none"
@@ -649,6 +854,12 @@ const LoginPage = () => {
                     />
                   </svg>
                 </button>
+                <ResendTimer
+                  onResend={handleResendCode}
+                  disabled={sendingCode}
+                  loading={sendingCode}
+                  email={email}
+                />
               </div>
             </form>
           )}
@@ -695,7 +906,8 @@ const LoginPage = () => {
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  className="font-medium text-red-200 hover:text-red-100"
+                  disabled={sendingCode}
+                  className="font-medium text-red-200 hover:text-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Forgot Password?
                 </button>
@@ -709,7 +921,8 @@ const LoginPage = () => {
               <button
                 type="button"
                 onClick={handleForgotBack}
-                className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20"
+                disabled={sendingCode}
+                className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ marginTop: "-2rem", marginLeft: "-1rem" }}
               >
                 <FaArrowLeft className="mr-2" /> Back
@@ -720,13 +933,9 @@ const LoginPage = () => {
                     code={code}
                     setCode={setCode}
                     loading={loading}
-                    error={
-                      notification?.type === "error"
-                        ? notification.message
-                        : undefined
-                    }
+                    sendingCode={sendingCode}
                     email={email}
-                    onResendCode={handleResendCode}
+                    onResendCode={handleForgotPasswordResendCode}
                     onSubmit={async (e) => {
                       e.preventDefault();
                       if (!isLoaded) return;
@@ -767,24 +976,66 @@ const LoginPage = () => {
                   showConfirmPassword={showConfirmPassword}
                   setShowConfirmPassword={setShowConfirmPassword}
                   loading={loading}
-                  error={notification?.message}
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!isLoaded) return;
+
+                    // Clear any existing notifications
+                    setNotification({ message: "", type: "info" });
+
+                    // Validate password match
                     if (password !== confirmPassword) {
                       setNotification({
-                        message: "Passwords do not match",
+                        message:
+                          "Passwords do not match. Please make sure both passwords are identical.",
                         type: "error",
                       });
                       return;
                     }
+
+                    // Validate password strength
                     if (password.length < 8) {
                       setNotification({
-                        message: "Password must be at least 8 characters long",
+                        message:
+                          "Password is too weak. Please use at least 8 characters.",
                         type: "error",
                       });
                       return;
                     }
+
+                    // Check for common weak password patterns
+                    const weakPasswordPatterns = [
+                      /^12345678$/,
+                      /^password$/,
+                      /^qwertyui$/,
+                      /^abcdefgh$/,
+                      /^11111111$/,
+                      /^00000000$/,
+                    ];
+
+                    if (
+                      weakPasswordPatterns.some((pattern) =>
+                        pattern.test(password.toLowerCase()),
+                      )
+                    ) {
+                      setNotification({
+                        message:
+                          "Password is too common. Please choose a more secure password.",
+                        type: "error",
+                      });
+                      return;
+                    }
+
+                    // Check if password contains at least one letter and one number
+                    if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+                      setNotification({
+                        message:
+                          "Password must contain both letters and numbers for better security.",
+                        type: "error",
+                      });
+                      return;
+                    }
+
                     setLoading(true);
                     try {
                       const result = await signIn.resetPassword({ password });
@@ -806,12 +1057,35 @@ const LoginPage = () => {
                             body: JSON.stringify({ userId: user._id }),
                           });
                         }
-                        await signOut();
-                        router.push("/login");
-                        localStorage.setItem(
-                          "lastActivityTimestamp",
-                          Date.now().toString(),
-                        );
+
+                        // Clear forgot password timer on successful reset
+                        const timerKey = `forgotPasswordResendTimer_${email}`;
+                        localStorage.removeItem(timerKey);
+
+                        // Set success notification before signing out
+                        setNotification({
+                          message:
+                            "Password reset successful! Please log in with your new password.",
+                          type: "success",
+                        });
+
+                        // Clear all form data
+                        setCode("");
+                        setPassword("");
+                        setConfirmPassword("");
+                        setForgotStep(false);
+                        setForgotStepIndex(0);
+                        setStep(1);
+
+                        // Wait a moment for the success message to be visible, then sign out
+                        setTimeout(async () => {
+                          await signOut();
+                          router.push("/login?successpassword=true");
+                          localStorage.setItem(
+                            "lastActivityTimestamp",
+                            Date.now().toString(),
+                          );
+                        }, 2000); // Show success message for 2 seconds
                       } else {
                         setNotification({
                           message:
@@ -821,7 +1095,8 @@ const LoginPage = () => {
                       }
                     } catch {
                       setNotification({
-                        message: "Failed to reset password. Please try again.",
+                        message:
+                          "An error occurred while resetting your password. Please try again.",
                         type: "error",
                       });
                     } finally {
