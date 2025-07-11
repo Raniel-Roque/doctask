@@ -6,6 +6,12 @@ import { Toolbar } from "./toolbar";
 import { Editor } from "./editor";
 import { ImageDragDropWrapper } from "./image-drag-drop";
 import { VersionHistoryPanel } from "./version-history-panel";
+import DOMPurify from 'dompurify';
+
+// SafeHtml component for secure rendering
+export function SafeHtml({ html }: { html: string }) {
+  return <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />;
+}
 
 interface DocumentEditorProps {
   isEditable?: boolean;

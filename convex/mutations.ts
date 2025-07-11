@@ -1975,11 +1975,10 @@ export const updateDocumentContent = mutation({
         throw new Error("Document content too large");
       }
 
-      // Security validation: Sanitize content to prevent XSS
       const sanitizedContent = sanitizeInput(args.content, {
         trim: false,
         removeHtml: false, // Allow HTML for rich text
-        escapeSpecialChars: true,
+        escapeSpecialChars: false, // Do not escape, to preserve HTML tags
         maxLength: 1000000,
       });
 
