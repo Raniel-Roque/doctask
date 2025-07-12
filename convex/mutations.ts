@@ -15,8 +15,58 @@ import {
   logBackup,
 } from "./utils/log";
 import { Id } from "./_generated/dataModel";
-import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { validateRateLimit } from "./utils/mutationRateLimit";
+
+// Simple backend sanitization function
+const sanitizeInput = (
+  value: string,
+  options: {
+    trim?: boolean;
+    removeHtml?: boolean;
+    escapeSpecialChars?: boolean;
+    maxLength?: number;
+  } = {}
+): string => {
+  const {
+    trim = true,
+    removeHtml = true,
+    escapeSpecialChars = true,
+    maxLength,
+  } = options;
+
+  let sanitizedValue = value;
+
+  // Handle null or undefined values
+  if (sanitizedValue === null || sanitizedValue === undefined) {
+    return "";
+  }
+
+  // Apply trimming if enabled
+  if (trim) {
+    sanitizedValue = sanitizedValue.trim();
+  }
+
+  // Remove HTML tags if enabled
+  if (removeHtml) {
+    sanitizedValue = sanitizedValue.replace(/[<>]/g, "");
+  }
+
+  // Escape special characters if enabled
+  if (escapeSpecialChars) {
+    sanitizedValue = sanitizedValue
+      .replace(/[&]/g, "&amp;")
+      .replace(/["]/g, "&quot;")
+      .replace(/[']/g, "&#x27;")
+      .replace(/[/]/g, "&#x2F;");
+  }
+
+  // Apply max length if specified
+  if (maxLength && sanitizedValue.length > maxLength) {
+    sanitizedValue = sanitizedValue.slice(0, maxLength);
+  }
+
+  return sanitizedValue;
+};
 
 // Backup types and validation
 interface ConvexBackup {
