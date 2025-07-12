@@ -101,6 +101,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   // No direct Convex mutations for create/update/delete user. Use API routes only.
   const resetPassword = useMutation(api.mutations.resetPassword);
+  const logLockAccount = useMutation(api.mutations.logLockAccount);
 
   // =========================================
   // Queries
@@ -253,7 +254,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setSelectedUser(user);
   };
 
-  const handleLockAccountSubmit = async () => {
+  const handleLockAccountSubmit = async (action: "lock" | "unlock") => {
     if (!selectedUser || !selectedUser.clerk_id) {
       setNotification({
         type: "error",
@@ -267,15 +268,15 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     try {
       logUserAction();
 
-      // Call distributed-safe API route for locking
+      // Call lock account API with correct format
       const response = await fetch("/api/clerk/lock-account", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          clerkId: selectedUser.clerk_id,
-          instructorClerkId: instructor?.clerk_id, // Pass instructor Clerk ID for Convex lookup
+          userId: selectedUser.clerk_id,
+          action,
         }),
       });
 
@@ -284,8 +285,31 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         throw new Error(errorData.error || "Failed to lock account");
       }
 
-      logUserAction();
+      // Log the action
+      if (instructor) {
+        await logLockAccount({
+          instructorId: instructor._id,
+          affectedEntityId: selectedUser._id,
+          action,
+          affectedUserInfo: {
+            first_name: selectedUser.first_name,
+            middle_name: selectedUser.middle_name,
+            last_name: selectedUser.last_name,
+            email: selectedUser.email,
+          },
+          instructorInfo: {
+            first_name: instructor.first_name,
+            middle_name: instructor.middle_name,
+            last_name: instructor.last_name,
+            email: instructor.email,
+          },
+        });
+      }
 
+      setNotification({
+        type: "success",
+        message: `Account ${action}ed successfully`,
+      });
       setSelectedUser(null);
     } catch (error) {
       setNotification({
