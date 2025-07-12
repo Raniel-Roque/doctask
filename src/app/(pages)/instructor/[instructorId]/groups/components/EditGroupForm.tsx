@@ -30,7 +30,7 @@ interface User {
 interface EditGroupFormProps {
   isOpen: boolean;
   isSubmitting: boolean;
-  networkError: string | null;
+  networkError?: string | null;
   onClose: () => void;
   onSubmit: (formData: {
     projectManager: string;
@@ -42,19 +42,17 @@ interface EditGroupFormProps {
   members: User[];
   advisers: User[];
   group: Group | null;
-  setNetworkError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export default function EditGroupForm({
   isOpen,
   isSubmitting,
-  networkError,
+  networkError = null,
   onClose,
   onSubmit,
   members,
   advisers,
   group,
-  setNetworkError,
 }: EditGroupFormProps) {
   // State
   const [formData, setFormData] = useState({
@@ -217,9 +215,6 @@ export default function EditGroupForm({
 
   const closeForm = () => {
     closeAllDropdowns();
-    if (setNetworkError) {
-      setNetworkError(null);
-    }
     setValidationErrors({});
     onClose();
   };
@@ -296,9 +291,6 @@ export default function EditGroupForm({
     e.stopPropagation();
 
     closeAllDropdowns();
-    if (setNetworkError) {
-      setNetworkError(null);
-    }
     setValidationErrors({});
 
     // Validate capstone title if provided

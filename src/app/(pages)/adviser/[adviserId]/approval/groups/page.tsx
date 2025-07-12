@@ -30,7 +30,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [actionType, setActionType] = useState<"accept" | "reject">("accept");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [networkError, setNetworkError] = useState<string | null>(null);
+  // Removed networkError state - using notification banner instead
 
   // State for notifications
   const [notification, setNotification] = useState<{
@@ -101,21 +101,18 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
     setSelectedGroup(group);
     setActionType("accept");
     setIsConfirmOpen(true);
-    setNetworkError(null);
   };
 
   const handleReject = async (group: Group) => {
     setSelectedGroup(group);
     setActionType("reject");
     setIsConfirmOpen(true);
-    setNetworkError(null);
   };
 
   const handleConfirmAction = async () => {
     if (!selectedGroup) return;
 
     setIsSubmitting(true);
-    setNetworkError(null);
 
     try {
       if (actionType === "accept") {
@@ -139,9 +136,6 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
       }
       setIsConfirmOpen(false);
     } catch (error) {
-      setNetworkError(
-        error instanceof Error ? error.message : "An error occurred",
-      );
       setNotification({
         message: `Failed to ${actionType} group: ${error instanceof Error ? error.message : "Unknown error"}`,
         type: "error",
@@ -154,7 +148,6 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const handleCloseConfirmation = () => {
     setIsConfirmOpen(false);
     setSelectedGroup(null);
-    setNetworkError(null);
   };
 
   return (
@@ -216,7 +209,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
           onClose={handleCloseConfirmation}
           onConfirm={handleConfirmAction}
           isSubmitting={isSubmitting}
-          networkError={networkError}
+          networkError={null}
           action={actionType}
         />
 

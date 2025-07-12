@@ -34,7 +34,6 @@ interface AddFormProps {
   onFormDataChange: (data: AddFormData) => void;
   className?: string;
   isStudent?: boolean;
-  setNetworkError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 // =========================================
@@ -50,7 +49,6 @@ export const AddForm = ({
   onFormDataChange,
   className = "",
   isStudent = false,
-  setNetworkError,
 }: AddFormProps) => {
   // =========================================
   // State
@@ -173,9 +171,6 @@ export const AddForm = ({
     e.preventDefault();
     e.stopPropagation();
 
-    // Clear any previous network errors
-    setNetworkError(null);
-
     // Validate form
     const errors = validateUserForm(formData);
     if (errors) {
@@ -208,14 +203,11 @@ export const AddForm = ({
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Clear any network errors when closing
-    setNetworkError(null);
     // Just call onClose and let the parent handle the confirmation
     onClose();
   };
 
   const closeForm = () => {
-    setNetworkError(null);
     onClose();
   };
 

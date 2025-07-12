@@ -70,14 +70,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [editNetworkError, setEditNetworkError] = useState<string | null>(null);
-  const [deleteNetworkError, setDeleteNetworkError] = useState<string | null>(
-    null,
-  );
-  const [addNetworkError, setAddNetworkError] = useState<string | null>(null);
-  const [resetPasswordNetworkError, setResetPasswordNetworkError] = useState<
-    string | null
-  >(null);
+  // Removed individual network error states - using notification banner instead
   const [editFormData, setEditFormData] = useState<EditFormData>({
     first_name: "",
     middle_name: "",
@@ -97,7 +90,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     (() => void) | null
   >(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [networkError, setNetworkError] = useState<string | null>(null);
+  // Removed networkError state - using notification banner instead
 
   // =========================================
   // Mutations
@@ -220,7 +213,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const handleEditSubmit = async () => {
     if (!editingUser) return;
     setIsSubmitting(true);
-    setEditNetworkError(null);
     try {
       // Use apiRequest for robust error handling
       await apiRequest("/api/clerk/update-user", {
@@ -241,9 +233,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
       setEditingUser(null);
     } catch (error) {
-      setEditNetworkError(
-        error instanceof Error ? error.message : "Failed to update user",
-      );
       setNotification({
         type: "error",
         message:
@@ -265,7 +254,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
 
     setIsDeleting(true);
-    setDeleteNetworkError(null);
 
     try {
       logUserAction();
@@ -331,7 +319,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
 
     setIsSubmitting(true);
-    setAddNetworkError(null);
 
     try {
       // Call distributed-safe API route for creation
@@ -428,7 +415,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
     if (!resetPasswordUser) return;
 
     setIsResettingPassword(true);
-    setResetPasswordNetworkError(null);
 
     try {
       logUserAction();
@@ -479,18 +465,23 @@ const UsersPage = ({ params }: UsersPageProps) => {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === "AbortError") {
-          setResetPasswordNetworkError("Request timed out. Please try again.");
+          setNotification({
+            type: "error",
+            message: "Request timed out. Please try again.",
+          });
         } else if (error.message.includes("Network error")) {
-          setResetPasswordNetworkError(
-            "Network error - please check your internet connection",
-          );
+          setNotification({
+            type: "error",
+            message: "Network error - please check your internet connection",
+          });
         } else {
-          setResetPasswordNetworkError(error.message);
+          setNotification({ type: "error", message: error.message });
         }
       } else {
-        setResetPasswordNetworkError(
-          "An unexpected error occurred. Please try again.",
-        );
+        setNotification({
+          type: "error",
+          message: "An unexpected error occurred. Please try again.",
+        });
       }
     } finally {
       setIsResettingPassword(false);
@@ -505,7 +496,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
     if (!selectedUser || !instructor) return;
 
     setIsSubmitting(true);
-    setNetworkError(null);
 
     try {
       const response = await fetch("/api/clerk/lock-account", {
@@ -547,9 +537,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
       setSuccessMessage(`Account ${action}ed successfully`);
       setSelectedUser(null);
     } catch (error) {
-      setNetworkError(
-        error instanceof Error ? error.message : "An error occurred",
-      );
+      setNotification({
+        type: "error",
+        message: error instanceof Error ? error.message : "An error occurred",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -601,8 +592,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
         <AddForm
           isOpen={isAddingUser}
           isSubmitting={isSubmitting}
-          networkError={addNetworkError}
-          setNetworkError={setAddNetworkError}
+          networkError={null} // Removed networkError state
           formData={addFormData}
           onClose={() => {
             if (isSubmitting) {
@@ -648,8 +638,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           user={editingUser}
           formData={editFormData}
           isSubmitting={isSubmitting}
-          networkError={editNetworkError}
-          setNetworkError={setEditNetworkError}
+          networkError={null} // Removed networkError state
           onClose={() => {
             if (isSubmitting) {
               // During submission, don't allow closing
@@ -700,7 +689,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onCancel={() => setDeleteUser(null)}
           onConfirm={handleDeleteSubmit}
           isSubmitting={isDeleting}
-          networkError={deleteNetworkError}
+          networkError={null} // Removed networkError state
         />
 
         {/* Reset Password Confirmation */}
@@ -709,7 +698,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onCancel={() => setResetPasswordUser(null)}
           onConfirm={handleResetPassword}
           isSubmitting={isResettingPassword}
-          networkError={resetPasswordNetworkError}
+          networkError={null} // Removed networkError state
         />
 
         {/* Validation Error */}
@@ -750,12 +739,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
           user={selectedUser}
           onCancel={() => {
             setSelectedUser(null);
-            setNetworkError(null);
           }}
           onConfirm={handleLockAccountSubmit}
           isSubmitting={isSubmitting}
-          networkError={networkError}
-          setNetworkError={setNetworkError}
+          networkError={null} // Removed networkError state
         />
       </div>
     </div>

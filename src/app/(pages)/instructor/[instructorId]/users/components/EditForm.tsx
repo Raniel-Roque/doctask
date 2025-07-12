@@ -34,7 +34,6 @@ interface EditFormProps {
   onFormDataChange: (data: EditFormData) => void;
   className?: string;
   isStudent?: boolean;
-  setNetworkError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 // =========================================
@@ -50,7 +49,6 @@ export default function EditForm({
   onFormDataChange,
   className = "",
   isStudent = false,
-  setNetworkError,
 }: EditFormProps) {
   // =========================================
   // State
@@ -172,9 +170,6 @@ export default function EditForm({
     e.preventDefault();
     e.stopPropagation();
 
-    // Clear any previous network errors
-    setNetworkError(null);
-
     // Validate form
     const errors = validateUserForm(formData);
     if (errors) {
@@ -201,12 +196,7 @@ export default function EditForm({
       return;
     }
 
-    // Check if role has been changed
-    if (user && formData.subrole !== user.subrole) {
-      setShowRoleChangeConfirmation(true);
-    } else {
-      onSubmit();
-    }
+    onSubmit();
   };
 
   const confirmAndSubmit = () => {
@@ -221,8 +211,6 @@ export default function EditForm({
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Clear any network errors when closing
-    setNetworkError(null);
     // Just call onClose and let the parent handle the confirmation
     onClose();
   };

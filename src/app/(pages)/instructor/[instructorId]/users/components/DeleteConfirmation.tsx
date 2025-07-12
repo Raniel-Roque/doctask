@@ -27,14 +27,10 @@ export const DeleteConfirmation = ({
   onConfirm,
   isSubmitting = false,
   networkError = null,
-  setNetworkError,
-}: DeleteConfirmationProps & {
-  setNetworkError?: (err: string | null) => void;
-}) => {
+}: DeleteConfirmationProps) => {
   if (!user) return null;
 
   const handleCancel = () => {
-    if (typeof setNetworkError === "function") setNetworkError(null);
     onCancel();
   };
 

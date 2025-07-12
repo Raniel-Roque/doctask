@@ -62,6 +62,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: "Password reset successfully",
+      firstName: convexUser.first_name,
+      lastName: convexUser.last_name,
+      email: convexUser.email,
+      password: newPassword,
     });
   } catch {
     return NextResponse.json(

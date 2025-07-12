@@ -25,7 +25,7 @@ const sanitizeInput = (
     removeHtml?: boolean;
     escapeSpecialChars?: boolean;
     maxLength?: number;
-  } = {}
+  } = {},
 ): string => {
   const {
     trim = true,

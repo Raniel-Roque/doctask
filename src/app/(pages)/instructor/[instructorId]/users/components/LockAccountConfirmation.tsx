@@ -15,9 +15,8 @@ export const LockAccountConfirmation = ({
   user,
   onCancel,
   onConfirm,
-  isSubmitting,
-  networkError,
-  setNetworkError,
+  isSubmitting = false,
+  networkError = null,
 }: LockAccountConfirmationProps) => {
   const [processingAction, setProcessingAction] = useState<
     "lock" | "unlock" | null
@@ -26,7 +25,6 @@ export const LockAccountConfirmation = ({
   if (!user) return null;
 
   const handleCancel = () => {
-    if (setNetworkError) setNetworkError(null);
     onCancel();
   };
 

@@ -24,6 +24,7 @@ import {
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { apiRequest } from "@/lib/utils";
+import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
 
 // =========================================
 // Types
@@ -71,14 +72,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [editNetworkError, setEditNetworkError] = useState<string | null>(null);
-  const [deleteNetworkError, setDeleteNetworkError] = useState<string | null>(
-    null,
-  );
-  const [addNetworkError, setAddNetworkError] = useState<string | null>(null);
-  const [resetPasswordNetworkError, setResetPasswordNetworkError] = useState<
-    string | null
-  >(null);
+  // Removed individual network error states - using notification banner instead
   const [editFormData, setEditFormData] = useState<EditFormData>({
     first_name: "",
     middle_name: "",
@@ -99,6 +93,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const [pendingCloseAction, setPendingCloseAction] = useState<
     (() => void) | null
   >(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  // Removed networkError state - using notification banner instead
 
   // =========================================
   // Mutations
@@ -253,13 +249,63 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     // No-op in production
   };
 
+  const handleLockAccount = (user: User) => {
+    setSelectedUser(user);
+  };
+
+  const handleLockAccountSubmit = async () => {
+    if (!selectedUser || !selectedUser.clerk_id) {
+      setNotification({
+        type: "error",
+        message: "Cannot lock account: Missing Clerk ID",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      logUserAction();
+
+      // Call distributed-safe API route for locking
+      const response = await fetch("/api/clerk/lock-account", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clerkId: selectedUser.clerk_id,
+          instructorClerkId: instructor?.clerk_id, // Pass instructor Clerk ID for Convex lookup
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to lock account");
+      }
+
+      logUserAction();
+
+      setSelectedUser(null);
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to lock account. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // =========================================
   // Form Submissions
   // =========================================
   const handleEditSubmit = async () => {
     if (!editingUser) return;
     setIsSubmitting(true);
-    setEditNetworkError(null);
     try {
       // Use apiRequest for robust error handling
       await apiRequest("/api/clerk/update-user", {
@@ -280,9 +326,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       });
       setEditingUser(null);
     } catch (error) {
-      setEditNetworkError(
-        error instanceof Error ? error.message : "Failed to update user",
-      );
       setNotification({
         type: "error",
         message:
@@ -304,7 +347,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     }
 
     setIsDeleting(true);
-    setDeleteNetworkError(null);
 
     try {
       logUserAction();
@@ -359,7 +401,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     }
 
     setIsSubmitting(true);
-    setAddNetworkError(null);
 
     try {
       // Call distributed-safe API route for creation
@@ -459,7 +500,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     if (!resetPasswordUser) return;
 
     setIsResettingPassword(true);
-    setResetPasswordNetworkError(null);
 
     try {
       logUserAction();
@@ -518,18 +558,26 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === "AbortError") {
-          setResetPasswordNetworkError("Request timed out. Please try again.");
+          setNotification({
+            type: "error",
+            message: "Request timed out. Please try again.",
+          });
         } else if (error.message.includes("Network error")) {
-          setResetPasswordNetworkError(
-            "Network error - please check your internet connection",
-          );
+          setNotification({
+            type: "error",
+            message: "Network error - please check your internet connection",
+          });
         } else {
-          setResetPasswordNetworkError(error.message);
+          setNotification({
+            type: "error",
+            message: error.message,
+          });
         }
       } else {
-        setResetPasswordNetworkError(
-          "An unexpected error occurred. Please try again.",
-        );
+        setNotification({
+          type: "error",
+          message: "An unexpected error occurred. Please try again.",
+        });
       }
     } finally {
       setIsResettingPassword(false);
@@ -581,7 +629,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           onDelete={setDeleteUser}
           onAdd={() => setIsAddingUser(true)}
           onResetPassword={setResetPasswordUser}
-          onLockAccount={() => {}}
+          onLockAccount={handleLockAccount}
           showRoleColumn={true}
           totalPages={searchResult.totalPages}
           totalCount={searchResult.totalCount}
@@ -597,8 +645,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         <AddForm
           isOpen={isAddingUser}
           isSubmitting={isSubmitting}
-          networkError={addNetworkError}
-          setNetworkError={setAddNetworkError}
+          networkError={null} // Removed networkError prop
           formData={addFormData}
           onClose={handleCloseAddForm}
           onSubmit={handleAddSubmit}
@@ -611,8 +658,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           user={editingUser}
           formData={editFormData}
           isSubmitting={isSubmitting}
-          networkError={editNetworkError}
-          setNetworkError={setEditNetworkError}
+          networkError={null} // Removed networkError prop
           onClose={() => {
             if (isSubmitting) {
               // During submission, don't allow closing
@@ -666,7 +712,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           onCancel={() => setDeleteUser(null)}
           onConfirm={handleDeleteSubmit}
           isSubmitting={isDeleting}
-          networkError={deleteNetworkError}
+          networkError={null} // Removed networkError prop
         />
 
         {/* Reset Password Confirmation */}
@@ -675,7 +721,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           onCancel={() => setResetPasswordUser(null)}
           onConfirm={handleResetPassword}
           isSubmitting={isResettingPassword}
-          networkError={resetPasswordNetworkError}
+          networkError={null} // Removed networkError prop
         />
 
         {/* Validation Error */}
@@ -707,6 +753,16 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             setShowUnsavedConfirm(false);
             setPendingCloseAction(null);
           }}
+        />
+
+        <LockAccountConfirmation
+          user={selectedUser}
+          onCancel={() => {
+            setSelectedUser(null);
+          }}
+          onConfirm={handleLockAccountSubmit}
+          isSubmitting={isSubmitting}
+          networkError={null} // Removed networkError prop
         />
       </div>
     </div>

@@ -30,7 +30,6 @@ interface AddGroupFormProps {
   }) => void;
   isSubmitting?: boolean;
   networkError?: string | null;
-  setNetworkError: React.Dispatch<React.SetStateAction<string | null>>;
   projectManagers: {
     _id: string;
     first_name: string;
@@ -57,7 +56,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   onSubmit,
   isSubmitting = false,
   networkError = null,
-  setNetworkError,
   projectManagers,
   members,
   advisers,
@@ -344,9 +342,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   };
 
   const closeForm = () => {
-    if (setNetworkError) {
-      setNetworkError(null);
-    }
     setValidationErrors({});
     onClose();
   };
@@ -356,9 +351,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     e.stopPropagation();
 
     closeAllDropdowns();
-    if (setNetworkError) {
-      setNetworkError(null);
-    }
     setValidationErrors({});
 
     // Validate form

@@ -25,16 +25,12 @@ export const ResetPasswordConfirmation = ({
   user,
   onCancel,
   onConfirm,
-  isSubmitting,
-  networkError,
-  setNetworkError,
-}: ResetPasswordConfirmationProps & {
-  setNetworkError?: (err: string | null) => void;
-}) => {
+  isSubmitting = false,
+  networkError = null,
+}: ResetPasswordConfirmationProps) => {
   if (!user) return null;
 
   const handleCancel = () => {
-    if (typeof setNetworkError === "function") setNetworkError(null);
     onCancel();
   };
 
