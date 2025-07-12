@@ -101,7 +101,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   // No direct Convex mutations for create/update/delete user. Use API routes only.
   const resetPassword = useMutation(api.mutations.resetPassword);
-  const logLockAccount = useMutation(api.mutations.logLockAccount);
+  const logLockAccount = useMutation(api.mutations.logLockAccountMutation);
 
   // =========================================
   // Queries
