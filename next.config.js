@@ -73,12 +73,6 @@ const nextConfig = {
             chunks: 'all',
             priority: 20,
           },
-          clerk: {
-            test: /[\\/]node_modules[\\/](@clerk)[\\/]/,
-            name: 'clerk',
-            chunks: 'all',
-            priority: 20,
-          },
           common: {
             name: 'common',
             minChunks: 2,
