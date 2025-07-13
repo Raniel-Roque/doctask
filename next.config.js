@@ -45,46 +45,7 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config) => {
-    // Optimize large dependencies to reduce serialization warnings
-    config.optimization = {
-      ...config.optimization,
-      splitChunks: {
-        ...config.optimization.splitChunks,
-        chunks: "all",
-        cacheGroups: {
-          ...config.optimization.splitChunks.cacheGroups,
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: "vendors",
-            chunks: "all",
-            priority: 10,
-          },
-          // Separate large libraries that might cause serialization issues
-          reactPdf: {
-            test: /[\\/]node_modules[\\/](@react-pdf|react-pdf)[\\/]/,
-            name: "react-pdf",
-            chunks: "all",
-            priority: 20,
-          },
-          tiptap: {
-            test: /[\\/]node_modules[\\/](@tiptap|tiptap)[\\/]/,
-            name: "tiptap",
-            chunks: "all",
-            priority: 20,
-          },
-          common: {
-            name: "common",
-            minChunks: 2,
-            chunks: "all",
-            priority: 5,
-          },
-        },
-      },
-    };
 
-    return config;
-  },
 };
 
 module.exports = nextConfig;
