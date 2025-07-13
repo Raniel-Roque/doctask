@@ -1026,11 +1026,39 @@ const LoginPage = () => {
                       return;
                     }
 
-                    // Check if password contains at least one letter and one number
-                    if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+                    // Validate password complexity requirements
+                    const hasLowercase = /[a-z]/.test(password);
+                    const hasUppercase = /[A-Z]/.test(password);
+                    const hasNumber = /\d/.test(password);
+                    const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(password);
+
+                    if (!hasLowercase) {
                       setNotification({
-                        message:
-                          "Password must contain both letters and numbers for better security.",
+                        message: "Password must contain at least 1 lowercase character.",
+                        type: "error",
+                      });
+                      return;
+                    }
+
+                    if (!hasUppercase) {
+                      setNotification({
+                        message: "Password must contain at least 1 uppercase character.",
+                        type: "error",
+                      });
+                      return;
+                    }
+
+                    if (!hasNumber) {
+                      setNotification({
+                        message: "Password must contain at least 1 number.",
+                        type: "error",
+                      });
+                      return;
+                    }
+
+                    if (!hasSpecialChar) {
+                      setNotification({
+                        message: "Password must contain at least 1 special character (!\"#$%&'()*+,-./:;<=>?@[]^_`{|}~).",
                         type: "error",
                       });
                       return;
@@ -1093,12 +1121,27 @@ const LoginPage = () => {
                           type: "error",
                         });
                       }
-                    } catch {
-                      setNotification({
-                        message:
-                          "An error occurred while resetting your password. Please try again.",
-                        type: "error",
-                      });
+                    } catch (err) {
+                      const errorMessage = err instanceof Error ? err.message : "";
+                      
+                      // Check for compromised password error
+                      if (
+                        errorMessage.toLowerCase().includes("compromised") ||
+                        errorMessage.toLowerCase().includes("data breach") ||
+                        errorMessage.toLowerCase().includes("found in breach") ||
+                        errorMessage.toLowerCase().includes("pwned")
+                      ) {
+                        setNotification({
+                          message: "This password has been found in data breaches and cannot be used. Please choose a different password.",
+                          type: "error",
+                        });
+                      } else {
+                        setNotification({
+                          message:
+                            "An error occurred while resetting your password. Please try again.",
+                          type: "error",
+                        });
+                      }
                     } finally {
                       setLoading(false);
                     }

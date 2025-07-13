@@ -1,5 +1,5 @@
 import React from "react";
-import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaLock, FaEye, FaEyeSlash, FaCheck, FaTimes } from "react-icons/fa";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface ResetPasswordInputProps {
@@ -26,7 +26,16 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
   setShowConfirmPassword,
   loading = false,
   onSubmit,
-}) => (
+}) => {
+  // Password validation checks
+  const hasLowercase = /[a-z]/.test(newPassword);
+  const hasUppercase = /[A-Z]/.test(newPassword);
+  const hasNumber = /\d/.test(newPassword);
+  const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(newPassword);
+  const hasMinLength = newPassword.length >= 8;
+  const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
+
+  return (
   <form className="mt-8 space-y-6" onSubmit={onSubmit}>
     <div className="relative">
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 z-20">
@@ -109,7 +118,41 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         {loading ? "Resetting..." : "Reset Password"}
       </button>
     </div>
+
+    {/* Password Requirements */}
+    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+      <h4 className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</h4>
+      <div className="space-y-1 text-xs">
+        <div className={`flex items-center ${hasMinLength ? 'text-green-600' : 'text-gray-500'}`}>
+          {hasMinLength ? <FaCheck className="mr-2" /> : <FaTimes className="mr-2" />}
+          At least 8 characters
+        </div>
+        <div className={`flex items-center ${hasLowercase ? 'text-green-600' : 'text-gray-500'}`}>
+          {hasLowercase ? <FaCheck className="mr-2" /> : <FaTimes className="mr-2" />}
+          At least 1 lowercase character
+        </div>
+        <div className={`flex items-center ${hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
+          {hasUppercase ? <FaCheck className="mr-2" /> : <FaTimes className="mr-2" />}
+          At least 1 uppercase character
+        </div>
+        <div className={`flex items-center ${hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
+          {hasNumber ? <FaCheck className="mr-2" /> : <FaTimes className="mr-2" />}
+          At least 1 number
+        </div>
+        <div className={`flex items-center ${hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
+          {hasSpecialChar ? <FaCheck className="mr-2" /> : <FaTimes className="mr-2" />}
+          At least 1 special character (!@#$%^&*)
+        </div>
+        {confirmPassword.length > 0 && (
+          <div className={`flex items-center ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
+            {passwordsMatch ? <FaCheck className="mr-2" /> : <FaTimes className="mr-2" />}
+            Passwords match
+          </div>
+        )}
+      </div>
+    </div>
   </form>
-);
+  );
+};
 
 export default ResetPasswordInput;

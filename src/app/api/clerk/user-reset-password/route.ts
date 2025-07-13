@@ -42,6 +42,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate password complexity requirements
+    const hasLowercase = /[a-z]/.test(newPassword);
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasNumber = /\d/.test(newPassword);
+    const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(newPassword);
+
+    if (!hasLowercase) {
+      return NextResponse.json(
+        { error: "Password must contain at least 1 lowercase character" },
+        { status: 400 },
+      );
+    }
+
+    if (!hasUppercase) {
+      return NextResponse.json(
+        { error: "Password must contain at least 1 uppercase character" },
+        { status: 400 },
+      );
+    }
+
+    if (!hasNumber) {
+      return NextResponse.json(
+        { error: "Password must contain at least 1 number" },
+        { status: 400 },
+      );
+    }
+
+    if (!hasSpecialChar) {
+      return NextResponse.json(
+        { error: "Password must contain at least 1 special character (!\"#$%&'()*+,-./:;<=>?@[]^_`{|}~)" },
+        { status: 400 },
+      );
+    }
+
     // Apply rate limiting
     const rateLimit = createRateLimiter(RATE_LIMITS.PASSWORD_CHANGE);
     const rateLimitResult = rateLimit(request, clerkId);
@@ -88,13 +122,30 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       const clerkError = error as ClerkError;
+      const errorMessage = clerkError.errors?.[0]?.message || "";
+
+      // Check for compromised password error
+      if (
+        errorMessage.toLowerCase().includes("compromised") ||
+        errorMessage.toLowerCase().includes("data breach") ||
+        errorMessage.toLowerCase().includes("found in breach") ||
+        errorMessage.toLowerCase().includes("pwned") ||
+        errorMessage.toLowerCase().includes("haveibeenpwned")
+      ) {
+        return NextResponse.json(
+          {
+            error: "This password has been found in data breaches and cannot be used. Please choose a different password.",
+          },
+          { status: 400 },
+        );
+      }
 
       // Check for password strength error
       if (
-        clerkError.errors?.[0]?.message?.includes("password_strength") ||
-        clerkError.errors?.[0]?.message?.includes("weak_password") ||
-        clerkError.errors?.[0]?.message?.includes("password is too weak") ||
-        clerkError.errors?.[0]?.message?.includes("not strong enough")
+        errorMessage.includes("password_strength") ||
+        errorMessage.includes("weak_password") ||
+        errorMessage.includes("password is too weak") ||
+        errorMessage.includes("not strong enough")
       ) {
         return NextResponse.json(
           {
@@ -108,7 +159,7 @@ export async function POST(request: NextRequest) {
       // Forward other Clerk errors
       return NextResponse.json(
         {
-          error: clerkError.errors?.[0]?.message || "Failed to reset password",
+          error: errorMessage || "Failed to reset password",
         },
         { status: 400 },
       );
