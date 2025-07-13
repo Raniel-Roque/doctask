@@ -144,25 +144,22 @@ export async function POST(request: Request) {
         (u: BackupUser) => u.role === 2,
       );
       if (instructorUser) {
-        oldUserIdToNewUserId.set(
-          instructorUser._id,
-          newInstructorResult.userId,
-        );
+        oldUserIdToNewUserId[instructorUser._id] = newInstructorResult.userId;
       }
 
       for (const log of backupData.tables.logs) {
         // Map user_id and affected_entity_id
         const newUserId = log.user_id
-          ? oldUserIdToNewUserId.get(log.user_id)
+          ? oldUserIdToNewUserId[log.user_id]
           : null;
         let newAffectedEntityId: Id<"users"> | Id<"groupsTable"> | null = null;
         if (log.affected_entity_type === "user") {
           newAffectedEntityId = log.affected_entity_id
-            ? (oldUserIdToNewUserId.get(log.affected_entity_id) ?? null)
+            ? (oldUserIdToNewUserId[log.affected_entity_id] ?? null)
             : null;
         } else if (log.affected_entity_type === "group") {
           newAffectedEntityId = log.affected_entity_id
-            ? (oldGroupIdToNewGroupId.get(log.affected_entity_id) ?? null)
+            ? (oldGroupIdToNewGroupId[log.affected_entity_id] ?? null)
             : null;
         } else if (log.affected_entity_type === "database") {
           newAffectedEntityId = newInstructorResult.userId;
