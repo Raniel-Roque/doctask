@@ -122,7 +122,7 @@ export const AddForm = ({
         [name]: parseInt(value),
       });
     } else {
-      const sanitizedValue = sanitizeInput(value, {
+      let sanitizedValue = sanitizeInput(value, {
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
@@ -131,6 +131,15 @@ export const AddForm = ({
             ? VALIDATION_RULES.email.maxLength
             : VALIDATION_RULES.name.maxLength,
       });
+
+      // Capitalize name fields (first_name, middle_name, last_name)
+      if (name === "first_name" || name === "middle_name" || name === "last_name") {
+        sanitizedValue = sanitizedValue
+          .toLowerCase()
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      }
 
       onFormDataChange({
         ...formData,

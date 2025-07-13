@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clear-cache": "node scripts/clear-cache.js"
   },
   "dependencies": {
     "@ag-media/react-pdf-table": "^2.0.3",

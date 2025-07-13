@@ -25,6 +25,7 @@ import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChange
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { apiRequest } from "@/lib/utils";
 import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
+import { useAuth } from "@clerk/nextjs";
 
 // =========================================
 // Types
@@ -37,6 +38,7 @@ interface UsersStudentsPageProps {
 // Component
 // =========================================
 const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
+  const { getToken } = useAuth();
   // =========================================
   // State
   // =========================================
@@ -331,10 +333,18 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     if (!editingUser) return;
     setIsSubmitting(true);
     try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error("Not authenticated");
+      }
+
       // Use apiRequest for robust error handling
       await apiRequest("/api/clerk/update-user", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           clerkId: editingUser.clerk_id,
           email: editFormData.email.trim(),
