@@ -11,7 +11,6 @@ import {
   X,
 } from "lucide-react";
 import { useState, use } from "react";
-import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -59,7 +58,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     "download" | "restore" | null
   >(null);
   const [showRestoreSuccess, setShowRestoreSuccess] = useState(false);
-  const { getToken } = useAuth();
   const { signOut } = useClerk();
   const router = useRouter();
 
@@ -120,17 +118,11 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     try {
       setIsDownloading(true);
 
-      const token = await getToken();
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
       // Call API route for backup
       const response = await fetch("/api/convex/backup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ instructorId }),
       });
@@ -203,11 +195,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     try {
       setIsRestoring(true);
 
-      const token = await getToken();
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
       // Read and extract the ZIP file
       const zip = await JSZip.loadAsync(selectedZipFile);
       const encryptedData = await zip.file("backup.enc")?.async("text");
@@ -226,7 +213,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           backup,
@@ -549,7 +535,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
                 try {
                   // Handle instructor deletion and recreation
-                  const token = await getToken();
+                  const token = await user?.id;
                   if (!token) {
                     throw new Error("Not authenticated");
                   }

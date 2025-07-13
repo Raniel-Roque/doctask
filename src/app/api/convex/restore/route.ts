@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
-import { clerkClient, auth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { generatePassword } from "@/utils/passwordGeneration";
 import { Resend } from "resend";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -154,14 +154,31 @@ interface BackupData {
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
-
     const { backup, instructorId } = await request.json();
     if (!backup || !instructorId) {
       return new NextResponse("Missing required fields", { status: 400 });
+    }
+
+    // Initialize Convex client
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+    // Verify instructor permissions
+    const instructor = await convex.query(api.fetch.getUserById, {
+      id: instructorId as Id<"users">,
+    });
+    
+    if (!instructor) {
+      return NextResponse.json(
+        { error: "Instructor not found" },
+        { status: 404 },
+      );
+    }
+
+    if (instructor.role !== 2) {
+      return NextResponse.json(
+        { error: "Unauthorized - Only instructors can restore backups" },
+        { status: 401 },
+      );
     }
 
     // Initialize Clerk client
@@ -175,20 +192,6 @@ export async function POST(request: Request) {
     }
 
     const backupData = backup as BackupData;
-
-    // The instructorId is already the Convex _id of the instructor
-    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
-    // Verify the instructor exists and is valid
-    const instructorConvexUser = await convex.query(api.fetch.getUserById, {
-      id: instructorId as Id<"users">,
-    });
-    if (!instructorConvexUser || instructorConvexUser.role !== 2) {
-      return NextResponse.json(
-        { error: "Instructor not found or invalid" },
-        { status: 404 },
-      );
-    }
 
     // Delete from Convex first
     // Delete students
@@ -230,7 +233,7 @@ export async function POST(request: Request) {
 
     // Delete users (except current user)
     await convex.mutation(api.restore.deleteAllUsers, {
-      currentUserId: userId,
+      currentUserId: instructor._id,
     });
 
     // Get all users from Clerk
@@ -238,7 +241,7 @@ export async function POST(request: Request) {
 
     // Delete all users except the instructor
     for (const clerkUser of existingClerkUsers) {
-      if (clerkUser.id !== userId) {
+      if (clerkUser.id !== instructor._id) {
         // Don't delete the instructor
         // Delete from Clerk
         await clerk.users.deleteUser(clerkUser.id);
@@ -250,7 +253,7 @@ export async function POST(request: Request) {
         if (convexUser) {
           await convex.mutation(api.mutations.deleteUser, {
             userId: convexUser._id,
-            instructorId: instructorConvexUser._id,
+            instructorId: instructor._id,
             clerkId: clerkUser.id,
           });
         }

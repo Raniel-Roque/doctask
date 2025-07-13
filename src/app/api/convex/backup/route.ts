@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
-import { auth } from "@clerk/nextjs/server";
 import { Id } from "../../../../../convex/_generated/dataModel";
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
-
     const { instructorId } = await request.json();
     if (!instructorId) {
       return new NextResponse("Missing instructorId", { status: 400 });
@@ -18,6 +12,25 @@ export async function POST(request: Request) {
 
     // Initialize Convex client
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+    // Verify instructor permissions
+    const instructor = await convex.query(api.fetch.getUserById, {
+      id: instructorId as Id<"users">,
+    });
+    
+    if (!instructor) {
+      return NextResponse.json(
+        { error: "Instructor not found" },
+        { status: 404 },
+      );
+    }
+
+    if (instructor.role !== 2) {
+      return NextResponse.json(
+        { error: "Unauthorized - Only instructors can create backups" },
+        { status: 401 },
+      );
+    }
 
     // Call the backup mutation
     const backup = await convex.mutation(api.mutations.downloadConvexBackup, {
