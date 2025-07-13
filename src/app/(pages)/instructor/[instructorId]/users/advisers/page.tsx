@@ -224,9 +224,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
       // Use apiRequest for robust error handling
       await apiRequest("/api/clerk/update-user", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           clerkId: editingUser.clerk_id,

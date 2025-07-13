@@ -133,12 +133,16 @@ export const AddForm = ({
       });
 
       // Capitalize name fields (first_name, middle_name, last_name)
-      if (name === "first_name" || name === "middle_name" || name === "last_name") {
+      if (
+        name === "first_name" ||
+        name === "middle_name" ||
+        name === "last_name"
+      ) {
         sanitizedValue = sanitizedValue
           .toLowerCase()
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
       }
 
       onFormDataChange({

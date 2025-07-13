@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { FaTimes, FaEye, FaEyeSlash, FaCheck, FaTimes as FaTimesIcon } from "react-icons/fa";
+import {
+  FaTimes,
+  FaEye,
+  FaEyeSlash,
+  FaCheck,
+  FaTimes as FaTimesIcon,
+} from "react-icons/fa";
 import { useUser } from "@clerk/clerk-react";
 import { NotificationBanner } from "./NotificationBanner";
 import { sanitizeInput } from "./SanitizeInput";
@@ -87,7 +93,9 @@ export default function ChangePassword({
     if (!isLoaded || !user) return;
 
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match. Please make sure both passwords are identical.");
+      setError(
+        "Passwords do not match. Please make sure both passwords are identical.",
+      );
       return;
     }
 
@@ -101,7 +109,9 @@ export default function ChangePassword({
     const hasLowercase = /[a-z]/.test(newPassword);
     const hasUppercase = /[A-Z]/.test(newPassword);
     const hasNumber = /\d/.test(newPassword);
-    const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(newPassword);
+    const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(
+      newPassword,
+    );
 
     if (!hasLowercase) {
       setError("Password must contain at least 1 lowercase character.");
@@ -119,7 +129,9 @@ export default function ChangePassword({
     }
 
     if (!hasSpecialChar) {
-      setError("Password must contain at least 1 special character (!@#$%^&*).");
+      setError(
+        "Password must contain at least 1 special character (!@#$%^&*).",
+      );
       return;
     }
 
@@ -159,7 +171,7 @@ export default function ChangePassword({
             "This password has been found in data breaches and cannot be used. Please choose a different password.",
           );
         }
-        
+
         // Check for specific Clerk password strength error
         if (
           data.error?.includes("password_strength") ||
@@ -309,41 +321,82 @@ export default function ChangePassword({
 
             {/* Password Requirements */}
             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-2">
+                Password Requirements:
+              </h4>
               <div className="space-y-1 text-xs">
                 {(() => {
                   const hasLowercase = /[a-z]/.test(newPassword);
                   const hasUppercase = /[A-Z]/.test(newPassword);
                   const hasNumber = /\d/.test(newPassword);
-                  const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(newPassword);
+                  const hasSpecialChar =
+                    /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(newPassword);
                   const hasMinLength = newPassword.length >= 8;
-                  const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
+                  const passwordsMatch =
+                    newPassword === confirmPassword &&
+                    confirmPassword.length > 0;
 
                   return (
                     <>
-                      <div className={`flex items-center ${hasMinLength ? 'text-green-600' : 'text-gray-500'}`}>
-                        {hasMinLength ? <FaCheck className="mr-2" /> : <FaTimesIcon className="mr-2" />}
+                      <div
+                        className={`flex items-center ${hasMinLength ? "text-green-600" : "text-gray-500"}`}
+                      >
+                        {hasMinLength ? (
+                          <FaCheck className="mr-2" />
+                        ) : (
+                          <FaTimesIcon className="mr-2" />
+                        )}
                         At least 8 characters
                       </div>
-                      <div className={`flex items-center ${hasLowercase ? 'text-green-600' : 'text-gray-500'}`}>
-                        {hasLowercase ? <FaCheck className="mr-2" /> : <FaTimesIcon className="mr-2" />}
+                      <div
+                        className={`flex items-center ${hasLowercase ? "text-green-600" : "text-gray-500"}`}
+                      >
+                        {hasLowercase ? (
+                          <FaCheck className="mr-2" />
+                        ) : (
+                          <FaTimesIcon className="mr-2" />
+                        )}
                         At least 1 lowercase character
                       </div>
-                      <div className={`flex items-center ${hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
-                        {hasUppercase ? <FaCheck className="mr-2" /> : <FaTimesIcon className="mr-2" />}
+                      <div
+                        className={`flex items-center ${hasUppercase ? "text-green-600" : "text-gray-500"}`}
+                      >
+                        {hasUppercase ? (
+                          <FaCheck className="mr-2" />
+                        ) : (
+                          <FaTimesIcon className="mr-2" />
+                        )}
                         At least 1 uppercase character
                       </div>
-                      <div className={`flex items-center ${hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
-                        {hasNumber ? <FaCheck className="mr-2" /> : <FaTimesIcon className="mr-2" />}
+                      <div
+                        className={`flex items-center ${hasNumber ? "text-green-600" : "text-gray-500"}`}
+                      >
+                        {hasNumber ? (
+                          <FaCheck className="mr-2" />
+                        ) : (
+                          <FaTimesIcon className="mr-2" />
+                        )}
                         At least 1 number
                       </div>
-                      <div className={`flex items-center ${hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
-                        {hasSpecialChar ? <FaCheck className="mr-2" /> : <FaTimesIcon className="mr-2" />}
+                      <div
+                        className={`flex items-center ${hasSpecialChar ? "text-green-600" : "text-gray-500"}`}
+                      >
+                        {hasSpecialChar ? (
+                          <FaCheck className="mr-2" />
+                        ) : (
+                          <FaTimesIcon className="mr-2" />
+                        )}
                         At least 1 special character (!@#$%^&*)
                       </div>
                       {confirmPassword.length > 0 && (
-                        <div className={`flex items-center ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
-                          {passwordsMatch ? <FaCheck className="mr-2" /> : <FaTimesIcon className="mr-2" />}
+                        <div
+                          className={`flex items-center ${passwordsMatch ? "text-green-600" : "text-red-600"}`}
+                        >
+                          {passwordsMatch ? (
+                            <FaCheck className="mr-2" />
+                          ) : (
+                            <FaTimesIcon className="mr-2" />
+                          )}
                           Passwords match
                         </div>
                       )}

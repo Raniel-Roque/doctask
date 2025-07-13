@@ -1030,11 +1030,13 @@ const LoginPage = () => {
                     const hasLowercase = /[a-z]/.test(password);
                     const hasUppercase = /[A-Z]/.test(password);
                     const hasNumber = /\d/.test(password);
-                    const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(password);
+                    const hasSpecialChar =
+                      /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(password);
 
                     if (!hasLowercase) {
                       setNotification({
-                        message: "Password must contain at least 1 lowercase character.",
+                        message:
+                          "Password must contain at least 1 lowercase character.",
                         type: "error",
                       });
                       return;
@@ -1042,7 +1044,8 @@ const LoginPage = () => {
 
                     if (!hasUppercase) {
                       setNotification({
-                        message: "Password must contain at least 1 uppercase character.",
+                        message:
+                          "Password must contain at least 1 uppercase character.",
                         type: "error",
                       });
                       return;
@@ -1058,7 +1061,8 @@ const LoginPage = () => {
 
                     if (!hasSpecialChar) {
                       setNotification({
-                        message: "Password must contain at least 1 special character (!\"#$%&'()*+,-./:;<=>?@[]^_`{|}~).",
+                        message:
+                          "Password must contain at least 1 special character (!\"#$%&'()*+,-./:;<=>?@[]^_`{|}~).",
                         type: "error",
                       });
                       return;
@@ -1122,17 +1126,21 @@ const LoginPage = () => {
                         });
                       }
                     } catch (err) {
-                      const errorMessage = err instanceof Error ? err.message : "";
-                      
+                      const errorMessage =
+                        err instanceof Error ? err.message : "";
+
                       // Check for compromised password error
                       if (
                         errorMessage.toLowerCase().includes("compromised") ||
                         errorMessage.toLowerCase().includes("data breach") ||
-                        errorMessage.toLowerCase().includes("found in breach") ||
+                        errorMessage
+                          .toLowerCase()
+                          .includes("found in breach") ||
                         errorMessage.toLowerCase().includes("pwned")
                       ) {
                         setNotification({
-                          message: "This password has been found in data breaches and cannot be used. Please choose a different password.",
+                          message:
+                            "This password has been found in data breaches and cannot be used. Please choose a different password.",
                           type: "error",
                         });
                       } else {

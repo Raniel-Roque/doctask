@@ -46,7 +46,9 @@ export async function POST(request: NextRequest) {
     const hasLowercase = /[a-z]/.test(newPassword);
     const hasUppercase = /[A-Z]/.test(newPassword);
     const hasNumber = /\d/.test(newPassword);
-    const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(newPassword);
+    const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(
+      newPassword,
+    );
 
     if (!hasLowercase) {
       return NextResponse.json(
@@ -71,7 +73,10 @@ export async function POST(request: NextRequest) {
 
     if (!hasSpecialChar) {
       return NextResponse.json(
-        { error: "Password must contain at least 1 special character (!\"#$%&'()*+,-./:;<=>?@[]^_`{|}~)" },
+        {
+          error:
+            "Password must contain at least 1 special character (!\"#$%&'()*+,-./:;<=>?@[]^_`{|}~)",
+        },
         { status: 400 },
       );
     }
@@ -134,7 +139,8 @@ export async function POST(request: NextRequest) {
       ) {
         return NextResponse.json(
           {
-            error: "This password has been found in data breaches and cannot be used. Please choose a different password.",
+            error:
+              "This password has been found in data breaches and cannot be used. Please choose a different password.",
           },
           { status: 400 },
         );
