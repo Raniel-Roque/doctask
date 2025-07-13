@@ -494,7 +494,20 @@ const LoginPage = () => {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
-      if (errorMessage.includes("Your account is locked")) {
+      
+      // Check for compromised password error first
+      if (
+        errorMessage.toLowerCase().includes("compromised") ||
+        errorMessage.toLowerCase().includes("pwned") ||
+        errorMessage.toLowerCase().includes("breach") ||
+        errorMessage.toLowerCase().includes("data breach") ||
+        errorMessage.toLowerCase().includes("password has been compromised")
+      ) {
+        setNotification({
+          message: "This password has been compromised in a data breach. Please use forgot password.",
+          type: "error",
+        });
+      } else if (errorMessage.includes("Your account is locked")) {
         setNotification({
           message: `Your account is locked. Please try again later or contact your capstone instructor.`,
           type: "error",
