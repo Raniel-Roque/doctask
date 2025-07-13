@@ -4,6 +4,7 @@ import { generatePassword } from "@/utils/passwordGeneration";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
 
 interface ClerkError {
   errors?: Array<{
@@ -37,10 +38,29 @@ export async function POST(request: Request) {
     } = body;
 
     // Validate required fields before sanitization
-    if (!firstName || !lastName || !email) {
+    if (!firstName || !lastName || !email || !instructorId) {
       return NextResponse.json(
         { error: "Required fields are missing" },
         { status: 400 },
+      );
+    }
+
+    // Verify instructor permissions
+    const instructor = await convex.query(api.fetch.getUserById, {
+      userId: instructorId as Id<"users">,
+    });
+    
+    if (!instructor) {
+      return NextResponse.json(
+        { error: "Instructor not found" },
+        { status: 404 },
+      );
+    }
+
+    if (instructor.role !== 2) {
+      return NextResponse.json(
+        { error: "Unauthorized - Only instructors can create users" },
+        { status: 401 },
       );
     }
 
@@ -109,7 +129,7 @@ export async function POST(request: Request) {
         email: trimmedEmail,
         role: role,
         subrole: subrole,
-        instructorId: instructorId,
+        instructorId: instructorId as Id<"users">,
         clerk_id: clerkUser.id,
       });
     } catch {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { clerkClient, auth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
@@ -38,24 +38,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Request too large" }, { status: 413 });
     }
 
-    // Get acting instructor's Clerk ID from session
-    const { userId: instructorClerkId } = await auth();
-    if (!instructorClerkId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    // Map to Convex user ID
-    const instructorConvexUser = await convex.query(
-      api.fetch.getUserByClerkId,
-      {
-        clerkId: instructorClerkId,
-      },
-    );
-    if (!instructorConvexUser) {
-      return NextResponse.json(
-        { error: "Instructor not found in database" },
-        { status: 404 },
-      );
-    }
     const body = await request.json();
 
     // Validate request body
@@ -66,13 +48,33 @@ export async function POST(request: Request) {
       );
     }
 
-    const { clerkId, email, firstName, lastName, middleName } = body;
+    const { clerkId, email, firstName, lastName, middleName, instructorId } = body;
 
     // Validate required fields before sanitization
-    if (!clerkId || !email || !firstName || !lastName) {
+    if (!clerkId || !email || !firstName || !lastName || !instructorId) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 },
+      );
+    }
+
+    // Get and verify instructor permissions
+    const instructorConvexUser = await convex.query(
+      api.fetch.getUserById,
+      {
+        id: instructorId as Id<"users">,
+      },
+    );
+    if (!instructorConvexUser) {
+      return NextResponse.json(
+        { error: "Instructor not found in database" },
+        { status: 404 },
+      );
+    }
+    if (instructorConvexUser.role !== 2) {
+      return NextResponse.json(
+        { error: "Unauthorized - Only instructors can perform this action" },
+        { status: 403 },
       );
     }
 

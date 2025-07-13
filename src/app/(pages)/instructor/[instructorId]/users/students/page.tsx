@@ -25,7 +25,7 @@ import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChange
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { apiRequest } from "@/lib/utils";
 import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
-import { useAuth } from "@clerk/nextjs";
+
 
 // =========================================
 // Types
@@ -38,7 +38,6 @@ interface UsersStudentsPageProps {
 // Component
 // =========================================
 const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
-  const { getToken } = useAuth();
   // =========================================
   // State
   // =========================================
@@ -279,6 +278,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         body: JSON.stringify({
           userId: selectedUser.clerk_id,
           action,
+          instructorId: instructorId,
         }),
       });
 
@@ -333,17 +333,11 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     if (!editingUser) return;
     setIsSubmitting(true);
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
       // Use apiRequest for robust error handling
       await apiRequest("/api/clerk/update-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           clerkId: editingUser.clerk_id,
@@ -352,6 +346,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           middleName: editFormData.middle_name?.trim() || "",
           lastName: editFormData.last_name.trim(),
           subrole: editFormData.subrole,
+          instructorId: instructorId,
         }),
       });
       setNotification({
@@ -393,7 +388,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         },
         body: JSON.stringify({
           clerkId: deleteUser.clerk_id,
-          instructorClerkId: instructor?.clerk_id, // Pass instructor Clerk ID for Convex lookup
+          instructorId: instructorId,
         }),
       });
 
@@ -549,6 +544,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         },
         body: JSON.stringify({
           clerkId: resetPasswordUser.clerk_id,
+          instructorId: instructorId,
         }),
         signal: controller.signal,
       });

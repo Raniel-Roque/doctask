@@ -3,6 +3,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
 
 interface ClerkError {
   errors?: Array<{
@@ -24,13 +25,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const { clerkId, instructorClerkId } = body;
+    const { clerkId, instructorId } = body;
 
     // Validate required fields before sanitization
-    if (!clerkId || !instructorClerkId) {
+    if (!clerkId || !instructorId) {
       return NextResponse.json(
-        { error: "Clerk ID and Instructor Clerk ID are required" },
+        { error: "Clerk ID and Instructor ID are required" },
         { status: 400 },
+      );
+    }
+
+    // Verify instructor permissions
+    const instructor = await convex.query(api.fetch.getUserById, {
+      userId: instructorId as Id<"users">,
+    });
+    
+    if (!instructor) {
+      return NextResponse.json(
+        { error: "Instructor not found" },
+        { status: 404 },
+      );
+    }
+
+    if (instructor.role !== 2) {
+      return NextResponse.json(
+        { error: "Unauthorized - Only instructors can delete users" },
+        { status: 401 },
       );
     }
 
@@ -40,24 +60,18 @@ export async function POST(request: Request) {
       removeHtml: true,
       escapeSpecialChars: true,
     });
-    const sanitizedInstructorClerkId = sanitizeInput(instructorClerkId, {
-      trim: true,
-      removeHtml: true,
-      escapeSpecialChars: true,
-    });
 
     // Validate required fields after sanitization
-    if (!sanitizedClerkId || !sanitizedInstructorClerkId) {
+    if (!sanitizedClerkId) {
       return NextResponse.json(
         {
-          error:
-            "Clerk ID or Instructor Clerk ID is invalid after sanitization",
+          error: "Clerk ID is invalid after sanitization",
         },
         { status: 400 },
       );
     }
 
-    // Look up Convex user and instructor IDs by Clerk ID
+    // Look up Convex user by Clerk ID
     const user = await convex.query(api.fetch.getUserByClerkId, {
       clerkId: sanitizedClerkId,
     });
@@ -67,22 +81,13 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
-    const instructor = await convex.query(api.fetch.getUserByClerkId, {
-      clerkId: sanitizedInstructorClerkId,
-    });
-    if (!instructor) {
-      return NextResponse.json(
-        { error: "Instructor not found in Convex" },
-        { status: 404 },
-      );
-    }
 
     // First, soft-delete in Convex
     let convexSuccess = false;
     try {
       const convexResult = await convex.mutation(api.mutations.deleteUser, {
         userId: user._id,
-        instructorId: instructor._id,
+        instructorId: instructorId as Id<"users">,
         clerkId: sanitizedClerkId,
       });
       convexSuccess = convexResult.success;
@@ -103,7 +108,7 @@ export async function POST(request: Request) {
       // Rollback Convex soft-delete (set isDeleted=false for user and all associated data)
       await convex.mutation(api.mutations.restoreUser, {
         userId: user._id,
-        instructorId: instructor._id,
+        instructorId: instructorId as Id<"users">,
       });
       return NextResponse.json(
         { error: "Failed to delete user from Clerk, Convex rolled back" },

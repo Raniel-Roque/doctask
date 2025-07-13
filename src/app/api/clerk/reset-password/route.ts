@@ -3,6 +3,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { generatePassword } from "@/utils/passwordGeneration";
+import { Id } from "../../../../../convex/_generated/dataModel";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -18,13 +19,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const { clerkId } = body;
+    const { clerkId, instructorId } = body;
 
     // Validate required fields
-    if (!clerkId) {
+    if (!clerkId || !instructorId) {
       return NextResponse.json(
-        { error: "Clerk ID is required" },
+        { error: "Clerk ID and Instructor ID are required" },
         { status: 400 },
+      );
+    }
+
+    // Verify instructor permissions
+    const instructor = await convex.query(api.fetch.getUserById, {
+      userId: instructorId as Id<"users">,
+    });
+    
+    if (!instructor) {
+      return NextResponse.json(
+        { error: "Instructor not found" },
+        { status: 404 },
+      );
+    }
+
+    if (instructor.role !== 2) {
+      return NextResponse.json(
+        { error: "Unauthorized - Only instructors can reset passwords" },
+        { status: 401 },
       );
     }
 

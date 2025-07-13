@@ -1,6 +1,9 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { Session } from "@clerk/nextjs/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
 
 interface ClerkError {
   errors?: Array<{
@@ -8,11 +11,13 @@ interface ClerkError {
   }>;
 }
 
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
 export async function POST(request: Request) {
   try {
-    const { userId, action } = await request.json();
+    const { userId, action, instructorId } = await request.json();
 
-    if (!userId || !action) {
+    if (!userId || !action || !instructorId) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
@@ -23,6 +28,25 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Invalid action. Must be 'lock' or 'unlock'" },
         { status: 400 },
+      );
+    }
+
+    // Verify instructor permissions
+    const instructor = await convex.query(api.fetch.getUserById, {
+      userId: instructorId as Id<"users">,
+    });
+    
+    if (!instructor) {
+      return NextResponse.json(
+        { error: "Instructor not found" },
+        { status: 404 },
+      );
+    }
+
+    if (instructor.role !== 2) {
+      return NextResponse.json(
+        { error: "Unauthorized - Only instructors can lock/unlock accounts" },
+        { status: 401 },
       );
     }
 
