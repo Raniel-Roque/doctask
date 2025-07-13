@@ -241,7 +241,7 @@ export async function POST(request: Request) {
 
     // Delete all users except the instructor
     for (const clerkUser of existingClerkUsers) {
-      if (clerkUser.id !== instructor._id) {
+      if (clerkUser.id !== instructor.clerk_id) {
         // Don't delete the instructor
         // Delete from Clerk
         await clerk.users.deleteUser(clerkUser.id);

@@ -209,6 +209,12 @@ export default function EditForm({
       return;
     }
 
+    // Check if role has changed (for students only)
+    if (isStudent && user && formData.subrole !== user.subrole) {
+      setShowRoleChangeConfirmation(true);
+      return;
+    }
+
     onSubmit();
   };
 

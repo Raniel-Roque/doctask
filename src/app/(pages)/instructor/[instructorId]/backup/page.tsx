@@ -39,6 +39,40 @@ interface BackupAndRestorePageProps {
   params: Promise<{ instructorId: string }>;
 }
 
+interface RestoreData {
+  backupData: {
+    tables: {
+      logs: Array<{
+        user_id: string;
+        user_role: number;
+        affected_entity_type: string;
+        affected_entity_id: string;
+        action: string;
+        details: string;
+      }>;
+      users: Array<{
+        _id: string;
+        clerk_id: string;
+        email: string;
+        first_name: string;
+        last_name: string;
+        middle_name?: string;
+        role: number;
+        subrole?: number;
+        isDeleted?: boolean;
+        terms_agreed?: boolean;
+        privacy_agreed?: boolean;
+        terms_agreed_at?: number;
+        privacy_agreed_at?: number;
+      }>;
+    };
+  };
+  idMappings: {
+    oldUserIdToNewUserId: Record<string, string>;
+    oldGroupIdToNewGroupId: Record<string, string>;
+  };
+}
+
 const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const { instructorId } = use(params);
   const { user } = useUser();
@@ -58,6 +92,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     "download" | "restore" | null
   >(null);
   const [showRestoreSuccess, setShowRestoreSuccess] = useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [restoreData, setRestoreData] = useState<RestoreData | null>(null);
   const { signOut } = useClerk();
   const router = useRouter();
 
@@ -225,7 +262,14 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         throw new Error(errorData.error || "Failed to restore database backup");
       }
 
-      await response.json();
+      const restoreResult = await response.json();
+      
+      // Store the backup data and mappings for instructor restoration
+      setRestoreData({
+        backupData: restoreResult.backupData,
+        idMappings: restoreResult.idMappings,
+      });
+      
       setShowRestoreConfirm(false);
       setShowRestoreSuccess(true);
     } catch (error: unknown) {
@@ -238,6 +282,40 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       });
     } finally {
       setIsRestoring(false);
+    }
+  };
+
+  const handleLogoutConfirmation = async () => {
+    setIsLoggingOut(true);
+    try {
+      // Call the restore-instructor API with the stored data
+      const response = await fetch("/api/convex/restore-instructor", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          instructorId,
+          backupData: restoreData?.backupData,
+          idMappings: restoreData?.idMappings,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to restore instructor");
+      }
+
+      // Sign out and redirect
+      signOut(() => {
+        router.push("/login?restore=true");
+      });
+    } catch {
+      setNotification({
+        type: "error",
+        message: "Failed to complete restore process. Please try again.",
+      });
+      setIsLoggingOut(false);
+      setShowLogoutConfirmation(false);
     }
   };
 
@@ -530,44 +608,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
           <DialogFooter>
             <Button
-              onClick={async () => {
+              onClick={() => {
                 setShowRestoreSuccess(false);
-
-                try {
-                  // Handle instructor deletion and recreation
-                  const token = await user?.id;
-                  if (!token) {
-                    throw new Error("Not authenticated");
-                  }
-
-                  // Call a separate API to handle instructor restoration
-                  const response = await fetch(
-                    "/api/convex/restore-instructor",
-                    {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                      },
-                      body: JSON.stringify({ instructorId }),
-                    },
-                  );
-
-                  if (!response.ok) {
-                    throw new Error("Failed to restore instructor");
-                  }
-
-                  // Now sign out and redirect
-                  signOut(() => {
-                    router.push("/login?successrestore=true");
-                  });
-                } catch {
-                  setNotification({
-                    type: "error",
-                    message:
-                      "Failed to complete restore process. Please try again.",
-                  });
-                }
+                setShowLogoutConfirmation(true);
               }}
               className="bg-green-600 hover:bg-green-700"
             >
@@ -576,6 +619,55 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Logout Confirmation Dialog */}
+      {showLogoutConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-6 h-6 text-[#B54A4A]">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                We are now logging out...
+              </h2>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              Your database has been successfully restored. You will be logged out and need to log back in with your new credentials.
+            </p>
+
+            <div className="flex justify-end">
+              <button
+                onClick={handleLogoutConfirmation}
+                className="flex items-center gap-2 px-4 py-2 text-white bg-[#B54A4A] rounded-md hover:bg-[#9B3F3F] transition-colors"
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? (
+                  <>
+                    <div className="animate-spin">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                    Logging out...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+                    </svg>
+                    OK
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
