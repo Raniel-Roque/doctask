@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     // Verify instructor permissions
     const instructor = await convex.query(api.fetch.getUserById, {
-      userId: instructorId as Id<"users">,
+      id: instructorId as Id<"users">,
     });
     
     if (!instructor) {

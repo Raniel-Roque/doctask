@@ -58,20 +58,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get and verify instructor permissions
-    const instructorConvexUser = await convex.query(
-      api.fetch.getUserById,
-      {
-        id: instructorId as Id<"users">,
-      },
-    );
-    if (!instructorConvexUser) {
+    // Verify instructor permissions
+    const instructor = await convex.query(api.fetch.getUserById, {
+      id: instructorId as Id<"users">,
+    });
+    if (!instructor) {
       return NextResponse.json(
         { error: "Instructor not found in database" },
         { status: 404 },
       );
     }
-    if (instructorConvexUser.role !== 2) {
+    if (instructor.role !== 2) {
       return NextResponse.json(
         { error: "Unauthorized - Only instructors can perform this action" },
         { status: 403 },
@@ -158,7 +155,7 @@ export async function POST(request: Request) {
       // Only set subrole if student
       const updateArgs: UpdateUserArgs = {
         userId: convexUser._id as Id<"users">,
-        instructorId: instructorConvexUser._id as Id<"users">,
+        instructorId: instructor._id as Id<"users">,
         first_name: sanitizedFirstName,
         middle_name: sanitizedMiddleName,
         last_name: sanitizedLastName,
@@ -199,7 +196,7 @@ export async function POST(request: Request) {
     try {
       const updateArgs: UpdateUserArgs = {
         userId: convexUser._id as Id<"users">,
-        instructorId: instructorConvexUser._id as Id<"users">,
+        instructorId: instructor._id as Id<"users">,
         first_name: sanitizedFirstName,
         middle_name: sanitizedMiddleName,
         last_name: sanitizedLastName,
