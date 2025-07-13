@@ -452,7 +452,22 @@ export async function POST(request: Request) {
       }
     }
 
-    // Restore document status
+    // Restore notes first (before document status)
+    const oldNoteIdToNewNoteId = new Map();
+    for (const note of backupData.tables.notes) {
+      const newGroupId = oldGroupIdToNewGroupId.get(note.group_id);
+      if (newGroupId) {
+        const result = await convex.mutation(api.restore.restoreNote, {
+          group_id: newGroupId,
+          document_part: note.document_part,
+          content: note.content,
+          isDeleted: note.isDeleted ?? false,
+        });
+        oldNoteIdToNewNoteId.set(note._id, result.noteId);
+      }
+    }
+
+    // Restore document status (after notes so note IDs are available)
     for (const status of backupData.tables.documentStatus) {
       const newGroupId = oldGroupIdToNewGroupId.get(status.group_id);
       const newNoteIds = status.note_ids
@@ -460,10 +475,19 @@ export async function POST(request: Request) {
             .map((noteId: string) => oldNoteIdToNewNoteId.get(noteId))
             .filter(Boolean)
         : undefined;
+      
+      // Check if this is a pre-approved document part
+      const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
+        status.document_part,
+      );
+      
+      // Use the backup review_status, but ensure pre-approved documents are approved
+      const reviewStatus = isPreApproved ? 2 : status.review_status;
+      
       await convex.mutation(api.restore.restoreDocumentStatus, {
         group_id: newGroupId,
         document_part: status.document_part,
-        review_status: status.review_status,
+        review_status: reviewStatus,
         note_ids: newNoteIds,
         last_modified: status.last_modified,
         isDeleted: status.isDeleted ?? false,
@@ -485,21 +509,6 @@ export async function POST(request: Request) {
         assigned_student_ids: newAssignedStudentIds,
         isDeleted: assignment.isDeleted ?? false,
       });
-    }
-
-    // Restore notes
-    const oldNoteIdToNewNoteId = new Map();
-    for (const note of backupData.tables.notes) {
-      const newGroupId = oldGroupIdToNewGroupId.get(note.group_id);
-      if (newGroupId) {
-        const result = await convex.mutation(api.restore.restoreNote, {
-          group_id: newGroupId,
-          document_part: note.document_part,
-          content: note.content,
-          isDeleted: note.isDeleted ?? false,
-        });
-        oldNoteIdToNewNoteId.set(note._id, result.noteId);
-      }
     }
 
     // Restore images with file storage
