@@ -77,6 +77,17 @@ const LoginPage = () => {
   }, [router]);
 
   useEffect(() => {
+    // Check for restore banner flag in localStorage
+    if (typeof window !== 'undefined' && localStorage.getItem('showRestoreBanner') === 'true') {
+      setNotification({
+        message: 'Database has been restored successfully! Please check your email for the new password.',
+        type: 'success',
+      });
+      localStorage.removeItem('showRestoreBanner');
+    }
+  }, []);
+
+  useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
     };

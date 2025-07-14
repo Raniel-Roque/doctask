@@ -43,7 +43,7 @@ export const deleteAllUsers = mutation({
   handler: async (ctx, args) => {
     const users = await ctx.db.query("users").collect();
     for (const user of users) {
-      if (user.clerk_id !== args.currentUserId) {
+      if (user._id !== args.currentUserId) {
         await ctx.db.delete(user._id);
       }
     }

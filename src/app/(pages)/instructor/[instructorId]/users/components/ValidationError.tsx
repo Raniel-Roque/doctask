@@ -1,4 +1,4 @@
-import { FaExclamationTriangle, FaTimes } from "react-icons/fa";
+import { FaExclamationTriangle } from "react-icons/fa";
 import { useEffect, useState } from "react";
 
 // =========================================
@@ -76,12 +76,6 @@ export const ValidationError = ({
             <FaExclamationTriangle />
             <h3 className="text-lg font-semibold">Validation Error</h3>
           </div>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <FaTimes />
-          </button>
         </div>
 
         {/* Error Message */}

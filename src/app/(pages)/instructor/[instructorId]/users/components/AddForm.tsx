@@ -122,7 +122,7 @@ export const AddForm = ({
         [name]: parseInt(value),
       });
     } else {
-      let sanitizedValue = sanitizeInput(value, {
+      const sanitizedValue = sanitizeInput(value, {
         trim: true,
         removeHtml: true,
         escapeSpecialChars: true,
@@ -131,20 +131,7 @@ export const AddForm = ({
             ? VALIDATION_RULES.email.maxLength
             : VALIDATION_RULES.name.maxLength,
       });
-
-      // Capitalize name fields (first_name, middle_name, last_name)
-      if (
-        name === "first_name" ||
-        name === "middle_name" ||
-        name === "last_name"
-      ) {
-        sanitizedValue = sanitizedValue
-          .toLowerCase()
-          .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ");
-      }
-
+      
       onFormDataChange({
         ...formData,
         [name]: sanitizedValue,
@@ -241,13 +228,6 @@ export const AddForm = ({
               <FaPlus />
               Add New User
             </h2>
-            <button
-              onClick={handleClose}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-              disabled={isSubmitting}
-            >
-              <FaTimes size={24} />
-            </button>
           </div>
 
           {/* Error Messages */}

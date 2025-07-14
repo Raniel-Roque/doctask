@@ -342,9 +342,11 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         body: JSON.stringify({
           clerkId: editingUser.clerk_id,
           email: editFormData.email.trim(),
-          firstName: editFormData.first_name.trim(),
-          middleName: editFormData.middle_name?.trim() || "",
-          lastName: editFormData.last_name.trim(),
+          firstName: toSentenceCase(editFormData.first_name.trim()),
+          middleName: editFormData.middle_name?.trim() 
+            ? toSentenceCase(editFormData.middle_name.trim())
+            : "",
+          lastName: toSentenceCase(editFormData.last_name.trim()),
           subrole: editFormData.subrole,
           instructorId: instructorId,
         }),
@@ -413,6 +415,15 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     }
   };
 
+  // Utility function to convert text to sentence case
+  const toSentenceCase = (text: string): string => {
+    return text
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
   const handleAddSubmit = async () => {
     const error = validateAddForm(addFormData);
     if (error) {
@@ -444,22 +455,22 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             trim: true,
             removeHtml: true,
           }),
-          firstName: sanitizeInput(addFormData.first_name, {
+          firstName: toSentenceCase(sanitizeInput(addFormData.first_name, {
             maxLength: 50,
             trim: true,
             removeHtml: true,
-          }),
-          lastName: sanitizeInput(addFormData.last_name, {
+          })),
+          lastName: toSentenceCase(sanitizeInput(addFormData.last_name, {
             maxLength: 50,
             trim: true,
             removeHtml: true,
-          }),
+          })),
           middleName: addFormData.middle_name
-            ? sanitizeInput(addFormData.middle_name, {
+            ? toSentenceCase(sanitizeInput(addFormData.middle_name, {
                 maxLength: 50,
                 trim: true,
                 removeHtml: true,
-              })
+              }))
             : undefined,
           role: 0, // 0 = student
           subrole: addFormData.subrole,

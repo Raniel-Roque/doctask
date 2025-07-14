@@ -8,7 +8,6 @@ import {
   Loader2,
   Eye,
   EyeOff,
-  X,
 } from "lucide-react";
 import { useState, use } from "react";
 import { useRouter } from "next/navigation";
@@ -19,7 +18,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -34,6 +32,7 @@ import {
 import JSZip from "jszip";
 import { useUser, useClerk } from "@clerk/clerk-react";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import { FaSignOutAlt } from "react-icons/fa";
 
 interface BackupAndRestorePageProps {
   params: Promise<{ instructorId: string }>;
@@ -92,7 +91,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     "download" | "restore" | null
   >(null);
   const [showRestoreSuccess, setShowRestoreSuccess] = useState(false);
-  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [restoreData, setRestoreData] = useState<RestoreData | null>(null);
   const { signOut } = useClerk();
@@ -305,17 +303,42 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         throw new Error("Failed to restore instructor");
       }
 
-      // Sign out and redirect
-      signOut(() => {
-        router.push("/login?restore=true");
+      // Show success notification before logout
+      setNotification({
+        type: "success",
+        message: "Restore completed successfully! Redirecting to login...",
       });
+
+      // Add a small delay to ensure the notification is shown
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Try to sign out with fallback navigation and timeout
+      const navigationTimeout = setTimeout(() => {
+        localStorage.setItem('showRestoreBanner', 'true');
+        console.warn("Navigation timeout, forcing redirect");
+        window.location.href = "/login";
+      }, 5000); // 5 second timeout
+
+      try {
+        await signOut();
+        clearTimeout(navigationTimeout);
+        // If signOut succeeds, navigate
+        localStorage.setItem('showRestoreBanner', 'true');
+        router.push("/login");
+      } catch (signOutError) {
+        clearTimeout(navigationTimeout);
+        localStorage.setItem('showRestoreBanner', 'true');
+        console.warn("Sign out failed, using fallback navigation:", signOutError);
+        // Fallback: force navigation even if sign out fails
+        window.location.href = "/login";
+      }
     } catch {
       setNotification({
         type: "error",
         message: "Failed to complete restore process. Please try again.",
       });
       setIsLoggingOut(false);
-      setShowLogoutConfirmation(false);
+      setShowRestoreSuccess(false); // Ensure success dialog is closed
     }
   };
 
@@ -502,8 +525,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           }
         }}
       >
-        <DialogContent
-          className={`sm:max-w-[425px] ${isRestoring ? "[&>button]:hidden" : ""}`}
+        <DialogContent className={`sm:max-w-[425px] ${isRestoring ? "[&>button]:hidden" : ""}`}
           onPointerDownOutside={(e) => {
             if (isRestoring) {
               e.preventDefault();
@@ -515,14 +537,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             }
           }}
         >
-          {/* Custom close button that's only shown when not restoring */}
-          {!isRestoring && (
-            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </DialogClose>
-          )}
-
           <DialogHeader>
             <DialogTitle>Restore Database</DialogTitle>
             <DialogDescription>
@@ -590,84 +604,43 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       {/* Restore Success Dialog */}
       <Dialog open={showRestoreSuccess} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="text-green-600">
+          <div className="flex items-center gap-3 mb-4">
+            <FaSignOutAlt size={24} color="#B54A4A" />
+            <h2 className="text-xl font-semibold text-gray-900">
               Restore Successful!
-            </DialogTitle>
-            <DialogDescription>
-              Your database has been successfully restored.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4">
-            <p className="text-sm text-gray-600">
-              All your data has been restored from the backup. You will now be
-              automatically logged out.
-            </p>
+            </h2>
           </div>
 
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                setShowRestoreSuccess(false);
-                setShowLogoutConfirmation(true);
-              }}
-              className="bg-green-600 hover:bg-green-700"
+          <p className="text-gray-600 mb-6">
+            Your database has been successfully restored. You will be logged out and need to log back in with your new credentials.
+          </p>
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleLogoutConfirmation}
+              className="flex items-center gap-2 px-4 py-2 text-white bg-[#B54A4A] rounded-md hover:bg-[#9B3F3F] transition-colors"
+              disabled={isLoggingOut}
             >
-              OK, Log Me Out
-            </Button>
-          </DialogFooter>
+              {isLoggingOut ? (
+                <>
+                  <div className="animate-spin">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                  Logging out...
+                </>
+              ) : (
+                <>
+                  <FaSignOutAlt size={16} />
+                  OK
+                </>
+              )}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
-
-      {/* Logout Confirmation Dialog */}
-      {showLogoutConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-6 h-6 text-[#B54A4A]">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                We are now logging out...
-              </h2>
-            </div>
-
-            <p className="text-gray-600 mb-6">
-              Your database has been successfully restored. You will be logged out and need to log back in with your new credentials.
-            </p>
-
-            <div className="flex justify-end">
-              <button
-                onClick={handleLogoutConfirmation}
-                className="flex items-center gap-2 px-4 py-2 text-white bg-[#B54A4A] rounded-md hover:bg-[#9B3F3F] transition-colors"
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? (
-                  <>
-                    <div className="animate-spin">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    </div>
-                    Logging out...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
-                    </svg>
-                    OK
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
