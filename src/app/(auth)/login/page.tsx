@@ -781,7 +781,7 @@ const LoginPage = () => {
           type={notification?.type || "info"}
           onClose={() => setNotification(null)}
         />
-        <div className="max-w-sm w-full space-y-8 z-10 relative pb-16">
+        <div className="w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl space-y-8 z-10 relative pb-16">
           {/* Back Button for steps 2, 3, 4 */}
           {step > 1 && (
             <button
