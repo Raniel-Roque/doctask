@@ -608,37 +608,37 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
             <FaSignOutAlt size={24} color="#B54A4A" />
             <h2 className="text-xl font-semibold text-gray-900">
               Restore Successful!
-            </h2>
-          </div>
+              </h2>
+            </div>
 
-          <p className="text-gray-600 mb-6">
-            Your database has been successfully restored. You will be logged out and need to log back in with your new credentials.
-          </p>
+            <p className="text-gray-600 mb-6">
+              Your database has been successfully restored. You will be logged out and need to log back in with your new credentials.
+            </p>
 
-          <div className="flex justify-end">
-            <button
-              onClick={handleLogoutConfirmation}
-              className="flex items-center gap-2 px-4 py-2 text-white bg-[#B54A4A] rounded-md hover:bg-[#9B3F3F] transition-colors"
-              disabled={isLoggingOut}
-            >
-              {isLoggingOut ? (
-                <>
-                  <div className="animate-spin">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  </div>
-                  Logging out...
-                </>
-              ) : (
-                <>
+            <div className="flex justify-end">
+              <button
+                onClick={handleLogoutConfirmation}
+                className="flex items-center gap-2 px-4 py-2 text-white bg-[#B54A4A] rounded-md hover:bg-[#9B3F3F] transition-colors"
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? (
+                  <>
+                    <div className="animate-spin">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                    Logging out...
+                  </>
+                ) : (
+                  <>
                   <FaSignOutAlt size={16} />
-                  OK
-                </>
-              )}
-            </button>
-          </div>
+                    OK
+                  </>
+                )}
+              </button>
+            </div>
         </DialogContent>
       </Dialog>
     </div>

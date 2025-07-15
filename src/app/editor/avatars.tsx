@@ -19,8 +19,6 @@ const AvatarStack = () => {
   const users = useOthers();
   const currentUser = useSelf();
 
-  if (users.length === 0) return null;
-
   return (
     <>
       <div className="flex items-center">
@@ -36,7 +34,7 @@ const AvatarStack = () => {
           ))}
         </div>
       </div>
-      <Separator orientation="vertical" className="h-6" />
+      {users.length > 0 && <Separator orientation="vertical" className="h-6" />}
     </>
   );
 };

@@ -41,7 +41,7 @@ const useSaveToDatabase = (
     | undefined,
   isEditable: boolean,
 ) => {
-  const { editor } = useEditorStore();
+  const { editor, setIsSaving, setLastSaved, setSaveError } = useEditorStore();
   const updateContent = useMutation(api.mutations.updateDocumentContent);
 
   // Get the live document ID (template document, not version snapshot)
@@ -64,7 +64,7 @@ const useSaveToDatabase = (
       : "skip",
   );
 
-  const saveToDatabase = async () => {
+  const saveToDatabase = async (isManualSave = false) => {
     if (!editor || !document || !currentUser?._id || !isEditable) return;
 
     // Always save to the live document, not the current document
@@ -75,12 +75,21 @@ const useSaveToDatabase = (
 
     const content = editor.getHTML();
     // Compare against live document content, not current document content
-    if (content !== liveDocument?.content) {
-      await updateContent({
-        documentId: targetDocumentId,
-        content,
-        userId: currentUser._id,
-      });
+    if (content !== liveDocument?.content || isManualSave) {
+      try {
+        setIsSaving(true);
+        setSaveError(null);
+        await updateContent({
+          documentId: targetDocumentId,
+          content,
+          userId: currentUser._id,
+        });
+        setLastSaved(new Date());
+      } catch (error) {
+        setSaveError(error instanceof Error ? error.message : "Failed to save");
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -230,12 +239,12 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
   useEffect(() => {
     if (!isEditable) return;
 
-    let saveInterval = 1000; // 1 second for solo editing
+    let saveInterval = 5000; // 5 seconds for solo editing (was 1 second)
     let backupInterval: NodeJS.Timeout;
 
     const updateSaveInterval = (isCollaborative: boolean) => {
       if (backupInterval) clearInterval(backupInterval);
-      saveInterval = isCollaborative ? 30000 : 1000; // 30s collaborative, 1s solo
+      saveInterval = isCollaborative ? 60000 : 5000; // 60s collaborative (was 30s), 5s solo (was 1s)
       backupInterval = setInterval(saveToDatabase, saveInterval);
     };
 

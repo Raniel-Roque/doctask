@@ -142,15 +142,15 @@ body {
     color: inherit !important;
   }
 
-  /* Remove borders from all table cells and headers */
-  table td,
-  table th,
-  .min-w-full td,
-  .min-w-full th,
-  table.min-w-full td,
-  table.min-w-full th,
-  table.w-full td,
-  table.w-full th {
+  /* Remove borders from all table cells and headers - EXCEPT in editor */
+  table:not(.tiptap table) td,
+  table:not(.tiptap table) th,
+  .min-w-full:not(.tiptap) td,
+  .min-w-full:not(.tiptap) th,
+  table.min-w-full:not(.tiptap) td,
+  table.min-w-full:not(.tiptap) th,
+  table.w-full:not(.tiptap) td,
+  table.w-full:not(.tiptap) th {
     border: none !important;
   }
 }
@@ -235,16 +235,16 @@ body {
     display: block !important;
   }
 
-  /* Aggressively remove ALL borders from editor elements */
+  /* Aggressively remove ALL borders from editor elements - EXCEPT tables */
   .ProseMirror,
-  .ProseMirror *,
-  [class*="ProseMirror"],
+  .ProseMirror *:not(table):not(td):not(th),
+  [class*="ProseMirror"]:not(table):not(td):not(th),
   .tiptap,
-  .tiptap *,
+  .tiptap *:not(table):not(td):not(th),
   .editor-container,
-  .editor-container *,
+  .editor-container *:not(table):not(td):not(th),
   div[data-type="content"],
-  div[data-type="content"] * {
+  div[data-type="content"] *:not(table):not(td):not(th) {
     border: none !important;
     border-top: none !important;
     border-bottom: none !important;
@@ -264,8 +264,6 @@ body {
   /* Hide all collaborative elements */
   .floating-menu,
   .bubble-menu,
-  [class*="floating"],
-  [class*="bubble"],
   .floating-threads,
   .anchored-threads,
   
@@ -336,11 +334,11 @@ body {
     visibility: hidden !important;
   }
 
-  /* Remove all collaborative highlights and backgrounds */
+  /* Remove all collaborative highlights and backgrounds - EXCEPT table selection */
   .collaborative-highlight,
   .collaborative-highlight-conflict,
-  [class*="highlight"],
-  .ProseMirror-selectednode {
+  [class*="highlight"]:not(.selectedCell),
+  .ProseMirror-selectednode:not(.selectedCell) {
     background-color: transparent !important;
     border: none !important;
     outline: none !important;

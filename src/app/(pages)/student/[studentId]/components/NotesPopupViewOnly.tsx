@@ -7,6 +7,7 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaStickyNote,
+  FaTimes,
 } from "react-icons/fa";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -14,6 +15,7 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 
 interface NotesPopupViewOnlyProps {
   isOpen: boolean;
+  onClose: () => void;
   groupId: Id<"groupsTable">;
   documentPart: string;
   documentTitle: string;
@@ -29,6 +31,7 @@ interface Note {
 
 const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
   isOpen,
+  onClose,
   groupId,
   documentPart,
   documentTitle,
@@ -111,6 +114,13 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
               <h2 className="text-xl font-semibold text-gray-900">Notes</h2>
               <p className="text-sm text-gray-600 mt-1">{documentTitle}</p>
             </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+              title="Close"
+            >
+              <FaTimes className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Filter Header */}

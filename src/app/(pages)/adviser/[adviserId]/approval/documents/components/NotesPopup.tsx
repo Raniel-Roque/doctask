@@ -23,6 +23,7 @@ import DeleteNoteConfirmation from "./DeleteNoteConfirmation";
 
 interface NotesPopupProps {
   isOpen: boolean;
+  onClose: () => void;
   groupId: Id<"groupsTable">;
   documentPart: string;
   documentTitle: string;
@@ -39,6 +40,7 @@ interface Note {
 
 const NotesPopup: React.FC<NotesPopupProps> = ({
   isOpen,
+  onClose,
   groupId,
   documentPart,
   documentTitle,
@@ -287,6 +289,13 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
               <h2 className="text-xl font-semibold text-gray-900">Notes</h2>
               <p className="text-sm text-gray-600 mt-1">{documentTitle}</p>
             </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+              title="Close"
+            >
+              <FaTimes className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Filter Header */}

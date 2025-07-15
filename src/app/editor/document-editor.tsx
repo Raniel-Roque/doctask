@@ -66,6 +66,7 @@ export const DocumentEditor = ({
           capstoneTitle={capstoneTitle}
           onOpenVersionHistory={handleOpenVersionHistory}
           backUrl={backUrl}
+          onManualSave={saveToDatabase}
         />
         {(isEditable || toolbarMode === "adviserViewOnly") && (
           <Toolbar toolbarMode={toolbarMode} />

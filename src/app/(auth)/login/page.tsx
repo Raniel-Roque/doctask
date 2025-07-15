@@ -117,42 +117,7 @@ const LoginPage = () => {
     );
   }
 
-  const checkCodeRateLimit = (
-    email: string,
-  ): { allowed: boolean; message?: string } => {
-    const rateLimitKey = `rateLimit_${email}`;
-    const timerKey = `resendTimer_${email}`;
-    const now = Date.now();
-    // Timer check (2 min)
-    const storedTimer = localStorage.getItem(timerKey);
-    if (storedTimer) {
-      const { resetTime } = JSON.parse(storedTimer);
-      if (now < resetTime) {
-        const remaining = Math.ceil((resetTime - now) / 1000);
-        const min = Math.floor(remaining / 60);
-        const sec = (remaining % 60).toString().padStart(2, "0");
-        return {
-          allowed: false,
-          message: `Please wait ${min}:${sec} before requesting another code.`,
-        };
-      }
-    }
-    // Rate limit check (3 per 5 min)
-    const rateLimitData = localStorage.getItem(rateLimitKey);
-    if (rateLimitData) {
-      const { count, resetTime } = JSON.parse(rateLimitData);
-      if (now < resetTime && count >= 3) {
-        const remaining = Math.ceil((resetTime - now) / 1000);
-        const min = Math.floor(remaining / 60);
-        const sec = (remaining % 60).toString().padStart(2, "0");
-        return {
-          allowed: false,
-          message: `Rate limit exceeded. Try again in ${min}:${sec}.`,
-        };
-      }
-    }
-    return { allowed: true };
-  };
+
 
   const updateCodeRateLimit = (email: string) => {
     const rateLimitKey = `rateLimit_${email}`;
@@ -187,24 +152,11 @@ const LoginPage = () => {
     e.preventDefault();
     if (!isLoaded) return;
 
-    // Rate limit check
+    // Convert email to lowercase only when submitting
     const emailToCheck = email.toLowerCase();
-    const rateLimitResult = checkCodeRateLimit(emailToCheck);
-    if (!rateLimitResult.allowed) {
-      setNotification({
-        message:
-          rateLimitResult.message ||
-          "Please wait before requesting another code.",
-        type: "error",
-      });
-      return;
-    }
 
     try {
       setLoading(true);
-
-      // Convert email to lowercase only when submitting
-      const emailToCheck = email.toLowerCase();
 
       // Check if email exists in our database
       const response = await fetch("/api/convex/get-user-by-email", {

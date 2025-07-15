@@ -36,6 +36,8 @@ import {
 import { BsFilePdf, BsFiletypeDocx } from "react-icons/bs";
 import { useEditorStore } from "@/store/use-editor-store";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { CloudSavingIndicator } from "./cloud-saving-indicator";
+import { Avatars } from "./avatars";
 
 interface NavbarProps {
   title?: string;
@@ -44,6 +46,7 @@ interface NavbarProps {
   capstoneTitle?: string;
   onOpenVersionHistory?: () => void;
   backUrl?: string;
+  onManualSave?: (isManualSave?: boolean) => Promise<void>;
 }
 
 interface NotificationState {
@@ -58,6 +61,7 @@ export const Navbar = ({
   capstoneTitle = "",
   onOpenVersionHistory,
   backUrl,
+  onManualSave,
 }: NavbarProps) => {
   const [selectedRows, setSelectedRows] = useState(1);
   const [selectedCols, setSelectedCols] = useState(1);
@@ -220,7 +224,7 @@ export const Navbar = ({
           font-size: 11pt !important;
         }
         
-        /* Hide any remaining unwanted elements */
+        /* Hide any remaining unwanted elements - ONLY within the PDF container */
         .temp-pdf-container [class*="lb-"],
         .temp-pdf-container [class*="liveblocks-"],
         .temp-pdf-container [class*="cursor"],
@@ -465,6 +469,9 @@ export const Navbar = ({
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <div className="text-lg font-semibold">{title}</div>
+              {!viewOnly && (
+                <CloudSavingIndicator onManualSave={onManualSave} />
+              )}
             </div>
             <Menubar className="border-none bg-transparent shadow-none h-auto p-0">
               {/* FILE */}
@@ -654,6 +661,11 @@ export const Navbar = ({
               )}
             </Menubar>
           </div>
+        </div>
+        
+        {/* User avatars on the right side */}
+        <div className="pr-4 py-1 flex items-center gap-2">
+          <Avatars />
         </div>
       </nav>
     </>
