@@ -227,7 +227,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     setFormData((prev) => ({
       ...prev,
       [name]: sanitizeInput(value, {
-        trim: true,
+        trim: false, // Don't trim during input to allow spaces
         removeHtml: true,
         escapeSpecialChars: true,
         maxLength: VALIDATION_RULES.text.maxLength,
@@ -240,7 +240,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   ) => {
     setProjectManagerSearch(
       sanitizeInput(e.target.value, {
-        trim: true,
+        trim: false, // Don't trim during search to allow spaces
         removeHtml: true,
         escapeSpecialChars: true,
       }),
@@ -250,7 +250,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   const handleMemberSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMemberSearch(
       sanitizeInput(e.target.value, {
-        trim: true,
+        trim: false, // Don't trim during search to allow spaces
         removeHtml: true,
         escapeSpecialChars: true,
       }),
@@ -260,8 +260,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   const handleAdviserSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAdviserSearch(
       sanitizeInput(e.target.value, {
-        trim: true,
-        removeHtml: true,
+        trim: false, // Don't trim during search to allow spaces
         escapeSpecialChars: true,
       }),
     );

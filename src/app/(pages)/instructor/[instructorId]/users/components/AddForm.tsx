@@ -123,7 +123,7 @@ export const AddForm = ({
       });
     } else {
       const sanitizedValue = sanitizeInput(value, {
-        trim: true,
+        trim: false, // Don't trim during input to allow spaces
         removeHtml: true,
         escapeSpecialChars: true,
         maxLength:
@@ -151,7 +151,7 @@ export const AddForm = ({
   const handleRoleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRoleSearch(
       sanitizeInput(e.target.value, {
-        trim: true,
+        trim: false, // Don't trim during search to allow spaces
         removeHtml: true,
         escapeSpecialChars: true,
       }),
@@ -171,15 +171,24 @@ export const AddForm = ({
     e.preventDefault();
     e.stopPropagation();
 
-    // Validate form
-    const errors = validateUserForm(formData);
+    // Trim data before submission
+    const trimmedFormData = {
+      ...formData,
+      first_name: formData.first_name.trim(),
+      middle_name: formData.middle_name.trim(),
+      last_name: formData.last_name.trim(),
+      email: formData.email.trim(),
+    };
+
+    // Validate form with trimmed data
+    const errors = validateUserForm(trimmedFormData);
     if (errors) {
       setValidationErrors(errors);
       return;
     }
 
-    // Additional validation using SanitizeInput
-    const nameValidation = validateInput(formData.first_name, "name");
+    // Additional validation using SanitizeInput with trimmed data
+    const nameValidation = validateInput(trimmedFormData.first_name, "name");
     if (!nameValidation.isValid) {
       setValidationErrors((prev) => ({
         ...prev,
@@ -188,7 +197,7 @@ export const AddForm = ({
       return;
     }
 
-    const emailValidation = validateInput(formData.email, "email");
+    const emailValidation = validateInput(trimmedFormData.email, "email");
     if (!emailValidation.isValid) {
       setValidationErrors((prev) => ({
         ...prev,
@@ -197,6 +206,8 @@ export const AddForm = ({
       return;
     }
 
+    // Update form data with trimmed values before submission
+    onFormDataChange(trimmedFormData);
     onSubmit();
   };
 

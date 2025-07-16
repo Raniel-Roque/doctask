@@ -49,7 +49,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
           onChange={(e) =>
             setNewPassword(
               sanitizeInput(e.target.value, {
-                trim: true,
+                trim: false, // Don't trim during input to allow spaces
                 removeHtml: true,
                 escapeSpecialChars: true,
               }),

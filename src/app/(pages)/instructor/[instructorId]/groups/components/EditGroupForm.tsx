@@ -225,7 +225,7 @@ export default function EditGroupForm({
     setFormData((prev) => ({
       ...prev,
       [name]: sanitizeInput(value, {
-        trim: true,
+        trim: false, // Don't trim during input to allow spaces
         removeHtml: true,
         escapeSpecialChars: true,
         maxLength: VALIDATION_RULES.text.maxLength,

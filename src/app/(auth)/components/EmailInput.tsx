@@ -22,9 +22,9 @@ const EmailInput: React.FC<EmailInputProps> = ({
   onAutocomplete,
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only sanitize HTML and special chars, but preserve case
+    // Only sanitize HTML and special chars, but preserve case and spaces
     const sanitizedValue = sanitizeInput(e.target.value, {
-      trim: true,
+      trim: false, // Don't trim during input to allow spaces
       removeHtml: true,
       escapeSpecialChars: true,
       preserveCase: true,

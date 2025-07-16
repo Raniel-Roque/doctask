@@ -26,7 +26,7 @@ export const sanitizeInput = (
   }
 
   const {
-    trim = true,
+    trim = false, // Changed default to false to preserve spaces during input
     removeHtml = true,
     escapeSpecialChars = true,
     maxLength,

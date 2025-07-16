@@ -45,14 +45,19 @@ const ResetCodeInput: React.FC<ResetCodeInputProps> = ({
       <div className="relative">
         <input
           type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={6}
           required
           value={code}
           onChange={(e) =>
             setCode(
               sanitizeInput(e.target.value, {
-                trim: true,
+                trim: false, // Don't trim during input to allow spaces
                 removeHtml: true,
                 escapeSpecialChars: true,
+                maxLength: 6, // Limit to 6 characters
+                allowedPattern: /^[0-9]*$/, // Only allow numbers 0-9
               }),
             )
           }
