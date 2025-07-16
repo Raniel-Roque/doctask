@@ -219,13 +219,12 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           const formValue = form[key] ?? "";
           if (isFieldChanged(key, formValue)) {
             if (key === "gender" || key === "civilStatus") {
-              changedFields[key] =
-                formValue === "" ? undefined : Number(formValue);
+              changedFields[key] = formValue === "" ? undefined : Number(formValue);
             } else if (key === "contact") {
               changedFields[key] = formValue;
             } else {
               changedFields[key] =
-                formValue === "" ? "" : sanitizeInput(formValue);
+                formValue === "" ? undefined : sanitizeInput(formValue);
             }
           }
         }
@@ -234,7 +233,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           const formValue = form[key] ?? "";
           if (isFieldChanged(key, formValue)) {
             changedFields[key] =
-              formValue === "" ? "" : sanitizeInput(formValue);
+              formValue === "" ? undefined : sanitizeInput(formValue);
           }
         }
       }

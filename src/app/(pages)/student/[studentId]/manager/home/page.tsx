@@ -77,6 +77,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
   const isLoading =
     user === undefined ||
     studentGroup === undefined ||
+    (studentGroup?.group_id && groupDetails === undefined) ||
     (studentGroup?.group_id && latestDocuments === undefined) ||
     (studentGroup?.group_id && taskAssignments === undefined) ||
     (groupDetails?.adviser_id && adviser === undefined) ||

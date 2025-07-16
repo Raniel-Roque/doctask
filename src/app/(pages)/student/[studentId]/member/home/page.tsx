@@ -48,7 +48,7 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
   const isLoading =
     user === undefined ||
     studentGroup === undefined ||
-    groupDetails === undefined ||
+    (studentGroup?.group_id && groupDetails === undefined) ||
     (studentGroup?.group_id && latestDocuments === undefined) ||
     (studentGroup?.group_id && taskAssignments === undefined) ||
     (groupDetails?.adviser_id && adviser === undefined) ||
@@ -56,7 +56,7 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
 
   // Adviser UI logic for member
   const isLoadingAdviser =
-    groupDetails === undefined ||
+    (studentGroup?.group_id && groupDetails === undefined) ||
     (groupDetails?.adviser_id
       ? adviser === undefined
       : groupDetails?.requested_adviser
