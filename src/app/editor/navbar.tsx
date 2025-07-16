@@ -410,8 +410,7 @@ export const Navbar = ({
                   }),
                 );
               }
-            } catch (error) {
-              console.error("Failed to load image:", error);
+            } catch {
             }
           }
         } else {

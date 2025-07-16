@@ -182,8 +182,7 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                     }),
                   );
                 }
-              } catch (error) {
-                console.error("Failed to load image:", error);
+              } catch  {
               }
             }
           } else {
@@ -229,8 +228,7 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
         message: "Document downloaded successfully!",
         type: "success",
       });
-    } catch (error) {
-      console.error("Failed to download DOCX:", error);
+    } catch {
       setNotification({
         message: "Failed to download document. Please try again.",
         type: "error",

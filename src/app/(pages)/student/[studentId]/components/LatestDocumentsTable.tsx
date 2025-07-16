@@ -384,8 +384,7 @@ export const LatestDocumentsTable = ({
         message: `All documents downloaded successfully as ${format.toUpperCase()}!`,
         type: "success",
       });
-    } catch (error) {
-      console.error("Failed to download bulk documents:", error);
+    } catch {
       setNotification({
         message: "Failed to download documents. Please try again.",
         type: "error",
@@ -470,8 +469,7 @@ export const LatestDocumentsTable = ({
                   }),
                 );
               }
-            } catch (error) {
-              console.error("Failed to load image:", error);
+            } catch {
             }
           }
         } else if (element.tagName === "H1") {
@@ -819,8 +817,7 @@ export const LatestDocumentsTable = ({
                     }),
                   );
                 }
-              } catch (error) {
-                console.error("Failed to load image:", error);
+              } catch {
               }
             }
           } else {
@@ -866,8 +863,7 @@ export const LatestDocumentsTable = ({
         message: "Document downloaded successfully!",
         type: "success",
       });
-    } catch (error) {
-      console.error("Failed to download DOCX:", error);
+    } catch {
       setNotification({
         message: "Failed to download document. Please try again.",
         type: "error",

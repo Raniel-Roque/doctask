@@ -692,8 +692,7 @@ export const TaskAssignmentTable = ({
                     }),
                   );
                 }
-              } catch (error) {
-                console.error("Failed to load image:", error);
+              } catch {
               }
             }
           } else {
@@ -739,8 +738,7 @@ export const TaskAssignmentTable = ({
         message: "Document downloaded successfully!",
         type: "success",
       });
-    } catch (error) {
-      console.error("Failed to download DOCX:", error);
+    } catch {
       setNotification({
         message: "Failed to download document. Please try again.",
         type: "error",

@@ -308,7 +308,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       // Try to sign out with fallback navigation and timeout
       const navigationTimeout = setTimeout(() => {
         localStorage.setItem("showRestoreBanner", "true");
-        console.warn("Navigation timeout, forcing redirect");
         window.location.href = "/login";
       }, 5000); // 5 second timeout
 
@@ -318,14 +317,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         // If signOut succeeds, navigate
         localStorage.setItem("showRestoreBanner", "true");
         router.push("/login");
-      } catch (signOutError) {
+      } catch {
         clearTimeout(navigationTimeout);
         localStorage.setItem("showRestoreBanner", "true");
-        console.warn(
-          "Sign out failed, using fallback navigation:",
-          signOutError,
-        );
-        // Fallback: force navigation even if sign out fails
         window.location.href = "/login";
       }
     } catch {

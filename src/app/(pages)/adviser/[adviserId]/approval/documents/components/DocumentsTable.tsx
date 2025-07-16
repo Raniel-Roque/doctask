@@ -336,8 +336,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                     }),
                   );
                 }
-              } catch (error) {
-                console.error("Failed to load image:", error);
+              } catch {
               }
             }
           } else {
@@ -383,8 +382,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
         message: "Document downloaded successfully!",
         type: "success",
       });
-    } catch (error) {
-      console.error("Failed to download DOCX:", error);
+    } catch {
       setNotification({
         message: "Failed to download document. Please try again.",
         type: "error",
