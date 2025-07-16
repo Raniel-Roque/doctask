@@ -166,7 +166,7 @@ export async function POST(request: Request) {
     const instructor = await convex.query(api.fetch.getUserById, {
       id: instructorId as Id<"users">,
     });
-    
+
     if (!instructor) {
       return NextResponse.json(
         { error: "Instructor not found" },
@@ -475,15 +475,15 @@ export async function POST(request: Request) {
             .map((noteId: string) => oldNoteIdToNewNoteId.get(noteId))
             .filter(Boolean)
         : undefined;
-      
+
       // Check if this is a pre-approved document part
       const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
         status.document_part,
       );
-      
+
       // Use the backup review_status, but ensure pre-approved documents are approved
       const reviewStatus = isPreApproved ? 2 : status.review_status;
-      
+
       await convex.mutation(api.restore.restoreDocumentStatus, {
         group_id: newGroupId,
         document_part: status.document_part,

@@ -131,7 +131,7 @@ export const AddForm = ({
             ? VALIDATION_RULES.email.maxLength
             : VALIDATION_RULES.name.maxLength,
       });
-      
+
       onFormDataChange({
         ...formData,
         [name]: sanitizedValue,

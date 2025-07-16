@@ -353,28 +353,92 @@ export const Navbar = ({
     if (!editor) return;
 
     // Using the more secure 'docx' library
-    const { Document, Packer, Paragraph, TextRun } = await import("docx");
+    const { Document, Packer, Paragraph, TextRun, ImageRun } = await import(
+      "docx"
+    );
 
-    const textContent = editor.getText();
+    const htmlContent = editor.getHTML();
+
+    // Create a temporary DOM element to parse the HTML
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = htmlContent;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const children: any[] = [];
+
+    // Process each child node
+    for (const node of Array.from(tempDiv.childNodes)) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        // Handle plain text
+        const text = node.textContent?.trim();
+        if (text) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: text,
+                  font: "Times New Roman",
+                  size: 22, // 11pt
+                }),
+              ],
+            }),
+          );
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+
+        if (element.tagName === "IMG") {
+          // Handle images
+          const img = element as HTMLImageElement;
+          if (img.src) {
+            try {
+              const response = await fetch(img.src);
+              if (response.ok) {
+                const arrayBuffer = await response.arrayBuffer();
+                children.push(
+                  new Paragraph({
+                    children: [
+                      new ImageRun({
+                        data: new Uint8Array(arrayBuffer),
+                        transformation: {
+                          width: 400,
+                          height: 300,
+                        },
+                        type: "png",
+                      }),
+                    ],
+                  }),
+                );
+              }
+            } catch (error) {
+              console.error("Failed to load image:", error);
+            }
+          }
+        } else {
+          // Handle other elements by extracting their text content
+          const text = element.textContent?.trim();
+          if (text) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: text,
+                    font: "Times New Roman",
+                    size: 22, // 11pt
+                  }),
+                ],
+              }),
+            );
+          }
+        }
+      }
+    }
 
     const doc = new Document({
       sections: [
         {
           properties: {},
-          children: textContent.split("\n").map(
-            (line) =>
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: line || " ",
-                    font: "Times New Roman",
-                    size: 22, // 11pt
-                  }),
-                ],
-                alignment: "both", // Justified
-                spacing: { line: 360 }, // 1.5 line spacing
-              }),
-          ),
+          children: children,
         },
       ],
     });
@@ -662,7 +726,7 @@ export const Navbar = ({
             </Menubar>
           </div>
         </div>
-        
+
         {/* User avatars on the right side */}
         <div className="pr-4 py-1 flex items-center gap-2">
           <Avatars />

@@ -78,12 +78,16 @@ const LoginPage = () => {
 
   useEffect(() => {
     // Check for restore banner flag in localStorage
-    if (typeof window !== 'undefined' && localStorage.getItem('showRestoreBanner') === 'true') {
+    if (
+      typeof window !== "undefined" &&
+      localStorage.getItem("showRestoreBanner") === "true"
+    ) {
       setNotification({
-        message: 'Database has been restored successfully! Please check your email for the new password.',
-        type: 'success',
+        message:
+          "Database has been restored successfully! Please check your email for the new password.",
+        type: "success",
       });
-      localStorage.removeItem('showRestoreBanner');
+      localStorage.removeItem("showRestoreBanner");
     }
   }, []);
 
@@ -116,8 +120,6 @@ const LoginPage = () => {
       </div>
     );
   }
-
-
 
   const updateCodeRateLimit = (email: string) => {
     const rateLimitKey = `rateLimit_${email}`;
@@ -457,7 +459,7 @@ const LoginPage = () => {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
-      
+
       // Check for compromised password error first
       if (
         errorMessage.toLowerCase().includes("compromised") ||
@@ -467,7 +469,8 @@ const LoginPage = () => {
         errorMessage.toLowerCase().includes("password has been compromised")
       ) {
         setNotification({
-          message: "This password has been compromised in a data breach. Please use forgot password.",
+          message:
+            "This password has been compromised in a data breach. Please use forgot password.",
           type: "error",
         });
       } else if (errorMessage.includes("Your account is locked")) {

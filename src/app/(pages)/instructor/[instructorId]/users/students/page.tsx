@@ -26,7 +26,6 @@ import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { apiRequest } from "@/lib/utils";
 import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
 
-
 // =========================================
 // Types
 // =========================================
@@ -343,7 +342,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           clerkId: editingUser.clerk_id,
           email: editFormData.email.trim(),
           firstName: toSentenceCase(editFormData.first_name.trim()),
-          middleName: editFormData.middle_name?.trim() 
+          middleName: editFormData.middle_name?.trim()
             ? toSentenceCase(editFormData.middle_name.trim())
             : "",
           lastName: toSentenceCase(editFormData.last_name.trim()),
@@ -455,22 +454,28 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             trim: true,
             removeHtml: true,
           }),
-          firstName: toSentenceCase(sanitizeInput(addFormData.first_name, {
-            maxLength: 50,
-            trim: true,
-            removeHtml: true,
-          })),
-          lastName: toSentenceCase(sanitizeInput(addFormData.last_name, {
-            maxLength: 50,
-            trim: true,
-            removeHtml: true,
-          })),
+          firstName: toSentenceCase(
+            sanitizeInput(addFormData.first_name, {
+              maxLength: 50,
+              trim: true,
+              removeHtml: true,
+            }),
+          ),
+          lastName: toSentenceCase(
+            sanitizeInput(addFormData.last_name, {
+              maxLength: 50,
+              trim: true,
+              removeHtml: true,
+            }),
+          ),
           middleName: addFormData.middle_name
-            ? toSentenceCase(sanitizeInput(addFormData.middle_name, {
-                maxLength: 50,
-                trim: true,
-                removeHtml: true,
-              }))
+            ? toSentenceCase(
+                sanitizeInput(addFormData.middle_name, {
+                  maxLength: 50,
+                  trim: true,
+                  removeHtml: true,
+                }),
+              )
             : undefined,
           role: 0, // 0 = student
           subrole: addFormData.subrole,

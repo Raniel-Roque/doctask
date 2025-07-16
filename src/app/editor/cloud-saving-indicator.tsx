@@ -21,13 +21,21 @@ export const CloudSavingIndicator = ({
   onManualSave,
   className = "",
 }: CloudSavingIndicatorProps) => {
-  const { isSaving, lastSaved, saveError, setIsSaving, setLastSaved, setSaveError } = useEditorStore();
+  const {
+    isSaving,
+    lastSaved,
+    saveError,
+    setIsSaving,
+    setLastSaved,
+    setSaveError,
+  } = useEditorStore();
   const status = useStatus();
   const [showTooltip, setShowTooltip] = useState(false);
   const [showSavedText, setShowSavedText] = useState(false);
 
   // Determine what to show based on various states
-  const showLoader = isSaving || status === "connecting" || status === "reconnecting";
+  const showLoader =
+    isSaving || status === "connecting" || status === "reconnecting";
   const showError = saveError || status === "disconnected";
   const showSuccess = !showError && !showLoader && lastSaved;
 
@@ -82,9 +90,7 @@ export const CloudSavingIndicator = ({
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
             >
-              {showError && (
-                <BsCloudSlash className="w-4 h-4 text-red-500" />
-              )}
+              {showError && <BsCloudSlash className="w-4 h-4 text-red-500" />}
               {!showError && !showLoader && (
                 <BsCloudCheck className="w-4 h-4 text-green-600" />
               )}
@@ -103,7 +109,7 @@ export const CloudSavingIndicator = ({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      
+
       {/* Text indicators */}
       {showLoader && (
         <span className="text-sm text-blue-600 font-medium">Saving...</span>
@@ -113,4 +119,4 @@ export const CloudSavingIndicator = ({
       )}
     </div>
   );
-}; 
+};

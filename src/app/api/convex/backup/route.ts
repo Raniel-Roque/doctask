@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const instructor = await convex.query(api.fetch.getUserById, {
       id: instructorId as Id<"users">,
     });
-    
+
     if (!instructor) {
       return NextResponse.json(
         { error: "Instructor not found" },

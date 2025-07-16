@@ -48,7 +48,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const { clerkId, email, firstName, lastName, middleName, instructorId } = body;
+    const { clerkId, email, firstName, lastName, middleName, instructorId } =
+      body;
 
     // Validate required fields before sanitization
     if (!clerkId || !email || !firstName || !lastName || !instructorId) {
