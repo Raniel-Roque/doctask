@@ -1138,7 +1138,22 @@ const LoginPage = () => {
             </>
           )}
         </div>
-        {/* College of Computer Studies Text - always at the bottom right of the red container */}
+        {/* Download Button - bottom left */}
+        {typeof window !== 'undefined' && !window.electron && (
+          <button
+            onClick={() => {
+              const link = document.createElement('a');
+              link.href = 'https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe';
+              link.download = 'DocTask-Setup-1.0.0.exe';
+              link.click();
+            }}
+            className="absolute bottom-0 left-0 mb-4 ml-4 text-sm text-red-200 font-light underline italic hover:text-white transition-colors duration-200 select-none"
+          >
+            Download Desktop App
+          </button>
+        )}
+        
+        {/* College of Computer Studies Text - bottom right */}
         <div className="absolute bottom-0 right-0 mb-4 mr-4 text-sm text-red-200 font-light select-none">
           College of Computer Studies
         </div>

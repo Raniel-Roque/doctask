@@ -46,3 +46,11 @@ test-security.js
 RATE_LIMITING.md
 SECURITY.md
 TERMS_AGREEMENT_SETUP.md
+
+# Desktop app installers (too large for Git)
+public/downloads/*.exe
+public/downloads/*.dmg
+public/downloads/*.AppImage
+public/downloads/*.deb
+public/downloads/*.rpm
+public/downloads/*.snap
