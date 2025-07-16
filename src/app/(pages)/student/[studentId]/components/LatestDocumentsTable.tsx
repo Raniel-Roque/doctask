@@ -98,6 +98,7 @@ const STATUS_LABELS: { [key: number]: string } = {
 
 // Define the proper chapter order for sorting
 const CHAPTER_ORDER = [
+  "title_page",
   "acknowledgment",
   "abstract",
   "table_of_contents",
@@ -107,8 +108,10 @@ const CHAPTER_ORDER = [
   "chapter_4",
   "chapter_5",
   "references",
+  "appendix_a",
   "appendix_b",
   "appendix_c",
+  "appendix_d",
   "appendix_e",
   "appendix_f",
   "appendix_g",
@@ -164,6 +167,13 @@ export const LatestDocumentsTable = ({
   const [cancelingSubmission, setCancelingSubmission] = useState<string | null>(
     null,
   );
+
+  // Add loading state for DOCX download
+  const [downloadingDocx, setDownloadingDocx] = useState<string | null>(null);
+
+  // Add state for bulk download popup
+  const [showBulkDownloadPopup, setShowBulkDownloadPopup] = useState(false);
+  const [bulkDownloading, setBulkDownloading] = useState(false);
 
   const handleToggleDetails = (detailType: "documents" | "tasks") => {
     setOpenDetails((prev) => (prev === detailType ? null : detailType));
@@ -294,16 +304,578 @@ export const LatestDocumentsTable = ({
     }
   };
 
-  // Filter documents based on selected status and task status
-  const filteredDocuments = documents.filter((doc) => {
-    const docStatusMatch =
-      selectedStatus === "all" || doc.status === parseInt(selectedStatus);
-    const taskStatus = getTaskStatus(doc);
-    const taskStatusMatch =
-      selectedTaskStatus === "all" ||
-      taskStatus === parseInt(selectedTaskStatus);
-    return docStatusMatch && taskStatusMatch;
-  });
+  // Helper function to generate consistent filename format
+  const generateFilename = (title: string, extension: string) => {
+    const now = new Date();
+    const dateTimeString = now.toISOString().replace(/[:.]/g, "-").slice(0, -5);
+    const sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, "");
+    const sanitizedCapstone = (capstoneTitle || "").replace(
+      /[^a-zA-Z0-9]/g,
+      "",
+    );
+    return `${sanitizedTitle}-${sanitizedCapstone}-${dateTimeString}.${extension}`;
+  };
+
+  // Helper function to generate bulk filename
+  const generateBulkFilename = (extension: string) => {
+    const now = new Date();
+    const dateTimeString = now.toISOString().replace(/[:.]/g, "-").slice(0, -5);
+    const sanitizedCapstone = (capstoneTitle || "Capstone").replace(
+      /[^a-zA-Z0-9]/g,
+      "",
+    );
+    return `${sanitizedCapstone}-Complete-${dateTimeString}.${extension}`;
+  };
+
+  // Bulk download function
+  const handleBulkDownload = async (format: "docx" | "pdf") => {
+    if (!documents || documents.length === 0) {
+      setNotification({
+        message: "No documents available for download.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setBulkDownloading(true);
+      setShowBulkDownloadPopup(false);
+
+      // Sort documents by chapter order
+      const sortedDocuments = documents.sort((a, b) => {
+        const orderA = CHAPTER_ORDER.indexOf(a.chapter);
+        const orderB = CHAPTER_ORDER.indexOf(b.chapter);
+        if (orderA === -1 && orderB === -1)
+          return a.chapter.localeCompare(b.chapter);
+        if (orderA === -1) return 1;
+        if (orderB === -1) return -1;
+        return orderA - orderB;
+      });
+
+      // Create zip file
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+
+      // Add individual documents
+      for (const doc of sortedDocuments) {
+        if (doc.content) {
+          if (format === "docx") {
+            const docxBlob = await createDocxDocument(doc);
+            zip.file(`${doc.title}.docx`, docxBlob);
+          } else {
+            const pdfBlob = await createPdfDocument(doc);
+            zip.file(`${doc.title}.pdf`, pdfBlob);
+          }
+        }
+      }
+
+      // Note: Only individual documents are included in the zip file
+
+      // Generate and download zip
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${generateBulkFilename("zip")}`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setNotification({
+        message: `All documents downloaded successfully as ${format.toUpperCase()}!`,
+        type: "success",
+      });
+    } catch (error) {
+      console.error("Failed to download bulk documents:", error);
+      setNotification({
+        message: "Failed to download documents. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setBulkDownloading(false);
+    }
+  };
+
+  // Helper function to create DOCX document
+  const createDocxDocument = async (doc: {
+    title: string;
+    content: string;
+  }) => {
+    const { Document, Packer, Paragraph, TextRun, ImageRun, PageBreak } =
+      await import("docx");
+
+    const htmlContent = doc.content;
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = htmlContent;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const children: any[] = [];
+
+    // Process each child node
+    for (const node of Array.from(tempDiv.childNodes)) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.trim();
+        if (text) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: text,
+                  font: "Times New Roman",
+                  size: 22, // 11pt
+                }),
+              ],
+            }),
+          );
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+
+        // Handle page breaks
+        if (element.className === "page-break") {
+          children.push(new PageBreak());
+          continue;
+        }
+
+        // Handle document sections (add spacing before new sections)
+        if (element.className === "document-section") {
+          // Add some spacing before new sections
+          children.push(
+            new Paragraph({
+              spacing: {
+                before: 400, // 20pt spacing
+              },
+            }),
+          );
+        }
+
+        if (element.tagName === "IMG") {
+          const img = element as HTMLImageElement;
+          if (img.src) {
+            try {
+              const response = await fetch(img.src);
+              if (response.ok) {
+                const arrayBuffer = await response.arrayBuffer();
+                children.push(
+                  new Paragraph({
+                    children: [
+                      new ImageRun({
+                        data: new Uint8Array(arrayBuffer),
+                        transformation: {
+                          width: 400,
+                          height: 300,
+                        },
+                        type: "png",
+                      }),
+                    ],
+                  }),
+                );
+              }
+            } catch (error) {
+              console.error("Failed to load image:", error);
+            }
+          }
+        } else if (element.tagName === "H1") {
+          // Handle headings with proper formatting
+          const text = element.textContent?.trim();
+          if (text) {
+            children.push(
+              new Paragraph({
+                spacing: {
+                  before: 400, // 20pt spacing before heading
+                  after: 200, // 10pt spacing after heading
+                },
+                children: [
+                  new TextRun({
+                    text: text,
+                    font: "Times New Roman",
+                    size: 32, // 16pt for headings
+                    bold: true,
+                  }),
+                ],
+              }),
+            );
+          }
+        } else {
+          const text = element.textContent?.trim();
+          if (text) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: text,
+                    font: "Times New Roman",
+                    size: 22, // 11pt
+                  }),
+                ],
+              }),
+            );
+          }
+        }
+      }
+    }
+
+    const docxDoc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: children,
+        },
+      ],
+    });
+
+    return await Packer.toBlob(docxDoc);
+  };
+
+  // Helper function to create PDF document
+  const createPdfDocument = async (doc: { title: string; content: string }) => {
+    const jsPDF = (await import("jspdf")).default;
+    const html2canvas = (await import("html2canvas")).default;
+
+    const tempContainer = document.createElement("div");
+    tempContainer.style.position = "absolute";
+    tempContainer.style.left = "-9999px";
+    tempContainer.style.top = "0";
+    tempContainer.style.width = "816px";
+    tempContainer.style.minHeight = "1056px";
+    tempContainer.style.background = "white";
+    tempContainer.style.paddingLeft = "144px";
+    tempContainer.style.paddingRight = "96px";
+    tempContainer.style.paddingTop = "96px";
+    tempContainer.style.paddingBottom = "96px";
+    tempContainer.style.fontFamily = "Times New Roman, serif";
+    tempContainer.style.fontSize = "11pt";
+    tempContainer.style.lineHeight = "1.5";
+    tempContainer.style.color = "black";
+    tempContainer.style.boxSizing = "border-box";
+    tempContainer.style.textAlign = "justify";
+
+    const cleanContent = document.createElement("div");
+    cleanContent.className = "ProseMirror";
+    cleanContent.style.border = "none";
+    cleanContent.style.outline = "none";
+    cleanContent.style.boxShadow = "none";
+    cleanContent.style.background = "white";
+    cleanContent.style.margin = "0";
+    cleanContent.style.padding = "0";
+    cleanContent.style.fontFamily = "Times New Roman, serif";
+    cleanContent.style.fontSize = "11pt";
+    cleanContent.style.lineHeight = "1.5";
+    cleanContent.style.width = "100%";
+
+    let editorHTML = doc.content;
+    editorHTML = editorHTML
+      .replace(/class="[^"]*lb-[^"]*"/g, "")
+      .replace(/class="[^"]*liveblocks[^"]*"/g, "")
+      .replace(/class="[^"]*cursor[^"]*"/g, "")
+      .replace(/class="[^"]*floating[^"]*"/g, "")
+      .replace(/data-liveblocks[^=]*="[^"]*"/g, "")
+      .replace(/data-thread[^=]*="[^"]*"/g, "")
+      .replace(/style="[^"]*position:\s*fixed[^"]*"/g, "")
+      .replace(/style="[^"]*position:\s*absolute[^"]*"/g, "");
+
+    cleanContent.innerHTML = editorHTML;
+
+    const printStyles = document.createElement("style");
+    printStyles.innerHTML = `
+      .temp-pdf-container * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .temp-pdf-container .ProseMirror {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: 'Times New Roman', serif !important;
+        font-size: 11pt !important;
+        line-height: 1.5 !important;
+      }
+      
+      .temp-pdf-container p {
+        margin: 0 0 6pt 0 !important;
+        font-size: 11pt !important;
+        line-height: 1.5 !important;
+        color: black !important;
+      }
+      
+      .temp-pdf-container h1, .temp-pdf-container h2, .temp-pdf-container h3, 
+      .temp-pdf-container h4, .temp-pdf-container h5, .temp-pdf-container h6 {
+        margin: 12pt 0 6pt 0 !important;
+        font-weight: bold !important;
+        color: black !important;
+      }
+      
+      .temp-pdf-container h1 { font-size: 14pt !important; }
+      .temp-pdf-container h2 { font-size: 13pt !important; }
+      .temp-pdf-container h3 { font-size: 12pt !important; }
+      
+      .temp-pdf-container img {
+        max-width: 100% !important;
+        height: auto !important;
+        margin: 12pt 0 !important;
+        outline: none !important;
+        border: none !important;
+        display: block !important;
+      }
+      
+      .temp-pdf-container table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 12pt 0 !important;
+      }
+      
+      .temp-pdf-container table td, .temp-pdf-container table th {
+        border: 1px solid black !important;
+        padding: 6pt 8pt !important;
+        font-size: 11pt !important;
+      }
+      
+      .temp-pdf-container [class*="lb-"],
+      .temp-pdf-container [class*="liveblocks-"],
+      .temp-pdf-container [class*="cursor"],
+      .temp-pdf-container [class*="floating"],
+      .temp-pdf-container [data-liveblocks],
+      .temp-pdf-container [data-thread] {
+        display: none !important;
+      }
+      
+      /* Page break styles */
+      .temp-pdf-container .page-break {
+        page-break-before: always !important;
+        break-before: page !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+      }
+      
+      .temp-pdf-container .document-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 20pt !important;
+      }
+      
+      .temp-pdf-container .document-section h1 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        margin-top: 20pt !important;
+      }
+    `;
+
+    tempContainer.className = "temp-pdf-container";
+    tempContainer.appendChild(cleanContent);
+
+    document.head.appendChild(printStyles);
+    document.body.appendChild(tempContainer);
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const images = tempContainer.querySelectorAll("img");
+    await Promise.all(
+      Array.from(images).map((img) => {
+        return new Promise((resolve) => {
+          if (img.complete) {
+            resolve(null);
+          } else {
+            img.onload = () => resolve(null);
+            img.onerror = () => resolve(null);
+            setTimeout(() => resolve(null), 3000);
+          }
+        });
+      }),
+    );
+
+    const canvas = await html2canvas(tempContainer, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      logging: false,
+      width: tempContainer.offsetWidth,
+      height: tempContainer.offsetHeight,
+      windowWidth: tempContainer.offsetWidth,
+      windowHeight: tempContainer.offsetHeight,
+    });
+
+    document.body.removeChild(tempContainer);
+    document.head.removeChild(printStyles);
+
+    const imgData = canvas.toDataURL("image/png", 1.0);
+    const pdf = new jsPDF("p", "pt", "letter");
+
+    const pdfWidth = 612;
+    const pdfHeight = 792;
+    const availableWidth = pdfWidth;
+    const availableHeight = pdfHeight;
+
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+
+    const ratio = Math.min(
+      availableWidth / imgWidth,
+      availableHeight / imgHeight,
+    );
+    const scaledWidth = imgWidth * ratio;
+    const scaledHeight = imgHeight * ratio;
+
+    const x = (pdfWidth - scaledWidth) / 2;
+    const y = 0;
+
+    pdf.addImage(imgData, "PNG", x, y, scaledWidth, scaledHeight, "", "FAST");
+
+    let remainingHeight = scaledHeight - availableHeight;
+    let currentY = -availableHeight;
+
+    while (remainingHeight > 0) {
+      pdf.addPage();
+      pdf.addImage(
+        imgData,
+        "PNG",
+        x,
+        currentY,
+        scaledWidth,
+        scaledHeight,
+        "",
+        "FAST",
+      );
+      remainingHeight -= availableHeight;
+      currentY -= availableHeight;
+    }
+
+    return pdf.output("blob");
+  };
+
+  // DOCX download function
+  const handleDownloadDocx = async (doc: Document) => {
+    if (!doc.content) {
+      setNotification({
+        message: "Document content is empty.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setDownloadingDocx(doc._id);
+
+      // Using the more secure 'docx' library
+      const { Document, Packer, Paragraph, TextRun, ImageRun } = await import(
+        "docx"
+      );
+
+      const htmlContent = doc.content;
+
+      // Create a temporary DOM element to parse the HTML
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = htmlContent;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const children: any[] = [];
+
+      // Process each child node
+      for (const node of Array.from(tempDiv.childNodes)) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          // Handle plain text
+          const text = node.textContent?.trim();
+          if (text) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: text,
+                    font: "Times New Roman",
+                    size: 22, // 11pt
+                  }),
+                ],
+              }),
+            );
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const element = node as Element;
+
+          if (element.tagName === "IMG") {
+            // Handle images
+            const img = element as HTMLImageElement;
+            if (img.src) {
+              try {
+                const response = await fetch(img.src);
+                if (response.ok) {
+                  const arrayBuffer = await response.arrayBuffer();
+                  children.push(
+                    new Paragraph({
+                      children: [
+                        new ImageRun({
+                          data: new Uint8Array(arrayBuffer),
+                          transformation: {
+                            width: 400,
+                            height: 300,
+                          },
+                          type: "png",
+                        }),
+                      ],
+                    }),
+                  );
+                }
+              } catch (error) {
+                console.error("Failed to load image:", error);
+              }
+            }
+          } else {
+            // Handle other elements by extracting their text content
+            const text = element.textContent?.trim();
+            if (text) {
+              children.push(
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: text,
+                      font: "Times New Roman",
+                      size: 22, // 11pt
+                    }),
+                  ],
+                }),
+              );
+            }
+          }
+        }
+      }
+
+      const docxDoc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: children,
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(docxDoc);
+
+      // Download the file
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = generateFilename(doc.title, "docx");
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setNotification({
+        message: "Document downloaded successfully!",
+        type: "success",
+      });
+    } catch (error) {
+      console.error("Failed to download DOCX:", error);
+      setNotification({
+        message: "Failed to download document. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setDownloadingDocx(null);
+    }
+  };
 
   // Documents that are view/download only
   const viewOnlyDocuments = ["title_page", "appendix_a", "appendix_d"];
@@ -311,7 +883,43 @@ export const LatestDocumentsTable = ({
   const displayCapstoneTitle =
     capstoneTitle && capstoneTitle.trim() !== ""
       ? capstoneTitle
-      : "Untitled Capstone Document";
+      : "Untitled Capstone Title";
+
+  // Filter and sort documents
+  const filteredDocuments = documents
+    .filter((doc) => {
+      // Filter by status if selected
+      if (selectedStatus !== "all" && doc.status !== parseInt(selectedStatus)) {
+        return false;
+      }
+
+      // Filter by task status if selected
+      if (selectedTaskStatus !== "all") {
+        const taskStatus = getTaskStatus(doc);
+        if (taskStatus !== parseInt(selectedTaskStatus)) {
+          return false;
+        }
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by chapter order first
+      const orderA = CHAPTER_ORDER.indexOf(a.chapter);
+      const orderB = CHAPTER_ORDER.indexOf(b.chapter);
+
+      // If both chapters are in the order list, sort by their position
+      if (orderA !== -1 && orderB !== -1) {
+        return orderA - orderB;
+      }
+
+      // If only one is in the order list, prioritize it
+      if (orderA !== -1) return -1;
+      if (orderB !== -1) return 1;
+
+      // If neither is in the order list, sort alphabetically
+      return a.chapter.localeCompare(b.chapter);
+    });
 
   // Format last modified time
   const formatLastModified = (timestamp?: number) => {
@@ -491,8 +1099,14 @@ export const LatestDocumentsTable = ({
                 <button
                   className="text-gray-600 hover:text-gray-800 transition-colors p-2 border border-gray-200 rounded-full shadow-sm bg-white"
                   title="Download all documents"
+                  onClick={() => setShowBulkDownloadPopup(true)}
+                  disabled={bulkDownloading}
                 >
-                  <FaDownload className="w-4 h-4" />
+                  {bulkDownloading ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <FaDownload className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -882,8 +1496,17 @@ export const LatestDocumentsTable = ({
                         <button
                           className="text-green-600 hover:text-green-800 transition-colors"
                           title="Download Document"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadDocx(doc);
+                          }}
+                          disabled={downloadingDocx === doc._id}
                         >
-                          <FaDownload className="w-4 h-4" />
+                          {downloadingDocx === doc._id ? (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <FaDownload className="w-4 h-4" />
+                          )}
                         </button>
                         {/* Only show Notes and Submit for non-excluded chapters */}
                         {!["title_page", "appendix_a", "appendix_d"].includes(
@@ -975,6 +1598,64 @@ export const LatestDocumentsTable = ({
           type={notification.type}
           onClose={() => setNotification(null)}
         />
+      )}
+
+      {/* Bulk Download Popup */}
+      {showBulkDownloadPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Download All Documents
+              </h3>
+              <button
+                onClick={() => setShowBulkDownloadPopup(false)}
+                className="text-gray-400 hover:text-gray-600"
+                disabled={bulkDownloading}
+              >
+                <FaTimes className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Choose a format to download all documents. The zip file will
+              contain individual documents as separate files.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => handleBulkDownload("docx")}
+                disabled={bulkDownloading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {bulkDownloading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <FaDownload className="w-4 h-4" />
+                )}
+                Download as DOCX
+              </button>
+
+              <button
+                onClick={() => handleBulkDownload("pdf")}
+                disabled={bulkDownloading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {bulkDownloading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <FaDownload className="w-4 h-4" />
+                )}
+                Download as PDF
+              </button>
+            </div>
+
+            <div className="mt-4 text-xs text-gray-500">
+              <p>• Individual documents will be included as separate files</p>
+              <p>• All files will be packaged in a zip archive</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

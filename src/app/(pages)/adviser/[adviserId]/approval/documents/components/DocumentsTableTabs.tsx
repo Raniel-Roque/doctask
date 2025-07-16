@@ -58,6 +58,9 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
     type: "success" | "error" | "info" | "warning";
   } | null>(null);
 
+  // Add loading state for DOCX download
+  const [downloadingDocx, setDownloadingDocx] = useState<string | null>(null);
+
   const getFullName = (user: User) => {
     return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
   };
@@ -98,6 +101,143 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Helper function to generate consistent filename format
+  const generateFilename = (title: string, extension: string) => {
+    const now = new Date();
+    const dateTimeString = now.toISOString().replace(/[:.]/g, "-").slice(0, -5);
+    const sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, "");
+    return `${sanitizedTitle}-${dateTimeString}.${extension}`;
+  };
+
+  // DOCX download function
+  const handleDownloadDocx = async (doc: Document) => {
+    if (!doc.content) {
+      setNotification({
+        message: "Document content is empty.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setDownloadingDocx(doc._id);
+
+      // Using the more secure 'docx' library
+      const { Document, Packer, Paragraph, TextRun, ImageRun } = await import(
+        "docx"
+      );
+
+      const htmlContent = doc.content;
+
+      // Create a temporary DOM element to parse the HTML
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = htmlContent;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const children: any[] = [];
+
+      // Process each child node
+      for (const node of Array.from(tempDiv.childNodes)) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          // Handle plain text
+          const text = node.textContent?.trim();
+          if (text) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: text,
+                    font: "Times New Roman",
+                    size: 22, // 11pt
+                  }),
+                ],
+              }),
+            );
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const element = node as Element;
+
+          if (element.tagName === "IMG") {
+            // Handle images
+            const img = element as HTMLImageElement;
+            if (img.src) {
+              try {
+                const response = await fetch(img.src);
+                if (response.ok) {
+                  const arrayBuffer = await response.arrayBuffer();
+                  children.push(
+                    new Paragraph({
+                      children: [
+                        new ImageRun({
+                          data: new Uint8Array(arrayBuffer),
+                          transformation: {
+                            width: 400,
+                            height: 300,
+                          },
+                          type: "png",
+                        }),
+                      ],
+                    }),
+                  );
+                }
+              } catch (error) {
+                console.error("Failed to load image:", error);
+              }
+            }
+          } else {
+            // Handle other elements by extracting their text content
+            const text = element.textContent?.trim();
+            if (text) {
+              children.push(
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: text,
+                      font: "Times New Roman",
+                      size: 22, // 11pt
+                    }),
+                  ],
+                }),
+              );
+            }
+          }
+        }
+      }
+
+      const docxDoc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: children,
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(docxDoc);
+
+      // Download the file
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = generateFilename(doc.title, "docx");
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setNotification({
+        message: "Document downloaded successfully!",
+        type: "success",
+      });
+    } catch (error) {
+      console.error("Failed to download DOCX:", error);
+      setNotification({
+        message: "Failed to download document. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setDownloadingDocx(null);
+    }
   };
 
   const activeGroup = groups.find((g) => g._id === activeTab);
@@ -264,8 +404,14 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                           <button
                             className="text-green-600 hover:text-green-800 transition-colors"
                             title="Download Document"
+                            onClick={() => handleDownloadDocx(doc)}
+                            disabled={downloadingDocx === doc._id}
                           >
-                            <FaDownload className="w-3 h-3" />
+                            {downloadingDocx === doc._id ? (
+                              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <FaDownload className="w-3 h-3" />
+                            )}
                           </button>
                           <span className="mx-2 text-gray-300 select-none">
                             |
