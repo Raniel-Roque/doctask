@@ -182,6 +182,13 @@ export async function POST(request: Request) {
         password: newPassword,
         skipPasswordChecks: true,
       });
+
+      // Set email verification status based on role (same as create-user)
+      const emailAddress = newUser.emailAddresses[0];
+      await client.emailAddresses.updateEmailAddress(emailAddress.id, {
+        primary: true,
+        verified: convexUser.role === 2 ? true : false,
+      });
     } catch (clerkError) {
       return NextResponse.json(
         {
