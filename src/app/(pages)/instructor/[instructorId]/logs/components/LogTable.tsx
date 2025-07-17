@@ -1193,9 +1193,9 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
-                  className="px-6 py-12 text-center text-gray-500"
+                  className="px-6 py-12 text-center text-gray-500 w-full"
                 >
-                  <div className="flex flex-col items-center justify-center">
+                  <div className="flex flex-col items-center justify-center w-full">
                     <div className="text-lg font-medium mb-2">Loading...</div>
                     <div className="text-sm text-gray-400">Please wait while we fetch the logs</div>
                   </div>
@@ -1205,9 +1205,9 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
-                  className="px-6 py-12 text-center text-gray-500"
+                  className="px-6 py-12 text-center text-gray-500 w-full"
                 >
-                  <div className="flex flex-col items-center justify-center">
+                  <div className="flex flex-col items-center justify-center w-full">
                     <div className="text-lg font-medium mb-2">No logs available</div>
                     <div className="text-sm text-gray-400">There are no logs to display at this time</div>
                   </div>
@@ -1217,11 +1217,10 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
-                  className="px-6 py-12 text-center text-gray-500"
+                  className="px-6 py-12 text-center text-gray-500 w-full"
                 >
-                  <div className="flex flex-col items-center justify-center">
+                  <div className="flex flex-col items-center justify-center w-full">
                     <div className="text-lg font-medium mb-2">No entries found</div>
-                    <div className="text-sm text-gray-400">Try adjusting your filters or search terms</div>
                   </div>
                 </td>
               </tr>
