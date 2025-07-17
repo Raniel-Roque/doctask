@@ -336,8 +336,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                     }),
                   );
                 }
-              } catch {
-              }
+              } catch {}
             }
           } else {
             // Handle other elements by extracting their text content

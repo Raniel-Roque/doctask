@@ -3,5 +3,5 @@ declare global {
     electron?: boolean;
   }
 }
- 
-export {}; 
+
+export {};

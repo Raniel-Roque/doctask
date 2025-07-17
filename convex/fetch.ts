@@ -118,6 +118,18 @@ export const getStudents = query({
   },
 });
 
+export const getInstructors = query({
+  handler: async (ctx) => {
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("role"), 2))
+      .collect()
+      .then((results) => results.filter((u) => !u.isDeleted));
+
+    return users;
+  },
+});
+
 export const getUserByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
@@ -1800,6 +1812,8 @@ export const getLogsWithDetails = query({
     pageNumber: v.optional(v.number()),
     action: v.optional(v.union(v.string(), v.array(v.string()))), // allow string or array
     entityType: v.optional(v.union(v.string(), v.array(v.string()))), // allow string or array
+    instructorIds: v.optional(v.array(v.id("users"))), // Array of instructor IDs to filter by
+    adviserIds: v.optional(v.array(v.id("users"))), // Array of adviser IDs to filter by
   },
   handler: async (ctx, args) => {
     let logs: Array<{
@@ -1833,6 +1847,16 @@ export const getLogsWithDetails = query({
         .collect();
     } else {
       logs = await ctx.db.query("LogsTable").collect();
+    }
+
+    // Multi-select filter by instructor IDs if provided (before pagination)
+    if (args.instructorIds && args.instructorIds.length > 0) {
+      logs = logs.filter((log) => args.instructorIds!.includes(log.user_id));
+    }
+
+    // Multi-select filter by adviser IDs if provided (before pagination)
+    if (args.adviserIds && args.adviserIds.length > 0) {
+      logs = logs.filter((log) => args.adviserIds!.includes(log.user_id));
     }
 
     // Multi-select filter by action if provided (before pagination)

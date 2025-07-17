@@ -219,7 +219,8 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           const formValue = form[key] ?? "";
           if (isFieldChanged(key, formValue)) {
             if (key === "gender" || key === "civilStatus") {
-              changedFields[key] = formValue === "" ? undefined : Number(formValue);
+              changedFields[key] =
+                formValue === "" ? undefined : Number(formValue);
             } else if (key === "contact") {
               changedFields[key] = formValue;
             } else {
@@ -256,7 +257,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
       if (section === "secondary" && payload.contact !== undefined) {
         if (
           typeof payload.contact === "string" &&
-          payload.contact.length !== 11
+          payload.contact.length !== 13 // 09XX-XXX-XXXX = 13 characters
         ) {
           setNotification({
             message: "Contact number must be 11 digits (Philippines)",
@@ -319,7 +320,20 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
   // Only allow digits in contact number input
   const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/[^0-9]/g, "");
-    setForm({ ...form, contact: digits });
+    // Only allow up to 9 digits (after the '09' prefix)
+    const nineDigits = digits.slice(0, 9);
+    // Format as 09XX-XXX-XXXX
+    let formatted = "";
+    if (nineDigits.length > 0) {
+      formatted = "09";
+      if (nineDigits.length > 0) formatted += nineDigits.slice(0, 2);
+      if (nineDigits.length > 2) formatted += "-" + nineDigits.slice(2, 5);
+      if (nineDigits.length > 5) formatted += "-" + nineDigits.slice(5, 9);
+    }
+    // Only update if the formatted string is not longer than 13 characters
+    if (formatted.length <= 13) {
+      setForm({ ...form, contact: formatted });
+    }
   };
 
   return (
@@ -503,11 +517,11 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               name="contact"
               value={form.contact}
               onChange={handleContactChange}
-              placeholder="Enter your contact number"
+              placeholder="09XX-XXX-XXXX"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
-              maxLength={11}
+              maxLength={13}
               inputMode="numeric"
-              pattern="[0-9]*"
+              pattern="[0-9-]*"
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}

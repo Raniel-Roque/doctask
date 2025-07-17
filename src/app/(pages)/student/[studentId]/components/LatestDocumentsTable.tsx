@@ -469,8 +469,7 @@ export const LatestDocumentsTable = ({
                   }),
                 );
               }
-            } catch {
-            }
+            } catch {}
           }
         } else if (element.tagName === "H1") {
           // Handle headings with proper formatting
@@ -817,8 +816,7 @@ export const LatestDocumentsTable = ({
                     }),
                   );
                 }
-              } catch {
-              }
+              } catch {}
             }
           } else {
             // Handle other elements by extracting their text content
@@ -1101,7 +1099,7 @@ export const LatestDocumentsTable = ({
                   {bulkDownloading ? (
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                  <FaDownload className="w-4 h-4" />
+                    <FaDownload className="w-4 h-4" />
                   )}
                 </button>
               </div>
@@ -1501,7 +1499,7 @@ export const LatestDocumentsTable = ({
                           {downloadingDocx === doc._id ? (
                             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                           ) : (
-                          <FaDownload className="w-4 h-4" />
+                            <FaDownload className="w-4 h-4" />
                           )}
                         </button>
                         {/* Only show Notes and Submit for non-excluded chapters */}

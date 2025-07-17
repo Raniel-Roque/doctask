@@ -182,8 +182,7 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                     }),
                   );
                 }
-              } catch  {
-              }
+              } catch {}
             }
           } else {
             // Handle other elements by extracting their text content

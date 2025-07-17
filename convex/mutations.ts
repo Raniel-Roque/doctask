@@ -1052,8 +1052,7 @@ export const updateStudentProfile = mutation({
     const updates: Record<string, unknown> = {};
 
     if (args.section === "secondary") {
-      if (args.gender !== undefined)
-        updates.gender = args.gender;
+      if (args.gender !== undefined) updates.gender = args.gender;
       if (args.dateOfBirth !== undefined)
         updates.dateOfBirth =
           args.dateOfBirth === "" ? undefined : sanitize(args.dateOfBirth);
@@ -1076,17 +1075,33 @@ export const updateStudentProfile = mutation({
           args.contact === "" ? undefined : sanitize(args.contact);
     } else if (args.section === "education") {
       if (args.tertiaryDegree !== undefined)
-        updates.tertiaryDegree = args.tertiaryDegree === "" ? undefined : sanitize(args.tertiaryDegree);
+        updates.tertiaryDegree =
+          args.tertiaryDegree === ""
+            ? undefined
+            : sanitize(args.tertiaryDegree);
       if (args.tertiarySchool !== undefined)
-        updates.tertiarySchool = args.tertiarySchool === "" ? undefined : sanitize(args.tertiarySchool);
+        updates.tertiarySchool =
+          args.tertiarySchool === ""
+            ? undefined
+            : sanitize(args.tertiarySchool);
       if (args.secondarySchool !== undefined)
-        updates.secondarySchool = args.secondarySchool === "" ? undefined : sanitize(args.secondarySchool);
+        updates.secondarySchool =
+          args.secondarySchool === ""
+            ? undefined
+            : sanitize(args.secondarySchool);
       if (args.secondaryAddress !== undefined)
-        updates.secondaryAddress = args.secondaryAddress === "" ? undefined : sanitize(args.secondaryAddress);
+        updates.secondaryAddress =
+          args.secondaryAddress === ""
+            ? undefined
+            : sanitize(args.secondaryAddress);
       if (args.primarySchool !== undefined)
-        updates.primarySchool = args.primarySchool === "" ? undefined : sanitize(args.primarySchool);
+        updates.primarySchool =
+          args.primarySchool === "" ? undefined : sanitize(args.primarySchool);
       if (args.primaryAddress !== undefined)
-        updates.primaryAddress = args.primaryAddress === "" ? undefined : sanitize(args.primaryAddress);
+        updates.primaryAddress =
+          args.primaryAddress === ""
+            ? undefined
+            : sanitize(args.primaryAddress);
     }
     if (Object.keys(updates).length === 0) {
       return { success: false, message: "No changes to save." };

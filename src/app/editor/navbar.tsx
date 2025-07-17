@@ -410,8 +410,7 @@ export const Navbar = ({
                   }),
                 );
               }
-            } catch {
-            }
+            } catch {}
           }
         } else {
           // Handle other elements by extracting their text content

@@ -42,7 +42,7 @@ interface Log {
   _creationTime: number;
 }
 
-type SortField = "_creationTime" | "instructor" | "affectedEntity" | "action";
+type SortField = "_creationTime" | "affectedEntity" | "action";
 type SortDirection = "asc" | "desc";
 
 // =========================================
@@ -156,6 +156,24 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES][]
   >([]);
 
+  // Instructor filter state
+  const [instructorFilters, setInstructorFilters] = useState<string[]>([]);
+  const [tempInstructorFilters, setTempInstructorFilters] = useState<string[]>(
+    [],
+  );
+  const [showInstructorDropdown, setShowInstructorDropdown] = useState(false);
+  const [instructorSearch, setInstructorSearch] = useState("");
+  const instructorButtonRef = useRef<HTMLButtonElement>(null);
+  const instructorDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Adviser filter state
+  const [adviserFilters, setAdviserFilters] = useState<string[]>([]);
+  const [tempAdviserFilters, setTempAdviserFilters] = useState<string[]>([]);
+  const [showAdviserDropdown, setShowAdviserDropdown] = useState(false);
+  const [adviserSearch, setAdviserSearch] = useState("");
+  const adviserButtonRef = useRef<HTMLButtonElement>(null);
+  const adviserDropdownRef = useRef<HTMLDivElement>(null);
+
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
@@ -183,6 +201,18 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   }, [showActionDropdown, appliedActionFilters]);
 
   useEffect(() => {
+    if (showInstructorDropdown) {
+      setTempInstructorFilters(instructorFilters);
+    }
+  }, [showInstructorDropdown, instructorFilters]);
+
+  useEffect(() => {
+    if (showAdviserDropdown) {
+      setTempAdviserFilters(adviserFilters);
+    }
+  }, [showAdviserDropdown, adviserFilters]);
+
+  useEffect(() => {
     if (showEntityDropdown) setTempEntityTypeFilters(appliedEntityTypeFilters);
   }, [showEntityDropdown, appliedEntityTypeFilters]);
 
@@ -204,6 +234,38 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   }, [showActionDropdown]);
 
   useEffect(() => {
+    if (!showInstructorDropdown) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        instructorDropdownRef.current &&
+        !instructorDropdownRef.current.contains(event.target as Node) &&
+        instructorButtonRef.current &&
+        !instructorButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowInstructorDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showInstructorDropdown]);
+
+  useEffect(() => {
+    if (!showAdviserDropdown) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        adviserDropdownRef.current &&
+        !adviserDropdownRef.current.contains(event.target as Node) &&
+        adviserButtonRef.current &&
+        !adviserButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowAdviserDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showAdviserDropdown]);
+
+  useEffect(() => {
     if (!showEntityDropdown) return;
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -219,6 +281,15 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showEntityDropdown]);
 
+  // Fetch instructors for filter dropdown
+  const instructors = useQuery(api.fetch.getInstructors) || [];
+
+  // Fetch advisers for filter dropdown
+  const advisers = useQuery(api.fetch.getAdvisers, {
+    pageSize: 1000,
+    pageNumber: 1,
+  }) || { users: [] };
+
   // Fetch logs with backend multi-select filtering for action and entity type
   const logsQuery = useQuery(api.fetch.getLogsWithDetails, {
     userRole: userRole,
@@ -228,6 +299,14 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     entityType:
       appliedEntityTypeFilters.length > 0
         ? appliedEntityTypeFilters.map((e) => e.toLowerCase())
+        : undefined,
+    instructorIds:
+      instructorFilters.length > 0
+        ? instructorFilters.map((id) => id as Id<"users">)
+        : undefined,
+    adviserIds:
+      adviserFilters.length > 0
+        ? adviserFilters.map((id) => id as Id<"users">)
         : undefined,
   });
 
@@ -317,6 +396,50 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const handleResetActionFilters = () => {
     setTempActionFilters([]);
     setAppliedActionFilters([]);
+    setCurrentPage(1);
+  };
+
+  const handleInstructorFilter = (instructorId: string) => {
+    let newFilters;
+    if (tempInstructorFilters.includes(instructorId)) {
+      newFilters = tempInstructorFilters.filter((f) => f !== instructorId);
+    } else {
+      newFilters = [...tempInstructorFilters, instructorId];
+    }
+    setTempInstructorFilters(newFilters);
+  };
+
+  const handleSaveInstructorFilters = () => {
+    setInstructorFilters(tempInstructorFilters);
+    setShowInstructorDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const handleResetInstructorFilters = () => {
+    setTempInstructorFilters([]);
+    setInstructorFilters([]);
+    setCurrentPage(1);
+  };
+
+  const handleAdviserFilter = (adviserId: string) => {
+    let newFilters;
+    if (tempAdviserFilters.includes(adviserId)) {
+      newFilters = tempAdviserFilters.filter((f) => f !== adviserId);
+    } else {
+      newFilters = [...tempAdviserFilters, adviserId];
+    }
+    setTempAdviserFilters(newFilters);
+  };
+
+  const handleSaveAdviserFilters = () => {
+    setAdviserFilters(tempAdviserFilters);
+    setShowAdviserDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const handleResetAdviserFilters = () => {
+    setTempAdviserFilters([]);
+    setAdviserFilters([]);
     setCurrentPage(1);
   };
 
@@ -496,18 +619,6 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
           aValue = a._creationTime;
           bValue = b._creationTime;
           break;
-        case "instructor":
-          aValue = normalize(
-            [a.user?.first_name, a.user?.middle_name, a.user?.last_name]
-              .filter(Boolean)
-              .join(" "),
-          );
-          bValue = normalize(
-            [b.user?.first_name, b.user?.middle_name, b.user?.last_name]
-              .filter(Boolean)
-              .join(" "),
-          );
-          break;
         case "affectedEntity":
           aValue =
             a.affected_entity_type === "user"
@@ -627,7 +738,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
           <thead>
             <tr className="bg-[#B54A4A]">
               <th
-                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer w-32 whitespace-nowrap"
+                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer w-32"
                 onClick={() => handleSort("_creationTime")}
               >
                 <div className="flex items-center justify-center text-xs">
@@ -635,14 +746,199 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                   <span className="ml-1">{getSortIcon("_creationTime")}</span>
                 </div>
               </th>
-              <th
-                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer w-40"
-                onClick={() => handleSort("instructor")}
-              >
-                <div className="flex items-center justify-center">
-                  {userRole === 0 ? "Instructor" : "Adviser"}
-                  <span className="ml-1">{getSortIcon("instructor")}</span>
+              <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-40">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-medium uppercase">
+                    {userRole === 0 ? "INSTRUCTOR" : "ADVISER"}
+                  </span>
+                  {userRole === 0 && (
+                    <button
+                      type="button"
+                      className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowInstructorDropdown(!showInstructorDropdown);
+                        setShowActionDropdown(false);
+                        setShowEntityDropdown(false);
+                        setShowAdviserDropdown(false);
+                      }}
+                      title="Filter instructors"
+                      ref={instructorButtonRef}
+                      style={{ boxShadow: "none" }}
+                    >
+                      <FaFilter
+                        className={
+                          `w-4 h-4 transition-colors ` +
+                          (showInstructorDropdown ||
+                          instructorFilters.length > 0
+                            ? "text-blue-500"
+                            : "text-white")
+                        }
+                      />
+                    </button>
+                  )}
+                  {userRole === 1 && (
+                    <button
+                      type="button"
+                      className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAdviserDropdown(!showAdviserDropdown);
+                        setShowActionDropdown(false);
+                        setShowEntityDropdown(false);
+                        setShowInstructorDropdown(false);
+                      }}
+                      title="Filter advisers"
+                      ref={adviserButtonRef}
+                      style={{ boxShadow: "none" }}
+                    >
+                      <FaFilter
+                        className={
+                          `w-4 h-4 transition-colors ` +
+                          (showAdviserDropdown || adviserFilters.length > 0
+                            ? "text-blue-500"
+                            : "text-white")
+                        }
+                      />
+                    </button>
+                  )}
                 </div>
+                {showInstructorDropdown && (
+                  <div
+                    ref={instructorDropdownRef}
+                    className="absolute left-0 top-full z-20 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    style={{ minWidth: 220 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-3 border-b">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={instructorSearch}
+                          onChange={(e) => setInstructorSearch(e.target.value)}
+                          placeholder="Search instructors..."
+                          className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          autoFocus
+                        />
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
+                          <FaSearch />
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className="max-h-52 overflow-y-auto px-3 py-2 flex flex-col gap-1"
+                      style={{ maxHeight: 220 }}
+                    >
+                      {instructors
+                        .filter((instructor) =>
+                          `${instructor.first_name} ${instructor.middle_name ? instructor.middle_name + " " : ""}${instructor.last_name}`
+                            .toLowerCase()
+                            .includes(instructorSearch.toLowerCase()),
+                        )
+                        .slice(0, 10)
+                        .map((instructor) => (
+                          <label
+                            key={instructor._id}
+                            className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={tempInstructorFilters.includes(
+                                instructor._id,
+                              )}
+                              onChange={() =>
+                                handleInstructorFilter(instructor._id)
+                              }
+                              className="accent-blue-600"
+                            />
+                            <span className="text-left">
+                              {`${instructor.first_name} ${instructor.middle_name ? instructor.middle_name + " " : ""}${instructor.last_name}`}
+                            </span>
+                          </label>
+                        ))}
+                    </div>
+                    <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
+                      <button
+                        onClick={handleSaveInstructorFilters}
+                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                      >
+                        Apply
+                      </button>
+                      <button
+                        onClick={handleResetInstructorFilters}
+                        className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {showAdviserDropdown && (
+                  <div
+                    ref={adviserDropdownRef}
+                    className="absolute left-0 top-full z-20 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    style={{ minWidth: 220 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-3 border-b">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={adviserSearch}
+                          onChange={(e) => setAdviserSearch(e.target.value)}
+                          placeholder="Search advisers..."
+                          className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          autoFocus
+                        />
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
+                          <FaSearch />
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className="max-h-52 overflow-y-auto px-3 py-2 flex flex-col gap-1"
+                      style={{ maxHeight: 220 }}
+                    >
+                      {advisers.users
+                        .filter((adviser) =>
+                          `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`
+                            .toLowerCase()
+                            .includes(adviserSearch.toLowerCase()),
+                        )
+                        .slice(0, 10)
+                        .map((adviser) => (
+                          <label
+                            key={adviser._id}
+                            className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={tempAdviserFilters.includes(adviser._id)}
+                              onChange={() => handleAdviserFilter(adviser._id)}
+                              className="accent-blue-600"
+                            />
+                            <span className="text-left">
+                              {`${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`}
+                            </span>
+                          </label>
+                        ))}
+                    </div>
+                    <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
+                      <button
+                        onClick={handleSaveAdviserFilters}
+                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                      >
+                        Apply
+                      </button>
+                      <button
+                        onClick={handleResetAdviserFilters}
+                        className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                )}
               </th>
               {userRole === 0 && (
                 <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-24">
@@ -895,19 +1191,28 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
           <tbody>
             {!logsQuery ? (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                <td
+                  colSpan={userRole === 0 ? 5 : 4}
+                  className="px-6 py-4 text-center text-gray-500"
+                >
                   Loading...
                 </td>
               </tr>
             ) : logs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                <td
+                  colSpan={userRole === 0 ? 5 : 4}
+                  className="px-6 py-4 text-center text-gray-500"
+                >
                   No logs available
                 </td>
               </tr>
             ) : filteredAndSortedLogs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                <td
+                  colSpan={userRole === 0 ? 5 : 4}
+                  className="px-6 py-4 text-center text-gray-500"
+                >
                   No entries found
                 </td>
               </tr>
