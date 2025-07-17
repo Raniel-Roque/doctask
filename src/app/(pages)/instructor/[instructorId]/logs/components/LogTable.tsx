@@ -1193,9 +1193,9 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
-                  className="px-6 py-12 text-center text-gray-500 w-full"
+                  className="px-6 py-12 text-center text-gray-500"
                 >
-                  <div className="flex flex-col items-center justify-center w-full">
+                  <div className="flex flex-col items-center justify-center">
                     <div className="text-lg font-medium mb-2">Loading...</div>
                     <div className="text-sm text-gray-400">Please wait while we fetch the logs</div>
                   </div>
@@ -1205,11 +1205,10 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
-                  className="px-6 py-12 text-center text-gray-500 w-full"
+                  className="px-6 py-12 text-center text-gray-500"
                 >
-                  <div className="flex flex-col items-center justify-center w-full">
+                  <div className="flex flex-col items-center justify-center">
                     <div className="text-lg font-medium mb-2">No logs available</div>
-                    <div className="text-sm text-gray-400">There are no logs to display at this time</div>
                   </div>
                 </td>
               </tr>
@@ -1217,9 +1216,9 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
-                  className="px-6 py-12 text-center text-gray-500 w-full"
+                  className="px-6 py-12 text-center text-gray-500"
                 >
-                  <div className="flex flex-col items-center justify-center w-full">
+                  <div className="flex flex-col items-center justify-center">
                     <div className="text-lg font-medium mb-2">No entries found</div>
                   </div>
                 </td>
