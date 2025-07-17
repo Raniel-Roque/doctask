@@ -1193,34 +1193,27 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
-                  className="px-6 py-12 text-center text-gray-500"
+                  className="px-6 py-4 text-center text-gray-500"
                 >
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="text-lg font-medium mb-2">Loading...</div>
-                    <div className="text-sm text-gray-400">Please wait while we fetch the logs</div>
-                  </div>
+                  Loading...
                 </td>
               </tr>
             ) : logs.length === 0 ? (
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
-                  className="px-6 py-12 text-center text-gray-500"
+                  className="px-6 py-4 text-center text-gray-500"
                 >
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="text-lg font-medium mb-2">No logs available</div>
-                  </div>
+                  No logs available
                 </td>
               </tr>
             ) : filteredAndSortedLogs.length === 0 ? (
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
-                  className="px-6 py-12 text-center text-gray-500"
+                  className="px-6 py-4 text-center text-gray-500"
                 >
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="text-lg font-medium mb-2">No entries found</div>
-                  </div>
+                  No entries found
                 </td>
               </tr>
             ) : (
