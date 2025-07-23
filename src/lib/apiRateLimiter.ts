@@ -94,6 +94,11 @@ export const RATE_LIMITS = {
     windowMs: 300000,
     keyPrefix: "profile_picture",
   }, // 5 updates per 5 minutes
+  DESTRUCTIVE_ACTION: {
+    maxRequests: 1,
+    windowMs: 3600000,
+    keyPrefix: "destructive_action",
+  }, // 1 action per hour (very restrictive)
   STUDENT_SECONDARY_PROFILE_UPDATE: {
     maxRequests: 10,
     windowMs: 60000,

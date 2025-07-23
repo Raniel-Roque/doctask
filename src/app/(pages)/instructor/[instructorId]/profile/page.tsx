@@ -10,6 +10,7 @@ import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
+import { FaExclamationTriangle, FaTrash, FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 
 interface InstructorProfilePageProps {
   params: Promise<{ instructorId: string }>;
@@ -23,11 +24,123 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     message: string;
     type: "error" | "success" | "warning" | "info";
   } | null>(null);
+  const [showWipeModal, setShowWipeModal] = useState(false);
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
 
   // Fetch user data from Convex
   const userData = useQuery(api.fetch.getUserById, {
     id: instructorId as Id<"users">,
   });
+
+  const resetForm = () => {
+    setPassword("");
+    setShowPassword(false);
+    setIsVerified(false);
+    setConfirmName("");
+    setNotification(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    setShowWipeModal(false);
+  };
+
+  const handleVerifyPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setIsLoading(true);
+    setNotification(null);
+
+    try {
+      const response = await fetch("/api/clerk/verify-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clerkId: user.id,
+          currentPassword: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to verify password");
+      }
+
+      setIsVerified(true);
+      setNotification({
+        message: "Password verified. Please confirm the action.",
+        type: "success",
+      });
+    } catch {
+      setNotification({
+        message: "Current password is incorrect",
+        type: "error",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleWipeData = async () => {
+    if (!user || !userData) return;
+
+    const expectedName = `${userData.first_name} ${userData.last_name}`.toLowerCase().trim();
+    const enteredName = confirmName.toLowerCase().trim();
+
+    if (enteredName !== expectedName) {
+      setNotification({
+        message: "Name does not match. Please enter your full name exactly as shown.",
+        type: "error",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setNotification(null);
+
+    try {
+      const response = await fetch("/api/clerk/destructive-action", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clerkId: user.id,
+          action: "delete_all_data",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to wipe data");
+      }
+
+      setNotification({
+        message: "All data has been successfully wiped",
+        type: "success",
+      });
+      
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
+    } catch (err) {
+      setNotification({
+        message: err instanceof Error ? err.message : "Failed to wipe data",
+        type: "error",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,16 +161,162 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             onSuccess={setSuccessMessage}
             onError={(msg) => setNotification({ message: msg, type: "error" })}
           />
+          
+          {/* Instructor Commands Section */}
+          <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FaExclamationTriangle className="text-red-500" />
+                <span className="text-sm text-gray-600">Instructor Commands</span>
+              </div>
+              <button
+                onClick={() => setShowWipeModal(true)}
+                disabled={isLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+              >
+                <FaTrash className="text-xs" />
+                Wipe all data
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+      
+      {/* Password Verification Modal */}
+      {showWipeModal && !isVerified && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
+                <FaExclamationTriangle />
+                Wipe All Data
+              </h2>
+              <button
+                onClick={handleClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <FaTimes className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleVerifyPassword} className="space-y-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Enter your current password to continue with this destructive action.
+              </p>
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Current Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                    placeholder="Enter your current password"
+                    autoComplete={showPassword ? "off" : "current-password"}
+                    autoCorrect="off"
+                    spellCheck={false}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? <FaEye /> : <FaEyeSlash />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {isLoading ? "Verifying..." : "Verify Password"}
+              </button>
+            </form>
+
+            <NotificationBanner
+              message={notification?.message || null}
+              type={notification?.type || "success"}
+              onClose={() => setNotification(null)}
+              autoClose={notification?.type === "error" ? false : true}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showWipeModal && isVerified && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
+                <FaExclamationTriangle />
+                Wipe All Data
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-red-600 text-center">
+                Are you absolutely sure you want to wipe all data? This action cannot be undone.
+              </p>
+
+              <div>
+                <label htmlFor="confirmName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Type your full name to confirm: <span className="font-semibold">{userData?.first_name} {userData?.last_name}</span>
+                </label>
+                <input
+                  type="text"
+                  id="confirmName"
+                  value={confirmName}
+                  onChange={(e) => setConfirmName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="Enter your full name"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleClose}
+                  className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleWipeData}
+                  disabled={isLoading || !confirmName.trim()}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Wiping Data..." : "Yes, Wipe All Data"}
+                </button>
+              </div>
+            </div>
+
+            <NotificationBanner
+              message={notification?.message || null}
+              type={notification?.type || "success"}
+              onClose={() => setNotification(null)}
+              autoClose={notification?.type === "error" ? false : true}
+            />
+          </div>
+        </div>
+      )}
+      
       {/* Success/Error Messages */}
       <NotificationBanner
-        message={notification?.message || successMessage}
-        type={notification?.type || "success"}
-        onClose={() => {
-          setNotification(null);
-          setSuccessMessage(null);
-        }}
+        message={successMessage}
+        type="success"
+        onClose={() => setSuccessMessage(null)}
       />
     </div>
   );
