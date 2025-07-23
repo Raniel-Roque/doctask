@@ -21,6 +21,267 @@
   margin: 0;
 }
 
+/* Nested list styles - Google Docs style */
+/* Unordered lists - different bullet styles for each level */
+.tiptap ul li ul li {
+  list-style-type: circle;
+}
+
+.tiptap ul li ul li ul li {
+  list-style-type: square;
+}
+
+.tiptap ul li ul li ul li ul li {
+  list-style-type: disc;
+}
+
+.tiptap ul li ul li ul li ul li ul li {
+  list-style-type: circle;
+}
+
+.tiptap ul li ul li ul li ul li ul li ul li {
+  list-style-type: square;
+}
+
+/* Level 6 - back to disc */
+.tiptap ul li ul li ul li ul li ul li ul li ul li {
+  list-style-type: disc;
+}
+
+/* Level 7 - back to circle */
+.tiptap ul li ul li ul li ul li ul li ul li ul li ul li {
+  list-style-type: circle;
+}
+
+/* Level 8 - back to square */
+.tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul li {
+  list-style-type: square;
+}
+
+/* Level 9 - back to disc */
+.tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul li ul li {
+  list-style-type: disc;
+}
+
+/* Level 10 - final level, back to circle */
+.tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul li ul li {
+  list-style-type: circle;
+}
+
+/* Ordered lists - hierarchical numbering with CSS counters */
+.tiptap ol {
+  counter-reset: level1;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li {
+  counter-increment: level1;
+  list-style-type: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.tiptap ol li::before {
+  content: counter(level1) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Level 2 */
+.tiptap ol li ol {
+  counter-reset: level2;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li ol li {
+  counter-increment: level2;
+  list-style-type: none;
+  position: relative;
+  padding-left: 2em;
+}
+
+.tiptap ol li ol li::before {
+  content: counter(level1) "." counter(level2) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Level 3 */
+.tiptap ol li ol li ol {
+  counter-reset: level3;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li ol li ol li {
+  counter-increment: level3;
+  list-style-type: none;
+  position: relative;
+  padding-left: 3em;
+}
+
+.tiptap ol li ol li ol li::before {
+  content: counter(level1) "." counter(level2) "." counter(level3) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Level 4 */
+.tiptap ol li ol li ol li ol {
+  counter-reset: level4;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li ol li ol li ol li {
+  counter-increment: level4;
+  list-style-type: none;
+  position: relative;
+  padding-left: 3.5em;
+}
+
+.tiptap ol li ol li ol li ol li::before {
+  content: counter(level1) "." counter(level2) "." counter(level3) "." counter(level4) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Level 5 */
+.tiptap ol li ol li ol li ol li ol {
+  counter-reset: level5;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li ol li ol li ol li ol li {
+  counter-increment: level5;
+  list-style-type: none;
+  position: relative;
+  padding-left: 4.5em;
+}
+
+.tiptap ol li ol li ol li ol li ol li::before {
+  content: counter(level1) "." counter(level2) "." counter(level3) "." counter(level4) "." counter(level5) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Level 6 - lowercase letters (reset) */
+.tiptap ol li ol li ol li ol li ol li ol {
+  counter-reset: alpha1;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li {
+  counter-increment: alpha1;
+  list-style-type: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li::before {
+  content: counter(alpha1, lower-alpha) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Level 7 - uppercase letters */
+.tiptap ol li ol li ol li ol li ol li ol li ol {
+  counter-reset: alpha2;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li {
+  counter-increment: alpha2;
+  list-style-type: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li::before {
+  content: counter(alpha2, upper-alpha) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Level 8 - back to lowercase letters */
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol {
+  counter-reset: alpha3;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li {
+  counter-increment: alpha3;
+  list-style-type: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li::before {
+  content: counter(alpha3, lower-alpha) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Level 9 - back to uppercase letters */
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol {
+  counter-reset: alpha4;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol li {
+  counter-increment: alpha4;
+  list-style-type: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol li::before {
+  content: counter(alpha4, upper-alpha) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Level 10 - final level, back to lowercase letters */
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol li ol {
+  counter-reset: alpha5;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol li ol li {
+  counter-increment: alpha5;
+  list-style-type: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol li ol li::before {
+  content: counter(alpha5, lower-alpha) ". ";
+  position: absolute;
+  left: 0;
+  font-weight: normal;
+}
+
+/* Maximum supported levels: 10 levels total */
+/* Levels 1-5: Decimal (1., 1.1., 1.1.1., 1.1.1.1., 1.1.1.1.1.) */
+/* Levels 6-10: Alternating lowercase/uppercase letters (a., A., a., A., a.) */
+
 /* Task list specific styles */
 .tiptap ul[data-type="taskList"] {
   list-style: none;

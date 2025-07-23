@@ -8,6 +8,7 @@ import {
   Plus,
   Trash,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "convex/react";
@@ -433,7 +434,7 @@ export const VersionHistoryPanel = ({
                 {revertingId === revertConfirmId ? (
                   <>
                     <span className="animate-spin">
-                      <CheckCircle className="h-4 w-4" />
+                      <Loader2 className="h-4 w-4" />
                     </span>
                     Reverting...
                   </>

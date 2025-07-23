@@ -8,7 +8,6 @@ import {
   AlignRightIcon,
   BoldIcon,
   ChevronDownIcon,
-  HighlighterIcon,
   ImageIcon,
   ItalicIcon,
   ListCollapseIcon,
@@ -51,7 +50,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { type Level } from "@tiptap/extension-heading";
-import { type ColorResult, CompactPicker } from "react-color";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useEditorStore } from "@/store/use-editor-store";
@@ -214,54 +212,6 @@ const TextColorButton = () => {
       </TooltipTrigger>
       <TooltipContent>
         <p>Text color (Black only)</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
-
-const HighlightColorButton = () => {
-  const { editor } = useEditorStore();
-  const [highlightColor, setHighlightColor] = useState("#FFFFFF");
-
-  useEffect(() => {
-    if (!editor) return;
-
-    const updateHighlightColor = () => {
-      setHighlightColor(editor.getAttributes("highlight").color || "#FFFFFF");
-    };
-
-    editor.on("selectionUpdate", updateHighlightColor);
-
-    return () => {
-      editor.off("selectionUpdate", updateHighlightColor);
-    };
-  }, [editor]);
-
-  const onChange = (color: ColorResult) => {
-    editor?.chain().focus().setHighlight({ color: color.hex }).run();
-    setHighlightColor(color.hex); // ✅ Update UI immediately
-  };
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="h-7 min-w-7 flex flex-col items-center justify-center rounded-sm hover:bg-neutral-200/80 px-1.5 overflow-hidden text-sm">
-              <HighlighterIcon className="mt-0.5 size-4" />
-              <div
-                className="w-4 h-0.5 mt-0.5 rounded-sm"
-                style={{ backgroundColor: highlightColor }}
-              />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="p-0">
-            <CompactPicker color={highlightColor} onChange={onChange} />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>Highlight text</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -1054,7 +1004,6 @@ export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
         <ItalicButton />
         <UnderlineButton />
         <TextColorButton />
-        <HighlightColorButton />
         <Separator orientation="vertical" className="h-6 bg-neutral-300" />
         <UnlinkButton />
         <ImageButton />
