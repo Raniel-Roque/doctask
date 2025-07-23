@@ -183,13 +183,13 @@ export const UserTable = ({
       case 0:
         return (
           <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            Member
+            Project Member
           </span>
         );
       case 1:
         return (
           <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-            Manager
+            Project Manager
           </span>
         );
       default:

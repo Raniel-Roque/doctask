@@ -72,8 +72,8 @@ export default function EditForm({
   const roleDropdownRef = useRef<HTMLDivElement>(null);
 
   const roles = [
-    { value: 0, label: "Member" },
-    { value: 1, label: "Manager" },
+    { value: 0, label: "Project Member" },
+    { value: 1, label: "Project Manager" },
   ];
 
   const closeAllDropdowns = () => {

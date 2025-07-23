@@ -88,9 +88,9 @@ const PDFReport: React.FC<PDFReportProps> = ({
   const getSubroleName = (subrole: number | undefined) => {
     switch (subrole) {
       case 0:
-        return "Member";
+        return "Project Member";
       case 1:
-        return "Manager";
+        return "Project Manager";
       default:
         return "Unknown";
     }
