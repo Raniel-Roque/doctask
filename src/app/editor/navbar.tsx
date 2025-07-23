@@ -443,8 +443,6 @@ export const Navbar = ({
     onDownload(blob, generateFilename("docx"));
   };
 
-
-
   const onPrint = () => {
     // Add print-specific styles to eliminate headers and footers
     const printStyles = `
@@ -610,30 +608,40 @@ export const Navbar = ({
                           <div className="border-t border-neutral-200 my-2"></div>
                           <div className="mt-2 flex items-center justify-between">
                             <div className="flex items-center gap-1">
-                              <label className="text-sm font-medium text-neutral-700">Row:</label>
+                              <label className="text-sm font-medium text-neutral-700">
+                                Row:
+                              </label>
                               <input
                                 type="number"
                                 min="1"
                                 max="100"
                                 value={selectedRows}
-                                onChange={(e) => setSelectedRows(parseInt(e.target.value) || 1)}
+                                onChange={(e) =>
+                                  setSelectedRows(parseInt(e.target.value) || 1)
+                                }
                                 className="w-12 h-6 px-1 text-sm border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                               />
                             </div>
                             <div className="flex items-center gap-1">
-                              <label className="text-sm font-medium text-neutral-700">Col:</label>
+                              <label className="text-sm font-medium text-neutral-700">
+                                Col:
+                              </label>
                               <input
                                 type="number"
                                 min="1"
                                 max="10"
                                 value={selectedCols}
-                                onChange={(e) => setSelectedCols(parseInt(e.target.value) || 1)}
+                                onChange={(e) =>
+                                  setSelectedCols(parseInt(e.target.value) || 1)
+                                }
                                 className="w-12 h-6 px-1 text-sm border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                               />
                             </div>
                           </div>
                           <button
-                            onClick={() => createTable(selectedRows, selectedCols)}
+                            onClick={() =>
+                              createTable(selectedRows, selectedCols)
+                            }
                             className="w-full mt-2 h-7 flex items-center justify-center gap-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-sm transition-colors"
                           >
                             <PlusIcon className="size-3" />

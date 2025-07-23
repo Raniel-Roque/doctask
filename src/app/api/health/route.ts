@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { createRateLimiter } from "@/lib/apiRateLimiter";
 
 // Define a simple rate limit config for health endpoint
@@ -8,15 +8,15 @@ const HEALTH_RATE_LIMIT = {
   keyPrefix: "health",
 };
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const clientId =
       request.headers.get("x-forwarded-for") ||
       request.headers.get("x-real-ip") ||
       "unknown";
-    
+
     const rateLimiter = createRateLimiter(HEALTH_RATE_LIMIT);
-    const rateLimitResult = rateLimiter(request as any, clientId);
+    const rateLimitResult = rateLimiter(request, clientId);
 
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -26,7 +26,9 @@ export async function GET(request: Request) {
         },
         {
           status: 429,
-          headers: { "Retry-After": rateLimitResult.retryAfter?.toString() || "60" },
+          headers: {
+            "Retry-After": rateLimitResult.retryAfter?.toString() || "60",
+          },
         },
       );
     }
@@ -55,18 +57,18 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const clientId =
       request.headers.get("x-forwarded-for") ||
       request.headers.get("x-real-ip") ||
       "unknown";
-    
+
     const rateLimiter = createRateLimiter({
       ...HEALTH_RATE_LIMIT,
       maxRequests: 50, // Lower limit for POST
     });
-    const rateLimitResult = rateLimiter(request as any, clientId);
+    const rateLimitResult = rateLimiter(request, clientId);
 
     if (!rateLimitResult.success) {
       return NextResponse.json(
@@ -76,7 +78,9 @@ export async function POST(request: Request) {
         },
         {
           status: 429,
-          headers: { "Retry-After": rateLimitResult.retryAfter?.toString() || "60" },
+          headers: {
+            "Retry-After": rateLimitResult.retryAfter?.toString() || "60",
+          },
         },
       );
     }

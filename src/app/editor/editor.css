@@ -146,7 +146,8 @@
 }
 
 .tiptap ol li ol li ol li ol li::before {
-  content: counter(level1) "." counter(level2) "." counter(level3) "." counter(level4) ". ";
+  content: counter(level1) "." counter(level2) "." counter(level3) "."
+    counter(level4) ". ";
   position: absolute;
   left: 0;
   font-weight: normal;
@@ -167,7 +168,8 @@
 }
 
 .tiptap ol li ol li ol li ol li ol li::before {
-  content: counter(level1) "." counter(level2) "." counter(level3) "." counter(level4) "." counter(level5) ". ";
+  content: counter(level1) "." counter(level2) "." counter(level3) "."
+    counter(level4) "." counter(level5) ". ";
   position: absolute;
   left: 0;
   font-weight: normal;

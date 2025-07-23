@@ -67,7 +67,10 @@ export async function POST(request: NextRequest) {
     // Verify user is an instructor (role 2)
     if (convexUser.role !== 2) {
       return NextResponse.json(
-        { error: "Unauthorized - Only instructors can perform destructive actions" },
+        {
+          error:
+            "Unauthorized - Only instructors can perform destructive actions",
+        },
         { status: 401 },
       );
     }
@@ -79,22 +82,22 @@ export async function POST(request: NextRequest) {
           currentUserId: convexUser._id,
         });
         break;
-      
+
       case "delete_all_groups":
         await convex.mutation(api.restore.deleteAllGroups);
         break;
-      
+
       case "delete_all_documents":
         await convex.mutation(api.restore.deleteAllDocuments);
         break;
-      
+
       case "delete_all_data":
         // Delete all data from Convex first (in the same order as restore)
         await convex.mutation(api.restore.deleteAllStudents);
         await convex.mutation(api.restore.deleteAllAdvisers);
         await convex.mutation(api.restore.deleteAllGroups);
         await convex.mutation(api.restore.deleteAllDocuments);
-        
+
         // Delete all Liveblocks rooms
         try {
           const liveblocks = new Liveblocks({
@@ -106,10 +109,8 @@ export async function POST(request: NextRequest) {
           for (const room of rooms.data) {
             await liveblocks.deleteRoom(room.id);
           }
-        } catch (error) {
-          console.error("Failed to delete Liveblocks rooms:", error);
-        }
-        
+        } catch {}
+
         await convex.mutation(api.restore.deleteAllTaskAssignments);
         await convex.mutation(api.restore.deleteAllDocumentStatus);
         await convex.mutation(api.restore.deleteAllNotes);
@@ -118,20 +119,18 @@ export async function POST(request: NextRequest) {
         await convex.mutation(api.restore.deleteAllUsers, {
           currentUserId: convexUser._id,
         });
-        
+
         // Then delete all users from Clerk except the current instructor
         const { data: allUsers } = await client.users.getUserList();
         for (const clerkUser of allUsers) {
           if (clerkUser.id !== convexUser.clerk_id) {
             try {
               await client.users.deleteUser(clerkUser.id);
-            } catch (error) {
-              console.error(`Failed to delete Clerk user ${clerkUser.id}:`, error);
-            }
+            } catch {}
           }
         }
         break;
-      
+
       default:
         return NextResponse.json(
           { error: "Invalid action specified" },
@@ -143,11 +142,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `Action "${action}" completed successfully`,
     });
-  } catch (error) {
-    console.error("Destructive action error:", error);
+  } catch {
     return NextResponse.json(
       { error: "Failed to execute destructive action" },
       { status: 500 },
     );
   }
-} 
+}

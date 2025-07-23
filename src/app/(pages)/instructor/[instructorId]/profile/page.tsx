@@ -10,7 +10,13 @@ import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import { FaExclamationTriangle, FaTrash, FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
+import {
+  FaExclamationTriangle,
+  FaTrash,
+  FaEye,
+  FaEyeSlash,
+  FaTimes,
+} from "react-icons/fa";
 
 interface InstructorProfilePageProps {
   params: Promise<{ instructorId: string }>;
@@ -92,12 +98,15 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   const handleWipeData = async () => {
     if (!user || !userData) return;
 
-    const expectedName = `${userData.first_name} ${userData.last_name}`.toLowerCase().trim();
+    const expectedName = `${userData.first_name} ${userData.last_name}`
+      .toLowerCase()
+      .trim();
     const enteredName = confirmName.toLowerCase().trim();
 
     if (enteredName !== expectedName) {
       setNotification({
-        message: "Name does not match. Please enter your full name exactly as shown.",
+        message:
+          "Name does not match. Please enter your full name exactly as shown.",
         type: "error",
       });
       return;
@@ -128,7 +137,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         message: "All data has been successfully wiped",
         type: "success",
       });
-      
+
       setTimeout(() => {
         handleClose();
       }, 2000);
@@ -161,13 +170,15 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             onSuccess={setSuccessMessage}
             onError={(msg) => setNotification({ message: msg, type: "error" })}
           />
-          
+
           {/* Instructor Commands Section */}
           <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FaExclamationTriangle className="text-red-500" />
-                <span className="text-sm text-gray-600">Instructor Commands</span>
+                <span className="text-sm text-gray-600">
+                  Instructor Commands
+                </span>
               </div>
               <button
                 onClick={() => setShowWipeModal(true)}
@@ -181,7 +192,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
           </div>
         </div>
       </div>
-      
+
       {/* Password Verification Modal */}
       {showWipeModal && !isVerified && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -201,7 +212,8 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
 
             <form onSubmit={handleVerifyPassword} className="space-y-4">
               <p className="text-sm text-gray-600 mb-4">
-                Enter your current password to continue with this destructive action.
+                Enter your current password to continue with this destructive
+                action.
               </p>
               <div>
                 <label
@@ -265,12 +277,19 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
 
             <div className="space-y-4">
               <p className="text-sm text-red-600 text-center">
-                Are you absolutely sure you want to wipe all data? This action cannot be undone.
+                Are you absolutely sure you want to wipe all data? This action
+                cannot be undone.
               </p>
 
               <div>
-                <label htmlFor="confirmName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Type your full name to confirm: <span className="font-semibold">{userData?.first_name} {userData?.last_name}</span>
+                <label
+                  htmlFor="confirmName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Type your full name to confirm:{" "}
+                  <span className="font-semibold">
+                    {userData?.first_name} {userData?.last_name}
+                  </span>
                 </label>
                 <input
                   type="text"
@@ -311,7 +330,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
           </div>
         </div>
       )}
-      
+
       {/* Success/Error Messages */}
       <NotificationBanner
         message={successMessage}

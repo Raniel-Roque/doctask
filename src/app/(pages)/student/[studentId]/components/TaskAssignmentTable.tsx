@@ -441,7 +441,7 @@ export const TaskAssignmentTable = ({
     if (["title_page", "appendix_a", "appendix_d"].includes(chapter)) {
       return 1; // These chapters are automatically considered complete
     }
-    
+
     if (!hasSubparts(chapter)) {
       // For regular documents, return the task's status
       return chapterTasks[0]?.task_status || 0;
@@ -768,103 +768,109 @@ export const TaskAssignmentTable = ({
     return (
       <div className="flex justify-center w-full">
         <div className="flex flex-wrap items-center gap-2">
-          {assignedMemberIds.length > 0
-            ? assignedMemberIds.map((memberId) => {
-                const member = groupMembers?.find((m) => m._id === memberId);
-                if (!member) return null;
+          {assignedMemberIds.length > 0 ? (
+            assignedMemberIds.map((memberId) => {
+              const member = groupMembers?.find((m) => m._id === memberId);
+              if (!member) return null;
 
-                const isCurrentUser = memberId === currentUserId;
-                const pillColor =
-                  mode === "member" && isCurrentUser
-                    ? "bg-purple-200 text-purple-900"
-                    : "bg-blue-100 text-blue-800";
+              const isCurrentUser = memberId === currentUserId;
+              const pillColor =
+                mode === "member" && isCurrentUser
+                  ? "bg-purple-200 text-purple-900"
+                  : "bg-blue-100 text-blue-800";
 
-                return (
-                  <span
-                    key={memberId}
-                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${pillColor}`}
-                  >
-                    {member.first_name} {member.last_name}
-                    {mode === "manager" && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeMemberFromTask(task._id, memberId);
-                        }}
-                        disabled={isLoading}
-                        className={`text-blue-600 hover:text-blue-800 ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                      >
-                        <FaTimes className="w-3 h-3" />
-                      </button>
-                    )}
-                  </span>
-                );
-              })
-            : mode === "member" && (
-                <span className="text-gray-400 text-xs">
-                  No members assigned
+              return (
+                <span
+                  key={memberId}
+                  className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${pillColor}`}
+                >
+                  {member.first_name} {member.last_name}
+                  {mode === "manager" && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeMemberFromTask(task._id, memberId);
+                      }}
+                      disabled={isLoading}
+                      className={`text-blue-600 hover:text-blue-800 ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <FaTimes className="w-3 h-3" />
+                    </button>
+                  )}
                 </span>
-              )}
+              );
+            })
+          ) : (
+            <span className="text-gray-400 text-xs">No members assigned</span>
+          )}
           {mode === "manager" && !allAssigned && (
             <div className="relative">
-              <button
-                ref={(el) => {
-                  buttonRefs.current[task._id] = el;
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMemberSelector(task._id);
-                  setSearch((prev) => ({ ...prev, [task._id]: "" }));
-                }}
-                disabled={isLoading}
-                className={`inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <FaPlus className="w-3 h-3" />
-                Add Member
-              </button>
-              {showMemberSelector === task._id && (
-                <div
-                  ref={dropdownRef}
-                  className={`absolute left-0 z-10 min-w-[180px] p-2 bg-white border border-gray-200 rounded-md shadow-lg ${
-                    dropdownPosition[task._id] === "top"
-                      ? "bottom-full mb-1"
-                      : "top-full mt-1"
-                  }`}
-                >
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchValue}
-                    onChange={(e) =>
-                      setSearch((prev) => ({
-                        ...prev,
-                        [task._id]: e.target.value,
-                      }))
-                    }
-                    placeholder="Search members..."
-                    className="w-full mb-2 px-2 py-1 text-xs border rounded bg-white text-gray-700 shadow-sm"
-                  />
-                  {filteredMembers.length > 0 ? (
-                    filteredMembers.map((member) => (
-                      <button
-                        key={member._id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          addMemberToTask(task._id, member._id);
-                          setShowMemberSelector(null);
-                        }}
-                        disabled={isLoading}
-                        className={`block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                      >
-                        {member.first_name} {member.last_name}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="text-xs text-gray-400 px-3 py-2">
-                      No members found
+              {availableMembers.length > 0 ? (
+                <>
+                  <button
+                    ref={(el) => {
+                      buttonRefs.current[task._id] = el;
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMemberSelector(task._id);
+                      setSearch((prev) => ({ ...prev, [task._id]: "" }));
+                    }}
+                    disabled={isLoading}
+                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <FaPlus className="w-3 h-3" />
+                    Add Member
+                  </button>
+                  {showMemberSelector === task._id && (
+                    <div
+                      ref={dropdownRef}
+                      className={`absolute left-0 z-10 min-w-[180px] p-2 bg-white border border-gray-200 rounded-md shadow-lg ${
+                        dropdownPosition[task._id] === "top"
+                          ? "bottom-full mb-1"
+                          : "top-full mt-1"
+                      }`}
+                    >
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={searchValue}
+                        onChange={(e) =>
+                          setSearch((prev) => ({
+                            ...prev,
+                            [task._id]: e.target.value,
+                          }))
+                        }
+                        placeholder="Search members..."
+                        className="w-full mb-2 px-2 py-1 text-xs border rounded bg-white text-gray-700 shadow-sm"
+                      />
+                      {filteredMembers.length > 0 ? (
+                        filteredMembers.map((member) => (
+                          <button
+                            key={member._id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addMemberToTask(task._id, member._id);
+                              setShowMemberSelector(null);
+                            }}
+                            disabled={isLoading}
+                            className={`block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                          >
+                            {member.first_name} {member.last_name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="text-xs text-gray-400 px-3 py-2">
+                          No members found
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
+                </>
+              ) : (
+                <span className="text-gray-400 text-xs">
+                  No group members available
+                </span>
               )}
             </div>
           )}
@@ -1337,22 +1343,25 @@ export const TaskAssignmentTable = ({
                                       }
                                     }}
                                     disabled={
-                                      downloadingDocx ===
-                                      chapterTasks[0]._id
+                                      downloadingDocx === chapterTasks[0]._id
                                     }
                                   >
-                                    {downloadingDocx ===
-                                    chapterTasks[0]._id ? (
+                                    {downloadingDocx === chapterTasks[0]._id ? (
                                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                     ) : (
                                       <FaDownload className="w-4 h-4" />
                                     )}
                                   </button>
                                   {/* Only show Notes and Submit for non-excluded chapters */}
-                                  {!["title_page", "appendix_a", "appendix_d"].includes(
-                                    chapterTasks[0].chapter,
-                                  ) && (
+                                  {![
+                                    "title_page",
+                                    "appendix_a",
+                                    "appendix_d",
+                                  ].includes(chapterTasks[0].chapter) && (
                                     <>
+                                      <span className="mx-2 text-gray-300 select-none">
+                                        |
+                                      </span>
                                       <button
                                         className="text-yellow-500 hover:text-yellow-600 transition-colors"
                                         title="View Notes"
@@ -1374,46 +1383,81 @@ export const TaskAssignmentTable = ({
                                   )}
                                   {/* Submit/Cancel button for project managers */}
                                   {group &&
-                                    group.project_manager_id === currentUserId &&
-                                    !["title_page", "appendix_a", "appendix_d"].includes(chapterTasks[0].chapter) &&
-                                    getDocumentStatus(chapterTasks[0].chapter) !== 3 && // Hide for rejected documents
-                                    (canSubmitDocument(chapterTasks[0].chapter, chapterTasks) ||
-                                      canCancelSubmission(chapterTasks[0].chapter)) && (
-                                    <>
-                                      <button
-                                        className={`transition-colors ${
-                                          canCancelSubmission(chapterTasks[0].chapter)
-                                            ? "text-red-600 hover:text-red-800"
-                                            : "text-green-600 hover:text-green-800"
-                                        }`}
-                                        title={
-                                          canCancelSubmission(chapterTasks[0].chapter)
-                                            ? "Cancel Submission"
-                                            : "Submit Document"
-                                        }
-                                        onClick={() => {
-                                          if (canSubmitDocument(chapterTasks[0].chapter, chapterTasks)) {
-                                            handleSubmitDocument(chapterTasks[0].chapter);
-                                          } else if (canCancelSubmission(chapterTasks[0].chapter)) {
-                                            handleCancelSubmission(chapterTasks[0].chapter);
+                                    group.project_manager_id ===
+                                      currentUserId &&
+                                    ![
+                                      "title_page",
+                                      "appendix_a",
+                                      "appendix_d",
+                                    ].includes(chapterTasks[0].chapter) &&
+                                    getDocumentStatus(
+                                      chapterTasks[0].chapter,
+                                    ) !== 3 && // Hide for rejected documents
+                                    (canSubmitDocument(
+                                      chapterTasks[0].chapter,
+                                      chapterTasks,
+                                    ) ||
+                                      canCancelSubmission(
+                                        chapterTasks[0].chapter,
+                                      )) && (
+                                      <>
+                                        <button
+                                          className={`transition-colors ${
+                                            canCancelSubmission(
+                                              chapterTasks[0].chapter,
+                                            )
+                                              ? "text-red-600 hover:text-red-800"
+                                              : "text-green-600 hover:text-green-800"
+                                          }`}
+                                          title={
+                                            canCancelSubmission(
+                                              chapterTasks[0].chapter,
+                                            )
+                                              ? "Cancel Submission"
+                                              : "Submit Document"
                                           }
-                                        }}
-                                        disabled={
-                                          submittingDocument === chapterTasks[0].chapter ||
-                                          cancelingSubmission === chapterTasks[0].chapter
-                                        }
-                                      >
-                                        {submittingDocument === chapterTasks[0].chapter ||
-                                        cancelingSubmission === chapterTasks[0].chapter ? (
-                                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                        ) : canCancelSubmission(chapterTasks[0].chapter) ? (
-                                          <FaTimes className="w-4 h-4" />
-                                        ) : (
-                                          <FaCheck className="w-4 h-4" />
-                                        )}
-                                      </button>
-                                    </>
-                                  )}
+                                          onClick={() => {
+                                            if (
+                                              canSubmitDocument(
+                                                chapterTasks[0].chapter,
+                                                chapterTasks,
+                                              )
+                                            ) {
+                                              handleSubmitDocument(
+                                                chapterTasks[0].chapter,
+                                              );
+                                            } else if (
+                                              canCancelSubmission(
+                                                chapterTasks[0].chapter,
+                                              )
+                                            ) {
+                                              handleCancelSubmission(
+                                                chapterTasks[0].chapter,
+                                              );
+                                            }
+                                          }}
+                                          disabled={
+                                            submittingDocument ===
+                                              chapterTasks[0].chapter ||
+                                            cancelingSubmission ===
+                                              chapterTasks[0].chapter
+                                          }
+                                        >
+                                          {submittingDocument ===
+                                            chapterTasks[0].chapter ||
+                                          cancelingSubmission ===
+                                            chapterTasks[0].chapter ? (
+                                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                          ) : canCancelSubmission(
+                                              chapterTasks[0].chapter,
+                                            ) ? (
+                                            <FaTimes className="w-4 h-4" />
+                                          ) : (
+                                            <FaCheck className="w-4 h-4" />
+                                          )}
+                                        </button>
+                                      </>
+                                    )}
                                 </div>
                               </td>
                             </tr>
@@ -1490,8 +1534,7 @@ export const TaskAssignmentTable = ({
                                     e.stopPropagation();
                                     const document = documents.find(
                                       (doc) =>
-                                        doc.chapter ===
-                                        chapterTasks[0].chapter,
+                                        doc.chapter === chapterTasks[0].chapter,
                                     );
                                     if (document) {
                                       handleDownloadDocx(document);
@@ -1501,17 +1544,18 @@ export const TaskAssignmentTable = ({
                                     downloadingDocx === chapterTasks[0]._id
                                   }
                                 >
-                                  {downloadingDocx ===
-                                  chapterTasks[0]._id ? (
+                                  {downloadingDocx === chapterTasks[0]._id ? (
                                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                   ) : (
                                     <FaDownload className="w-4 h-4" />
                                   )}
                                 </button>
                                 {/* Only show Notes and Submit for non-excluded chapters */}
-                                {!["title_page", "appendix_a", "appendix_d"].includes(
-                                  chapterTasks[0].chapter,
-                                ) && (
+                                {![
+                                  "title_page",
+                                  "appendix_a",
+                                  "appendix_d",
+                                ].includes(chapterTasks[0].chapter) && (
                                   <>
                                     <span className="mx-2 text-gray-300 select-none">
                                       |
@@ -1522,7 +1566,8 @@ export const TaskAssignmentTable = ({
                                       onClick={() => {
                                         const document = documents.find(
                                           (doc) =>
-                                            doc.chapter === chapterTasks[0].chapter,
+                                            doc.chapter ===
+                                            chapterTasks[0].chapter,
                                         );
                                         if (document) {
                                           setNotesPopupDoc(document);

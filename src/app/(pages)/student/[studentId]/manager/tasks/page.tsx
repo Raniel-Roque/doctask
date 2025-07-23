@@ -62,14 +62,18 @@ const ManagerTasksPage = ({ params }: ManagerTasksPageProps) => {
   // Construct group object from available data
   const constructGroup = () => {
     if (!groupId || !taskAssignments?.groupMembers) return undefined;
-    
-    const projectManager = taskAssignments.groupMembers.find(member => member.isProjectManager);
-    const members = taskAssignments.groupMembers.filter(member => !member.isProjectManager);
-    
+
+    const projectManager = taskAssignments.groupMembers.find(
+      (member) => member.isProjectManager,
+    );
+    const members = taskAssignments.groupMembers.filter(
+      (member) => !member.isProjectManager,
+    );
+
     return {
       _id: groupId as Id<"groupsTable">,
       project_manager_id: projectManager?._id as Id<"users">,
-      member_ids: members.map(member => member._id as Id<"users">)
+      member_ids: members.map((member) => member._id as Id<"users">),
     };
   };
 
