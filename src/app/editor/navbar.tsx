@@ -19,9 +19,6 @@ import {
 import {
   BoldIcon,
   FileIcon,
-  FileJsonIcon,
-  FileTextIcon,
-  GlobeIcon,
   ItalicIcon,
   PrinterIcon,
   Redo2Icon,
@@ -32,6 +29,7 @@ import {
   Undo2Icon,
   DownloadIcon,
   HistoryIcon,
+  PlusIcon,
 } from "lucide-react";
 import { BsFilePdf, BsFiletypeDocx } from "react-icons/bs";
 import { useEditorStore } from "@/store/use-editor-store";
@@ -445,38 +443,7 @@ export const Navbar = ({
     onDownload(blob, generateFilename("docx"));
   };
 
-  const onSaveJSON = () => {
-    if (!editor) return;
 
-    const content = editor.getJSON();
-    const blob = new Blob([JSON.stringify(content)], {
-      type: "application/json",
-    });
-
-    onDownload(blob, generateFilename("json"));
-  };
-
-  const onSaveHTML = () => {
-    if (!editor) return;
-
-    const content = editor.getHTML();
-    const blob = new Blob([content], {
-      type: "text/html",
-    });
-
-    onDownload(blob, generateFilename("html"));
-  };
-
-  const onSaveText = () => {
-    if (!editor) return;
-
-    const content = editor.getText();
-    const blob = new Blob([content], {
-      type: "text/plain",
-    });
-
-    onDownload(blob, generateFilename("txt"));
-  };
 
   const onPrint = () => {
     // Add print-specific styles to eliminate headers and footers
@@ -565,18 +532,6 @@ export const Navbar = ({
                         <BsFilePdf className="mr-2 size-4" />
                         PDF
                       </MenubarItem>
-                      <MenubarItem onClick={onSaveText}>
-                        <FileTextIcon className="mr-2 size-4" />
-                        Text
-                      </MenubarItem>
-                      <MenubarItem onClick={onSaveJSON}>
-                        <FileJsonIcon className="mr-2 size-4" />
-                        JSON
-                      </MenubarItem>
-                      <MenubarItem onClick={onSaveHTML}>
-                        <GlobeIcon className="mr-2 size-4" />
-                        HTML
-                      </MenubarItem>
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarItem onClick={onPrint}>
@@ -631,7 +586,7 @@ export const Navbar = ({
                       <MenubarSubContent>
                         {/* 10x10 Table Grid */}
                         <div className="p-2">
-                          <div className="grid grid-cols-10 gap-0.5 w-[200px]">
+                          <div className="grid grid-cols-10 gap-0.5 w-[180px]">
                             {Array.from({ length: 10 * 10 }).map((_, index) => {
                               const row = Math.floor(index / 10) + 1;
                               const col = (index % 10) + 1;
@@ -652,9 +607,38 @@ export const Navbar = ({
                               );
                             })}
                           </div>
-                          <div className="mt-2 text-sm text-center">
-                            {selectedCols} × {selectedRows}
+                          <div className="border-t border-neutral-200 my-2"></div>
+                          <div className="mt-2 flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              <label className="text-sm font-medium text-neutral-700">Row:</label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={selectedRows}
+                                onChange={(e) => setSelectedRows(parseInt(e.target.value) || 1)}
+                                className="w-12 h-6 px-1 text-sm border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <label className="text-sm font-medium text-neutral-700">Col:</label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={selectedCols}
+                                onChange={(e) => setSelectedCols(parseInt(e.target.value) || 1)}
+                                className="w-12 h-6 px-1 text-sm border border-neutral-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
                           </div>
+                          <button
+                            onClick={() => createTable(selectedRows, selectedCols)}
+                            className="w-full mt-2 h-7 flex items-center justify-center gap-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-sm transition-colors"
+                          >
+                            <PlusIcon className="size-3" />
+                            Add Table
+                          </button>
                         </div>
                       </MenubarSubContent>
                     </MenubarSub>

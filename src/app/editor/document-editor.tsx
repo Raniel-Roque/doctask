@@ -58,7 +58,7 @@ export const DocumentEditor = ({
 
   return (
     <div className="min-h-screen bg-[#FAFBFD] print:!bg-white print:!min-h-0 print:!p-0 print:!m-0">
-      <div className="print:hidden">
+      <div className="print:hidden fixed top-0 left-0 right-0 z-50 bg-[#FAFBFD]">
         <Navbar
           title={title}
           viewOnly={!isEditable}
@@ -78,18 +78,20 @@ export const DocumentEditor = ({
           </div>
         )}
       </div>
-      <ImageDragDropWrapper isEditable={isEditable}>
-        <div className="flex justify-center print:!block print:!w-full print:!p-0 print:!m-0">
-          <div className="max-w-screen-lg w-full flex flex-col px-4 py-4 gap-y-2 print:!max-w-none print:!p-0 print:!m-0 print:!block print:!gap-0 print:!w-full">
-            <Editor
-              initialContent={initialContent}
-              isEditable={isEditable}
-              userType={userType}
-              suppressReadOnlyBanner={true}
-            />
+      <div className="pt-32 print:pt-0">
+        <ImageDragDropWrapper isEditable={isEditable}>
+          <div className="flex justify-center print:!block print:!w-full print:!p-0 print:!m-0">
+            <div className="max-w-screen-lg w-full flex flex-col px-4 py-4 gap-y-2 print:!max-w-none print:!p-0 print:!m-0 print:!block print:!gap-0 print:!w-full">
+              <Editor
+                initialContent={initialContent}
+                isEditable={isEditable}
+                userType={userType}
+                suppressReadOnlyBanner={true}
+              />
+            </div>
           </div>
-        </div>
-      </ImageDragDropWrapper>
+        </ImageDragDropWrapper>
+      </div>
 
       {/* Version History Panel */}
       <VersionHistoryPanel
