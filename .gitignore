@@ -149,11 +149,6 @@ public/downloads/*.deb
 public/downloads/*.rpm
 public/downloads/*.snap
 
-# Electron build outputs
-dist/
-build/
-release/
-
 # Package manager lock files (optional - some teams prefer to commit these)
 # package-lock.json
 # yarn.lock
