@@ -216,7 +216,7 @@ export const TaskAssignmentTable = ({
       .join(",");
   }, [groupMembers]);
 
-  // Fetch profile images only when the members change
+  // Fetch profile images only when the members change with debouncing
   useEffect(() => {
     const fetchImages = async () => {
       if (!groupMembers || groupMembers.length === 0) {
@@ -243,9 +243,14 @@ export const TaskAssignmentTable = ({
       }
     };
 
-    if (memberIds) {
-      fetchImages();
-    }
+    // Add debouncing to prevent rapid successive calls
+    const timeoutId = setTimeout(() => {
+      if (memberIds) {
+        fetchImages();
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
   }, [memberIds, groupMembers]);
 
   useEffect(() => {

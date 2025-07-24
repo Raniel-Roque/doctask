@@ -211,6 +211,17 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             </div>
 
             <form onSubmit={handleVerifyPassword} className="space-y-4">
+              {/* Hidden username field for accessibility and password managers */}
+              {user?.emailAddresses?.[0]?.emailAddress && (
+                <input
+                  type="email"
+                  name="username"
+                  value={user.emailAddresses[0].emailAddress.toLowerCase()}
+                  readOnly
+                  style={{ display: "none" }}
+                  autoComplete="username"
+                />
+              )}
               <p className="text-sm text-gray-600 mb-4">
                 Enter your current password to continue with this destructive
                 action.

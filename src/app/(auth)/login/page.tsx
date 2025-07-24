@@ -1,6 +1,6 @@
 "use client";
 
-import { useSignIn } from "@clerk/clerk-react";
+import { useSignIn, useUser } from "@clerk/clerk-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,8 @@ interface ClerkError {
 
 const LoginPage = () => {
   const { isLoaded, signIn, setActive } = useSignIn();
-  const { isSignedIn, signOut } = useAuth();
+  const { signOut, isSignedIn } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -41,12 +42,7 @@ const LoginPage = () => {
   const [forgotStep, setForgotStep] = useState(false); // false: login, true: forgot password
   const [forgotStepIndex, setForgotStepIndex] = useState(0); // 0: code, 1: reset password
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  useEffect(() => {
-    if (isSignedIn) {
-      router.push("/");
-    }
-  }, [isSignedIn, router]);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     // Check for success parameters in URL
@@ -92,6 +88,8 @@ const LoginPage = () => {
   }, []);
 
   useEffect(() => {
+    setIsClient(true);
+
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
     };
@@ -106,6 +104,15 @@ const LoginPage = () => {
     setShowPassword(false);
     setShowConfirmPassword(false);
   }, [step, forgotStep, forgotStepIndex]);
+
+  // Redirect if user is already authenticated
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (isLoaded && isSignedIn && user) {
+      // Redirect to root page to let the SmartRedirect handle the navigation
+      router.replace("/");
+    }
+  }, [isLoaded, isSignedIn, user, router]);
 
   if (isMobile) {
     return (
@@ -849,6 +856,15 @@ const LoginPage = () => {
               onSubmit={handlePasswordSubmit}
               autoComplete="on"
             >
+              {/* Hidden username field for accessibility and password managers */}
+              <input
+                type="email"
+                name="username"
+                value={email.toLowerCase()}
+                readOnly
+                style={{ display: "none" }}
+                autoComplete="username"
+              />
               <PasswordInput
                 password={password}
                 setPassword={setPassword}
@@ -955,6 +971,7 @@ const LoginPage = () => {
                   showConfirmPassword={showConfirmPassword}
                   setShowConfirmPassword={setShowConfirmPassword}
                   loading={loading}
+                  email={email}
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!isLoaded) return;
@@ -1139,14 +1156,36 @@ const LoginPage = () => {
           )}
         </div>
         {/* Download Button - bottom left */}
-        {typeof window !== "undefined" && !window.electron && (
+        {isClient && typeof window !== "undefined" && !window.electron && (
           <button
             onClick={() => {
-              const link = document.createElement("a");
-              link.href =
-                "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
-              link.download = "DocTask-Setup-1.0.0.exe";
-              link.click();
+              try {
+                const link = document.createElement("a");
+                link.href =
+                  "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
+                link.download = "DocTask-Setup-1.0.0.exe";
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+
+                // Ensure the link is properly attached to the DOM
+                document.body.appendChild(link);
+                link.click();
+
+                // Clean up the link element
+                setTimeout(() => {
+                  if (document.body.contains(link)) {
+                    document.body.removeChild(link);
+                  }
+                }, 100);
+              } catch (error) {
+                console.error("Download failed:", error);
+                // Fallback: open in new tab
+                window.open(
+                  "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe",
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }
             }}
             className="absolute bottom-0 left-0 mb-4 ml-4 text-sm text-red-200 font-light underline italic hover:text-white transition-colors duration-200 select-none"
           >

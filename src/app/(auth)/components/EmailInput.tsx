@@ -22,14 +22,14 @@ const EmailInput: React.FC<EmailInputProps> = ({
   onAutocomplete,
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only sanitize HTML and special chars, but preserve case and spaces
+    // Sanitize and convert to lowercase for password manager compatibility
     const sanitizedValue = sanitizeInput(e.target.value, {
       trim: false, // Don't trim during input to allow spaces
       removeHtml: true,
       escapeSpecialChars: true,
-      preserveCase: true,
+      preserveCase: false, // Convert to lowercase
     });
-    setEmail(sanitizedValue);
+    setEmail(sanitizedValue.toLowerCase());
 
     // If this is an autocomplete event (the input was filled by the browser)
     if (
@@ -54,7 +54,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
         type="email"
         autoComplete="email"
         required
-        value={email}
+        value={email.toLowerCase()}
         onChange={handleChange}
         className="appearance-none rounded-lg relative block w-full pl-10 pr-3 h-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
         placeholder={placeholder}

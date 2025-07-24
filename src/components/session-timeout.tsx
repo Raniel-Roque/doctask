@@ -34,7 +34,7 @@ export function SessionTimeout() {
         if (timeSinceLastActivity >= TIMEOUT_DURATION) {
           localStorage.removeItem(LAST_ACTIVITY_KEY);
           signOut();
-          router.push("/login");
+          router.replace("/login");
           return;
         }
       }
@@ -43,26 +43,23 @@ export function SessionTimeout() {
     // Run initial check
     checkInitialTimeout();
 
-    // Function to update last activity timestamp
+    // Function to update last activity timestamp with throttling
+    let lastUpdateTime = 0;
     const updateLastActivity = () => {
-      const newTime = Date.now();
-      setLastActivity(newTime);
-      localStorage.setItem(LAST_ACTIVITY_KEY, newTime.toString());
+      const now = Date.now();
+      // Throttle updates to once per second to reduce performance impact
+      if (now - lastUpdateTime > 1000) {
+        lastUpdateTime = now;
+        setLastActivity(now);
+        localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+      }
     };
 
-    // Add event listeners for user activity
-    const events = [
-      "mousedown",
-      "mousemove",
-      "keypress",
-      "scroll",
-      "touchstart",
-      "click",
-      "keydown",
-    ];
+    // Add event listeners for user activity (reduced list)
+    const events = ["mousedown", "keypress", "click", "keydown"];
 
     events.forEach((event) => {
-      window.addEventListener(event, updateLastActivity);
+      window.addEventListener(event, updateLastActivity, { passive: true });
     });
 
     // Check for timeout
@@ -76,13 +73,13 @@ export function SessionTimeout() {
         if (timeSinceLastActivity >= TIMEOUT_DURATION) {
           localStorage.removeItem(LAST_ACTIVITY_KEY);
           signOut();
-          router.push("/login");
+          router.replace("/login");
         }
       }
     };
 
-    // Check every 10 seconds
-    const intervalId = setInterval(checkTimeout, 10000);
+    // Check every 30 seconds instead of 10 to reduce frequency
+    const intervalId = setInterval(checkTimeout, 30000);
 
     // Handle tab/window visibility changes
     const handleVisibilityChange = () => {
@@ -111,10 +108,12 @@ export function SessionTimeout() {
       localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
     };
 
-    // Add visibility and focus event listeners
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("blur", handleBlur);
+    // Add visibility and focus event listeners with passive option where possible
+    document.addEventListener("visibilitychange", handleVisibilityChange, {
+      passive: true,
+    });
+    window.addEventListener("focus", handleFocus, { passive: true });
+    window.addEventListener("blur", handleBlur, { passive: true });
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     // Cleanup

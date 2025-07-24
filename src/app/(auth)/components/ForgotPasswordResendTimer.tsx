@@ -52,7 +52,7 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
     }
   }, [email, loading]);
 
-  // Countdown timer
+  // Countdown timer with reduced frequency for better performance
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setInterval(() => {
@@ -64,7 +64,7 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
           }
           return prev - 1;
         });
-      }, 1000);
+      }, 2000); // Changed from 1000ms to 2000ms to reduce frequency
       return () => clearInterval(timer);
     }
   }, [timeLeft, email]);

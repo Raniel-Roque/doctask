@@ -235,12 +235,12 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
   useEffect(() => {
     if (!isEditable) return;
 
-    let saveInterval = 5000; // 5 seconds for solo editing (was 1 second)
+    let saveInterval = 10000; // 10 seconds for solo editing (increased from 5s)
     let backupInterval: NodeJS.Timeout;
 
     const updateSaveInterval = (isCollaborative: boolean) => {
       if (backupInterval) clearInterval(backupInterval);
-      saveInterval = isCollaborative ? 60000 : 5000; // 60s collaborative (was 30s), 5s solo (was 1s)
+      saveInterval = isCollaborative ? 120000 : 10000; // 120s collaborative (increased from 60s), 10s solo (increased from 5s)
       backupInterval = setInterval(saveToDatabase, saveInterval);
     };
 

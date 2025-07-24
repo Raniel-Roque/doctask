@@ -1,29 +1,79 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "convex/react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { api } from "../../convex/_generated/api";
 
-const LoadingPage = () => {
+// Role constants
+const ROLES = {
+  STUDENT: 0,
+  ADVISER: 1,
+  INSTRUCTOR: 2,
+} as const;
+
+const SmartRedirect = () => {
   const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
 
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      router.replace("/login");
-    }
-  }, [isLoaded, isSignedIn, router]);
+  const convexUser = useQuery(api.fetch.getUserByClerkId, {
+    clerkId: user?.id ?? "",
+  });
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-white">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-black border-solid" />
-        <p className="text-gray-600 text-lg font-medium">
-          Loading Application...
-        </p>
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    // If not signed in, redirect to login
+    if (!isSignedIn) {
+      router.replace("/login");
+      return;
+    }
+
+    // If signed in but no user data yet, wait
+    if (!user || !convexUser) return;
+
+    // If user is not verified, stay on login page
+    if (!convexUser.email_verified) {
+      router.replace("/login");
+      return;
+    }
+
+    // Determine the correct destination based on role and subrole
+    const { role, subrole, _id } = convexUser;
+    let destination = "";
+
+    if (role === ROLES.INSTRUCTOR) {
+      destination = `/instructor/${_id}/home`;
+    } else if (role === ROLES.ADVISER) {
+      destination = `/adviser/${_id}/home`;
+    } else if (role === ROLES.STUDENT && typeof subrole === "number") {
+      if (subrole === 0) {
+        destination = `/student/${_id}/member/home`;
+      } else if (subrole === 1) {
+        destination = `/student/${_id}/manager/home`;
+      }
+    }
+
+    // Only redirect if we have a valid destination
+    if (destination) {
+      router.replace(destination);
+    }
+  }, [isLoaded, isSignedIn, user, convexUser, router]);
+
+  // Show minimal loading only if we're still determining the destination
+  if (!isLoaded || (isSignedIn && (!user || !convexUser))) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <LoadingSpinner size="md" text="Loading..." />
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Return null to prevent any flash of content
+  return null;
 };
 
-export default LoadingPage;
+export default SmartRedirect;

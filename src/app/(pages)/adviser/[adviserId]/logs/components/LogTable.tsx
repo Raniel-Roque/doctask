@@ -341,9 +341,9 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
   }
 
   return (
-    <div className="mt-4">
-      <div className="mb-4 flex flex-wrap gap-4">
-        <div className="flex-1 relative">
+    <div className="mt-4 w-full">
+      <div className="mb-4 flex flex-col lg:flex-row gap-4 w-full">
+        <div className="flex-1 relative min-w-0">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
             <FaSearch />
           </div>
@@ -358,7 +358,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
             }}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <div
             className="relative flex flex-col items-start"
             style={{ minWidth: "10rem" }}
@@ -415,12 +415,12 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
           </div>
         </div>
       </div>
-      <div className="relative">
-        <table className="min-w-full bg-white border border-gray-200">
+      <div className="relative w-full overflow-x-auto">
+        <table className="w-full bg-white border border-gray-200">
           <thead>
             <tr className="bg-[#B54A4A]">
               <th
-                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer w-32 whitespace-nowrap"
+                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer min-w-[12rem]"
                 onClick={() => handleSort("_creationTime")}
               >
                 <div className="flex items-center justify-center text-xs">
@@ -428,7 +428,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                   <span className="ml-1">{getSortIcon("_creationTime")}</span>
                 </div>
               </th>
-              <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-24">
+              <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider min-w-[6rem]">
                 <div className="flex items-center justify-center gap-2">
                   <span className="font-medium uppercase">ACTION</span>
                   <button
@@ -497,7 +497,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                   </div>
                 )}
               </th>
-              <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider w-40">
+              <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider min-w-[10rem]">
                 <div className="flex items-center justify-center gap-2">
                   <span className="font-medium uppercase">ENTITY</span>
                   <button
@@ -591,20 +591,20 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                     key={log._id}
                     className={`${index % 2 === 0 ? "bg-white" : "bg-gray-200"}`}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-left w-32">
+                    <td className="px-6 py-4 whitespace-nowrap text-left min-w-[12rem]">
                       {format(
                         new Date(log._creationTime),
                         "MMM dd, yyyy hh:mm a",
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center w-24">
+                    <td className="px-6 py-4 whitespace-nowrap text-center min-w-[6rem]">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionColors(log.action)}`}
                       >
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-left w-40">
+                    <td className="px-6 py-4 whitespace-nowrap text-left min-w-[10rem]">
                       <CollapsibleText
                         text={affectedEntity.display}
                         maxLength={20}
@@ -612,7 +612,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                         id={affectedEntity.id}
                       />
                     </td>
-                    <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line flex-1">
+                    <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line w-full">
                       <CollapsibleText
                         text={log.details}
                         maxLength={20}

@@ -13,6 +13,7 @@ interface ResetPasswordInputProps {
   setShowConfirmPassword: (show: boolean) => void;
   loading?: boolean;
   onSubmit: (e: React.FormEvent) => void;
+  email?: string; // Add email prop for accessibility
 }
 
 const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
@@ -26,6 +27,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
   setShowConfirmPassword,
   loading = false,
   onSubmit,
+  email,
 }) => {
   // Password validation checks
   const hasLowercase = /[a-z]/.test(newPassword);
@@ -38,6 +40,17 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
 
   return (
     <form className="mt-8 space-y-6" onSubmit={onSubmit}>
+      {/* Hidden username field for accessibility and password managers */}
+      {email && (
+        <input
+          type="email"
+          name="username"
+          value={email.toLowerCase()}
+          readOnly
+          style={{ display: "none" }}
+          autoComplete="username"
+        />
+      )}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 z-20">
           <FaLock color="#B54A4A" />

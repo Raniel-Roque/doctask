@@ -215,6 +215,17 @@ export default function ChangePassword({
 
         {!isVerified ? (
           <form onSubmit={handleVerifyPassword} className="space-y-4">
+            {/* Hidden username field for accessibility and password managers */}
+            {user?.emailAddresses?.[0]?.emailAddress && (
+              <input
+                type="email"
+                name="username"
+                value={user.emailAddresses[0].emailAddress.toLowerCase()}
+                readOnly
+                style={{ display: "none" }}
+                autoComplete="username"
+              />
+            )}
             <div>
               <label
                 htmlFor="currentPassword"
@@ -257,6 +268,17 @@ export default function ChangePassword({
           </form>
         ) : (
           <form onSubmit={handleResetPassword} className="space-y-4">
+            {/* Hidden username field for accessibility and password managers */}
+            {user?.emailAddresses?.[0]?.emailAddress && (
+              <input
+                type="email"
+                name="username"
+                value={user.emailAddresses[0].emailAddress.toLowerCase()}
+                readOnly
+                style={{ display: "none" }}
+                autoComplete="username"
+              />
+            )}
             <div>
               <label
                 htmlFor="newPassword"

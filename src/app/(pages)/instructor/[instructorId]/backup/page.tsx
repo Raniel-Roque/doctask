@@ -308,7 +308,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       // Try to sign out with fallback navigation and timeout
       const navigationTimeout = setTimeout(() => {
         localStorage.setItem("showRestoreBanner", "true");
-        window.location.href = "/login";
+        router.replace("/login");
       }, 5000); // 5 second timeout
 
       try {
@@ -316,11 +316,11 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         clearTimeout(navigationTimeout);
         // If signOut succeeds, navigate
         localStorage.setItem("showRestoreBanner", "true");
-        router.push("/login");
+        router.replace("/login");
       } catch {
         clearTimeout(navigationTimeout);
         localStorage.setItem("showRestoreBanner", "true");
-        window.location.href = "/login";
+        router.replace("/login");
       }
     } catch {
       setNotification({
@@ -451,6 +451,17 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           </DialogHeader>
 
           <div className="py-4">
+            {/* Hidden username field for accessibility and password managers */}
+            {user?.emailAddresses?.[0]?.emailAddress && (
+              <input
+                type="email"
+                name="username"
+                value={user.emailAddresses[0].emailAddress.toLowerCase()}
+                readOnly
+                style={{ display: "none" }}
+                autoComplete="username"
+              />
+            )}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}

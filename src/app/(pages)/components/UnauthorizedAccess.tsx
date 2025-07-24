@@ -48,10 +48,10 @@ const UnauthorizedAccess = ({
           <p className="text-gray-600 mb-6">{getMessage()}</p>
         </div>
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.replace("/login")}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
         >
-          Go to Homepage
+          Go to Login
         </button>
       </div>
     </div>

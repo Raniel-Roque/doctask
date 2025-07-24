@@ -36,26 +36,33 @@ function RedirectHandler() {
     if (!isLoaded || !isSignedIn || !user || !convexUser) return;
 
     const { role, subrole, _id } = convexUser;
-    let expectedPath = "";
 
-    if (role === ROLES.INSTRUCTOR) {
-      expectedPath = `/instructor/${_id}/home`;
-    } else if (role === ROLES.ADVISER) {
-      expectedPath = `/adviser/${_id}/home`;
-    } else if (role === ROLES.STUDENT && typeof subrole === "number") {
-      if (subrole === 0) {
-        expectedPath = `/student/${_id}/member/home`;
-      } else if (subrole === 1) {
-        expectedPath = `/student/${_id}/manager/home`;
+    // Only redirect if user is on a generic role path (e.g., /student/123 without /member or /manager)
+    const rolePath =
+      role === ROLES.INSTRUCTOR
+        ? "instructor"
+        : role === ROLES.ADVISER
+          ? "adviser"
+          : "student";
+    const genericRolePath = `/${rolePath}/${_id}`;
+
+    if (pathname === genericRolePath) {
+      let expectedPath = "";
+      if (role === ROLES.INSTRUCTOR) {
+        expectedPath = `/instructor/${_id}/home`;
+      } else if (role === ROLES.ADVISER) {
+        expectedPath = `/adviser/${_id}/home`;
+      } else if (role === ROLES.STUDENT && typeof subrole === "number") {
+        if (subrole === 0) {
+          expectedPath = `/student/${_id}/member/home`;
+        } else if (subrole === 1) {
+          expectedPath = `/student/${_id}/manager/home`;
+        }
       }
-    }
 
-    if (
-      pathname === "/" ||
-      pathname ===
-        `/${role === ROLES.INSTRUCTOR ? "instructor" : role === ROLES.ADVISER ? "adviser" : "student"}/${_id}`
-    ) {
-      router.replace(expectedPath);
+      if (expectedPath) {
+        router.replace(expectedPath);
+      }
     }
   }, [isLoaded, isSignedIn, user, convexUser, router, pathname]);
 
@@ -78,12 +85,11 @@ function UnauthRedirect() {
   return null;
 }
 
-// New component to gate content rendering
+// Simplified component to gate content rendering
 function AuthStatusGate({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const pathname = usePathname();
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   const convexUser = useQuery(api.fetch.getUserByClerkId, {
@@ -97,11 +103,6 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
       role === ROLES.ADVISER ||
       role === ROLES.INSTRUCTOR
     );
-  };
-
-  // Sanitize and validate path segments
-  const sanitizePath = (path: string) => {
-    return path.replace(/\.\./g, "").replace(/\/+/g, "/");
   };
 
   // Check if the current path matches the user's role and subrole
@@ -118,50 +119,55 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 
     // For students, validate subrole
     if (role === ROLES.STUDENT) {
-      // Sanitize path and check student path
-      const sanitizedPath = sanitizePath(pathname);
       const subrolePath = subrole === 0 ? "member" : "manager";
       const pathPattern = new RegExp(`^/student/${_id}/${subrolePath}/`);
-      return pathPattern.test(sanitizedPath);
+      return pathPattern.test(pathname);
     }
 
     // For non-students, check their respective paths
-    const sanitizedPath = sanitizePath(pathname);
     const basePath = role === ROLES.INSTRUCTOR ? "instructor" : "adviser";
     const pathPattern = new RegExp(`^/${basePath}/${_id}/`);
-    return pathPattern.test(sanitizedPath);
+    return pathPattern.test(pathname);
   };
-
-  useEffect(() => {
-    if (isLoaded) {
-      // If not signed in, redirect to login regardless of the path
-      if (!isSignedIn) {
-        router.replace("/login");
-        return;
-      }
-
-      // If signed in but no user data, also redirect to login
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      // If signed in and has user data, check verification status
-      // If not verified, stay on /login (handled by login page step logic)
-    }
-  }, [isLoaded, isSignedIn, user, convexUser, pathname, router]);
 
   // If not loaded yet, show nothing
   if (!isLoaded) {
     return null;
   }
 
-  // If not signed in or no user data, show nothing (will be redirected by useEffect)
+  // If not signed in or no user data, show nothing (will be redirected by root page)
   if (!isSignedIn || !user) {
     return null;
   }
 
-  // Render children when loaded, signed in, user and convexUser are available, AND on an authorized path and verified
+  // If user is not verified, show nothing (will be redirected by root page)
+  if (convexUser && !convexUser.email_verified) {
+    return null;
+  }
+
+  // If user is on login page but authenticated, allow redirect to happen
+  if (
+    pathname === "/login" &&
+    isSignedIn &&
+    user &&
+    convexUser &&
+    convexUser.email_verified
+  ) {
+    return <TermsAgreementWrapper>{children}</TermsAgreementWrapper>; // Allow login page to render for redirect
+  }
+
+  // If user is on root page and authenticated, allow it to render (for redirect logic)
+  if (
+    pathname === "/" &&
+    isSignedIn &&
+    user &&
+    convexUser &&
+    convexUser.email_verified
+  ) {
+    return <TermsAgreementWrapper>{children}</TermsAgreementWrapper>;
+  }
+
+  // Render children when all conditions are met
   if (
     isLoaded &&
     isSignedIn &&
