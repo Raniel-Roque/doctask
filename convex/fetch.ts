@@ -801,6 +801,7 @@ interface DocumentWithStatus {
   student_ids: Id<"users">[];
   status: number; // This now represents review_status from documentStatus table
   last_modified?: number; // This comes from documentStatus.last_modified
+  note_count: number; // Number of notes for this document
 }
 
 export const getDocumentsWithStatus = query({
@@ -878,6 +879,7 @@ export const getDocumentsWithStatus = query({
           student_ids: allStudentIds, // Attach the student IDs
           status: statusInfo?.review_status ?? 0, // Default to 0 (Not Submitted)
           last_modified: statusInfo?.last_modified,
+          note_count: statusInfo?.note_ids?.length ?? 0, // Number of notes for this document
         };
       });
 
@@ -1002,6 +1004,7 @@ interface AdviserDocumentWithStatus {
   content: string;
   status: number; // This represents review_status from documentStatus table
   last_modified?: number; // This comes from documentStatus.last_modified
+  note_count: number; // Number of notes for this document
 }
 
 interface AdviserGroupWithDocuments {
@@ -1237,6 +1240,7 @@ export const getAdviserDocuments = query({
               ...doc,
               status: statusInfo?.review_status ?? 0, // Default to 0 (Not Submitted)
               last_modified: statusInfo?.last_modified,
+              note_count: statusInfo?.note_ids?.length ?? 0, // Number of notes for this document
             };
           });
 

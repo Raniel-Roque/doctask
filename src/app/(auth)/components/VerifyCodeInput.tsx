@@ -43,6 +43,9 @@ const VerifyCodeInput: React.FC<VerifyCodeInputProps> = ({
           pattern="[0-9]*"
           maxLength={6}
           required
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck="false"
           value={code}
           onChange={(e) =>
             setCode(

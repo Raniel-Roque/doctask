@@ -399,38 +399,60 @@ const LoginPage = () => {
       });
 
       if (result.status === "complete") {
-        // Update Convex database to mark email as verified
-        const userRes = await fetch("/api/convex/get-user-by-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
+        try {
+          // Update Convex database to mark email as verified
+          const userRes = await fetch("/api/convex/get-user-by-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
 
-        if (!userRes.ok) {
-          throw new Error("Failed to fetch user for verification update");
+          if (!userRes.ok) {
+            throw new Error("Failed to fetch user for verification update");
+          }
+
+          const user = await userRes.json();
+
+          // Call the mark-email-verified API to update the user's email verification status
+          const verifyRes = await fetch("/api/convex/mark-email-verified", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user._id }),
+          });
+
+          if (!verifyRes.ok) {
+            throw new Error("Failed to mark email as verified");
+          }
+
+          // Clear resend timer to allow resending on subsequent attempts
+          const timerKey = `resendTimer_${email}`;
+          localStorage.removeItem(timerKey);
+
+          // Clear the code input
+          setCode("");
+
+          // Sign out and redirect to login with success message
+          await signOut();
+          router.push("/login?successverify=true");
+          localStorage.setItem("lastActivityTimestamp", Date.now().toString());
+        } catch (dbError) {
+          // If database update fails, still sign out but show error
+          console.error("Database update failed:", dbError);
+          await signOut();
+          setStep(1);
+          setCode("");
+          setNotification({
+            message:
+              "Email verified but failed to update database. Please try logging in again.",
+            type: "warning",
+          });
         }
-
-        const user = await userRes.json();
-
-        // Call the mark-email-verified API to update the user's email verification status
-        await fetch("/api/convex/mark-email-verified", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user._id }),
-        });
-
-        // Clear resend timer to allow resending on subsequent attempts
-        const timerKey = `resendTimer_${email}`;
-        localStorage.removeItem(timerKey);
-
-        await signOut();
-        router.push("/login?successverify=true");
-        localStorage.setItem("lastActivityTimestamp", Date.now().toString());
       } else {
         setNotification({
           message: "Invalid code. Please try again.",
           type: "error",
         });
+        setCode(""); // Clear the code input on error
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
@@ -438,6 +460,7 @@ const LoginPage = () => {
         message: errorMessage || "Invalid code. Please try again.",
         type: "error",
       });
+      setCode(""); // Clear the code input on error
     } finally {
       setLoading(false);
     }
@@ -641,49 +664,8 @@ const LoginPage = () => {
       shouldSendCode.toString(),
     );
 
-    if (shouldSendCode) {
-      // Send reset code only if no active timer
-      setSendingCode(true);
-      try {
-        if (!signIn) throw new Error("SignIn is not loaded");
-        const result = await signIn.create({
-          strategy: "reset_password_email_code",
-          identifier: email,
-        });
-        if (result.status === "needs_first_factor") {
-          // Clear the shouldSendForgotPasswordCode flag since we just sent a code
-          localStorage.removeItem(`shouldSendForgotPasswordCode_${email}`);
-
-          // Start the timer immediately for forgot password
-          const resetTime = Date.now() + 120000;
-          localStorage.setItem(
-            `forgotPasswordResendTimer_${email}`,
-            JSON.stringify({ resetTime }),
-          );
-
-          updateCodeRateLimit(email);
-          setNotification({
-            message:
-              "A password reset code has been sent to your email. Please check your inbox and spam folder.",
-            type: "success",
-          });
-        } else {
-          setNotification({
-            message: "Failed to send reset code. Please try again.",
-            type: "error",
-          });
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "";
-        setNotification({
-          message:
-            errorMessage || "Failed to send reset code. Please try again.",
-          type: "error",
-        });
-      } finally {
-        setSendingCode(false);
-      }
-    }
+    // Don't send code immediately - let the ResetCodeInput component handle it
+    // This makes it consistent with the regular verification flow
   };
 
   const handleForgotBack = () => {
@@ -810,44 +792,60 @@ const LoginPage = () => {
           )}
           {/* Step 2: Verification Code */}
           {step === 2 && (
-            <form className="mt-8 space-y-6" onSubmit={handleCodeSubmit}>
-              <VerifyCodeInput
-                code={code}
-                setCode={setCode}
-                loading={loading}
-                email={email}
-                onResendCode={handleResendCode}
-              />
-              <div className="mt-6">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                >
-                  {loading ? "Verifying..." : "Verify Code"}
-                  <svg
-                    className="ml-2 w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
-                </button>
-                <ResendTimer
-                  onResend={handleResendCode}
-                  disabled={sendingCode}
-                  loading={sendingCode}
+            <>
+              {/* Back Button for verification step */}
+              <button
+                type="button"
+                onClick={() => {
+                  setStep(1);
+                  setCode("");
+                  setNotification(null);
+                }}
+                disabled={loading}
+                className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ marginTop: "-2rem", marginLeft: "-1rem" }}
+              >
+                <FaArrowLeft className="mr-2" /> Back
+              </button>
+              <form className="mt-8 space-y-6" onSubmit={handleCodeSubmit}>
+                <VerifyCodeInput
+                  code={code}
+                  setCode={setCode}
+                  loading={loading}
                   email={email}
+                  onResendCode={handleResendCode}
                 />
-              </div>
-            </form>
+                <div className="mt-6">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                  >
+                    {loading ? "Verifying..." : "Verify Code"}
+                    <svg
+                      className="ml-2 w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M14 5l7 7m0 0l-7 7m7-7H3"
+                      />
+                    </svg>
+                  </button>
+                  <ResendTimer
+                    onResend={handleResendCode}
+                    disabled={sendingCode}
+                    loading={sendingCode}
+                    email={email}
+                  />
+                </div>
+              </form>
+            </>
           )}
           {/* Step 3: Password Input with Forgot Password */}
           {step === 3 && !forgotStep && (

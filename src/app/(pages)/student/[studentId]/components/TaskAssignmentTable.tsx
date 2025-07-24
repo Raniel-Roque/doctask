@@ -49,6 +49,7 @@ interface Document {
   title: string;
   content: string;
   status: number; // Document review status: 0=not_submitted, 1=submitted, 2=approved, 3=rejected
+  note_count: number; // Number of notes for this document
 }
 
 interface TaskAssignmentTableProps {
@@ -1368,7 +1369,7 @@ export const TaskAssignmentTable = ({
                                         |
                                       </span>
                                       <button
-                                        className="text-yellow-500 hover:text-yellow-600 transition-colors"
+                                        className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
                                         title="View Notes"
                                         onClick={() => {
                                           const document = documents.find(
@@ -1383,6 +1384,21 @@ export const TaskAssignmentTable = ({
                                         }}
                                       >
                                         <FaStickyNote className="w-4 h-4" />
+                                        {(() => {
+                                          const document = documents.find(
+                                            (doc) =>
+                                              doc.chapter ===
+                                              chapterTasks[0].chapter,
+                                          );
+                                          return document &&
+                                            document.note_count > 0 ? (
+                                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                              {document.note_count > 99
+                                                ? "99+"
+                                                : document.note_count}
+                                            </span>
+                                          ) : null;
+                                        })()}
                                       </button>
                                     </>
                                   )}
@@ -1566,7 +1582,7 @@ export const TaskAssignmentTable = ({
                                       |
                                     </span>
                                     <button
-                                      className="text-yellow-500 hover:text-yellow-600 transition-colors"
+                                      className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
                                       title="View Notes"
                                       onClick={() => {
                                         const document = documents.find(
@@ -1581,6 +1597,21 @@ export const TaskAssignmentTable = ({
                                       }}
                                     >
                                       <FaStickyNote className="w-4 h-4" />
+                                      {(() => {
+                                        const document = documents.find(
+                                          (doc) =>
+                                            doc.chapter ===
+                                            chapterTasks[0].chapter,
+                                        );
+                                        return document &&
+                                          document.note_count > 0 ? (
+                                          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                            {document.note_count > 99
+                                              ? "99+"
+                                              : document.note_count}
+                                          </span>
+                                        ) : null;
+                                      })()}
                                     </button>
                                   </>
                                 )}

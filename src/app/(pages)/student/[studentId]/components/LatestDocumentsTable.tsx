@@ -24,6 +24,7 @@ interface Document {
   content: string;
   status: number;
   last_modified?: number;
+  note_count: number; // Number of notes for this document
 }
 
 interface Task {
@@ -1471,13 +1472,17 @@ export const LatestDocumentsTable = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                       <div className="flex items-center gap-2 justify-center">
-                        <button
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
-                          title="View Document"
-                          onClick={() => handleViewDocument(doc)}
-                        >
-                          <FaEye className="w-4 h-4" />
-                        </button>
+                        {!["title_page", "appendix_a", "appendix_d"].includes(
+                          doc.chapter,
+                        ) && (
+                          <button
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            title="View Document"
+                            onClick={() => handleViewDocument(doc)}
+                          >
+                            <FaEye className="w-4 h-4" />
+                          </button>
+                        )}
                         {canEditDocument(doc) && (
                           <button
                             className="text-purple-600 hover:text-purple-800 transition-colors"
@@ -1511,7 +1516,7 @@ export const LatestDocumentsTable = ({
                               |
                             </span>
                             <button
-                              className="text-yellow-500 hover:text-yellow-600 transition-colors"
+                              className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
                               title="View Notes"
                               onClick={() => {
                                 setNotesPopupDoc(doc);
@@ -1519,6 +1524,11 @@ export const LatestDocumentsTable = ({
                               }}
                             >
                               <FaStickyNote className="w-4 h-4" />
+                              {doc.note_count > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                  {doc.note_count > 99 ? "99+" : doc.note_count}
+                                </span>
+                              )}
                             </button>
                           </>
                         )}

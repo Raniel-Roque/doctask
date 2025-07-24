@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { FaEnvelope } from "react-icons/fa";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import ForgotPasswordResendTimer from "./ForgotPasswordResendTimer";
@@ -22,23 +22,18 @@ const ResetCodeInput: React.FC<ResetCodeInputProps> = ({
   onResendCode,
   onSubmit,
 }) => {
-  const [hasCheckedAutoSend, setHasCheckedAutoSend] = useState(false);
-
   useEffect(() => {
     // Check if we should send code automatically when component loads
-    if (!hasCheckedAutoSend && onResendCode) {
-      setHasCheckedAutoSend(true);
-      const shouldSendCode = localStorage.getItem(
-        `shouldSendForgotPasswordCode_${email}`,
-      );
-      if (shouldSendCode === "true") {
-        // Clear the flag so we don't send again
-        localStorage.removeItem(`shouldSendForgotPasswordCode_${email}`);
-        // Send the code
-        onResendCode();
-      }
+    const shouldSendCode = localStorage.getItem(
+      `shouldSendForgotPasswordCode_${email}`,
+    );
+    if (shouldSendCode === "true" && onResendCode) {
+      // Clear the flag so we don't send again
+      localStorage.removeItem(`shouldSendForgotPasswordCode_${email}`);
+      // Send the code
+      onResendCode();
     }
-  }, [email, onResendCode, hasCheckedAutoSend]);
+  }, [email, onResendCode]);
 
   return (
     <form className="mt-8 space-y-6" onSubmit={onSubmit}>
@@ -49,6 +44,9 @@ const ResetCodeInput: React.FC<ResetCodeInputProps> = ({
           pattern="[0-9]*"
           maxLength={6}
           required
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck="false"
           value={code}
           onChange={(e) =>
             setCode(

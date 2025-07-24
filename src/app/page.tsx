@@ -41,6 +41,15 @@ const SmartRedirect = () => {
       return;
     }
 
+    // Check if user has agreed to terms and privacy policy
+    // If not agreed, don't redirect - let TermsAgreementWrapper handle it
+    if (
+      convexUser.terms_agreed !== true ||
+      convexUser.privacy_agreed !== true
+    ) {
+      return; // Don't redirect, let TermsAgreementWrapper show the popup
+    }
+
     // Determine the correct destination based on role and subrole
     const { role, subrole, _id } = convexUser;
     let destination = "";

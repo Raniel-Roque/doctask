@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth, useUser, useClerk } from "@clerk/clerk-react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient, useQuery } from "convex/react";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
@@ -91,6 +91,7 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const pathname = usePathname();
   const [error, setError] = useState<string | null>(null);
+  const { signOut } = useClerk();
 
   const convexUser = useQuery(api.fetch.getUserByClerkId, {
     clerkId: user?.id ?? "",
@@ -145,15 +146,33 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
     return null;
   }
 
-  // If user is on login page but authenticated, allow redirect to happen
-  if (
-    pathname === "/login" &&
-    isSignedIn &&
-    user &&
-    convexUser &&
-    convexUser.email_verified
-  ) {
-    return <TermsAgreementWrapper>{children}</TermsAgreementWrapper>; // Allow login page to render for redirect
+  // If user is authenticated but not found in Convex database, show error
+  if (isSignedIn && user && convexUser === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Account Not Found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            Your account could not be found in our database. This might happen
+            if your account was recently created or if there was a system issue.
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={() => signOut()}
+              className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+            >
+              Sign Out
+            </button>
+            <p className="text-sm text-gray-500">
+              Please contact support if this issue persists.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // If user is on root page and authenticated, allow it to render (for redirect logic)
@@ -167,13 +186,36 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
     return <TermsAgreementWrapper>{children}</TermsAgreementWrapper>;
   }
 
-  // Render children when all conditions are met
+  // If user is on login page but authenticated, allow redirect to happen
+  if (
+    pathname === "/login" &&
+    isSignedIn &&
+    user &&
+    convexUser &&
+    convexUser.email_verified
+  ) {
+    return <TermsAgreementWrapper>{children}</TermsAgreementWrapper>; // Allow login page to render for redirect
+  }
+
+  // Render children when all conditions are met (including path authorization)
   if (
     isLoaded &&
     isSignedIn &&
     user &&
     convexUser &&
-    isAuthorizedPath() &&
+    convexUser.email_verified &&
+    isAuthorizedPath()
+  ) {
+    return <TermsAgreementWrapper>{children}</TermsAgreementWrapper>;
+  }
+
+  // If user is authenticated and verified but not on an authorized path,
+  // still allow rendering so TermsAgreementWrapper can handle terms agreement
+  if (
+    isLoaded &&
+    isSignedIn &&
+    user &&
+    convexUser &&
     convexUser.email_verified
   ) {
     return <TermsAgreementWrapper>{children}</TermsAgreementWrapper>;
@@ -182,12 +224,19 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
   // Show error message if there's an authorization error
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-center">
-          <div className="text-red-500 text-lg font-semibold mb-2">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+          <div className="text-red-500 text-6xl mb-4">🚫</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
             Authorization Error
-          </div>
-          <div className="text-gray-600">{error}</div>
+          </h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => signOut()}
+            className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+          >
+            Sign Out
+          </button>
         </div>
       </div>
     );
