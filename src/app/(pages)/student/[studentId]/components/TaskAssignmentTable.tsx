@@ -1363,45 +1363,55 @@ export const TaskAssignmentTable = ({
                                     "title_page",
                                     "appendix_a",
                                     "appendix_d",
-                                  ].includes(chapterTasks[0].chapter) && (
-                                    <>
-                                      <span className="mx-2 text-gray-300 select-none">
-                                        |
-                                      </span>
-                                      <button
-                                        className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
-                                        title="View Notes"
-                                        onClick={() => {
-                                          const document = documents.find(
-                                            (doc) =>
-                                              doc.chapter ===
-                                              chapterTasks[0].chapter,
-                                          );
-                                          if (document) {
-                                            setNotesPopupDoc(document);
-                                            setNotesPopupOpen(true);
-                                          }
-                                        }}
-                                      >
-                                        <FaStickyNote className="w-4 h-4" />
-                                        {(() => {
-                                          const document = documents.find(
-                                            (doc) =>
-                                              doc.chapter ===
-                                              chapterTasks[0].chapter,
-                                          );
-                                          return document &&
-                                            document.note_count > 0 ? (
-                                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                              {document.note_count > 99
-                                                ? "99+"
-                                                : document.note_count}
-                                            </span>
-                                          ) : null;
-                                        })()}
-                                      </button>
-                                    </>
-                                  )}
+                                  ].includes(chapterTasks[0].chapter) &&
+                                    (() => {
+                                      const document = documents.find(
+                                        (doc) =>
+                                          doc.chapter ===
+                                          chapterTasks[0].chapter,
+                                      );
+                                      return (
+                                        document && document.note_count > 0
+                                      );
+                                    })() && (
+                                      <>
+                                        <span className="mx-3 text-gray-300 select-none">
+                                          |
+                                        </span>
+                                        <button
+                                          className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
+                                          title="View Notes"
+                                          onClick={() => {
+                                            const document = documents.find(
+                                              (doc) =>
+                                                doc.chapter ===
+                                                chapterTasks[0].chapter,
+                                            );
+                                            if (document) {
+                                              setNotesPopupDoc(document);
+                                              setNotesPopupOpen(true);
+                                            }
+                                          }}
+                                        >
+                                          <FaStickyNote className="w-4 h-4" />
+                                          {(() => {
+                                            const document = documents.find(
+                                              (doc) =>
+                                                doc.chapter ===
+                                                chapterTasks[0].chapter,
+                                            );
+                                            return document &&
+                                              document.note_count > 0 ? (
+                                              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                                {document.note_count > 99
+                                                  ? "99+"
+                                                  : document.note_count}
+                                              </span>
+                                            ) : null;
+                                          })()}
+                                        </button>
+                                      </>
+                                    )}
                                   {/* Submit/Cancel button for project managers */}
                                   {group &&
                                     group.project_manager_id ===
@@ -1422,6 +1432,9 @@ export const TaskAssignmentTable = ({
                                         chapterTasks[0].chapter,
                                       )) && (
                                       <>
+                                        <span className="mx-3 text-gray-300 select-none">
+                                          |
+                                        </span>
                                         <button
                                           className={`transition-colors ${
                                             canCancelSubmission(
@@ -1576,45 +1589,52 @@ export const TaskAssignmentTable = ({
                                   "title_page",
                                   "appendix_a",
                                   "appendix_d",
-                                ].includes(chapterTasks[0].chapter) && (
-                                  <>
-                                    <span className="mx-2 text-gray-300 select-none">
-                                      |
-                                    </span>
-                                    <button
-                                      className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
-                                      title="View Notes"
-                                      onClick={() => {
-                                        const document = documents.find(
-                                          (doc) =>
-                                            doc.chapter ===
-                                            chapterTasks[0].chapter,
-                                        );
-                                        if (document) {
-                                          setNotesPopupDoc(document);
-                                          setNotesPopupOpen(true);
-                                        }
-                                      }}
-                                    >
-                                      <FaStickyNote className="w-4 h-4" />
-                                      {(() => {
-                                        const document = documents.find(
-                                          (doc) =>
-                                            doc.chapter ===
-                                            chapterTasks[0].chapter,
-                                        );
-                                        return document &&
-                                          document.note_count > 0 ? (
-                                          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                            {document.note_count > 99
-                                              ? "99+"
-                                              : document.note_count}
-                                          </span>
-                                        ) : null;
-                                      })()}
-                                    </button>
-                                  </>
-                                )}
+                                ].includes(chapterTasks[0].chapter) &&
+                                  (() => {
+                                    const document = documents.find(
+                                      (doc) =>
+                                        doc.chapter === chapterTasks[0].chapter,
+                                    );
+                                    return document && document.note_count > 0;
+                                  })() && (
+                                    <>
+                                      <span className="mx-3 text-gray-300 select-none">
+                                        |
+                                      </span>
+                                      <button
+                                        className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
+                                        title="View Notes"
+                                        onClick={() => {
+                                          const document = documents.find(
+                                            (doc) =>
+                                              doc.chapter ===
+                                              chapterTasks[0].chapter,
+                                          );
+                                          if (document) {
+                                            setNotesPopupDoc(document);
+                                            setNotesPopupOpen(true);
+                                          }
+                                        }}
+                                      >
+                                        <FaStickyNote className="w-4 h-4" />
+                                        {(() => {
+                                          const document = documents.find(
+                                            (doc) =>
+                                              doc.chapter ===
+                                              chapterTasks[0].chapter,
+                                          );
+                                          return document &&
+                                            document.note_count > 0 ? (
+                                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                              {document.note_count > 99
+                                                ? "99+"
+                                                : document.note_count}
+                                            </span>
+                                          ) : null;
+                                        })()}
+                                      </button>
+                                    </>
+                                  )}
                                 {/* Submit/Cancel button for project managers */}
                                 {group &&
                                   group.project_manager_id === currentUserId &&
@@ -1631,6 +1651,9 @@ export const TaskAssignmentTable = ({
                                       chapterTasks[0].chapter,
                                     )) && (
                                     <>
+                                      <span className="mx-3 text-gray-300 select-none">
+                                        |
+                                      </span>
                                       <button
                                         className={`transition-colors ${
                                           canCancelSubmission(

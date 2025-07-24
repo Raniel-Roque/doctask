@@ -1510,28 +1510,27 @@ export const LatestDocumentsTable = ({
                         {/* Only show Notes and Submit for non-excluded chapters */}
                         {!["title_page", "appendix_a", "appendix_d"].includes(
                           doc.chapter,
-                        ) && (
-                          <>
-                            <span className="mx-2 text-gray-300 select-none">
-                              |
-                            </span>
-                            <button
-                              className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
-                              title="View Notes"
-                              onClick={() => {
-                                setNotesPopupDoc(doc);
-                                setNotesPopupOpen(true);
-                              }}
-                            >
-                              <FaStickyNote className="w-4 h-4" />
-                              {doc.note_count > 0 && (
+                        ) &&
+                          doc.note_count > 0 && (
+                            <>
+                              <span className="mx-3 text-gray-300 select-none">
+                                |
+                              </span>
+                              <button
+                                className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
+                                title="View Notes"
+                                onClick={() => {
+                                  setNotesPopupDoc(doc);
+                                  setNotesPopupOpen(true);
+                                }}
+                              >
+                                <FaStickyNote className="w-4 h-4" />
                                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                                   {doc.note_count > 99 ? "99+" : doc.note_count}
                                 </span>
-                              )}
-                            </button>
-                          </>
-                        )}
+                              </button>
+                            </>
+                          )}
                         {/* Submit/Cancel button for project managers */}
                         {group &&
                           group.project_manager_id === currentUserId &&
@@ -1542,6 +1541,9 @@ export const LatestDocumentsTable = ({
                           (canSubmitDocument(doc) ||
                             canCancelSubmission(doc)) && (
                             <>
+                              <span className="mx-3 text-gray-300 select-none">
+                                |
+                              </span>
                               <button
                                 className={`transition-colors ${
                                   canCancelSubmission(doc)
