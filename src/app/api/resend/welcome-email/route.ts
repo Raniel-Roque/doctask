@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import { getResendInstance, resendConfig } from "@/lib/resend-config";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = getResendInstance();
 
 export async function POST(request: Request) {
   try {
@@ -26,9 +26,9 @@ export async function POST(request: Request) {
     }
 
     await resend.emails.send({
-      from: "DocTask <onboarding@resend.dev>",
+      from: resendConfig.templates.welcome.from,
       to: email,
-      subject: "Welcome to DocTask",
+      subject: resendConfig.templates.welcome.subject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Welcome to DocTask!</h2>

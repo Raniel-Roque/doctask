@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import { getResendInstance, resendConfig } from "@/lib/resend-config";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = getResendInstance();
 
 export async function POST(request: Request) {
   try {
@@ -43,9 +43,9 @@ export async function POST(request: Request) {
     }
 
     const emailResult = await resend.emails.send({
-      from: "DocTask <onboarding@resend.dev>",
+      from: resendConfig.templates.resetPassword.from,
       to: email,
-      subject: "DocTask - Your Password Has Been Reset",
+      subject: resendConfig.templates.resetPassword.subject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Password Reset Notification</h2>
