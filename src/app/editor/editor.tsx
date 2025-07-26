@@ -263,7 +263,7 @@ export const Editor = ({
         }
         return false;
       },
-      // Disable all key events in view-only mode
+      // Handle keyboard shortcuts and disable key events in view-only mode
       handleKeyDown: (view, event) => {
         if (!isEditable) {
           // Allow only navigation keys and modifier keys
@@ -299,6 +299,17 @@ export const Editor = ({
           if (!allowedKeys.includes(event.key)) {
             event.preventDefault();
             return true; // Prevent default handling
+          }
+        } else {
+          // Handle table keyboard shortcuts when editable
+          const isInTable = view.state.selection.$from.node(-1)?.type.name === 'table';
+          
+          if (isInTable) {
+            // Delete table with Ctrl+Shift+Delete
+            if (event.ctrlKey && event.shiftKey && event.key === 'Delete') {
+              event.preventDefault();
+              return true; // Let the editor handle this via useEffect
+            }
           }
         }
         return false; // Let default handler deal with allowed keys
@@ -437,6 +448,29 @@ export const Editor = ({
       setEditor(null);
     };
   }, [editor, setEditor]);
+
+  // Handle keyboard shortcuts for table operations
+  useEffect(() => {
+    if (!editor || !isEditable) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check if cursor is in a table
+      const isInTable = editor.isActive('table');
+      
+      if (isInTable) {
+        // Delete table with Ctrl+Shift+Delete
+        if (event.ctrlKey && event.shiftKey && event.key === 'Delete') {
+          event.preventDefault();
+          editor.chain().focus().deleteTable().run();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [editor, isEditable]);
 
   // Room presence tracking
   useRoomPresence(others, self);
