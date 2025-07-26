@@ -23,7 +23,6 @@ import {
   PrinterIcon,
   Redo2Icon,
   RemoveFormattingIcon,
-  StrikethroughIcon,
   TextIcon,
   UnderlineIcon,
   Undo2Icon,
@@ -690,14 +689,6 @@ export const Navbar = ({
                         >
                           <UnderlineIcon className="mr-2 size-4" />
                           Underline <MenubarShortcut>⌘U</MenubarShortcut>
-                        </MenubarItem>
-                        <MenubarItem
-                          onClick={() =>
-                            editor?.chain().focus().toggleStrike().run()
-                          }
-                        >
-                          <StrikethroughIcon className="mr-2 size-4" />
-                          Strikethrough
                         </MenubarItem>
                       </MenubarSubContent>
                     </MenubarSub>

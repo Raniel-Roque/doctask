@@ -27,6 +27,11 @@ import {
   Undo2Icon,
   Unlink,
   UploadIcon,
+  Combine,
+  Split,
+  Plus,
+  Minus,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -867,8 +872,7 @@ const TableToolbarSection = () => {
   if (!isInTable) return null;
 
   return (
-    <>
-      <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+    <div className="bg-[#F1F4F9] px-2.5 py-0.5 rounded-[24px] min-h-[40px] flex items-center gap-x-0.5 overflow-x-auto">
       <span className="text-sm text-gray-600 font-medium px-1">Table:</span>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -876,15 +880,14 @@ const TableToolbarSection = () => {
             onClick={() => editor?.chain().focus().deleteTable().run()}
             className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-red-100 transition-colors border border-red-200"
           >
-            <svg className="size-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+            <Trash2 className="size-4 text-red-600" />
           </button>
         </TooltipTrigger>
         <TooltipContent>
           <p>Delete table (Ctrl+Shift+Delete)</p>
         </TooltipContent>
       </Tooltip>
+      <Separator orientation="vertical" className="h-6 bg-neutral-300" />
       <span className="text-sm text-gray-600 font-medium px-1">Row:</span>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -892,9 +895,7 @@ const TableToolbarSection = () => {
             onClick={() => editor?.chain().focus().deleteRow().run()}
             className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-red-100 transition-colors border border-red-200"
           >
-            <svg className="size-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-            </svg>
+            <Minus className="size-4 text-red-600" />
           </button>
         </TooltipTrigger>
         <TooltipContent>
@@ -907,9 +908,7 @@ const TableToolbarSection = () => {
             onClick={() => editor?.chain().focus().addRowAfter().run()}
             className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-green-100 transition-colors border border-green-200"
           >
-            <svg className="size-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
+            <Plus className="size-4 text-green-600" />
           </button>
         </TooltipTrigger>
         <TooltipContent>
@@ -924,9 +923,7 @@ const TableToolbarSection = () => {
             onClick={() => editor?.chain().focus().deleteColumn().run()}
             className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-red-100 transition-colors border border-red-200"
           >
-            <svg className="size-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-            </svg>
+            <Minus className="size-4 text-red-600" />
           </button>
         </TooltipTrigger>
         <TooltipContent>
@@ -939,16 +936,43 @@ const TableToolbarSection = () => {
             onClick={() => editor?.chain().focus().addColumnAfter().run()}
             className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-green-100 transition-colors border border-green-200"
           >
-            <svg className="size-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
+            <Plus className="size-4 text-green-600" />
           </button>
         </TooltipTrigger>
         <TooltipContent>
           <p>Add column</p>
         </TooltipContent>
       </Tooltip>
-    </>
+
+      <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+      <span className="text-sm text-gray-600 font-medium px-1">Cells:</span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => editor?.chain().focus().mergeCells().run()}
+            className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-blue-100 transition-colors border border-blue-200"
+          >
+            <Combine className="size-4 text-blue-600" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Merge cells (Ctrl+Shift+M)</p>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => editor?.chain().focus().splitCell().run()}
+            className="h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-orange-100 transition-colors border border-orange-200"
+          >
+            <Split className="size-4 text-orange-600" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Split cell (Ctrl+Shift+S)</p>
+        </TooltipContent>
+      </Tooltip>
+    </div>
   );
 };
 
@@ -1098,35 +1122,40 @@ export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
 
   return (
     <TooltipProvider>
-      <div className="bg-[#F1F4F9] px-2.5 py-0.5 rounded-[24px] min-h-[40px] flex items-center gap-x-0.5 overflow-x-auto">
-        {sections[0].map((item) => (
-          <ToolbarButton key={item.label} {...item} />
-        ))}
-        <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-        <FontFamilyButton />
-        <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-        <HeadingLevelButton />
-        <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-        <FontSizeButton />
-        <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-        <BoldButton />
-        <ItalicButton />
-        <UnderlineButton />
-        <TextColorButton />
-        <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-        <UnlinkButton />
-        <ImageButton />
-        <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-        <AlignmentButtons />
-        <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-        <LineHeightButton />
-        <BulletListButton />
-        <OrderedListButton />
+      <div className="flex flex-col gap-1">
+        {/* Main Toolbar Row */}
+        <div className="bg-[#F1F4F9] px-2.5 py-0.5 rounded-[24px] min-h-[40px] flex items-center gap-x-0.5 overflow-x-auto">
+          {sections[0].map((item) => (
+            <ToolbarButton key={item.label} {...item} />
+          ))}
+          <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+          <FontFamilyButton />
+          <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+          <HeadingLevelButton />
+          <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+          <FontSizeButton />
+          <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+          <BoldButton />
+          <ItalicButton />
+          <UnderlineButton />
+          <TextColorButton />
+          <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+          <UnlinkButton />
+          <ImageButton />
+          <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+          <AlignmentButtons />
+          <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+          <LineHeightButton />
+          <BulletListButton />
+          <OrderedListButton />
+          <Separator orientation="vertical" className="h-6 bg-neutral-300" />
+          {sections[1].map((item) => (
+            <ToolbarButton key={item.label} {...item} />
+          ))}
+        </div>
+        
+        {/* Table Operations Row - Only shows when in table */}
         <TableToolbarSection />
-        <Separator orientation="vertical" className="h-6 bg-neutral-300" />
-        {sections[1].map((item) => (
-          <ToolbarButton key={item.label} {...item} />
-        ))}
       </div>
     </TooltipProvider>
   );

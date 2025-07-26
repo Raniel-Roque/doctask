@@ -463,6 +463,18 @@ export const Editor = ({
           event.preventDefault();
           editor.chain().focus().deleteTable().run();
         }
+        
+        // Merge cells with Ctrl+Shift+M
+        if (event.ctrlKey && event.shiftKey && event.key === 'M') {
+          event.preventDefault();
+          editor.chain().focus().mergeCells().run();
+        }
+        
+        // Split cell with Ctrl+Shift+S
+        if (event.ctrlKey && event.shiftKey && event.key === 'S') {
+          event.preventDefault();
+          editor.chain().focus().splitCell().run();
+        }
       }
     };
 
