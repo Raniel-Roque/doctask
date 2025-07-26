@@ -129,34 +129,26 @@ export async function POST(request: NextRequest) {
       const clerkError = error as ClerkError;
       const errorMessage = clerkError.errors?.[0]?.message || "";
 
-      // Check for compromised password error
+      // Check for compromised/weak password error
       if (
         errorMessage.toLowerCase().includes("compromised") ||
         errorMessage.toLowerCase().includes("data breach") ||
         errorMessage.toLowerCase().includes("found in breach") ||
         errorMessage.toLowerCase().includes("pwned") ||
-        errorMessage.toLowerCase().includes("haveibeenpwned")
-      ) {
-        return NextResponse.json(
-          {
-            error:
-              "This password has been found in data breaches and cannot be used. Please choose a different password.",
-          },
-          { status: 400 },
-        );
-      }
-
-      // Check for password strength error
-      if (
+        errorMessage.toLowerCase().includes("haveibeenpwned") ||
+        errorMessage.toLowerCase().includes("weak") ||
+        errorMessage.toLowerCase().includes("common") ||
         errorMessage.includes("password_strength") ||
         errorMessage.includes("weak_password") ||
         errorMessage.includes("password is too weak") ||
-        errorMessage.includes("not strong enough")
+        errorMessage.includes("not strong enough") ||
+        errorMessage.toLowerCase().includes("too common") ||
+        errorMessage.toLowerCase().includes("password is too common")
       ) {
         return NextResponse.json(
           {
             error:
-              "Password is too weak. Please use a stronger password with a mix of letters, numbers, and special characters.",
+              "Password is too weak. Please choose a stronger password.",
           },
           { status: 400 },
         );

@@ -22,21 +22,21 @@ const EmailInput: React.FC<EmailInputProps> = ({
   onAutocomplete,
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Sanitize and convert to lowercase for password manager compatibility
+    // Sanitize but preserve case for user input
     const sanitizedValue = sanitizeInput(e.target.value, {
       trim: false, // Don't trim during input to allow spaces
       removeHtml: true,
       escapeSpecialChars: true,
-      preserveCase: false, // Convert to lowercase
+      preserveCase: true, // Preserve case for user input
     });
-    setEmail(sanitizedValue.toLowerCase());
+    setEmail(sanitizedValue);
 
     // If this is an autocomplete event (the input was filled by the browser)
     if (
       e.nativeEvent instanceof InputEvent &&
       e.nativeEvent.inputType === "insertReplacementText"
     ) {
-      onAutocomplete?.(sanitizedValue.toLowerCase());
+      onAutocomplete?.(sanitizedValue);
     }
   };
 
@@ -54,7 +54,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
         type="email"
         autoComplete="email"
         required
-        value={email.toLowerCase()}
+        value={email}
         onChange={handleChange}
         className="appearance-none rounded-lg relative block w-full pl-10 pr-3 h-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
         placeholder={placeholder}

@@ -230,7 +230,11 @@ const LoginPage = () => {
           if (result.status === "needs_first_factor") {
             updateCodeRateLimit(emailToCheck);
             setStep(2);
-            setNotification({ message: "", type: "info" });
+            setNotification({
+              message:
+                "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+              type: "success",
+            });
             setCode("");
           } else {
             setNotification({
@@ -360,7 +364,11 @@ const LoginPage = () => {
 
           if (result.status === "needs_first_factor") {
             setStep(2);
-            setNotification({ message: "", type: "info" });
+            setNotification({
+              message:
+                "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+              type: "success",
+            });
             setCode("");
           } else {
             setNotification({
@@ -562,7 +570,7 @@ const LoginPage = () => {
         });
       } else {
         setNotification({
-          message: "Failed to resend code. Please try again.",
+          message: "Failed to send new code. Please try again.",
           type: "error",
         });
       }
@@ -620,7 +628,7 @@ const LoginPage = () => {
         });
       } else {
         setNotification({
-          message: "Failed to resend code. Please try again.",
+          message: "Failed to send new code. Please try again.",
           type: "error",
         });
       }
@@ -1123,21 +1131,55 @@ const LoginPage = () => {
                       const errorMessage =
                         err instanceof Error ? err.message : "";
 
-                      // Check for compromised password error
+                      // Check for compromised/weak password error
                       if (
                         errorMessage.toLowerCase().includes("compromised") ||
                         errorMessage.toLowerCase().includes("data breach") ||
                         errorMessage
                           .toLowerCase()
                           .includes("found in breach") ||
-                        errorMessage.toLowerCase().includes("pwned")
+                        errorMessage.toLowerCase().includes("pwned") ||
+                        errorMessage.toLowerCase().includes("weak") ||
+                        errorMessage.toLowerCase().includes("common") ||
+                        errorMessage.toLowerCase().includes("weak_password") ||
+                        errorMessage.toLowerCase().includes("password_strength") ||
+                        errorMessage.toLowerCase().includes("not strong enough") ||
+                        errorMessage.toLowerCase().includes("password is too weak") ||
+                        errorMessage.toLowerCase().includes("too common") ||
+                        errorMessage.toLowerCase().includes("password is too common")
                       ) {
                         setNotification({
                           message:
-                            "This password has been found in data breaches and cannot be used. Please choose a different password.",
+                            "Password is too weak. Please choose a stronger password.",
                           type: "error",
                         });
-                      } else {
+                      }
+                      // Check for password validation errors
+                      else if (
+                        errorMessage.toLowerCase().includes("password_validation") ||
+                        errorMessage.toLowerCase().includes("invalid password") ||
+                        errorMessage.toLowerCase().includes("password requirements")
+                      ) {
+                        setNotification({
+                          message:
+                            "Password does not meet requirements. Please ensure it has at least 8 characters with uppercase, lowercase, numbers, and special characters.",
+                          type: "error",
+                        });
+                      }
+                      // Check for rate limiting
+                      else if (
+                        errorMessage.toLowerCase().includes("rate limit") ||
+                        errorMessage.toLowerCase().includes("too many requests") ||
+                        errorMessage.toLowerCase().includes("try again later")
+                      ) {
+                        setNotification({
+                          message:
+                            "Too many password reset attempts. Please wait a moment before trying again.",
+                          type: "error",
+                        });
+                      }
+                      // Generic error fallback
+                      else {
                         setNotification({
                           message:
                             "An error occurred while resetting your password. Please try again.",

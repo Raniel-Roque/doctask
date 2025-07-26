@@ -133,7 +133,9 @@ export const getInstructors = query({
 export const getUserByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    const user = await ctx.db
+    // Get all users with this email (non-deleted) and sort by creation time
+    // to ensure we get the most recent one
+    const users = await ctx.db
       .query("users")
       .filter((q) =>
         q.and(
@@ -141,8 +143,14 @@ export const getUserByEmail = query({
           q.neq(q.field("isDeleted"), true),
         ),
       )
-      .first();
-    return user; // No need to check isDeleted since we filtered it out
+      .collect();
+    
+    // Sort by creation time (newest first) and return the most recent
+    if (users.length > 0) {
+      return users.sort((a, b) => b._creationTime - a._creationTime)[0];
+    }
+    
+    return null;
   },
 });
 

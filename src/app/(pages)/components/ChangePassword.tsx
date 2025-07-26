@@ -159,27 +159,23 @@ export default function ChangePassword({
       const data = await updateResponse.json();
 
       if (!updateResponse.ok) {
-        // Check for compromised password error
+        // Check for compromised/weak password error
         if (
           data.error?.toLowerCase().includes("compromised") ||
           data.error?.toLowerCase().includes("data breach") ||
           data.error?.toLowerCase().includes("found in breach") ||
-          data.error?.toLowerCase().includes("pwned")
-        ) {
-          throw new Error(
-            "This password has been found in data breaches and cannot be used. Please choose a different password.",
-          );
-        }
-
-        // Check for specific Clerk password strength error
-        if (
+          data.error?.toLowerCase().includes("pwned") ||
+          data.error?.toLowerCase().includes("weak") ||
+          data.error?.toLowerCase().includes("common") ||
           data.error?.includes("password_strength") ||
           data.error?.includes("weak_password") ||
           data.error?.includes("password is too weak") ||
-          data.error?.includes("password_validation")
+          data.error?.includes("password_validation") ||
+          data.error?.toLowerCase().includes("too common") ||
+          data.error?.toLowerCase().includes("password is too common")
         ) {
           throw new Error(
-            "Password is too weak. Please use a stronger password with a mix of letters, numbers, and special characters.",
+            "Password is too weak. Please choose a stronger password.",
           );
         }
         throw new Error(data.error || "Failed to update password");

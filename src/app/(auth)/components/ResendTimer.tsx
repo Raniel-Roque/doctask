@@ -131,8 +131,8 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
       {canResend
         ? rateLimited
           ? "Rate limit exceeded. Please wait."
-          : "Didn't receive a code? Click here to resend"
-        : `Resend code in ${formatTime(timeLeft)}`}
+          : "Didn't receive a code? Click here to send a new code"
+        : `Send new code in ${formatTime(timeLeft)}`}
     </div>
   );
 };

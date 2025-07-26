@@ -188,14 +188,19 @@ export const createUser = mutation({
       return { success: true, userId: existingUserByClerkId._id };
     }
 
-    // Then check by email as a fallback
+    // Then check by email as a fallback (excluding deleted users)
     const emailLower = args.email.toLowerCase();
     const existingUserByEmail = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), emailLower))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("email"), emailLower),
+          q.neq(q.field("isDeleted"), true)
+        )
+      )
       .first();
 
-    if (existingUserByEmail && !existingUserByEmail.isDeleted) {
+    if (existingUserByEmail) {
       // If user exists with this email and is not deleted, error
       throw new Error("Email already registered with a different account.");
     }

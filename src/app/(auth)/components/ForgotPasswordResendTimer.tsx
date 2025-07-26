@@ -16,6 +16,7 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
   const [timeLeft, setTimeLeft] = useState(0);
   const [canResend, setCanResend] = useState(true);
   const [rateLimited, setRateLimited] = useState(false);
+  const [hasResentBefore, setHasResentBefore] = useState(false);
 
   // Check timer on mount and when loading state changes
   useEffect(() => {
@@ -30,6 +31,7 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
         if (remaining > 0) {
           setTimeLeft(remaining);
           setCanResend(false);
+          setHasResentBefore(true);
           return true; // Timer found and active
         } else {
           localStorage.removeItem(`forgotPasswordResendTimer_${email}`);
@@ -94,14 +96,20 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
       }
       await onResend();
 
-      // Start timer immediately for forgot password (no first resend exception)
-      const resetTime = Date.now() + 120000;
-      setTimeLeft(120);
-      setCanResend(false);
-      localStorage.setItem(
-        `forgotPasswordResendTimer_${email}`,
-        JSON.stringify({ resetTime }),
-      );
+      // Only start timer if this is not the first resend
+      if (hasResentBefore) {
+        // 2 minute timer
+        const resetTime = Date.now() + 120000;
+        setTimeLeft(120);
+        setCanResend(false);
+        localStorage.setItem(
+          `forgotPasswordResendTimer_${email}`,
+          JSON.stringify({ resetTime }),
+        );
+      } else {
+        // First resend - mark that we've resent before but don't start timer
+        setHasResentBefore(true);
+      }
 
       // Update rate limit
       const storedRateLimitData = localStorage.getItem(rateLimitKey);
@@ -144,8 +152,8 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
       {canResend
         ? rateLimited
           ? "Rate limit exceeded. Please wait."
-          : "Didn't receive a code? Click here to resend"
-        : `Resend code in ${formatTime(timeLeft)}`}
+          : "Didn't receive a code? Click here to send a new code"
+        : `Send new code in ${formatTime(timeLeft)}`}
     </div>
   );
 };
