@@ -13,10 +13,8 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 import {
   FaExclamationTriangle,
   FaTrash,
-  FaEye,
-  FaEyeSlash,
-  FaTimes,
 } from "react-icons/fa";
+import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
 
 interface InstructorProfilePageProps {
   params: Promise<{ instructorId: string }>;
@@ -31,8 +29,6 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     type: "error" | "success" | "warning" | "info";
   } | null>(null);
   const [showWipeModal, setShowWipeModal] = useState(false);
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [confirmName, setConfirmName] = useState("");
@@ -43,8 +39,6 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   });
 
   const resetForm = () => {
-    setPassword("");
-    setShowPassword(false);
     setIsVerified(false);
     setConfirmName("");
     setNotification(null);
@@ -55,14 +49,11 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     setShowWipeModal(false);
   };
 
-  const handleVerifyPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
+  const handleVerifyPassword = async (password: string, signal?: AbortSignal) => {
+    if (!user) {
+      throw new Error("User not found");
+    }
 
-    setIsLoading(true);
-    setNotification(null);
-
-    try {
       const response = await fetch("/api/clerk/verify-password", {
         method: "POST",
         headers: {
@@ -72,6 +63,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
           clerkId: user.id,
           currentPassword: password,
         }),
+        signal, // Add the AbortSignal to the fetch request
       });
 
       const data = await response.json();
@@ -85,14 +77,6 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         message: "Password verified. Please confirm the action.",
         type: "success",
       });
-    } catch {
-      setNotification({
-        message: "Current password is incorrect",
-        type: "error",
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleWipeData = async () => {
@@ -194,86 +178,15 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
       </div>
 
       {/* Password Verification Modal */}
-      {showWipeModal && !isVerified && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
-                <FaExclamationTriangle />
-                Wipe All Data
-              </h2>
-              <button
-                onClick={handleClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <FaTimes className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleVerifyPassword} className="space-y-4">
-              {/* Hidden username field for accessibility and password managers */}
-              {user?.emailAddresses?.[0]?.emailAddress && (
-                <input
-                  type="email"
-                  name="username"
-                  value={user.emailAddresses[0].emailAddress.toLowerCase()}
-                  readOnly
-                  style={{ display: "none" }}
-                  autoComplete="username"
-                />
-              )}
-              <p className="text-sm text-gray-600 mb-4">
-                Enter your current password to continue with this destructive
-                action.
-              </p>
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Current Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                    placeholder="Enter your current password"
-                    autoComplete={showPassword ? "off" : "current-password"}
-                    autoCorrect="off"
-                    spellCheck={false}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? <FaEye /> : <FaEyeSlash />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {isLoading ? "Verifying..." : "Verify Password"}
-              </button>
-            </form>
-
-            <NotificationBanner
-              message={notification?.message || null}
-              type={notification?.type || "success"}
-              onClose={() => setNotification(null)}
-              autoClose={notification?.type === "error" ? false : true}
-            />
-          </div>
-        </div>
-      )}
+      <PasswordVerification
+        isOpen={showWipeModal && !isVerified}
+        onClose={handleClose}
+        onVerify={handleVerifyPassword}
+        title="Wipe All Data"
+        description="Enter your current password to continue with this destructive action."
+        buttonText="Verify Password"
+        userEmail={user?.emailAddresses?.[0]?.emailAddress}
+      />
 
       {/* Confirmation Modal */}
       {showWipeModal && isVerified && (
