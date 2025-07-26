@@ -125,9 +125,28 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
     formValue: string,
   ): boolean {
     const backendValue = getUserDataField(key);
-    // If formValue is "" and backendValue is not "", it's a change (clearing)
-    // If formValue !== backendValue, it's a change
-    return formValue !== backendValue;
+    
+    // Normalize values for comparison
+    const normalizedFormValue = formValue.trim();
+    const normalizedBackendValue = backendValue.trim();
+    
+    // If both are empty, no change
+    if (normalizedFormValue === "" && normalizedBackendValue === "") {
+      return false;
+    }
+    
+    // If form is empty but backend has data, it's a change (clearing)
+    if (normalizedFormValue === "" && normalizedBackendValue !== "") {
+      return true;
+    }
+    
+    // If form has data but backend is empty, it's a change (adding)
+    if (normalizedFormValue !== "" && normalizedBackendValue === "") {
+      return true;
+    }
+    
+    // Otherwise, compare the values
+    return normalizedFormValue !== normalizedBackendValue;
   }
 
   // Detect unsaved changes for each section
@@ -222,10 +241,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               changedFields[key] =
                 formValue === "" ? undefined : Number(formValue);
             } else if (key === "contact") {
-              changedFields[key] = formValue;
+              changedFields[key] = formValue === "" ? "" : formValue;
             } else {
               changedFields[key] =
-                formValue === "" ? undefined : sanitizeInput(formValue);
+                formValue === "" ? "" : sanitizeInput(formValue);
             }
           }
         }
@@ -257,10 +276,11 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
       if (section === "secondary" && payload.contact !== undefined) {
         if (
           typeof payload.contact === "string" &&
-          payload.contact.length !== 13 // 09XX-XXX-XXXX = 13 characters
+          payload.contact.length > 0 &&
+          payload.contact.length !== 11 // 11 digits (09XXXXXXXXX)
         ) {
           setNotification({
-            message: "Contact number must be 11 digits (Philippines)",
+            message: "Contact number must be 11 digits (09XXXXXXXXX)",
             type: "error",
           });
           setShowNotification(true);
@@ -319,21 +339,13 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
 
   // Only allow digits in contact number input
   const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/[^0-9]/g, "");
-    // Only allow up to 9 digits (after the '09' prefix)
-    const nineDigits = digits.slice(0, 9);
-    // Format as 09XX-XXX-XXXX
-    let formatted = "";
-    if (nineDigits.length > 0) {
-      formatted = "09";
-      if (nineDigits.length > 0) formatted += nineDigits.slice(0, 2);
-      if (nineDigits.length > 2) formatted += "-" + nineDigits.slice(2, 5);
-      if (nineDigits.length > 5) formatted += "-" + nineDigits.slice(5, 9);
-    }
-    // Only update if the formatted string is not longer than 13 characters
-    if (formatted.length <= 13) {
-      setForm({ ...form, contact: formatted });
-    }
+    const value = e.target.value;
+    const digits = value.replace(/[^0-9]/g, "");
+    
+    // Allow up to 11 digits
+    const maxDigits = digits.slice(0, 11);
+    
+    setForm({ ...form, contact: maxDigits });
   };
 
   return (
@@ -346,18 +358,18 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           {hasUnsavedSecondary && (
             <button
               type="button"
-              className="p-1 text-gray-500 hover:text-gray-700 flex items-center"
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center transition-colors"
               aria-label="Save"
               disabled={loadingSecondary}
               onClick={() => handleSave("secondary")}
             >
               {loadingSecondary ? (
-                <FaSpinner className="h-5 w-5 animate-spin mr-1" />
+                <FaSpinner className="h-4 w-4 animate-spin mr-2" />
               ) : (
-                <FaSave className="h-5 w-5" />
+                <FaSave className="h-4 w-4 mr-2" />
               )}
-              <span className="ml-2 text-xs text-yellow-600">
-                There are unsaved changes.
+              <span className="text-sm font-medium">
+                {loadingSecondary ? "Saving..." : "Save Changes"}
               </span>
             </button>
           )}
@@ -517,11 +529,8 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               name="contact"
               value={form.contact}
               onChange={handleContactChange}
-              placeholder="09XX-XXX-XXXX"
+              placeholder="Enter your contact number"
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
-              maxLength={13}
-              inputMode="numeric"
-              pattern="[0-9-]*"
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
@@ -538,18 +547,18 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           {hasUnsavedEducation && (
             <button
               type="button"
-              className="p-1 text-gray-500 hover:text-gray-700 flex items-center"
+              className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center transition-colors"
               aria-label="Save"
               disabled={loadingEducation}
               onClick={() => handleSave("education")}
             >
               {loadingEducation ? (
-                <FaSpinner className="h-5 w-5 animate-spin mr-1" />
+                <FaSpinner className="h-4 w-4 animate-spin mr-2" />
               ) : (
-                <FaSave className="h-5 w-5" />
+                <FaSave className="h-4 w-4 mr-2" />
               )}
-              <span className="ml-2 text-xs text-yellow-600">
-                There are unsaved changes.
+              <span className="text-sm font-medium">
+                {loadingEducation ? "Saving..." : "Save Changes"}
               </span>
             </button>
           )}

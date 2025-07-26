@@ -40,8 +40,16 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
     });
 
     // Only allow jpg, jpeg, png
-    const allowedTypes = ["image/jpeg", "image/png"];
-    if (!allowedTypes.includes(file.type)) {
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const allowedExtensions = [".jpg", ".jpeg", ".png"];
+    
+    // Check both MIME type and file extension
+    const hasValidType = allowedTypes.includes(file.type);
+    const hasValidExtension = allowedExtensions.some(ext => 
+      file.name.toLowerCase().endsWith(ext)
+    );
+    
+    if (!hasValidType && !hasValidExtension) {
       onError("Please select a JPG or PNG image file");
       return;
     }
