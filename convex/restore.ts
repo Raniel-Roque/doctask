@@ -89,6 +89,13 @@ export const deleteAllImages = mutation({
   handler: async (ctx) => {
     const images = await ctx.db.query("images").collect();
     for (const image of images) {
+      // Delete the file from storage first
+      try {
+        await ctx.storage.delete(image.file_id);
+      } catch {
+
+      }
+      // Delete the image record from database
       await ctx.db.delete(image._id);
     }
     return { success: true };
