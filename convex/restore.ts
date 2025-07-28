@@ -385,9 +385,7 @@ export const restoreImage = mutation({
         const { storageId } = await uploadResponse.json();
         // Update the file_id to the new storage ID
         args.file_id = storageId as Id<"_storage">;
-      } catch (error) {
-        console.error("Failed to restore image to storage:", error);
-        // Continue with database restoration even if storage fails
+      } catch {
       }
     }
 
@@ -417,8 +415,7 @@ export const deleteImageFromStorage = mutation({
     try {
       await ctx.storage.delete(args.file_id);
       return { success: true };
-    } catch (error) {
-      console.error("Failed to delete image from storage:", error);
+    } catch {
       return { success: false, error: "Failed to delete from storage" };
     }
   },
@@ -450,8 +447,7 @@ export const restoreImageToStorage = mutation({
 
       const { storageId } = await uploadResponse.json();
       return { success: true, storageId: storageId as Id<"_storage"> };
-    } catch (error) {
-      console.error("Failed to restore image to storage:", error);
+    } catch {
       return { success: false, error: "Failed to restore to storage" };
     }
   },

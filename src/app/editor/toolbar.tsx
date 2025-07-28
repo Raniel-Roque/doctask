@@ -556,11 +556,23 @@ const BulletListButton = () => {
     };
   }, [editor]);
 
+  const handleToggleBulletList = () => {
+    if (!editor) return;
+
+    if (editor.isActive("bulletList")) {
+      // If bullet list is active, lift all nested content out of the list structure
+      editor.chain().focus().liftListItem("listItem").run();
+    } else {
+      // If not active, toggle bullet list on
+      editor.chain().focus().toggleBulletList().run();
+    }
+  };
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          onClick={handleToggleBulletList}
           className={cn(
             "h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80",
             isActive && "bg-neutral-300",
@@ -596,11 +608,23 @@ const OrderedListButton = () => {
     };
   }, [editor]);
 
+  const handleToggleOrderedList = () => {
+    if (!editor) return;
+
+    if (editor.isActive("orderedList")) {
+      // If ordered list is active, lift all nested content out of the list structure
+      editor.chain().focus().liftListItem("listItem").run();
+    } else {
+      // If not active, toggle ordered list on
+      editor.chain().focus().toggleOrderedList().run();
+    }
+  };
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          onClick={handleToggleOrderedList}
           className={cn(
             "h-7 min-w-7 flex items-center justify-center rounded-sm hover:bg-neutral-200/80",
             isActive && "bg-neutral-300",

@@ -443,9 +443,7 @@ const LoginPage = () => {
           await signOut();
           router.push("/login?successverify=true");
           localStorage.setItem("lastActivityTimestamp", Date.now().toString());
-        } catch (dbError) {
-          // If database update fails, still sign out but show error
-          console.error("Database update failed:", dbError);
+        } catch {
           await signOut();
           setStep(1);
           setCode("");
@@ -1233,9 +1231,7 @@ const LoginPage = () => {
                     document.body.removeChild(link);
                   }
                 }, 100);
-              } catch (error) {
-                console.error("Download failed:", error);
-                // Fallback: open in new tab
+              } catch {
                 window.open(
                   "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe",
                   "_blank",
