@@ -195,8 +195,8 @@ export const createUser = mutation({
       .filter((q) =>
         q.and(
           q.eq(q.field("email"), emailLower),
-          q.neq(q.field("isDeleted"), true)
-        )
+          q.neq(q.field("isDeleted"), true),
+        ),
       )
       .first();
 

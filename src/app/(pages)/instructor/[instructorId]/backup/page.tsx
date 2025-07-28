@@ -92,35 +92,35 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       throw new Error("User not found");
     }
 
-      const sanitizedPassword = sanitizeInput(password, {
-        trim: true,
-        removeHtml: true,
-        escapeSpecialChars: true,
-      });
+    const sanitizedPassword = sanitizeInput(password, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true,
+    });
 
-      const response = await fetch("/api/clerk/verify-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          clerkId: user.id,
-          currentPassword: sanitizedPassword,
-        }),
-        signal, // Add the AbortSignal to the fetch request
-      });
+    const response = await fetch("/api/clerk/verify-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        clerkId: user.id,
+        currentPassword: sanitizedPassword,
+      }),
+      signal, // Add the AbortSignal to the fetch request
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to verify password");
-      }
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to verify password");
+    }
 
-      // Execute the pending action
-      if (pendingAction === "download") {
-        await handleDownload();
-      } else if (pendingAction === "restore") {
-        setShowRestoreConfirm(true);
+    // Execute the pending action
+    if (pendingAction === "download") {
+      await handleDownload();
+    } else if (pendingAction === "restore") {
+      setShowRestoreConfirm(true);
     }
   };
 
@@ -420,7 +420,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         isOpen={showPasswordVerify}
         onClose={() => {
           setShowPasswordVerify(false);
-              setPendingAction(null);
+          setPendingAction(null);
         }}
         onVerify={verifyPassword}
         title="Verify Password"

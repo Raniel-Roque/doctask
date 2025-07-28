@@ -147,8 +147,7 @@ export async function POST(request: NextRequest) {
       ) {
         return NextResponse.json(
           {
-            error:
-              "Password is too weak. Please choose a stronger password.",
+            error: "Password is too weak. Please choose a stronger password.",
           },
           { status: 400 },
         );

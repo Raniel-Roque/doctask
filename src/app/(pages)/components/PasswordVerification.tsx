@@ -39,7 +39,7 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
 
     setIsVerifying(true);
     setError(null);
-    
+
     // Create new AbortController for this verification
     abortControllerRef.current = new AbortController();
 
@@ -49,8 +49,10 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
       handleClose();
     } catch (err) {
       // Only set error if the request wasn't aborted
-      if (err instanceof Error && err.name !== 'AbortError') {
-        setError(err instanceof Error ? err.message : "Failed to verify password");
+      if (err instanceof Error && err.name !== "AbortError") {
+        setError(
+          err instanceof Error ? err.message : "Failed to verify password",
+        );
       }
     } finally {
       setIsVerifying(false);
@@ -64,7 +66,7 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    
+
     setPassword("");
     setShowPassword(false);
     setError(null);
@@ -171,4 +173,4 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
   );
 };
 
-export default PasswordVerification; 
+export default PasswordVerification;

@@ -91,6 +91,18 @@ export async function POST(request: NextRequest) {
         await convex.mutation(api.restore.deleteAllDocuments);
         break;
 
+      case "delete_images_from_storage":
+        // Delete all images from storage only (not database)
+        const images = await convex.query(api.fetch.getAllImages);
+        for (const image of images) {
+          try {
+            await convex.mutation(api.restore.deleteImageFromStorage, {
+              file_id: image.file_id,
+            });
+          } catch {}
+        }
+        break;
+
       case "delete_all_data":
         // Delete all data from Convex first (in the same order as restore)
         await convex.mutation(api.restore.deleteAllStudents);

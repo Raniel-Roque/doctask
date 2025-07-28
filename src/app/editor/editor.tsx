@@ -302,11 +302,12 @@ export const Editor = ({
           }
         } else {
           // Handle table keyboard shortcuts when editable
-          const isInTable = view.state.selection.$from.node(-1)?.type.name === 'table';
-          
+          const isInTable =
+            view.state.selection.$from.node(-1)?.type.name === "table";
+
           if (isInTable) {
             // Delete table with Ctrl+Shift+Delete
-            if (event.ctrlKey && event.shiftKey && event.key === 'Delete') {
+            if (event.ctrlKey && event.shiftKey && event.key === "Delete") {
               event.preventDefault();
               return true; // Let the editor handle this via useEffect
             }
@@ -455,32 +456,32 @@ export const Editor = ({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       // Check if cursor is in a table
-      const isInTable = editor.isActive('table');
-      
+      const isInTable = editor.isActive("table");
+
       if (isInTable) {
         // Delete table with Ctrl+Shift+Delete
-        if (event.ctrlKey && event.shiftKey && event.key === 'Delete') {
+        if (event.ctrlKey && event.shiftKey && event.key === "Delete") {
           event.preventDefault();
           editor.chain().focus().deleteTable().run();
         }
-        
+
         // Merge cells with Ctrl+Shift+M
-        if (event.ctrlKey && event.shiftKey && event.key === 'M') {
+        if (event.ctrlKey && event.shiftKey && event.key === "M") {
           event.preventDefault();
           editor.chain().focus().mergeCells().run();
         }
-        
+
         // Split cell with Ctrl+Shift+S
-        if (event.ctrlKey && event.shiftKey && event.key === 'S') {
+        if (event.ctrlKey && event.shiftKey && event.key === "S") {
           event.preventDefault();
           editor.chain().focus().splitCell().run();
         }
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [editor, isEditable]);
 

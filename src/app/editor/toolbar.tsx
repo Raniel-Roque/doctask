@@ -1153,7 +1153,7 @@ export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
             <ToolbarButton key={item.label} {...item} />
           ))}
         </div>
-        
+
         {/* Table Operations Row - Only shows when in table */}
         <TableToolbarSection />
       </div>

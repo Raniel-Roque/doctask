@@ -144,12 +144,12 @@ export const getUserByEmail = query({
         ),
       )
       .collect();
-    
+
     // Sort by creation time (newest first) and return the most recent
     if (users.length > 0) {
       return users.sort((a, b) => b._creationTime - a._creationTime)[0];
     }
-    
+
     return null;
   },
 });

@@ -125,26 +125,26 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
     formValue: string,
   ): boolean {
     const backendValue = getUserDataField(key);
-    
+
     // Normalize values for comparison
     const normalizedFormValue = formValue.trim();
     const normalizedBackendValue = backendValue.trim();
-    
+
     // If both are empty, no change
     if (normalizedFormValue === "" && normalizedBackendValue === "") {
       return false;
     }
-    
+
     // If form is empty but backend has data, it's a change (clearing)
     if (normalizedFormValue === "" && normalizedBackendValue !== "") {
       return true;
     }
-    
+
     // If form has data but backend is empty, it's a change (adding)
     if (normalizedFormValue !== "" && normalizedBackendValue === "") {
       return true;
     }
-    
+
     // Otherwise, compare the values
     return normalizedFormValue !== normalizedBackendValue;
   }
@@ -341,10 +341,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
   const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const digits = value.replace(/[^0-9]/g, "");
-    
+
     // Allow up to 11 digits
     const maxDigits = digits.slice(0, 11);
-    
+
     setForm({ ...form, contact: maxDigits });
   };
 

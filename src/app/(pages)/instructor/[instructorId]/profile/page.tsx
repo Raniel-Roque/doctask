@@ -10,10 +10,7 @@ import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import {
-  FaExclamationTriangle,
-  FaTrash,
-} from "react-icons/fa";
+import { FaExclamationTriangle, FaTrash } from "react-icons/fa";
 import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
 
 interface InstructorProfilePageProps {
@@ -49,34 +46,37 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     setShowWipeModal(false);
   };
 
-  const handleVerifyPassword = async (password: string, signal?: AbortSignal) => {
+  const handleVerifyPassword = async (
+    password: string,
+    signal?: AbortSignal,
+  ) => {
     if (!user) {
       throw new Error("User not found");
     }
 
-      const response = await fetch("/api/clerk/verify-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          clerkId: user.id,
-          currentPassword: password,
-        }),
-        signal, // Add the AbortSignal to the fetch request
-      });
+    const response = await fetch("/api/clerk/verify-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        clerkId: user.id,
+        currentPassword: password,
+      }),
+      signal, // Add the AbortSignal to the fetch request
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to verify password");
-      }
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to verify password");
+    }
 
-      setIsVerified(true);
-      setNotification({
-        message: "Password verified. Please confirm the action.",
-        type: "success",
-      });
+    setIsVerified(true);
+    setNotification({
+      message: "Password verified. Please confirm the action.",
+      type: "success",
+    });
   };
 
   const handleWipeData = async () => {

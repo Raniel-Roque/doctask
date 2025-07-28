@@ -1142,11 +1142,19 @@ const LoginPage = () => {
                         errorMessage.toLowerCase().includes("weak") ||
                         errorMessage.toLowerCase().includes("common") ||
                         errorMessage.toLowerCase().includes("weak_password") ||
-                        errorMessage.toLowerCase().includes("password_strength") ||
-                        errorMessage.toLowerCase().includes("not strong enough") ||
-                        errorMessage.toLowerCase().includes("password is too weak") ||
+                        errorMessage
+                          .toLowerCase()
+                          .includes("password_strength") ||
+                        errorMessage
+                          .toLowerCase()
+                          .includes("not strong enough") ||
+                        errorMessage
+                          .toLowerCase()
+                          .includes("password is too weak") ||
                         errorMessage.toLowerCase().includes("too common") ||
-                        errorMessage.toLowerCase().includes("password is too common")
+                        errorMessage
+                          .toLowerCase()
+                          .includes("password is too common")
                       ) {
                         setNotification({
                           message:
@@ -1156,9 +1164,15 @@ const LoginPage = () => {
                       }
                       // Check for password validation errors
                       else if (
-                        errorMessage.toLowerCase().includes("password_validation") ||
-                        errorMessage.toLowerCase().includes("invalid password") ||
-                        errorMessage.toLowerCase().includes("password requirements")
+                        errorMessage
+                          .toLowerCase()
+                          .includes("password_validation") ||
+                        errorMessage
+                          .toLowerCase()
+                          .includes("invalid password") ||
+                        errorMessage
+                          .toLowerCase()
+                          .includes("password requirements")
                       ) {
                         setNotification({
                           message:
@@ -1169,7 +1183,9 @@ const LoginPage = () => {
                       // Check for rate limiting
                       else if (
                         errorMessage.toLowerCase().includes("rate limit") ||
-                        errorMessage.toLowerCase().includes("too many requests") ||
+                        errorMessage
+                          .toLowerCase()
+                          .includes("too many requests") ||
                         errorMessage.toLowerCase().includes("try again later")
                       ) {
                         setNotification({

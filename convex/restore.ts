@@ -1,5 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 
 // =========================================
 // DELETE OPERATIONS
@@ -92,9 +93,7 @@ export const deleteAllImages = mutation({
       // Delete the file from storage first
       try {
         await ctx.storage.delete(image.file_id);
-      } catch {
-
-      }
+      } catch {}
       // Delete the image record from database
       await ctx.db.delete(image._id);
     }
@@ -361,8 +360,38 @@ export const restoreImage = mutation({
     alt_text: v.optional(v.string()),
     url: v.string(),
     isDeleted: v.optional(v.boolean()),
+    fileData: v.optional(v.string()), // Base64 encoded file data for storage restoration
   },
   handler: async (ctx, args) => {
+    // If fileData is provided, restore the file to storage first
+    if (args.fileData) {
+      try {
+        // Convert base64 to buffer
+        const buffer = Buffer.from(args.fileData, "base64");
+
+        // Generate upload URL and upload the file
+        const uploadUrl = await ctx.storage.generateUploadUrl();
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": args.content_type },
+          body: buffer,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload file to storage");
+        }
+
+        // Note: We can't reuse the original file_id, so we'll use the new one
+        const { storageId } = await uploadResponse.json();
+        // Update the file_id to the new storage ID
+        args.file_id = storageId as Id<"_storage">;
+      } catch (error) {
+        console.error("Failed to restore image to storage:", error);
+        // Continue with database restoration even if storage fails
+      }
+    }
+
+    // Restore to database
     await ctx.db.insert("images", {
       file_id: args.file_id,
       filename: args.filename,
@@ -376,6 +405,55 @@ export const restoreImage = mutation({
     });
 
     return { success: true };
+  },
+});
+
+// Helper function to delete image from storage only
+export const deleteImageFromStorage = mutation({
+  args: {
+    file_id: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      await ctx.storage.delete(args.file_id);
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to delete image from storage:", error);
+      return { success: false, error: "Failed to delete from storage" };
+    }
+  },
+});
+
+// Function to restore image to storage only (without database)
+export const restoreImageToStorage = mutation({
+  args: {
+    file_id: v.id("_storage"),
+    fileData: v.string(), // Base64 encoded file data
+    content_type: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Convert base64 to buffer
+      const buffer = Buffer.from(args.fileData, "base64");
+
+      // Generate upload URL and upload the file
+      const uploadUrl = await ctx.storage.generateUploadUrl();
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": args.content_type },
+        body: buffer,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload file to storage");
+      }
+
+      const { storageId } = await uploadResponse.json();
+      return { success: true, storageId: storageId as Id<"_storage"> };
+    } catch (error) {
+      console.error("Failed to restore image to storage:", error);
+      return { success: false, error: "Failed to restore to storage" };
+    }
   },
 });
 
