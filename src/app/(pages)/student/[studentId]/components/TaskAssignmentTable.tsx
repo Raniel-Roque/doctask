@@ -807,7 +807,10 @@ export const TaskAssignmentTable = ({
               );
             })
           ) : (
-            <span className="text-gray-400 text-xs">No members assigned</span>
+            // Show "No members assigned" only for members, or for managers when no members are available
+            (mode === "member" || availableMembers.length === 0) && (
+              <span className="text-gray-400 text-xs">No members assigned</span>
+            )
           )}
           {mode === "manager" && !allAssigned && (
             <div className="relative">
