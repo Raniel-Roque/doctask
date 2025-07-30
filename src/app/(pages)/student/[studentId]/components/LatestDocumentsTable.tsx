@@ -373,7 +373,36 @@ export const LatestDocumentsTable = ({
         }
       }
 
-      // Note: Only individual documents are included in the zip file
+      // Add special documents (Title Page, Appendix A, Appendix D) as DOCX regardless of format
+      // These are always generated as DOCX since they don't have PDF equivalents
+      const specialDocuments = [
+        { chapter: "title_page", title: "Title Page" },
+        { chapter: "appendix_a", title: "Appendix A" },
+        { chapter: "appendix_d", title: "Appendix D" }
+      ];
+
+      for (const specialDoc of specialDocuments) {
+        const docExists = documents.find(doc => doc.chapter === specialDoc.chapter);
+        if (docExists) {
+          try {
+            let docxBlob: Blob;
+            
+            if (specialDoc.chapter === "title_page") {
+              docxBlob = await createTitlePageDocumentBlob();
+            } else if (specialDoc.chapter === "appendix_a") {
+              docxBlob = await createAppendixADocumentBlob();
+            } else if (specialDoc.chapter === "appendix_d") {
+              docxBlob = await createAppendixDDocumentBlob();
+            } else {
+              continue;
+            }
+            
+            zip.file(`${specialDoc.title} Data.docx`, docxBlob);
+          } catch (error) {
+            console.warn(`Could not generate ${specialDoc.title}:`, error);
+          }
+        }
+      }
 
       // Generate and download zip
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -1538,6 +1567,493 @@ export const LatestDocumentsTable = ({
     } finally {
       setDownloadingDocx(null);
     }
+  };
+
+  // Helper functions to create document blobs for bulk download
+  const createTitlePageDocumentBlob = async (): Promise<Blob> => {
+    if (!group) {
+      throw new Error("No group information available.");
+    }
+
+    const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = await import("docx");
+
+    // Get all member IDs (project manager + members)
+    const allMemberIds = [group.project_manager_id, ...group.member_ids];
+    
+    const membersWithProfiles = await Promise.all(
+      allMemberIds.map(async (memberId) => {
+        const user = await convex.query(api.fetch.getUserById, { id: memberId });
+        return {
+          user,
+          isProjectManager: memberId === group.project_manager_id,
+        };
+      })
+    );
+
+    // Filter out null values and sort by last name
+    const validMembers = membersWithProfiles
+      .filter((member) => member.user && !member.user.isDeleted)
+      .sort((a, b) => {
+        if (!a.user || !b.user) return 0;
+        return a.user.last_name.localeCompare(b.user.last_name);
+      });
+
+    const children = [
+      // Title
+      new Paragraph({
+        text: displayCapstoneTitle,
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: 400,
+          after: 400,
+        },
+      }),
+      new Paragraph({
+        text: "",
+        spacing: {
+          before: 200,
+          after: 200,
+        },
+      }),
+      // Adviser section
+      new Paragraph({
+        text: "Adviser:",
+        heading: HeadingLevel.HEADING_2,
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: 300,
+          after: 200,
+        },
+      }),
+      new Paragraph({
+        text: adviser && adviser.first_name 
+          ? `${adviser.first_name}${adviser.middle_name ? ` ${adviser.middle_name}` : ""} ${adviser.last_name}`
+          : "None",
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: 100,
+          after: 300,
+        },
+      }),
+      // Members section
+      new Paragraph({
+        text: "Members:",
+        heading: HeadingLevel.HEADING_2,
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: 300,
+          after: 200,
+        },
+      }),
+    ];
+
+    // Add each member's name
+    for (let index = 0; index < validMembers.length; index++) {
+      const { user } = validMembers[index];
+      
+      // Format name as "Last Name, First Name Middle Name"
+      const fullName = `${user?.last_name || ""}, ${user?.first_name || ""}${user?.middle_name ? ` ${user.middle_name}` : ""}`;
+      
+      children.push(
+        new Paragraph({
+          text: fullName,
+          alignment: AlignmentType.CENTER,
+          spacing: {
+            before: 100,
+            after: 100,
+          },
+        })
+      );
+    }
+
+    const docxDoc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: children,
+        },
+      ],
+    });
+
+    return await Packer.toBlob(docxDoc);
+  };
+
+  const createAppendixADocumentBlob = async (): Promise<Blob> => {
+    if (!group) {
+      throw new Error("No group information available.");
+    }
+
+    const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = await import("docx");
+
+    // Get all member IDs (project manager + members)
+    const allMemberIds = [group.project_manager_id, ...group.member_ids];
+    
+    const membersWithProfiles = await Promise.all(
+      allMemberIds.map(async (memberId) => {
+        const user = await convex.query(api.fetch.getUserById, { id: memberId });
+        return {
+          user,
+          isProjectManager: memberId === group.project_manager_id,
+        };
+      })
+    );
+
+    // Filter out null values and sort by last name
+    const validMembers = membersWithProfiles
+      .filter((member) => member.user && !member.user.isDeleted)
+      .sort((a, b) => {
+        if (!a.user || !b.user) return 0;
+        return a.user.last_name.localeCompare(b.user.last_name);
+      });
+
+    const children = [
+      // Title
+      new Paragraph({
+        text: "APPENDIX A",
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: 400,
+          after: 400,
+        },
+      }),
+      new Paragraph({
+        text: "TASK ASSIGNMENTS",
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: 200,
+          after: 600,
+        },
+      }),
+    ];
+
+    // Add each member's information and tasks
+    for (let index = 0; index < validMembers.length; index++) {
+      const { user } = validMembers[index];
+      
+      // Format name as "Last Name, First Name Middle Name"
+      const fullName = `${user?.last_name || ""}, ${user?.first_name || ""}${user?.middle_name ? ` ${user.middle_name}` : ""}`;
+      
+      // Add member header
+      children.push(
+        new Paragraph({
+          text: `${index + 1}. ${fullName}`,
+          heading: HeadingLevel.HEADING_2,
+          spacing: {
+            before: 400,
+            after: 200,
+          },
+        })
+      );
+
+      // Get tasks assigned to this member and sort by chapter order
+      // Project manager manages all tasks, regular members only get their assigned tasks
+      const memberTasks = tasks
+        .filter(task => {
+          if (user?._id === group.project_manager_id) {
+            // Project manager gets all tasks
+            return true;
+          } else {
+            // Regular members only get tasks assigned to them
+            return task.assigned_student_ids.includes(user?._id as Id<"users">);
+          }
+        });
+
+      if (memberTasks.length > 0) {
+        // Group tasks by chapter and merge subparts
+        const tasksByChapter = new Map<string, { chapter: string; tasks: typeof memberTasks; allCompleted: boolean }>();
+        
+        memberTasks.forEach(task => {
+          if (!tasksByChapter.has(task.chapter)) {
+            tasksByChapter.set(task.chapter, {
+              chapter: task.chapter,
+              tasks: [],
+              allCompleted: true
+            });
+          }
+          const chapterGroup = tasksByChapter.get(task.chapter)!;
+          chapterGroup.tasks.push(task);
+          if (task.task_status !== 1) {
+            chapterGroup.allCompleted = false;
+          }
+        });
+
+        // Sort chapters by the defined order
+        const sortedChapters = Array.from(tasksByChapter.values()).sort((a, b) => {
+          const orderA = CHAPTER_ORDER.indexOf(a.chapter);
+          const orderB = CHAPTER_ORDER.indexOf(b.chapter);
+          if (orderA === -1 && orderB === -1) return a.chapter.localeCompare(b.chapter);
+          if (orderA === -1) return 1;
+          if (orderB === -1) return -1;
+          return orderA - orderB;
+        });
+
+        // Add tasks section
+        children.push(
+          new Paragraph({
+            text: "Assigned Tasks:",
+            heading: HeadingLevel.HEADING_3,
+            spacing: {
+              before: 300,
+              after: 200,
+            },
+          })
+        );
+
+        // Add each chapter as one task
+        sortedChapters.forEach((chapterGroup, chapterIndex) => {
+          const chapterName = chapterGroup.chapter.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+          const taskStatus = chapterGroup.allCompleted ? "Completed" : "Incomplete";
+          const taskText = `${chapterIndex + 1}. ${chapterName} (${taskStatus})`;
+          
+          children.push(
+            new Paragraph({
+              text: taskText,
+              spacing: { before: 100 },
+            })
+          );
+        });
+      } else {
+        // No tasks assigned
+        children.push(
+          new Paragraph({
+            text: "No tasks assigned",
+            spacing: {
+              before: 300,
+              after: 200,
+            },
+          })
+        );
+      }
+
+      // Add spacing between members
+      children.push(
+        new Paragraph({
+          text: "",
+          spacing: {
+            before: 400,
+            after: 200,
+          },
+        })
+      );
+    }
+
+    const docxDoc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: children,
+        },
+      ],
+    });
+
+    return await Packer.toBlob(docxDoc);
+  };
+
+  const createAppendixDDocumentBlob = async (): Promise<Blob> => {
+    if (!group) {
+      throw new Error("No group information available.");
+    }
+
+    const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = await import("docx");
+
+    // Get all member IDs (project manager + members)
+    const allMemberIds = [group.project_manager_id, ...group.member_ids];
+    
+    const membersWithProfiles = await Promise.all(
+      allMemberIds.map(async (memberId) => {
+        const user = await convex.query(api.fetch.getUserById, { id: memberId });
+        const studentProfile = await convex.query(api.fetch.getStudentGroup, { userId: memberId });
+        
+        // Get Clerk user data for profile image
+        let clerkUser = null;
+        if (user?.clerk_id) {
+          try {
+            const clerkResponse = await fetch(`/api/clerk/get-user-profile?clerkId=${user.clerk_id}`);
+            if (clerkResponse.ok) {
+              const clerkData = await clerkResponse.json();
+              clerkUser = clerkData.user;
+            }
+          } catch (error) {
+            console.warn("Could not fetch Clerk user data:", error);
+          }
+        }
+        
+        return {
+          user,
+          studentProfile,
+          clerkUser,
+          isProjectManager: memberId === group.project_manager_id,
+        };
+      })
+    );
+
+    // Filter out null values and sort by last name
+    const validMembers = membersWithProfiles
+      .filter((member) => member.user && !member.user.isDeleted)
+      .sort((a, b) => {
+        if (!a.user || !b.user) return 0;
+        return a.user.last_name.localeCompare(b.user.last_name);
+      });
+
+    const children = [
+      // Title
+      new Paragraph({
+        text: "APPENDIX D",
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: 400,
+          after: 400,
+        },
+      }),
+      new Paragraph({
+        text: "DATA",
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: 200,
+          after: 600,
+        },
+      }),
+    ];
+
+    // Add each member's information
+    for (let index = 0; index < validMembers.length; index++) {
+      const { user, studentProfile } = validMembers[index];
+      
+      // Format name as "Last Name, First Name Middle Name"
+      const fullName = `${user?.last_name || ""}, ${user?.first_name || ""}${user?.middle_name ? ` ${user.middle_name}` : ""}`;
+      
+      // Add member header
+      children.push(
+        new Paragraph({
+          text: `${index + 1}. ${fullName}`,
+          heading: HeadingLevel.HEADING_2,
+          spacing: {
+            before: 400,
+            after: 200,
+          },
+        })
+      );
+
+      // Primary Information
+      children.push(
+        new Paragraph({
+          text: "Primary Information:",
+          heading: HeadingLevel.HEADING_3,
+          spacing: {
+            before: 300,
+            after: 200,
+          },
+        }),
+        new Paragraph({
+          text: `Email: ${user?.email || "None"}`,
+          spacing: { before: 100 },
+        })
+      );
+
+      // Secondary Information (always show, with "None" for empty fields)
+      const secondaryInfo = [];
+      
+      if (studentProfile?.gender !== undefined && studentProfile.gender !== null) {
+        const genderText = studentProfile.gender === 0 ? "Male" : studentProfile.gender === 1 ? "Female" : "Other";
+        secondaryInfo.push(`Gender: ${genderText}`);
+      } else {
+        secondaryInfo.push(`Gender: None`);
+      }
+      
+      secondaryInfo.push(`Date of Birth: ${studentProfile?.dateOfBirth || "None"}`);
+      secondaryInfo.push(`Place of Birth: ${studentProfile?.placeOfBirth || "None"}`);
+      secondaryInfo.push(`Nationality: ${studentProfile?.nationality || "None"}`);
+      
+      if (studentProfile?.civilStatus !== undefined && studentProfile.civilStatus !== null) {
+        const civilStatusText = studentProfile.civilStatus === 0 ? "Single" : 
+                               studentProfile.civilStatus === 1 ? "Married" : 
+                               studentProfile.civilStatus === 2 ? "Divorced" : "Widowed";
+        secondaryInfo.push(`Civil Status: ${civilStatusText}`);
+      } else {
+        secondaryInfo.push(`Civil Status: None`);
+      }
+      
+      secondaryInfo.push(`Religion: ${studentProfile?.religion || "None"}`);
+      secondaryInfo.push(`Home Address: ${studentProfile?.homeAddress || "None"}`);
+      secondaryInfo.push(`Contact #: ${studentProfile?.contact || "None"}`);
+
+      children.push(
+        new Paragraph({
+          text: "Secondary Information:",
+          heading: HeadingLevel.HEADING_3,
+          spacing: {
+            before: 300,
+            after: 200,
+          },
+        })
+      );
+      
+      secondaryInfo.forEach(info => {
+        children.push(
+          new Paragraph({
+            text: info,
+            spacing: { before: 100 },
+          })
+        );
+      });
+
+      // Education Information (always show, with "None" for empty fields)
+      const educationInfo = [];
+      
+      educationInfo.push(`Tertiary Degree: ${studentProfile?.tertiaryDegree || "None"}`);
+      educationInfo.push(`Tertiary School: ${studentProfile?.tertiarySchool || "None"}`);
+      educationInfo.push(`Secondary School: ${studentProfile?.secondarySchool || "None"}`);
+      educationInfo.push(`Secondary School Address: ${studentProfile?.secondaryAddress || "None"}`);
+      educationInfo.push(`Primary School: ${studentProfile?.primarySchool || "None"}`);
+      educationInfo.push(`Primary School Address: ${studentProfile?.primaryAddress || "None"}`);
+
+      children.push(
+        new Paragraph({
+          text: "Education Information:",
+          heading: HeadingLevel.HEADING_3,
+          spacing: {
+            before: 300,
+            after: 200,
+          },
+        })
+      );
+      
+      educationInfo.forEach(info => {
+        children.push(
+          new Paragraph({
+            text: info,
+            spacing: { before: 100 },
+          })
+        );
+      });
+
+      // Add spacing between members
+      children.push(
+        new Paragraph({
+          text: "",
+          spacing: {
+            before: 400,
+            after: 200,
+          },
+        })
+      );
+    }
+
+    const docxDoc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: children,
+        },
+      ],
+    });
+
+    return await Packer.toBlob(docxDoc);
   };
 
   // Documents that are view/download only
