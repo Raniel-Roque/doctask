@@ -450,7 +450,7 @@ export const Editor = ({
     };
   }, [editor, setEditor]);
 
-  // Handle keyboard shortcuts for table operations
+  // Handle keyboard shortcuts for table operations and list indentation
   useEffect(() => {
     if (!editor || !isEditable) return;
 
@@ -475,6 +475,23 @@ export const Editor = ({
         if (event.ctrlKey && event.shiftKey && event.key === "S") {
           event.preventDefault();
           editor.chain().focus().splitCell().run();
+        }
+      }
+
+      // Handle Tab key for list indentation
+      if (event.key === "Tab") {
+        const isInList = editor.isActive("bulletList") || editor.isActive("orderedList");
+        
+        if (isInList) {
+          event.preventDefault();
+          
+          if (event.shiftKey) {
+            // Shift+Tab: Outdent list item
+            editor.chain().focus().liftListItem("listItem").run();
+          } else {
+            // Tab: Indent list item
+            editor.chain().focus().sinkListItem("listItem").run();
+          }
         }
       }
     };

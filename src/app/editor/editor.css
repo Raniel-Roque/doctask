@@ -23,20 +23,40 @@
 
 /* Nested list styles - Google Docs style */
 /* Unordered lists - different bullet styles for each level */
+.tiptap ul li ul {
+  margin-left: 1.5em;
+}
+
 .tiptap ul li ul li {
   list-style-type: circle;
+}
+
+.tiptap ul li ul li ul {
+  margin-left: 1.5em;
 }
 
 .tiptap ul li ul li ul li {
   list-style-type: square;
 }
 
+.tiptap ul li ul li ul li ul {
+  margin-left: 1.5em;
+}
+
 .tiptap ul li ul li ul li ul li {
   list-style-type: disc;
 }
 
+.tiptap ul li ul li ul li ul li ul {
+  margin-left: 1.5em;
+}
+
 .tiptap ul li ul li ul li ul li ul li {
   list-style-type: circle;
+}
+
+.tiptap ul li ul li ul li ul li ul li ul {
+  margin-left: 1.5em;
 }
 
 .tiptap ul li ul li ul li ul li ul li ul li {
@@ -44,27 +64,47 @@
 }
 
 /* Level 6 - back to disc */
+.tiptap ul li ul li ul li ul li ul li ul li ul {
+  margin-left: 1.5em;
+}
+
 .tiptap ul li ul li ul li ul li ul li ul li ul li {
   list-style-type: disc;
 }
 
 /* Level 7 - back to circle */
+.tiptap ul li ul li ul li ul li ul li ul li ul li ul {
+  margin-left: 1.5em;
+}
+
 .tiptap ul li ul li ul li ul li ul li ul li ul li ul li {
   list-style-type: circle;
 }
 
 /* Level 8 - back to square */
+.tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul {
+  margin-left: 1.5em;
+}
+
 .tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul li {
   list-style-type: square;
 }
 
 /* Level 9 - back to disc */
+.tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul li ul {
+  margin-left: 1.5em;
+}
+
 .tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul li ul li {
   list-style-type: disc;
 }
 
 /* Level 10 - final level, back to circle */
-.tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul li ul li {
+.tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul li ul li ul {
+  margin-left: 1.5em;
+}
+
+.tiptap ul li ul li ul li ul li ul li ul li ul li ul li ul li ul li ul li {
   list-style-type: circle;
 }
 
@@ -175,7 +215,7 @@
   font-weight: normal;
 }
 
-/* Level 6 - lowercase letters (reset) */
+/* Level 6 - lowercase letters */
 .tiptap ol li ol li ol li ol li ol li ol {
   counter-reset: alpha1;
   list-style-type: none;
@@ -186,7 +226,7 @@
   counter-increment: alpha1;
   list-style-type: none;
   position: relative;
-  padding-left: 1.5em;
+  padding-left: 5.5em;
 }
 
 .tiptap ol li ol li ol li ol li ol li ol li::before {
@@ -207,7 +247,7 @@
   counter-increment: alpha2;
   list-style-type: none;
   position: relative;
-  padding-left: 1.5em;
+  padding-left: 6.5em;
 }
 
 .tiptap ol li ol li ol li ol li ol li ol li ol li::before {
@@ -228,7 +268,7 @@
   counter-increment: alpha3;
   list-style-type: none;
   position: relative;
-  padding-left: 1.5em;
+  padding-left: 7.5em;
 }
 
 .tiptap ol li ol li ol li ol li ol li ol li ol li ol li::before {
@@ -249,7 +289,7 @@
   counter-increment: alpha4;
   list-style-type: none;
   position: relative;
-  padding-left: 1.5em;
+  padding-left: 8.5em;
 }
 
 .tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol li::before {
@@ -270,7 +310,7 @@
   counter-increment: alpha5;
   list-style-type: none;
   position: relative;
-  padding-left: 1.5em;
+  padding-left: 9.5em;
 }
 
 .tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol li ol li::before {
@@ -278,6 +318,44 @@
   position: absolute;
   left: 0;
   font-weight: normal;
+}
+
+/* Fix for nested list counter inheritance issues */
+.tiptap ol ol {
+  counter-reset: none;
+}
+
+.tiptap ol ol ol {
+  counter-reset: none;
+}
+
+.tiptap ol ol ol ol {
+  counter-reset: none;
+}
+
+.tiptap ol ol ol ol ol {
+  counter-reset: none;
+}
+
+/* Ensure proper counter inheritance for deeply nested lists */
+.tiptap ol li ol li ol li ol li ol li ol {
+  counter-reset: none;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol {
+  counter-reset: none;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol {
+  counter-reset: none;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol {
+  counter-reset: none;
+}
+
+.tiptap ol li ol li ol li ol li ol li ol li ol li ol li ol li ol {
+  counter-reset: none;
 }
 
 /* Maximum supported levels: 10 levels total */

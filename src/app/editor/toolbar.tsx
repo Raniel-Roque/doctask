@@ -558,14 +558,7 @@ const BulletListButton = () => {
 
   const handleToggleBulletList = () => {
     if (!editor) return;
-
-    if (editor.isActive("bulletList")) {
-      // If bullet list is active, lift all nested content out of the list structure
-      editor.chain().focus().liftListItem("listItem").run();
-    } else {
-      // If not active, toggle bullet list on
-      editor.chain().focus().toggleBulletList().run();
-    }
+    editor.chain().focus().toggleBulletList().run();
   };
 
   return (
@@ -610,14 +603,7 @@ const OrderedListButton = () => {
 
   const handleToggleOrderedList = () => {
     if (!editor) return;
-
-    if (editor.isActive("orderedList")) {
-      // If ordered list is active, lift all nested content out of the list structure
-      editor.chain().focus().liftListItem("listItem").run();
-    } else {
-      // If not active, toggle ordered list on
-      editor.chain().focus().toggleOrderedList().run();
-    }
+    editor.chain().focus().toggleOrderedList().run();
   };
 
   return (
