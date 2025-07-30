@@ -1211,38 +1211,131 @@ const LoginPage = () => {
         </div>
         {/* Download Button - bottom left */}
         {isClient && typeof window !== "undefined" && !window.electron && (
-          <button
-            onClick={() => {
-              try {
-                const link = document.createElement("a");
-                link.href =
-                  "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
-                link.download = "DocTask-Setup-1.0.0.exe";
-                link.target = "_blank";
-                link.rel = "noopener noreferrer";
+          <div className="absolute bottom-0 left-0 mb-4 ml-4">
+            <div className="relative group">
+              <button
+                onClick={() => {
+                  // Detect user's operating system
+                  const userAgent = navigator.userAgent.toLowerCase();
+                  let downloadUrl = "";
+                  let fileName = "";
+                  let showUnavailableMessage = false;
 
-                // Ensure the link is properly attached to the DOM
-                document.body.appendChild(link);
-                link.click();
-
-                // Clean up the link element
-                setTimeout(() => {
-                  if (document.body.contains(link)) {
-                    document.body.removeChild(link);
+                  if (userAgent.includes("win")) {
+                    // Windows
+                    downloadUrl = "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
+                    fileName = "DocTask-Setup-1.0.0.exe";
+                  } else if (userAgent.includes("mac")) {
+                    // macOS - currently unavailable
+                    showUnavailableMessage = true;
+                  } else if (userAgent.includes("linux")) {
+                    // Linux - currently unavailable
+                    showUnavailableMessage = true;
+                  } else {
+                    // Default to Windows for unknown OS
+                    downloadUrl = "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
+                    fileName = "DocTask-Setup-1.0.0.exe";
                   }
-                }, 100);
-              } catch {
-                window.open(
-                  "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe",
-                  "_blank",
-                  "noopener,noreferrer",
-                );
-              }
-            }}
-            className="absolute bottom-0 left-0 mb-4 ml-4 text-sm text-red-200 font-light underline italic hover:text-white transition-colors duration-200 select-none"
-          >
-            Download Desktop App
-          </button>
+
+                  if (showUnavailableMessage) {
+                    // Show notification that the platform is not yet available
+                    setNotification({
+                      message: "Desktop app for your platform is coming soon! Please use the web version for now.",
+                      type: "info",
+                    });
+                    return;
+                  }
+
+                  // Download the appropriate version
+                  try {
+                    const link = document.createElement("a");
+                    link.href = downloadUrl;
+                    link.download = fileName;
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+
+                    // Ensure the link is properly attached to the DOM
+                    document.body.appendChild(link);
+                    link.click();
+
+                    // Clean up the link element
+                    setTimeout(() => {
+                      if (document.body.contains(link)) {
+                        document.body.removeChild(link);
+                      }
+                    }, 100);
+                  } catch {
+                    window.open(downloadUrl, "_blank", "noopener,noreferrer");
+                  }
+                }}
+                className="text-sm text-red-200 font-light underline italic hover:text-white transition-colors duration-200 select-none"
+              >
+                Download Desktop App
+              </button>
+              
+              {/* Dropdown menu */}
+              <div className="absolute bottom-full left-0 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[200px] z-50">
+                <div className="p-2">
+                  <div className="text-xs text-gray-500 font-medium mb-2 px-2">Choose Platform:</div>
+                  
+                  {/* Windows */}
+                  <button
+                    onClick={() => {
+                      try {
+                        const link = document.createElement("a");
+                        link.href =
+                          "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
+                        link.download = "DocTask-Setup-1.0.0.exe";
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+
+                        document.body.appendChild(link);
+                        link.click();
+
+                        setTimeout(() => {
+                          if (document.body.contains(link)) {
+                            document.body.removeChild(link);
+                          }
+                        }, 100);
+                      } catch {
+                        window.open(
+                          "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe",
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
+                  >
+                    <span className="text-blue-600">🪟</span>
+                    Windows (.exe)
+                  </button>
+                  
+                  {/* Linux */}
+                  <button
+                    disabled
+                    className="w-full text-left px-3 py-2 text-sm text-gray-400 cursor-not-allowed rounded-md flex items-center gap-2"
+                    title="Coming soon"
+                  >
+                    <span className="text-orange-600">🐧</span>
+                    Linux (.AppImage)
+                    <span className="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-auto">Soon</span>
+                  </button>
+                  
+                  {/* Mac */}
+                  <button
+                    disabled
+                    className="w-full text-left px-3 py-2 text-sm text-gray-400 cursor-not-allowed rounded-md flex items-center gap-2"
+                    title="Coming soon"
+                  >
+                    <span className="text-gray-600">🍎</span>
+                    macOS (.dmg)
+                    <span className="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-auto">Soon</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* College of Computer Studies Text - bottom right */}
