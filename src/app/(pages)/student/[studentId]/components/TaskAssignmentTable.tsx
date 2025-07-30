@@ -774,44 +774,44 @@ export const TaskAssignmentTable = ({
     return (
       <div className="flex justify-center w-full">
         <div className="flex flex-wrap items-center gap-2">
-          {assignedMemberIds.length > 0 ? (
-            assignedMemberIds.map((memberId) => {
-              const member = groupMembers?.find((m) => m._id === memberId);
-              if (!member) return null;
+          {assignedMemberIds.length > 0
+            ? assignedMemberIds.map((memberId) => {
+                const member = groupMembers?.find((m) => m._id === memberId);
+                if (!member) return null;
 
-              const isCurrentUser = memberId === currentUserId;
-              const pillColor =
-                mode === "member" && isCurrentUser
-                  ? "bg-purple-200 text-purple-900"
-                  : "bg-blue-100 text-blue-800";
+                const isCurrentUser = memberId === currentUserId;
+                const pillColor =
+                  mode === "member" && isCurrentUser
+                    ? "bg-purple-200 text-purple-900"
+                    : "bg-blue-100 text-blue-800";
 
-              return (
-                <span
-                  key={memberId}
-                  className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${pillColor}`}
-                >
-                  {member.first_name} {member.last_name}
-                  {mode === "manager" && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeMemberFromTask(task._id, memberId);
-                      }}
-                      disabled={isLoading}
-                      className={`text-blue-600 hover:text-blue-800 ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                    >
-                      <FaTimes className="w-3 h-3" />
-                    </button>
-                  )}
+                return (
+                  <span
+                    key={memberId}
+                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${pillColor}`}
+                  >
+                    {member.first_name} {member.last_name}
+                    {mode === "manager" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeMemberFromTask(task._id, memberId);
+                        }}
+                        disabled={isLoading}
+                        className={`text-blue-600 hover:text-blue-800 ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <FaTimes className="w-3 h-3" />
+                      </button>
+                    )}
+                  </span>
+                );
+              })
+            : // Show "No members assigned" only for members, or for managers when no members are available
+              (mode === "member" || availableMembers.length === 0) && (
+                <span className="text-gray-400 text-xs">
+                  No members assigned
                 </span>
-              );
-            })
-          ) : (
-            // Show "No members assigned" only for members, or for managers when no members are available
-            (mode === "member" || availableMembers.length === 0) && (
-              <span className="text-gray-400 text-xs">No members assigned</span>
-            )
-          )}
+              )}
           {mode === "manager" && !allAssigned && (
             <div className="relative">
               {availableMembers.length > 0 ? (

@@ -1025,6 +1025,7 @@ interface ToolbarProps {
 
 export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
   const { editor } = useEditorStore();
+  const [spellCheckerEnabled, setSpellCheckerEnabled] = useState(true);
 
   const onPrint = () => {
     // Add print-specific styles to eliminate headers and footers
@@ -1051,6 +1052,22 @@ export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
     setTimeout(() => {
       head.removeChild(printStyleElement);
     }, 1000);
+  };
+
+  // Update spell checker state when editor changes
+  useEffect(() => {
+    if (editor) {
+      const currentSpellCheck = editor.view.dom.getAttribute("spellcheck");
+      setSpellCheckerEnabled(currentSpellCheck !== "false");
+    }
+  }, [editor]);
+
+  const toggleSpellChecker = () => {
+    if (editor) {
+      const newValue = !spellCheckerEnabled;
+      editor.view.dom.setAttribute("spellcheck", newValue.toString());
+      setSpellCheckerEnabled(newValue);
+    }
   };
 
   if (toolbarMode === "adviserViewOnly") {
@@ -1098,15 +1115,10 @@ export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
         onClick: onPrint,
       },
       {
-        label: "Spell Check",
+        label: "Spell Checker",
         icon: SpellCheckIcon,
-        onClick: () => {
-          const current = editor?.view.dom.getAttribute("spellcheck");
-          editor?.view.dom.setAttribute(
-            "spellcheck",
-            current === "false" ? "true" : "false",
-          );
-        },
+        onClick: toggleSpellChecker,
+        isActive: spellCheckerEnabled,
       },
     ],
     [

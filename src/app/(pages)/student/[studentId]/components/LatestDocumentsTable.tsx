@@ -177,7 +177,8 @@ export const LatestDocumentsTable = ({
   const [showBulkDownloadPopup, setShowBulkDownloadPopup] = useState(false);
   const [bulkDownloading, setBulkDownloading] = useState(false);
 
-  const [downloadingAppendixD, setDownloadingAppendixD] = useState<boolean>(false);
+  const [downloadingAppendixD, setDownloadingAppendixD] =
+    useState<boolean>(false);
 
   const handleToggleDetails = (detailType: "documents" | "tasks") => {
     setOpenDetails((prev) => (prev === detailType ? null : detailType));
@@ -378,15 +379,17 @@ export const LatestDocumentsTable = ({
       const specialDocuments = [
         { chapter: "title_page", title: "Title Page" },
         { chapter: "appendix_a", title: "Appendix A" },
-        { chapter: "appendix_d", title: "Appendix D" }
+        { chapter: "appendix_d", title: "Appendix D" },
       ];
 
       for (const specialDoc of specialDocuments) {
-        const docExists = documents.find(doc => doc.chapter === specialDoc.chapter);
+        const docExists = documents.find(
+          (doc) => doc.chapter === specialDoc.chapter,
+        );
         if (docExists) {
           try {
             let docxBlob: Blob;
-            
+
             if (specialDoc.chapter === "title_page") {
               docxBlob = await createTitlePageDocumentBlob();
             } else if (specialDoc.chapter === "appendix_a") {
@@ -396,7 +399,7 @@ export const LatestDocumentsTable = ({
             } else {
               continue;
             }
-            
+
             zip.file(`${specialDoc.title} Data.docx`, docxBlob);
           } catch (error) {
             console.warn(`Could not generate ${specialDoc.title}:`, error);
@@ -935,22 +938,29 @@ export const LatestDocumentsTable = ({
     try {
       setDownloadingAppendixD(true);
 
-      const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = await import("docx");
+      const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } =
+        await import("docx");
       const JSZip = await import("jszip");
 
       // Get all member IDs (project manager + members)
       const allMemberIds = [group.project_manager_id, ...group.member_ids];
-      
+
       const membersWithProfiles = await Promise.all(
         allMemberIds.map(async (memberId) => {
-          const user = await convex.query(api.fetch.getUserById, { id: memberId });
-          const studentProfile = await convex.query(api.fetch.getStudentGroup, { userId: memberId });
-          
+          const user = await convex.query(api.fetch.getUserById, {
+            id: memberId,
+          });
+          const studentProfile = await convex.query(api.fetch.getStudentGroup, {
+            userId: memberId,
+          });
+
           // Get Clerk user data for profile image
           let clerkUser = null;
           if (user?.clerk_id) {
             try {
-              const clerkResponse = await fetch(`/api/clerk/get-user-profile?clerkId=${user.clerk_id}`);
+              const clerkResponse = await fetch(
+                `/api/clerk/get-user-profile?clerkId=${user.clerk_id}`,
+              );
               if (clerkResponse.ok) {
                 const clerkData = await clerkResponse.json();
                 clerkUser = clerkData.user;
@@ -959,14 +969,14 @@ export const LatestDocumentsTable = ({
               console.warn("Could not fetch Clerk user data:", error);
             }
           }
-          
+
           return {
             user,
             studentProfile,
             clerkUser,
             isProjectManager: memberId === group.project_manager_id,
           };
-        })
+        }),
       );
 
       // Filter out null values and sort by last name
@@ -1002,10 +1012,10 @@ export const LatestDocumentsTable = ({
       // Add each member's information
       for (let index = 0; index < validMembers.length; index++) {
         const { user, studentProfile } = validMembers[index];
-        
+
         // Format name as "Last Name, First Name Middle Name"
         const fullName = `${user?.last_name || ""}, ${user?.first_name || ""}${user?.middle_name ? ` ${user.middle_name}` : ""}`;
-        
+
         // Add member header
         children.push(
           new Paragraph({
@@ -1015,7 +1025,7 @@ export const LatestDocumentsTable = ({
               before: 400,
               after: 200,
             },
-          })
+          }),
         );
 
         // Primary Information
@@ -1031,34 +1041,58 @@ export const LatestDocumentsTable = ({
           new Paragraph({
             text: `Email: ${user?.email || "None"}`,
             spacing: { before: 100 },
-          })
+          }),
         );
 
         // Secondary Information (always show, with "None" for empty fields)
         const secondaryInfo = [];
-        
-        if (studentProfile?.gender !== undefined && studentProfile.gender !== null) {
-          const genderText = studentProfile.gender === 0 ? "Male" : studentProfile.gender === 1 ? "Female" : "Other";
+
+        if (
+          studentProfile?.gender !== undefined &&
+          studentProfile.gender !== null
+        ) {
+          const genderText =
+            studentProfile.gender === 0
+              ? "Male"
+              : studentProfile.gender === 1
+                ? "Female"
+                : "Other";
           secondaryInfo.push(`Gender: ${genderText}`);
         } else {
           secondaryInfo.push(`Gender: None`);
         }
-        
-        secondaryInfo.push(`Date of Birth: ${studentProfile?.dateOfBirth || "None"}`);
-        secondaryInfo.push(`Place of Birth: ${studentProfile?.placeOfBirth || "None"}`);
-        secondaryInfo.push(`Nationality: ${studentProfile?.nationality || "None"}`);
-        
-        if (studentProfile?.civilStatus !== undefined && studentProfile.civilStatus !== null) {
-          const civilStatusText = studentProfile.civilStatus === 0 ? "Single" : 
-                                 studentProfile.civilStatus === 1 ? "Married" : 
-                                 studentProfile.civilStatus === 2 ? "Divorced" : "Widowed";
+
+        secondaryInfo.push(
+          `Date of Birth: ${studentProfile?.dateOfBirth || "None"}`,
+        );
+        secondaryInfo.push(
+          `Place of Birth: ${studentProfile?.placeOfBirth || "None"}`,
+        );
+        secondaryInfo.push(
+          `Nationality: ${studentProfile?.nationality || "None"}`,
+        );
+
+        if (
+          studentProfile?.civilStatus !== undefined &&
+          studentProfile.civilStatus !== null
+        ) {
+          const civilStatusText =
+            studentProfile.civilStatus === 0
+              ? "Single"
+              : studentProfile.civilStatus === 1
+                ? "Married"
+                : studentProfile.civilStatus === 2
+                  ? "Divorced"
+                  : "Widowed";
           secondaryInfo.push(`Civil Status: ${civilStatusText}`);
         } else {
           secondaryInfo.push(`Civil Status: None`);
         }
-        
+
         secondaryInfo.push(`Religion: ${studentProfile?.religion || "None"}`);
-        secondaryInfo.push(`Home Address: ${studentProfile?.homeAddress || "None"}`);
+        secondaryInfo.push(
+          `Home Address: ${studentProfile?.homeAddress || "None"}`,
+        );
         secondaryInfo.push(`Contact #: ${studentProfile?.contact || "None"}`);
 
         children.push(
@@ -1069,27 +1103,39 @@ export const LatestDocumentsTable = ({
               before: 300,
               after: 200,
             },
-          })
+          }),
         );
-        
-        secondaryInfo.forEach(info => {
+
+        secondaryInfo.forEach((info) => {
           children.push(
             new Paragraph({
               text: info,
               spacing: { before: 100 },
-            })
+            }),
           );
         });
 
         // Education Information (always show, with "None" for empty fields)
         const educationInfo = [];
-        
-        educationInfo.push(`Tertiary Degree: ${studentProfile?.tertiaryDegree || "None"}`);
-        educationInfo.push(`Tertiary School: ${studentProfile?.tertiarySchool || "None"}`);
-        educationInfo.push(`Secondary School: ${studentProfile?.secondarySchool || "None"}`);
-        educationInfo.push(`Secondary School Address: ${studentProfile?.secondaryAddress || "None"}`);
-        educationInfo.push(`Primary School: ${studentProfile?.primarySchool || "None"}`);
-        educationInfo.push(`Primary School Address: ${studentProfile?.primaryAddress || "None"}`);
+
+        educationInfo.push(
+          `Tertiary Degree: ${studentProfile?.tertiaryDegree || "None"}`,
+        );
+        educationInfo.push(
+          `Tertiary School: ${studentProfile?.tertiarySchool || "None"}`,
+        );
+        educationInfo.push(
+          `Secondary School: ${studentProfile?.secondarySchool || "None"}`,
+        );
+        educationInfo.push(
+          `Secondary School Address: ${studentProfile?.secondaryAddress || "None"}`,
+        );
+        educationInfo.push(
+          `Primary School: ${studentProfile?.primarySchool || "None"}`,
+        );
+        educationInfo.push(
+          `Primary School Address: ${studentProfile?.primaryAddress || "None"}`,
+        );
 
         children.push(
           new Paragraph({
@@ -1099,15 +1145,15 @@ export const LatestDocumentsTable = ({
               before: 300,
               after: 200,
             },
-          })
+          }),
         );
-        
-        educationInfo.forEach(info => {
+
+        educationInfo.forEach((info) => {
           children.push(
             new Paragraph({
               text: info,
               spacing: { before: 100 },
-            })
+            }),
           );
         });
 
@@ -1119,7 +1165,7 @@ export const LatestDocumentsTable = ({
               before: 400,
               after: 200,
             },
-          })
+          }),
         );
       } // Close the for loop
 
@@ -1136,10 +1182,10 @@ export const LatestDocumentsTable = ({
 
       // Create a zip file containing both the generated data and the template
       const zip = new JSZip.default();
-      
+
       // Add the generated Appendix D data
       zip.file("Appendix D Data.docx", appendixDBlob);
-      
+
       // Add profile images to the zip
       for (let index = 0; index < validMembers.length; index++) {
         const { user, clerkUser } = validMembers[index];
@@ -1148,7 +1194,7 @@ export const LatestDocumentsTable = ({
             const imageResponse = await fetch(clerkUser.imageUrl);
             if (imageResponse.ok) {
               const imageBlob = await imageResponse.blob();
-              const fileName = `${user?.last_name || 'Unknown'}_${user?.first_name || 'User'}_profile.jpg`;
+              const fileName = `${user?.last_name || "Unknown"}_${user?.first_name || "User"}_profile.jpg`;
               zip.file(`Profile Images/${fileName}`, imageBlob);
             }
           } catch (error) {
@@ -1156,10 +1202,12 @@ export const LatestDocumentsTable = ({
           }
         }
       }
-      
+
       // Add the template file
       try {
-        const templateResponse = await fetch("/templates/Appendix D Template.docx");
+        const templateResponse = await fetch(
+          "/templates/Appendix D Template.docx",
+        );
         if (templateResponse.ok) {
           const templateBlob = await templateResponse.blob();
           zip.file("Appendix D Template.docx", templateBlob);
@@ -1204,20 +1252,23 @@ export const LatestDocumentsTable = ({
     try {
       setDownloadingDocx("title_page");
 
-      const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = await import("docx");
+      const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } =
+        await import("docx");
       const JSZip = await import("jszip");
 
       // Get all member IDs (project manager + members)
       const allMemberIds = [group.project_manager_id, ...group.member_ids];
-      
+
       const membersWithProfiles = await Promise.all(
         allMemberIds.map(async (memberId) => {
-          const user = await convex.query(api.fetch.getUserById, { id: memberId });
+          const user = await convex.query(api.fetch.getUserById, {
+            id: memberId,
+          });
           return {
             user,
             isProjectManager: memberId === group.project_manager_id,
           };
-        })
+        }),
       );
 
       // Filter out null values and sort by last name
@@ -1257,9 +1308,10 @@ export const LatestDocumentsTable = ({
           },
         }),
         new Paragraph({
-          text: adviser && adviser.first_name 
-            ? `${adviser.first_name}${adviser.middle_name ? ` ${adviser.middle_name}` : ""} ${adviser.last_name}`
-            : "None",
+          text:
+            adviser && adviser.first_name
+              ? `${adviser.first_name}${adviser.middle_name ? ` ${adviser.middle_name}` : ""} ${adviser.last_name}`
+              : "None",
           alignment: AlignmentType.CENTER,
           spacing: {
             before: 100,
@@ -1281,10 +1333,10 @@ export const LatestDocumentsTable = ({
       // Add each member's name
       for (let index = 0; index < validMembers.length; index++) {
         const { user } = validMembers[index];
-        
+
         // Format name as "Last Name, First Name Middle Name"
         const fullName = `${user?.last_name || ""}, ${user?.first_name || ""}${user?.middle_name ? ` ${user.middle_name}` : ""}`;
-        
+
         children.push(
           new Paragraph({
             text: fullName,
@@ -1293,7 +1345,7 @@ export const LatestDocumentsTable = ({
               before: 100,
               after: 100,
             },
-          })
+          }),
         );
       }
 
@@ -1310,13 +1362,15 @@ export const LatestDocumentsTable = ({
 
       // Create a zip file containing both the generated data and the template
       const zip = new JSZip.default();
-      
+
       // Add the generated Title Page data
       zip.file("Title Page Data.docx", titlePageBlob);
-      
+
       // Add the template file
       try {
-        const templateResponse = await fetch("/templates/Title Page Template.docx");
+        const templateResponse = await fetch(
+          "/templates/Title Page Template.docx",
+        );
         if (templateResponse.ok) {
           const templateBlob = await templateResponse.blob();
           zip.file("Title Page Template.docx", templateBlob);
@@ -1361,20 +1415,23 @@ export const LatestDocumentsTable = ({
     try {
       setDownloadingDocx("appendix_a");
 
-      const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = await import("docx");
+      const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } =
+        await import("docx");
       const JSZip = await import("jszip");
 
       // Get all member IDs (project manager + members)
       const allMemberIds = [group.project_manager_id, ...group.member_ids];
-      
+
       const membersWithProfiles = await Promise.all(
         allMemberIds.map(async (memberId) => {
-          const user = await convex.query(api.fetch.getUserById, { id: memberId });
+          const user = await convex.query(api.fetch.getUserById, {
+            id: memberId,
+          });
           return {
             user,
             isProjectManager: memberId === group.project_manager_id,
           };
-        })
+        }),
       );
 
       // Filter out null values and sort by last name
@@ -1410,10 +1467,10 @@ export const LatestDocumentsTable = ({
       // Add each member's information and tasks
       for (let index = 0; index < validMembers.length; index++) {
         const { user } = validMembers[index];
-        
+
         // Format name as "Last Name, First Name Middle Name"
         const fullName = `${user?.last_name || ""}, ${user?.first_name || ""}${user?.middle_name ? ` ${user.middle_name}` : ""}`;
-        
+
         // Add member header
         children.push(
           new Paragraph({
@@ -1423,32 +1480,38 @@ export const LatestDocumentsTable = ({
               before: 400,
               after: 200,
             },
-          })
+          }),
         );
 
         // Get tasks assigned to this member and sort by chapter order
         // Project manager manages all tasks, regular members only get their assigned tasks
-        const memberTasks = tasks
-          .filter(task => {
-            if (user?._id === group.project_manager_id) {
-              // Project manager gets all tasks
-              return true;
-            } else {
-              // Regular members only get tasks assigned to them
-              return task.assigned_student_ids.includes(user?._id as Id<"users">);
-            }
-          });
+        const memberTasks = tasks.filter((task) => {
+          if (user?._id === group.project_manager_id) {
+            // Project manager gets all tasks
+            return true;
+          } else {
+            // Regular members only get tasks assigned to them
+            return task.assigned_student_ids.includes(user?._id as Id<"users">);
+          }
+        });
 
         if (memberTasks.length > 0) {
           // Group tasks by chapter and merge subparts
-          const tasksByChapter = new Map<string, { chapter: string; tasks: typeof memberTasks; allCompleted: boolean }>();
-          
-          memberTasks.forEach(task => {
+          const tasksByChapter = new Map<
+            string,
+            {
+              chapter: string;
+              tasks: typeof memberTasks;
+              allCompleted: boolean;
+            }
+          >();
+
+          memberTasks.forEach((task) => {
             if (!tasksByChapter.has(task.chapter)) {
               tasksByChapter.set(task.chapter, {
                 chapter: task.chapter,
                 tasks: [],
-                allCompleted: true
+                allCompleted: true,
               });
             }
             const chapterGroup = tasksByChapter.get(task.chapter)!;
@@ -1459,14 +1522,17 @@ export const LatestDocumentsTable = ({
           });
 
           // Sort chapters by the defined order
-          const sortedChapters = Array.from(tasksByChapter.values()).sort((a, b) => {
-            const orderA = CHAPTER_ORDER.indexOf(a.chapter);
-            const orderB = CHAPTER_ORDER.indexOf(b.chapter);
-            if (orderA === -1 && orderB === -1) return a.chapter.localeCompare(b.chapter);
-            if (orderA === -1) return 1;
-            if (orderB === -1) return -1;
-            return orderA - orderB;
-          });
+          const sortedChapters = Array.from(tasksByChapter.values()).sort(
+            (a, b) => {
+              const orderA = CHAPTER_ORDER.indexOf(a.chapter);
+              const orderB = CHAPTER_ORDER.indexOf(b.chapter);
+              if (orderA === -1 && orderB === -1)
+                return a.chapter.localeCompare(b.chapter);
+              if (orderA === -1) return 1;
+              if (orderB === -1) return -1;
+              return orderA - orderB;
+            },
+          );
 
           // Add tasks section
           children.push(
@@ -1477,20 +1543,24 @@ export const LatestDocumentsTable = ({
                 before: 300,
                 after: 200,
               },
-            })
+            }),
           );
 
           // Add each chapter as one task
           sortedChapters.forEach((chapterGroup, chapterIndex) => {
-            const chapterName = chapterGroup.chapter.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
-            const taskStatus = chapterGroup.allCompleted ? "Completed" : "Incomplete";
+            const chapterName = chapterGroup.chapter
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (l) => l.toUpperCase());
+            const taskStatus = chapterGroup.allCompleted
+              ? "Completed"
+              : "Incomplete";
             const taskText = `${chapterIndex + 1}. ${chapterName} (${taskStatus})`;
-            
+
             children.push(
               new Paragraph({
                 text: taskText,
                 spacing: { before: 100 },
-              })
+              }),
             );
           });
         } else {
@@ -1502,7 +1572,7 @@ export const LatestDocumentsTable = ({
                 before: 300,
                 after: 200,
               },
-            })
+            }),
           );
         }
 
@@ -1514,7 +1584,7 @@ export const LatestDocumentsTable = ({
               before: 400,
               after: 200,
             },
-          })
+          }),
         );
       }
 
@@ -1531,13 +1601,15 @@ export const LatestDocumentsTable = ({
 
       // Create a zip file containing both the generated data and the template
       const zip = new JSZip.default();
-      
+
       // Add the generated Appendix A data
       zip.file("Appendix A Data.docx", appendixABlob);
-      
+
       // Add the template file
       try {
-        const templateResponse = await fetch("/templates/Appendix A Template.docx");
+        const templateResponse = await fetch(
+          "/templates/Appendix A Template.docx",
+        );
         if (templateResponse.ok) {
           const templateBlob = await templateResponse.blob();
           zip.file("Appendix A Template.docx", templateBlob);
@@ -1575,19 +1647,22 @@ export const LatestDocumentsTable = ({
       throw new Error("No group information available.");
     }
 
-    const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = await import("docx");
+    const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } =
+      await import("docx");
 
     // Get all member IDs (project manager + members)
     const allMemberIds = [group.project_manager_id, ...group.member_ids];
-    
+
     const membersWithProfiles = await Promise.all(
       allMemberIds.map(async (memberId) => {
-        const user = await convex.query(api.fetch.getUserById, { id: memberId });
+        const user = await convex.query(api.fetch.getUserById, {
+          id: memberId,
+        });
         return {
           user,
           isProjectManager: memberId === group.project_manager_id,
         };
-      })
+      }),
     );
 
     // Filter out null values and sort by last name
@@ -1627,9 +1702,10 @@ export const LatestDocumentsTable = ({
         },
       }),
       new Paragraph({
-        text: adviser && adviser.first_name 
-          ? `${adviser.first_name}${adviser.middle_name ? ` ${adviser.middle_name}` : ""} ${adviser.last_name}`
-          : "None",
+        text:
+          adviser && adviser.first_name
+            ? `${adviser.first_name}${adviser.middle_name ? ` ${adviser.middle_name}` : ""} ${adviser.last_name}`
+            : "None",
         alignment: AlignmentType.CENTER,
         spacing: {
           before: 100,
@@ -1651,10 +1727,10 @@ export const LatestDocumentsTable = ({
     // Add each member's name
     for (let index = 0; index < validMembers.length; index++) {
       const { user } = validMembers[index];
-      
+
       // Format name as "Last Name, First Name Middle Name"
       const fullName = `${user?.last_name || ""}, ${user?.first_name || ""}${user?.middle_name ? ` ${user.middle_name}` : ""}`;
-      
+
       children.push(
         new Paragraph({
           text: fullName,
@@ -1663,7 +1739,7 @@ export const LatestDocumentsTable = ({
             before: 100,
             after: 100,
           },
-        })
+        }),
       );
     }
 
@@ -1684,19 +1760,22 @@ export const LatestDocumentsTable = ({
       throw new Error("No group information available.");
     }
 
-    const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = await import("docx");
+    const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } =
+      await import("docx");
 
     // Get all member IDs (project manager + members)
     const allMemberIds = [group.project_manager_id, ...group.member_ids];
-    
+
     const membersWithProfiles = await Promise.all(
       allMemberIds.map(async (memberId) => {
-        const user = await convex.query(api.fetch.getUserById, { id: memberId });
+        const user = await convex.query(api.fetch.getUserById, {
+          id: memberId,
+        });
         return {
           user,
           isProjectManager: memberId === group.project_manager_id,
         };
-      })
+      }),
     );
 
     // Filter out null values and sort by last name
@@ -1732,10 +1811,10 @@ export const LatestDocumentsTable = ({
     // Add each member's information and tasks
     for (let index = 0; index < validMembers.length; index++) {
       const { user } = validMembers[index];
-      
+
       // Format name as "Last Name, First Name Middle Name"
       const fullName = `${user?.last_name || ""}, ${user?.first_name || ""}${user?.middle_name ? ` ${user.middle_name}` : ""}`;
-      
+
       // Add member header
       children.push(
         new Paragraph({
@@ -1745,32 +1824,34 @@ export const LatestDocumentsTable = ({
             before: 400,
             after: 200,
           },
-        })
+        }),
       );
 
       // Get tasks assigned to this member and sort by chapter order
       // Project manager manages all tasks, regular members only get their assigned tasks
-      const memberTasks = tasks
-        .filter(task => {
-          if (user?._id === group.project_manager_id) {
-            // Project manager gets all tasks
-            return true;
-          } else {
-            // Regular members only get tasks assigned to them
-            return task.assigned_student_ids.includes(user?._id as Id<"users">);
-          }
-        });
+      const memberTasks = tasks.filter((task) => {
+        if (user?._id === group.project_manager_id) {
+          // Project manager gets all tasks
+          return true;
+        } else {
+          // Regular members only get tasks assigned to them
+          return task.assigned_student_ids.includes(user?._id as Id<"users">);
+        }
+      });
 
       if (memberTasks.length > 0) {
         // Group tasks by chapter and merge subparts
-        const tasksByChapter = new Map<string, { chapter: string; tasks: typeof memberTasks; allCompleted: boolean }>();
-        
-        memberTasks.forEach(task => {
+        const tasksByChapter = new Map<
+          string,
+          { chapter: string; tasks: typeof memberTasks; allCompleted: boolean }
+        >();
+
+        memberTasks.forEach((task) => {
           if (!tasksByChapter.has(task.chapter)) {
             tasksByChapter.set(task.chapter, {
               chapter: task.chapter,
               tasks: [],
-              allCompleted: true
+              allCompleted: true,
             });
           }
           const chapterGroup = tasksByChapter.get(task.chapter)!;
@@ -1781,14 +1862,17 @@ export const LatestDocumentsTable = ({
         });
 
         // Sort chapters by the defined order
-        const sortedChapters = Array.from(tasksByChapter.values()).sort((a, b) => {
-          const orderA = CHAPTER_ORDER.indexOf(a.chapter);
-          const orderB = CHAPTER_ORDER.indexOf(b.chapter);
-          if (orderA === -1 && orderB === -1) return a.chapter.localeCompare(b.chapter);
-          if (orderA === -1) return 1;
-          if (orderB === -1) return -1;
-          return orderA - orderB;
-        });
+        const sortedChapters = Array.from(tasksByChapter.values()).sort(
+          (a, b) => {
+            const orderA = CHAPTER_ORDER.indexOf(a.chapter);
+            const orderB = CHAPTER_ORDER.indexOf(b.chapter);
+            if (orderA === -1 && orderB === -1)
+              return a.chapter.localeCompare(b.chapter);
+            if (orderA === -1) return 1;
+            if (orderB === -1) return -1;
+            return orderA - orderB;
+          },
+        );
 
         // Add tasks section
         children.push(
@@ -1799,20 +1883,24 @@ export const LatestDocumentsTable = ({
               before: 300,
               after: 200,
             },
-          })
+          }),
         );
 
         // Add each chapter as one task
         sortedChapters.forEach((chapterGroup, chapterIndex) => {
-          const chapterName = chapterGroup.chapter.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
-          const taskStatus = chapterGroup.allCompleted ? "Completed" : "Incomplete";
+          const chapterName = chapterGroup.chapter
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase());
+          const taskStatus = chapterGroup.allCompleted
+            ? "Completed"
+            : "Incomplete";
           const taskText = `${chapterIndex + 1}. ${chapterName} (${taskStatus})`;
-          
+
           children.push(
             new Paragraph({
               text: taskText,
               spacing: { before: 100 },
-            })
+            }),
           );
         });
       } else {
@@ -1824,7 +1912,7 @@ export const LatestDocumentsTable = ({
               before: 300,
               after: 200,
             },
-          })
+          }),
         );
       }
 
@@ -1836,7 +1924,7 @@ export const LatestDocumentsTable = ({
             before: 400,
             after: 200,
           },
-        })
+        }),
       );
     }
 
@@ -1857,21 +1945,28 @@ export const LatestDocumentsTable = ({
       throw new Error("No group information available.");
     }
 
-    const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = await import("docx");
+    const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } =
+      await import("docx");
 
     // Get all member IDs (project manager + members)
     const allMemberIds = [group.project_manager_id, ...group.member_ids];
-    
+
     const membersWithProfiles = await Promise.all(
       allMemberIds.map(async (memberId) => {
-        const user = await convex.query(api.fetch.getUserById, { id: memberId });
-        const studentProfile = await convex.query(api.fetch.getStudentGroup, { userId: memberId });
-        
+        const user = await convex.query(api.fetch.getUserById, {
+          id: memberId,
+        });
+        const studentProfile = await convex.query(api.fetch.getStudentGroup, {
+          userId: memberId,
+        });
+
         // Get Clerk user data for profile image
         let clerkUser = null;
         if (user?.clerk_id) {
           try {
-            const clerkResponse = await fetch(`/api/clerk/get-user-profile?clerkId=${user.clerk_id}`);
+            const clerkResponse = await fetch(
+              `/api/clerk/get-user-profile?clerkId=${user.clerk_id}`,
+            );
             if (clerkResponse.ok) {
               const clerkData = await clerkResponse.json();
               clerkUser = clerkData.user;
@@ -1880,14 +1975,14 @@ export const LatestDocumentsTable = ({
             console.warn("Could not fetch Clerk user data:", error);
           }
         }
-        
+
         return {
           user,
           studentProfile,
           clerkUser,
           isProjectManager: memberId === group.project_manager_id,
         };
-      })
+      }),
     );
 
     // Filter out null values and sort by last name
@@ -1923,10 +2018,10 @@ export const LatestDocumentsTable = ({
     // Add each member's information
     for (let index = 0; index < validMembers.length; index++) {
       const { user, studentProfile } = validMembers[index];
-      
+
       // Format name as "Last Name, First Name Middle Name"
       const fullName = `${user?.last_name || ""}, ${user?.first_name || ""}${user?.middle_name ? ` ${user.middle_name}` : ""}`;
-      
+
       // Add member header
       children.push(
         new Paragraph({
@@ -1936,7 +2031,7 @@ export const LatestDocumentsTable = ({
             before: 400,
             after: 200,
           },
-        })
+        }),
       );
 
       // Primary Information
@@ -1952,34 +2047,58 @@ export const LatestDocumentsTable = ({
         new Paragraph({
           text: `Email: ${user?.email || "None"}`,
           spacing: { before: 100 },
-        })
+        }),
       );
 
       // Secondary Information (always show, with "None" for empty fields)
       const secondaryInfo = [];
-      
-      if (studentProfile?.gender !== undefined && studentProfile.gender !== null) {
-        const genderText = studentProfile.gender === 0 ? "Male" : studentProfile.gender === 1 ? "Female" : "Other";
+
+      if (
+        studentProfile?.gender !== undefined &&
+        studentProfile.gender !== null
+      ) {
+        const genderText =
+          studentProfile.gender === 0
+            ? "Male"
+            : studentProfile.gender === 1
+              ? "Female"
+              : "Other";
         secondaryInfo.push(`Gender: ${genderText}`);
       } else {
         secondaryInfo.push(`Gender: None`);
       }
-      
-      secondaryInfo.push(`Date of Birth: ${studentProfile?.dateOfBirth || "None"}`);
-      secondaryInfo.push(`Place of Birth: ${studentProfile?.placeOfBirth || "None"}`);
-      secondaryInfo.push(`Nationality: ${studentProfile?.nationality || "None"}`);
-      
-      if (studentProfile?.civilStatus !== undefined && studentProfile.civilStatus !== null) {
-        const civilStatusText = studentProfile.civilStatus === 0 ? "Single" : 
-                               studentProfile.civilStatus === 1 ? "Married" : 
-                               studentProfile.civilStatus === 2 ? "Divorced" : "Widowed";
+
+      secondaryInfo.push(
+        `Date of Birth: ${studentProfile?.dateOfBirth || "None"}`,
+      );
+      secondaryInfo.push(
+        `Place of Birth: ${studentProfile?.placeOfBirth || "None"}`,
+      );
+      secondaryInfo.push(
+        `Nationality: ${studentProfile?.nationality || "None"}`,
+      );
+
+      if (
+        studentProfile?.civilStatus !== undefined &&
+        studentProfile.civilStatus !== null
+      ) {
+        const civilStatusText =
+          studentProfile.civilStatus === 0
+            ? "Single"
+            : studentProfile.civilStatus === 1
+              ? "Married"
+              : studentProfile.civilStatus === 2
+                ? "Divorced"
+                : "Widowed";
         secondaryInfo.push(`Civil Status: ${civilStatusText}`);
       } else {
         secondaryInfo.push(`Civil Status: None`);
       }
-      
+
       secondaryInfo.push(`Religion: ${studentProfile?.religion || "None"}`);
-      secondaryInfo.push(`Home Address: ${studentProfile?.homeAddress || "None"}`);
+      secondaryInfo.push(
+        `Home Address: ${studentProfile?.homeAddress || "None"}`,
+      );
       secondaryInfo.push(`Contact #: ${studentProfile?.contact || "None"}`);
 
       children.push(
@@ -1990,27 +2109,39 @@ export const LatestDocumentsTable = ({
             before: 300,
             after: 200,
           },
-        })
+        }),
       );
-      
-      secondaryInfo.forEach(info => {
+
+      secondaryInfo.forEach((info) => {
         children.push(
           new Paragraph({
             text: info,
             spacing: { before: 100 },
-          })
+          }),
         );
       });
 
       // Education Information (always show, with "None" for empty fields)
       const educationInfo = [];
-      
-      educationInfo.push(`Tertiary Degree: ${studentProfile?.tertiaryDegree || "None"}`);
-      educationInfo.push(`Tertiary School: ${studentProfile?.tertiarySchool || "None"}`);
-      educationInfo.push(`Secondary School: ${studentProfile?.secondarySchool || "None"}`);
-      educationInfo.push(`Secondary School Address: ${studentProfile?.secondaryAddress || "None"}`);
-      educationInfo.push(`Primary School: ${studentProfile?.primarySchool || "None"}`);
-      educationInfo.push(`Primary School Address: ${studentProfile?.primaryAddress || "None"}`);
+
+      educationInfo.push(
+        `Tertiary Degree: ${studentProfile?.tertiaryDegree || "None"}`,
+      );
+      educationInfo.push(
+        `Tertiary School: ${studentProfile?.tertiarySchool || "None"}`,
+      );
+      educationInfo.push(
+        `Secondary School: ${studentProfile?.secondarySchool || "None"}`,
+      );
+      educationInfo.push(
+        `Secondary School Address: ${studentProfile?.secondaryAddress || "None"}`,
+      );
+      educationInfo.push(
+        `Primary School: ${studentProfile?.primarySchool || "None"}`,
+      );
+      educationInfo.push(
+        `Primary School Address: ${studentProfile?.primaryAddress || "None"}`,
+      );
 
       children.push(
         new Paragraph({
@@ -2020,15 +2151,15 @@ export const LatestDocumentsTable = ({
             before: 300,
             after: 200,
           },
-        })
+        }),
       );
-      
-      educationInfo.forEach(info => {
+
+      educationInfo.forEach((info) => {
         children.push(
           new Paragraph({
             text: info,
             spacing: { before: 100 },
-          })
+          }),
         );
       });
 
@@ -2040,7 +2171,7 @@ export const LatestDocumentsTable = ({
             before: 400,
             after: 200,
           },
-        })
+        }),
       );
     }
 
@@ -2683,9 +2814,15 @@ export const LatestDocumentsTable = ({
                             e.stopPropagation();
                             handleDownloadDocx(doc);
                           }}
-                          disabled={downloadingDocx === doc._id || (doc.chapter === "appendix_d" && downloadingAppendixD)}
+                          disabled={
+                            downloadingDocx === doc._id ||
+                            (doc.chapter === "appendix_d" &&
+                              downloadingAppendixD)
+                          }
                         >
-                          {downloadingDocx === doc._id || (doc.chapter === "appendix_d" && downloadingAppendixD) ? (
+                          {downloadingDocx === doc._id ||
+                          (doc.chapter === "appendix_d" &&
+                            downloadingAppendixD) ? (
                             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                           ) : (
                             <FaDownload className="w-4 h-4" />

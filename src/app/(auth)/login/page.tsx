@@ -1223,7 +1223,8 @@ const LoginPage = () => {
 
                   if (userAgent.includes("win")) {
                     // Windows
-                    downloadUrl = "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
+                    downloadUrl =
+                      "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
                     fileName = "DocTask-Setup-1.0.0.exe";
                   } else if (userAgent.includes("mac")) {
                     // macOS - currently unavailable
@@ -1233,14 +1234,16 @@ const LoginPage = () => {
                     showUnavailableMessage = true;
                   } else {
                     // Default to Windows for unknown OS
-                    downloadUrl = "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
+                    downloadUrl =
+                      "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
                     fileName = "DocTask-Setup-1.0.0.exe";
                   }
 
                   if (showUnavailableMessage) {
                     // Show notification that the platform is not yet available
                     setNotification({
-                      message: "Desktop app for your platform is coming soon! Please use the web version for now.",
+                      message:
+                        "Desktop app for your platform is coming soon! Please use the web version for now.",
                       type: "info",
                     });
                     return;
@@ -1272,12 +1275,14 @@ const LoginPage = () => {
               >
                 Download Desktop App
               </button>
-              
+
               {/* Dropdown menu */}
               <div className="absolute bottom-full left-0 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[200px] z-50">
                 <div className="p-2">
-                  <div className="text-xs text-gray-500 font-medium mb-2 px-2">Choose Platform:</div>
-                  
+                  <div className="text-xs text-gray-500 font-medium mb-2 px-2">
+                    Choose Platform:
+                  </div>
+
                   {/* Windows */}
                   <button
                     onClick={() => {
@@ -1310,7 +1315,7 @@ const LoginPage = () => {
                     <span className="text-blue-600">🪟</span>
                     Windows (.exe)
                   </button>
-                  
+
                   {/* Linux */}
                   <button
                     disabled
@@ -1319,9 +1324,11 @@ const LoginPage = () => {
                   >
                     <span className="text-orange-600">🐧</span>
                     Linux (.AppImage)
-                    <span className="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-auto">Soon</span>
+                    <span className="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-auto">
+                      Soon
+                    </span>
                   </button>
-                  
+
                   {/* Mac */}
                   <button
                     disabled
@@ -1330,7 +1337,9 @@ const LoginPage = () => {
                   >
                     <span className="text-gray-600">🍎</span>
                     macOS (.dmg)
-                    <span className="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-auto">Soon</span>
+                    <span className="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-auto">
+                      Soon
+                    </span>
                   </button>
                 </div>
               </div>

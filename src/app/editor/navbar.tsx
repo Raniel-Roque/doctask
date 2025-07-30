@@ -480,10 +480,12 @@ export const Navbar = ({
       </div>
 
       <nav className="flex items-center justify-between print:hidden">
-        <div className="pl-4 py-1 flex gap-2 items-center">
+        <div className="pl-4 py-1 flex gap-3 items-center">
+          {/* Logo */}
           <button
-            onClick={() => router.push(backUrl || "/")}
+            onClick={() => router.push("/")}
             className="hover:opacity-80 transition-opacity"
+            title="Go home"
           >
             <Image
               src="/doctask.ico"
@@ -492,6 +494,8 @@ export const Navbar = ({
               height={40}
             />
           </button>
+
+          {/* Title and Cloud Saving Indicator */}
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <div className="text-lg font-semibold">{title}</div>
@@ -500,25 +504,34 @@ export const Navbar = ({
               )}
             </div>
             <Menubar className="border-none bg-transparent shadow-none h-auto p-0">
+              {/* HOME/BACK BUTTON */}
+              <button
+                onClick={() => router.push(backUrl || "/")}
+                className="text-sm font-normal py-0.5 px-[7px] rounded-sm hover:bg-muted h-auto text-neutral-600 hover:text-neutral-800 transition-colors duration-150"
+                title={backUrl ? "Go back" : "Go home"}
+              >
+                {backUrl ? "Back" : "Home"}
+              </button>
+
               {/* FILE */}
               <MenubarMenu>
                 <MenubarTrigger className="text-sm font-normal py-0.5 px-[7px] rounded-sm hover:bg-muted h-auto">
                   File
                 </MenubarTrigger>
                 <MenubarContent className="print:hidden">
+                  {/* Manual Save - Only in edit mode */}
+                  {!viewOnly && (
+                    <MenubarItem onClick={() => onManualSave?.(true)}>
+                      <FileIcon className="mr-2 size-4" />
+                      Save
+                    </MenubarItem>
+                  )}
+
+                  {/* Download Options */}
                   <MenubarSub>
                     <MenubarSubTrigger>
-                      {viewOnly ? (
-                        <>
-                          <DownloadIcon className="mr-2 size-4" />
-                          Download
-                        </>
-                      ) : (
-                        <>
-                          <FileIcon className="mr-2 size-4" />
-                          Save
-                        </>
-                      )}
+                      <DownloadIcon className="mr-2 size-4" />
+                      Download
                     </MenubarSubTrigger>
                     <MenubarSubContent>
                       <MenubarItem onClick={onSaveDOCX}>
@@ -531,6 +544,7 @@ export const Navbar = ({
                       </MenubarItem>
                     </MenubarSubContent>
                   </MenubarSub>
+
                   <MenubarItem onClick={onPrint}>
                     <PrinterIcon className="mr-2 size-4" />
                     Print <MenubarShortcut>⌘P</MenubarShortcut>

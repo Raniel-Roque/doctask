@@ -385,8 +385,7 @@ export const restoreImage = mutation({
         const { storageId } = await uploadResponse.json();
         // Update the file_id to the new storage ID
         args.file_id = storageId as Id<"_storage">;
-      } catch {
-      }
+      } catch {}
     }
 
     // Restore to database

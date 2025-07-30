@@ -480,11 +480,12 @@ export const Editor = ({
 
       // Handle Tab key for list indentation
       if (event.key === "Tab") {
-        const isInList = editor.isActive("bulletList") || editor.isActive("orderedList");
-        
+        const isInList =
+          editor.isActive("bulletList") || editor.isActive("orderedList");
+
         if (isInList) {
           event.preventDefault();
-          
+
           if (event.shiftKey) {
             // Shift+Tab: Outdent list item
             editor.chain().focus().liftListItem("listItem").run();
