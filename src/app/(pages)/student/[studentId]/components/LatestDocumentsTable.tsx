@@ -401,9 +401,7 @@ export const LatestDocumentsTable = ({
             }
 
             zip.file(`${specialDoc.title} Data.docx`, docxBlob);
-          } catch (error) {
-            console.warn(`Could not generate ${specialDoc.title}:`, error);
-          }
+          } catch {}
         }
       }
 
@@ -965,9 +963,7 @@ export const LatestDocumentsTable = ({
                 const clerkData = await clerkResponse.json();
                 clerkUser = clerkData.user;
               }
-            } catch (error) {
-              console.warn("Could not fetch Clerk user data:", error);
-            }
+            } catch {}
           }
 
           return {
@@ -1197,9 +1193,7 @@ export const LatestDocumentsTable = ({
               const fileName = `${user?.last_name || "Unknown"}_${user?.first_name || "User"}_profile.jpg`;
               zip.file(`Profile Images/${fileName}`, imageBlob);
             }
-          } catch (error) {
-            console.warn("Could not fetch profile image:", error);
-          }
+          } catch {}
         }
       }
 
@@ -1212,9 +1206,7 @@ export const LatestDocumentsTable = ({
           const templateBlob = await templateResponse.blob();
           zip.file("Appendix D Template.docx", templateBlob);
         }
-      } catch (error) {
-        console.warn("Could not fetch template file:", error);
-      }
+      } catch {}
 
       // Generate and download the zip file
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -1375,9 +1367,7 @@ export const LatestDocumentsTable = ({
           const templateBlob = await templateResponse.blob();
           zip.file("Title Page Template.docx", templateBlob);
         }
-      } catch (error) {
-        console.warn("Could not fetch template file:", error);
-      }
+      } catch {}
 
       // Generate and download the zip file
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -1614,9 +1604,7 @@ export const LatestDocumentsTable = ({
           const templateBlob = await templateResponse.blob();
           zip.file("Appendix A Template.docx", templateBlob);
         }
-      } catch (error) {
-        console.warn("Could not fetch template file:", error);
-      }
+      } catch {}
 
       // Generate and download the zip file
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -1971,9 +1959,7 @@ export const LatestDocumentsTable = ({
               const clerkData = await clerkResponse.json();
               clerkUser = clerkData.user;
             }
-          } catch (error) {
-            console.warn("Could not fetch Clerk user data:", error);
-          }
+          } catch {}
         }
 
         return {

@@ -12,11 +12,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
-import {
-  sanitizeInput,
-  validateInput,
-  VALIDATION_RULES,
-} from "../../../../components/SanitizeInput";
+import { validateInput } from "../../../../components/SanitizeInput";
 
 interface AddGroupFormProps {
   isOpen: boolean;
@@ -226,44 +222,22 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: sanitizeInput(value, {
-        trim: false, // Don't trim during input to allow spaces
-        removeHtml: true,
-        escapeSpecialChars: true,
-        maxLength: VALIDATION_RULES.text.maxLength,
-      }),
+      [name]: value,
     }));
   };
 
   const handleProjectManagerSearch = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    setProjectManagerSearch(
-      sanitizeInput(e.target.value, {
-        trim: false, // Don't trim during search to allow spaces
-        removeHtml: true,
-        escapeSpecialChars: true,
-      }),
-    );
+    setProjectManagerSearch(e.target.value);
   };
 
   const handleMemberSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMemberSearch(
-      sanitizeInput(e.target.value, {
-        trim: false, // Don't trim during search to allow spaces
-        removeHtml: true,
-        escapeSpecialChars: true,
-      }),
-    );
+    setMemberSearch(e.target.value);
   };
 
   const handleAdviserSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAdviserSearch(
-      sanitizeInput(e.target.value, {
-        trim: false, // Don't trim during search to allow spaces
-        escapeSpecialChars: true,
-      }),
-    );
+    setAdviserSearch(e.target.value);
   };
 
   const handleProjectManagerSelect = (user: {

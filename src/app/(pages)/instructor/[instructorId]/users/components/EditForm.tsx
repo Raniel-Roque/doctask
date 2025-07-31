@@ -15,11 +15,7 @@ import { User, EditFormData } from "./types";
 import { validateUserForm } from "../../utils/validation";
 import { NotificationBanner } from "../../../../components/NotificationBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
-import {
-  sanitizeInput,
-  validateInput,
-  VALIDATION_RULES,
-} from "../../../../components/SanitizeInput";
+import { validateInput } from "../../../../components/SanitizeInput";
 
 // =========================================
 // Types
@@ -130,19 +126,9 @@ export default function EditForm({
         [name]: parseInt(value),
       });
     } else {
-      const sanitizedValue = sanitizeInput(value, {
-        trim: false, // Don't trim during input to allow spaces
-        removeHtml: true,
-        escapeSpecialChars: true,
-        maxLength:
-          name === "email"
-            ? VALIDATION_RULES.email.maxLength
-            : VALIDATION_RULES.name.maxLength,
-      });
-
       onFormDataChange({
         ...formData,
-        [name]: sanitizedValue,
+        [name]: value,
       });
     }
 
@@ -157,13 +143,7 @@ export default function EditForm({
   };
 
   const handleRoleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRoleSearch(
-      sanitizeInput(e.target.value, {
-        trim: false, // Don't trim during search to allow spaces
-        removeHtml: true,
-        escapeSpecialChars: true,
-      }),
-    );
+    setRoleSearch(e.target.value);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

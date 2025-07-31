@@ -4,7 +4,7 @@ import { FaSave, FaSpinner } from "react-icons/fa";
 import { NotificationBanner } from "../../../components/NotificationBanner";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+
 import type { Doc, Id } from "../../../../../../convex/_generated/dataModel";
 
 interface UpdateStudentProfileArgs {
@@ -243,8 +243,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
             } else if (key === "contact") {
               changedFields[key] = formValue === "" ? "" : formValue;
             } else {
-              changedFields[key] =
-                formValue === "" ? "" : sanitizeInput(formValue);
+              changedFields[key] = formValue === "" ? "" : formValue;
             }
           }
         }
@@ -252,8 +251,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
         for (const key of educationFields) {
           const formValue = form[key] ?? "";
           if (isFieldChanged(key, formValue)) {
-            changedFields[key] =
-              formValue === "" ? undefined : sanitizeInput(formValue);
+            changedFields[key] = formValue === "" ? undefined : formValue;
           }
         }
       }

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
-import { sanitizeInput } from "./SanitizeInput";
+
 import { NotificationBanner } from "./NotificationBanner";
 
 interface PasswordVerificationProps {
@@ -117,12 +117,7 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
                 id="currentPassword"
                 value={password}
                 onChange={(e) => {
-                  const sanitizedValue = sanitizeInput(e.target.value, {
-                    trim: false,
-                    removeHtml: true,
-                    escapeSpecialChars: true,
-                  });
-                  setPassword(sanitizedValue);
+                  setPassword(e.target.value);
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required

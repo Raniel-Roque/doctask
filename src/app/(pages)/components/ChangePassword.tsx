@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaTimes, FaCheck } from "react-icons/fa";
 import { useUser } from "@clerk/clerk-react";
-import { sanitizeInput } from "./SanitizeInput";
+
 import { NotificationBanner } from "./NotificationBanner";
 import PasswordVerification from "./PasswordVerification";
 
@@ -47,12 +47,6 @@ export default function ChangePassword({
       throw new Error("User not loaded");
     }
 
-    const sanitizedPassword = sanitizeInput(password, {
-      trim: true,
-      removeHtml: true,
-      escapeSpecialChars: true,
-    });
-
     const response = await fetch("/api/clerk/verify-password", {
       method: "POST",
       headers: {
@@ -60,7 +54,7 @@ export default function ChangePassword({
       },
       body: JSON.stringify({
         clerkId: user.id,
-        currentPassword: sanitizedPassword,
+        currentPassword: password,
       }),
       signal, // Add the AbortSignal to the fetch request
     });
@@ -126,12 +120,6 @@ export default function ChangePassword({
     setError(null);
 
     try {
-      const sanitizedNewPassword = sanitizeInput(newPassword, {
-        trim: true,
-        removeHtml: true,
-        escapeSpecialChars: true,
-      });
-
       // Update the password using our API endpoint
       const updateResponse = await fetch("/api/clerk/user-reset-password", {
         method: "POST",
@@ -140,7 +128,7 @@ export default function ChangePassword({
         },
         body: JSON.stringify({
           clerkId: user.id,
-          newPassword: sanitizedNewPassword,
+          newPassword: newPassword,
         }),
       });
 

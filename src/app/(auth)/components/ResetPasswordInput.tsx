@@ -1,6 +1,5 @@
 import React from "react";
 import { FaLock, FaEye, FaEyeSlash, FaCheck, FaTimes } from "react-icons/fa";
-import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface ResetPasswordInputProps {
   newPassword: string;
@@ -59,15 +58,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
           type={showPassword ? "text" : "password"}
           required
           value={newPassword}
-          onChange={(e) =>
-            setNewPassword(
-              sanitizeInput(e.target.value, {
-                trim: false, // Don't trim during input to allow spaces
-                removeHtml: true,
-                escapeSpecialChars: true,
-              }),
-            )
-          }
+          onChange={(e) => setNewPassword(e.target.value)}
           className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white disabled:bg-gray-50 disabled:opacity-100"
           placeholder="New Password"
           disabled={loading}
@@ -95,15 +86,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
           type={showConfirmPassword ? "text" : "password"}
           required
           value={confirmPassword}
-          onChange={(e) =>
-            setConfirmPassword(
-              sanitizeInput(e.target.value, {
-                trim: true,
-                removeHtml: true,
-                escapeSpecialChars: true,
-              }),
-            )
-          }
+          onChange={(e) => setConfirmPassword(e.target.value)}
           className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white disabled:bg-gray-50 disabled:opacity-100"
           placeholder="Confirm Password"
           disabled={loading}

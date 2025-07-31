@@ -13,11 +13,7 @@ import {
 } from "react-icons/fa";
 import { Group } from "./types";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
-import {
-  sanitizeInput,
-  validateInput,
-  VALIDATION_RULES,
-} from "../../../../components/SanitizeInput";
+import { validateInput } from "../../../../components/SanitizeInput";
 
 interface User {
   _id: string;
@@ -224,33 +220,16 @@ export default function EditGroupForm({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: sanitizeInput(value, {
-        trim: false, // Don't trim during input to allow spaces
-        removeHtml: true,
-        escapeSpecialChars: true,
-        maxLength: VALIDATION_RULES.text.maxLength,
-      }),
+      [name]: value,
     }));
   };
 
   const handleMembersSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMembersSearch(
-      sanitizeInput(e.target.value, {
-        trim: true,
-        removeHtml: true,
-        escapeSpecialChars: true,
-      }),
-    );
+    setMembersSearch(e.target.value);
   };
 
   const handleAdviserSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAdviserSearch(
-      sanitizeInput(e.target.value, {
-        trim: true,
-        removeHtml: true,
-        escapeSpecialChars: true,
-      }),
-    );
+    setAdviserSearch(e.target.value);
   };
 
   // Handle member selection

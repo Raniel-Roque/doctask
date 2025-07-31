@@ -1,6 +1,5 @@
 import React from "react";
 import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
-import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface PasswordInputProps {
   password: string;
@@ -39,15 +38,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
       autoComplete={showPassword ? "off" : autoComplete}
       required
       value={password}
-      onChange={(e) =>
-        setPassword(
-          sanitizeInput(e.target.value, {
-            trim: false, // Don't trim during input to allow spaces
-            removeHtml: true,
-            escapeSpecialChars: true,
-          }),
-        )
-      }
+      onChange={(e) => setPassword(e.target.value)}
       className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
       placeholder={placeholder}
       disabled={disabled || loading}

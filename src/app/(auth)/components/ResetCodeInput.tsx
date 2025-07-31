@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { FaEnvelope } from "react-icons/fa";
-import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import ForgotPasswordResendTimer from "./ForgotPasswordResendTimer";
 
 interface ResetCodeInputProps {
@@ -48,17 +47,7 @@ const ResetCodeInput: React.FC<ResetCodeInputProps> = ({
           autoCorrect="off"
           spellCheck="false"
           value={code}
-          onChange={(e) =>
-            setCode(
-              sanitizeInput(e.target.value, {
-                trim: false, // Don't trim during input to allow spaces
-                removeHtml: true,
-                escapeSpecialChars: true,
-                maxLength: 6, // Limit to 6 characters
-                allowedPattern: /^[0-9]*$/, // Only allow numbers 0-9
-              }),
-            )
-          }
+          onChange={(e) => setCode(e.target.value)}
           className="appearance-none rounded-lg relative block w-full pl-10 pr-3 h-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"
           placeholder="Enter verification code"
           disabled={loading}

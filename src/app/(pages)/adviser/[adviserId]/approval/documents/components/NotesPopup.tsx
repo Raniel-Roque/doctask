@@ -17,7 +17,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
-import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+
 import { UnsavedChangesConfirmation } from "@/app/(pages)/components/UnsavedChangesConfirmation";
 import DeleteNoteConfirmation from "./DeleteNoteConfirmation";
 
@@ -165,14 +165,9 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   };
 
   const handleAddNote = async () => {
-    const sanitizedContent = sanitizeInput(newNoteContent.trim(), {
-      trim: true,
-      removeHtml: true,
-      escapeSpecialChars: true,
-      maxLength: 1000,
-    });
+    const content = newNoteContent.trim();
 
-    if (!sanitizedContent) {
+    if (!content) {
       showNotification("Note content cannot be empty", "error");
       return;
     }
@@ -182,7 +177,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
       await createNote({
         groupId,
         documentPart,
-        content: sanitizedContent,
+        content: content,
         userId: currentUserId,
       });
       setNewNoteContent("");
@@ -198,14 +193,9 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   };
 
   const handleEditNote = async (noteId: Id<"notes">) => {
-    const sanitizedContent = sanitizeInput(editingContent.trim(), {
-      trim: true,
-      removeHtml: true,
-      escapeSpecialChars: true,
-      maxLength: 1000,
-    });
+    const content = editingContent.trim();
 
-    if (!sanitizedContent) {
+    if (!content) {
       showNotification("Note content cannot be empty", "error");
       return;
     }
@@ -213,7 +203,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
     try {
       await updateNote({
         noteId,
-        content: sanitizedContent,
+        content: content,
         userId: currentUserId,
       });
       setEditingNoteId(null);

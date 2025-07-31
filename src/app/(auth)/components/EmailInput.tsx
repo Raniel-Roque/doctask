@@ -1,6 +1,5 @@
 import React from "react";
 import { FaEnvelope } from "react-icons/fa";
-import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface EmailInputProps {
   email: string;
@@ -22,21 +21,16 @@ const EmailInput: React.FC<EmailInputProps> = ({
   onAutocomplete,
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Sanitize but preserve case for user input
-    const sanitizedValue = sanitizeInput(e.target.value, {
-      trim: false, // Don't trim during input to allow spaces
-      removeHtml: true,
-      escapeSpecialChars: true,
-      preserveCase: true, // Preserve case for user input
-    });
-    setEmail(sanitizedValue);
+    // No sanitization on frontend - let backend handle it
+    const value = e.target.value;
+    setEmail(value);
 
     // If this is an autocomplete event (the input was filled by the browser)
     if (
       e.nativeEvent instanceof InputEvent &&
       e.nativeEvent.inputType === "insertReplacementText"
     ) {
-      onAutocomplete?.(sanitizedValue);
+      onAutocomplete?.(value);
     }
   };
 

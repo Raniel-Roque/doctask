@@ -3,7 +3,6 @@ import { FaCamera } from "react-icons/fa";
 import Image from "next/image";
 import { Cropper, ReactCropperElement } from "react-cropper";
 import "cropperjs/dist/cropper.css";
-import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 interface User {
   id: string;
@@ -32,13 +31,6 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const sanitizedFileName = sanitizeInput(file.name, {
-      trim: true,
-      removeHtml: true,
-      escapeSpecialChars: true,
-      maxLength: 100,
-    });
-
     // Only allow jpg, jpeg, png
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
     const allowedExtensions = [".jpg", ".jpeg", ".png"];
@@ -56,11 +48,6 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
 
     if (file.size > 2 * 1024 * 1024) {
       onError("Image size should be less than 2MB");
-      return;
-    }
-
-    if (!sanitizedFileName || sanitizedFileName !== file.name) {
-      onError("Invalid file name");
       return;
     }
 
