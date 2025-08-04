@@ -122,7 +122,7 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
                 placeholder="Enter your current password"
-                autoComplete={showPassword ? "off" : "current-password"}
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 disabled={isVerifying || loading}

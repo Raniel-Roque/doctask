@@ -227,7 +227,7 @@ export default function ChangePassword({
                     required
                     minLength={8}
                     placeholder="Enter your new password"
-                    autoComplete={showNewPassword ? "off" : "new-password"}
+                    autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
                   />
@@ -258,7 +258,7 @@ export default function ChangePassword({
                     required
                     minLength={8}
                     placeholder="Confirm your new password"
-                    autoComplete={showConfirmPassword ? "off" : "new-password"}
+                    autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
                   />
