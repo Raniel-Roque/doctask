@@ -27,8 +27,8 @@ export const VALIDATION_RULES = {
   // Email
   email: {
     maxLength: 100,
-    pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-    message: "Invalid email format",
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    message: "Email must be in a valid format (e.g., user@domain.com)",
     required: true,
   },
 } as const;

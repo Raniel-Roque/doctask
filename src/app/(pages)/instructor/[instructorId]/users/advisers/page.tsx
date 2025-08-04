@@ -302,8 +302,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
     if (!formData.first_name.trim()) return "First name is required";
     if (!formData.last_name.trim()) return "Last name is required";
     if (!formData.email.trim()) return "Email is required";
+    if (formData.email.length > 100) return "Email must be less than 100 characters";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      return "Invalid email format";
+      return "Email must be in a valid format (e.g., user@domain.com)";
     return null;
   };
 
