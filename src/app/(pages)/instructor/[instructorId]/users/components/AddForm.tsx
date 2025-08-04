@@ -15,7 +15,6 @@ import { AddFormData } from "./types";
 import { validateUserForm } from "../../utils/validation";
 import { NotificationBanner } from "../../../../components/NotificationBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
-import { validateInput } from "../../../../components/SanitizeInput";
 
 // =========================================
 // Types
