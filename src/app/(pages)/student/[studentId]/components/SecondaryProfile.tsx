@@ -286,12 +286,124 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           return;
         }
       }
+
+      // Validate field length limits for secondary section
+      if (section === "secondary") {
+        if (payload.placeOfBirth !== undefined && payload.placeOfBirth.length > 255) {
+          setNotification({
+            message: "Place of birth must be 255 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingSecondary(false);
+          return;
+        }
+        if (payload.nationality !== undefined && payload.nationality.length > 50) {
+          setNotification({
+            message: "Nationality must be 50 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingSecondary(false);
+          return;
+        }
+        if (payload.religion !== undefined && payload.religion.length > 20) {
+          setNotification({
+            message: "Religion must be 20 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingSecondary(false);
+          return;
+        }
+        if (payload.homeAddress !== undefined && payload.homeAddress.length > 255) {
+          setNotification({
+            message: "Home address must be 255 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingSecondary(false);
+          return;
+        }
+      }
+
+      // Validate field length limits for education section
+      if (section === "education") {
+        if (payload.tertiarySchool !== undefined && payload.tertiarySchool.length > 50) {
+          setNotification({
+            message: "Tertiary school name must be 50 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingEducation(false);
+          return;
+        }
+        if (payload.tertiaryDegree !== undefined && payload.tertiaryDegree.length > 50) {
+          setNotification({
+            message: "Bachelor degree must be 50 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingEducation(false);
+          return;
+        }
+        if (payload.secondarySchool !== undefined && payload.secondarySchool.length > 50) {
+          setNotification({
+            message: "Secondary school name must be 50 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingEducation(false);
+          return;
+        }
+        if (payload.secondaryAddress !== undefined && payload.secondaryAddress.length > 255) {
+          setNotification({
+            message: "Secondary school address must be 255 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingEducation(false);
+          return;
+        }
+        if (payload.primarySchool !== undefined && payload.primarySchool.length > 50) {
+          setNotification({
+            message: "Primary school name must be 50 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingEducation(false);
+          return;
+        }
+        if (payload.primaryAddress !== undefined && payload.primaryAddress.length > 255) {
+          setNotification({
+            message: "Primary school address must be 255 characters or less.",
+            type: "error",
+          });
+          setShowNotification(true);
+          setLoadingEducation(false);
+          return;
+        }
+      }
       if (section === "secondary" && payload.dateOfBirth !== undefined) {
         if (typeof payload.dateOfBirth === "string") {
           const birthDate = new Date(payload.dateOfBirth);
-          if (birthDate > new Date()) {
+          const today = new Date();
+          
+          if (birthDate > today) {
             setNotification({
               message: "Date of birth cannot be in the future.",
+              type: "error",
+            });
+            setShowNotification(true);
+            setLoadingSecondary(false);
+            return;
+          }
+          
+          // Check minimum age of 16
+          const minAgeDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+          if (birthDate > minAgeDate) {
+            setNotification({
+              message: "You must be at least 16 years old.",
               type: "error",
             });
             setShowNotification(true);
@@ -332,6 +444,16 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const dd = String(today.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+
+  // Helper: Minimum age date (16 years ago from today)
+  const minAgeDateStr = React.useMemo(() => {
+    const today = new Date();
+    const minAgeDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+    const yyyy = minAgeDate.getFullYear();
+    const mm = String(minAgeDate.getMonth() + 1).padStart(2, "0");
+    const dd = String(minAgeDate.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
   }, []);
 
@@ -425,6 +547,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               placeholder={userData?.dateOfBirth ? undefined : "YYYY-MM-DD"}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               max={todayStr}
+              min={minAgeDateStr}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
@@ -440,6 +563,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.placeOfBirth}
               onChange={handleChange}
               placeholder="Enter your place of birth"
+              maxLength={255}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
@@ -456,6 +580,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.nationality}
               onChange={handleChange}
               placeholder="Enter your nationality"
+              maxLength={50}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
@@ -496,6 +621,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.religion}
               onChange={handleChange}
               placeholder="Enter your religion"
+              maxLength={20}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
@@ -512,6 +638,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.homeAddress}
               onChange={handleChange}
               placeholder="Enter your home address"
+              maxLength={255}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
@@ -572,6 +699,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.tertiarySchool}
               onChange={handleChange}
               placeholder="Enter your tertiary school name"
+              maxLength={50}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
@@ -588,6 +716,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.tertiaryDegree}
               onChange={handleChange}
               placeholder="Enter your bachelor degree"
+              maxLength={50}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
@@ -604,6 +733,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.secondarySchool}
               onChange={handleChange}
               placeholder="Enter your secondary school name"
+              maxLength={50}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
@@ -620,6 +750,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.secondaryAddress}
               onChange={handleChange}
               placeholder="Enter your secondary school address"
+              maxLength={255}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
@@ -636,6 +767,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.primarySchool}
               onChange={handleChange}
               placeholder="Enter your primary school name"
+              maxLength={50}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
@@ -652,6 +784,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               value={form.primaryAddress}
               onChange={handleChange}
               placeholder="Enter your primary school address"
+              maxLength={255}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               autoComplete="off"
               autoCorrect="off"
