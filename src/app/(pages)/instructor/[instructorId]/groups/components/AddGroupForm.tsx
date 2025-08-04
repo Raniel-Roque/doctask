@@ -392,7 +392,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
           </div>
 
           {/* Error Messages */}
-          {(Object.keys(validationErrors).length > 0) && (
+          {Object.keys(validationErrors).length > 0 && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2 text-red-700">
                 <FaExclamationTriangle />

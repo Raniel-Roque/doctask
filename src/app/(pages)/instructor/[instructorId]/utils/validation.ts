@@ -70,7 +70,7 @@ export const validateField = (
 
   // Check email local part length (Clerk limit is 64 characters)
   if (fieldName === "email") {
-    const localPart = value.split('@')[0];
+    const localPart = value.split("@")[0];
     if (localPart && localPart.length > 64) {
       return "Email username (before @) must be less than 64 characters";
     }

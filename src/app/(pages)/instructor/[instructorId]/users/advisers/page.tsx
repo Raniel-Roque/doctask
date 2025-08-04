@@ -305,7 +305,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
     if (!formData.first_name.trim()) return "First name is required";
     if (!formData.last_name.trim()) return "Last name is required";
     if (!formData.email.trim()) return "Email is required";
-    if (formData.email.length > 100) return "Email must be less than 100 characters";
+    if (formData.email.length > 100)
+      return "Email must be less than 100 characters";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       return "Invalid email format";
     return null;
@@ -544,7 +545,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "An error occurred while processing your request");
+        throw new Error(
+          data.error || "An error occurred while processing your request",
+        );
       }
 
       // Log the action

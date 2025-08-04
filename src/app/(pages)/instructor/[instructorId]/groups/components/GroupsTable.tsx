@@ -156,7 +156,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   );
 
   // Add state for expanded capstone titles
-  const [expandedCapstoneTitles, setExpandedCapstoneTitles] = useState<Set<string>>(new Set());
+  const [expandedCapstoneTitles, setExpandedCapstoneTitles] = useState<
+    Set<string>
+  >(new Set());
 
   useEffect(() => {
     if (showAdviserDropdown) {
@@ -260,7 +262,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     return (
       <button
         onClick={() => {
-          setExpandedCapstoneTitles(prev => {
+          setExpandedCapstoneTitles((prev) => {
             const newSet = new Set(prev);
             if (isExpanded) {
               newSet.delete(groupId);
@@ -722,7 +724,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   {group.name || "-"}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900">
-                  <CollapsibleText text={group.capstone_title} groupId={group._id} />
+                  <CollapsibleText
+                    text={group.capstone_title}
+                    groupId={group._id}
+                  />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {group.projectManager

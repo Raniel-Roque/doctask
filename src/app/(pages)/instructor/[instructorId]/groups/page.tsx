@@ -82,7 +82,10 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
       } else if (error.message.includes("not found")) {
         setNotification({
           type: "error",
-          message: operation === "delete" ? "Group could not be found" : "One or more selected users could not be found",
+          message:
+            operation === "delete"
+              ? "Group could not be found"
+              : "One or more selected users could not be found",
         });
       } else if (error.message.includes("permission denied")) {
         setNotification({

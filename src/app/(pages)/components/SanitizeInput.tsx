@@ -102,7 +102,8 @@ export const VALIDATION_RULES = {
   capstoneTitle: {
     maxLength: 255,
     pattern: /^[a-zA-Z0-9\s.,!?-]+$/,
-    message: "Capstone Title can only contain letters, numbers, and basic punctuation",
+    message:
+      "Capstone Title can only contain letters, numbers, and basic punctuation",
     required: false,
   },
 } as const;

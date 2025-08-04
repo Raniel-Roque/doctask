@@ -289,7 +289,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
 
       // Validate field length limits for secondary section
       if (section === "secondary") {
-        if (payload.placeOfBirth !== undefined && payload.placeOfBirth.length > 255) {
+        if (
+          payload.placeOfBirth !== undefined &&
+          payload.placeOfBirth.length > 255
+        ) {
           setNotification({
             message: "Place of birth must be 255 characters or less.",
             type: "error",
@@ -298,7 +301,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           setLoadingSecondary(false);
           return;
         }
-        if (payload.nationality !== undefined && payload.nationality.length > 50) {
+        if (
+          payload.nationality !== undefined &&
+          payload.nationality.length > 50
+        ) {
           setNotification({
             message: "Nationality must be 50 characters or less.",
             type: "error",
@@ -316,7 +322,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           setLoadingSecondary(false);
           return;
         }
-        if (payload.homeAddress !== undefined && payload.homeAddress.length > 255) {
+        if (
+          payload.homeAddress !== undefined &&
+          payload.homeAddress.length > 255
+        ) {
           setNotification({
             message: "Home address must be 255 characters or less.",
             type: "error",
@@ -329,7 +338,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
 
       // Validate field length limits for education section
       if (section === "education") {
-        if (payload.tertiarySchool !== undefined && payload.tertiarySchool.length > 50) {
+        if (
+          payload.tertiarySchool !== undefined &&
+          payload.tertiarySchool.length > 50
+        ) {
           setNotification({
             message: "Tertiary school name must be 50 characters or less.",
             type: "error",
@@ -338,7 +350,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           setLoadingEducation(false);
           return;
         }
-        if (payload.tertiaryDegree !== undefined && payload.tertiaryDegree.length > 50) {
+        if (
+          payload.tertiaryDegree !== undefined &&
+          payload.tertiaryDegree.length > 50
+        ) {
           setNotification({
             message: "Bachelor degree must be 50 characters or less.",
             type: "error",
@@ -347,7 +362,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           setLoadingEducation(false);
           return;
         }
-        if (payload.secondarySchool !== undefined && payload.secondarySchool.length > 50) {
+        if (
+          payload.secondarySchool !== undefined &&
+          payload.secondarySchool.length > 50
+        ) {
           setNotification({
             message: "Secondary school name must be 50 characters or less.",
             type: "error",
@@ -356,7 +374,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           setLoadingEducation(false);
           return;
         }
-        if (payload.secondaryAddress !== undefined && payload.secondaryAddress.length > 255) {
+        if (
+          payload.secondaryAddress !== undefined &&
+          payload.secondaryAddress.length > 255
+        ) {
           setNotification({
             message: "Secondary school address must be 255 characters or less.",
             type: "error",
@@ -365,7 +386,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           setLoadingEducation(false);
           return;
         }
-        if (payload.primarySchool !== undefined && payload.primarySchool.length > 50) {
+        if (
+          payload.primarySchool !== undefined &&
+          payload.primarySchool.length > 50
+        ) {
           setNotification({
             message: "Primary school name must be 50 characters or less.",
             type: "error",
@@ -374,7 +398,10 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           setLoadingEducation(false);
           return;
         }
-        if (payload.primaryAddress !== undefined && payload.primaryAddress.length > 255) {
+        if (
+          payload.primaryAddress !== undefined &&
+          payload.primaryAddress.length > 255
+        ) {
           setNotification({
             message: "Primary school address must be 255 characters or less.",
             type: "error",
@@ -388,7 +415,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
         if (typeof payload.dateOfBirth === "string") {
           const birthDate = new Date(payload.dateOfBirth);
           const today = new Date();
-          
+
           if (birthDate > today) {
             setNotification({
               message: "Date of birth cannot be in the future.",
@@ -398,9 +425,13 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
             setLoadingSecondary(false);
             return;
           }
-          
+
           // Check minimum age of 16
-          const minAgeDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+          const minAgeDate = new Date(
+            today.getFullYear() - 16,
+            today.getMonth(),
+            today.getDate(),
+          );
           if (birthDate > minAgeDate) {
             setNotification({
               message: "You must be at least 16 years old.",

@@ -47,15 +47,21 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   hasResults,
 }) => {
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
-  
+
   // Add state for expanded capstone titles
-  const [expandedCapstoneTitles, setExpandedCapstoneTitles] = useState<Set<string>>(new Set());
+  const [expandedCapstoneTitles, setExpandedCapstoneTitles] = useState<
+    Set<string>
+  >(new Set());
 
   const toggleExpand = (groupId: string) => {
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
   };
 
-  const getFullName = (user: { first_name: string; middle_name?: string; last_name: string }) => {
+  const getFullName = (user: {
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+  }) => {
     return `${user.last_name}, ${user.first_name}${
       user.middle_name ? ` ${user.middle_name}` : ""
     }`;
@@ -81,7 +87,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     return (
       <button
         onClick={() => {
-          setExpandedCapstoneTitles(prev => {
+          setExpandedCapstoneTitles((prev) => {
             const newSet = new Set(prev);
             if (isExpanded) {
               newSet.delete(groupId);

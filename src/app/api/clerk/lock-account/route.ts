@@ -89,7 +89,11 @@ export async function POST(request: Request) {
   } catch (error) {
     const clerkError = error as ClerkError;
     return NextResponse.json(
-      { error: clerkError.errors?.[0]?.message || "An error occurred while processing your request" },
+      {
+        error:
+          clerkError.errors?.[0]?.message ||
+          "An error occurred while processing your request",
+      },
       { status: 500 },
     );
   }

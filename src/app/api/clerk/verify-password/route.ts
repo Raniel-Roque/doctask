@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     } catch {
       return NextResponse.json(
-        { error: "Current password is incorrect" },
+        { error: "Password is incorrect" },
         { status: 401 },
       );
     }
