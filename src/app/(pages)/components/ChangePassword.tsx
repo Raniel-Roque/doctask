@@ -227,13 +227,16 @@ export default function ChangePassword({
                     required
                     minLength={8}
                     placeholder="Enter your new password"
-                    autoComplete="new-password"
+                    autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
                     data-form-type="other"
                     data-lpignore="true"
                     data-1p-ignore="true"
                     data-bwignore="true"
+                    data-chrome-autofill="off"
+                    data-chrome-password-manager="off"
+                    data-chrome-breach-detection="off"
                   />
                   <button
                     type="button"
@@ -262,13 +265,16 @@ export default function ChangePassword({
                     required
                     minLength={8}
                     placeholder="Confirm your new password"
-                    autoComplete="new-password"
+                    autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
                     data-form-type="other"
                     data-lpignore="true"
                     data-1p-ignore="true"
                     data-bwignore="true"
+                    data-chrome-autofill="off"
+                    data-chrome-password-manager="off"
+                    data-chrome-breach-detection="off"
                   />
                   <button
                     type="button"

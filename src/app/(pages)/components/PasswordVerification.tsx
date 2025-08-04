@@ -122,13 +122,16 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
                 placeholder="Enter your current password"
-                autoComplete="new-password"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-bwignore="true"
+                data-chrome-autofill="off"
+                data-chrome-password-manager="off"
+                data-chrome-breach-detection="off"
                 disabled={isVerifying || loading}
               />
               <button
