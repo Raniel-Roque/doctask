@@ -41,11 +41,20 @@ export const ResetPasswordConfirmation = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl border-2 border-gray-200">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <FaExclamationTriangle size={24} color="#EAB308" />
-          <h3 className="text-xl font-semibold text-gray-900">
-            Reset Password Confirmation
-          </h3>
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            <FaExclamationTriangle size={24} color="#EAB308" />
+            <h3 className="text-xl font-semibold text-gray-900">
+              Reset Password Confirmation
+            </h3>
+          </div>
+          <button
+            onClick={onCancel}
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+            disabled={isSubmitting}
+          >
+            <FaTimes size={24} />
+          </button>
         </div>
 
         {/* User Information */}

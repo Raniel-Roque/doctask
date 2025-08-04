@@ -199,6 +199,13 @@ export const AddForm = ({
               <FaPlus />
               Add New User
             </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+              disabled={isSubmitting}
+            >
+              <FaTimes size={24} />
+            </button>
           </div>
 
           {/* Error Messages */}

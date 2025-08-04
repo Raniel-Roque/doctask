@@ -28,10 +28,19 @@ const DeleteGroupConfirmation: React.FC<DeleteGroupConfirmationProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
         {/* Header */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-          <FaExclamationTriangle size={24} color="#DC2626" />
-          Confirm Delete
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+            <FaExclamationTriangle size={24} color="#DC2626" />
+            Confirm Delete
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+            disabled={isSubmitting}
+          >
+            <FaTimes size={24} />
+          </button>
+        </div>
 
         {/* Confirmation Message */}
         <p className="mb-8 text-gray-600">
