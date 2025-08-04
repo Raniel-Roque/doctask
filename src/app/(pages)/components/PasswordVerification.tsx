@@ -125,6 +125,8 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
                 disabled={isVerifying || loading}
               />
               <button

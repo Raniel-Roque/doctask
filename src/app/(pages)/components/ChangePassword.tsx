@@ -230,6 +230,8 @@ export default function ChangePassword({
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
+                    data-form-type="other"
+                    data-lpignore="true"
                   />
                   <button
                     type="button"
@@ -261,6 +263,8 @@ export default function ChangePassword({
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
+                    data-form-type="other"
+                    data-lpignore="true"
                   />
                   <button
                     type="button"
