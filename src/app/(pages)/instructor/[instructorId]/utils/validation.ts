@@ -68,6 +68,14 @@ export const validateField = (
     return `${fieldLabel} must be less than ${rules.maxLength} characters`;
   }
 
+  // Check email local part length (Clerk limit is 64 characters)
+  if (fieldName === "email") {
+    const localPart = value.split('@')[0];
+    if (localPart && localPart.length > 64) {
+      return "Email username (before @) must be less than 64 characters";
+    }
+  }
+
   // Check pattern
   if (!rules.pattern.test(value)) {
     return rules.message;

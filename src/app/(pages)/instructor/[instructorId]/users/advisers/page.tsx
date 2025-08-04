@@ -306,13 +306,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
     if (!formData.last_name.trim()) return "Last name is required";
     if (!formData.email.trim()) return "Email is required";
     if (formData.email.length > 100) return "Email must be less than 100 characters";
-    
-    // Check local part length (before @) - Clerk limit is 64 characters
-    const localPart = formData.email.split('@')[0];
-    if (localPart && localPart.length > 64) {
-      return "Email username (before @) must be less than 64 characters";
-    }
-    
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       return "Invalid email format";
     return null;
