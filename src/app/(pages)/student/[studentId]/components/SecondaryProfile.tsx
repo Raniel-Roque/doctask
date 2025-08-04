@@ -458,6 +458,14 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
     setForm({ ...form, contact: maxDigits });
   };
 
+  // Only allow letters, spaces, and common punctuation for text fields
+  const handleTextOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow letters, spaces, hyphens, apostrophes, and periods
+    const filteredValue = value.replace(/[^a-zA-Z\s\-'\.]/g, "");
+    setForm({ ...form, [e.target.name]: filteredValue });
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow-lg p-8 mt-4 mb-8">
@@ -550,7 +558,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               type="text"
               name="placeOfBirth"
               value={form.placeOfBirth}
-              onChange={handleChange}
+              onChange={handleTextOnlyChange}
               placeholder="Enter your place of birth"
               maxLength={255}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
@@ -567,7 +575,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               type="text"
               name="nationality"
               value={form.nationality}
-              onChange={handleChange}
+              onChange={handleTextOnlyChange}
               placeholder="Enter your nationality"
               maxLength={50}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
@@ -608,7 +616,7 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               type="text"
               name="religion"
               value={form.religion}
-              onChange={handleChange}
+              onChange={handleTextOnlyChange}
               placeholder="Enter your religion"
               maxLength={20}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
