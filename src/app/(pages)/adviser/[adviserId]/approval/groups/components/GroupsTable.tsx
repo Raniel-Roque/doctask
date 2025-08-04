@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import {
-  FaCheck,
-  FaTimes,
-  FaPlus,
   FaChevronLeft,
   FaChevronRight,
+  FaCheck,
+  FaTimes,
   FaMinus,
+  FaPlus,
 } from "react-icons/fa";
-import { User, Group } from "./types";
+import { Group } from "./types";
 
 interface GroupsTableProps {
   groups: Group[];
@@ -47,13 +47,60 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   hasResults,
 }) => {
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  
+  // Add state for expanded capstone titles
+  const [expandedCapstoneTitles, setExpandedCapstoneTitles] = useState<Set<string>>(new Set());
 
   const toggleExpand = (groupId: string) => {
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
   };
 
-  const getFullName = (user: User) => {
-    return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
+  const getFullName = (user: { first_name: string; middle_name?: string; last_name: string }) => {
+    return `${user.last_name}, ${user.first_name}${
+      user.middle_name ? ` ${user.middle_name}` : ""
+    }`;
+  };
+
+  // =========================================
+  // Collapsible Text Component
+  // =========================================
+  const CollapsibleText = ({
+    text,
+    maxLength = 50,
+    groupId,
+  }: {
+    text: string | null | undefined;
+    maxLength?: number;
+    groupId: string;
+  }) => {
+    if (!text) return <span>-</span>;
+    if (text.length <= maxLength) return <span>{text}</span>;
+
+    const isExpanded = expandedCapstoneTitles.has(groupId);
+
+    return (
+      <button
+        onClick={() => {
+          setExpandedCapstoneTitles(prev => {
+            const newSet = new Set(prev);
+            if (isExpanded) {
+              newSet.delete(groupId);
+            } else {
+              newSet.add(groupId);
+            }
+            return newSet;
+          });
+        }}
+        className="w-full text-left hover:bg-gray-50 rounded px-1 py-1 transition-colors"
+        title={isExpanded ? "Click to collapse" : "Click to expand"}
+      >
+        {isExpanded ? (
+          <span>{text}</span>
+        ) : (
+          <span>{text.slice(0, maxLength)}...</span>
+        )}
+      </button>
+    );
   };
 
   return (
@@ -145,8 +192,11 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {group.name || "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {group.capstone_title || "-"}
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    <CollapsibleText
+                      text={group.capstone_title}
+                      groupId={group._id}
+                    />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {group.projectManager

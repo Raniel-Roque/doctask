@@ -155,6 +155,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     capstoneSortDirection,
   );
 
+  // Add state for expanded capstone titles
+  const [expandedCapstoneTitles, setExpandedCapstoneTitles] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     if (showAdviserDropdown) {
       setTempAdviserFilters(adviserFilters);
@@ -227,13 +230,57 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   };
 
   const getFullName = (user: User) => {
-    return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
+    return `${user.last_name}, ${user.first_name}${
+      user.middle_name ? ` ${user.middle_name}` : ""
+    }`;
   };
 
   // Get unique advisers for filter dropdown
   const uniqueAdvisers = Array.from(
-    new Set(advisers.map((adviser) => getFullName(adviser))),
+    new Set(advisers.map((adviser: User) => getFullName(adviser))),
   ).sort();
+
+  // =========================================
+  // Collapsible Text Component
+  // =========================================
+  const CollapsibleText = ({
+    text,
+    maxLength = 50,
+    groupId,
+  }: {
+    text: string | null | undefined;
+    maxLength?: number;
+    groupId: string;
+  }) => {
+    if (!text) return <span>-</span>;
+    if (text.length <= maxLength) return <span>{text}</span>;
+
+    const isExpanded = expandedCapstoneTitles.has(groupId);
+
+    return (
+      <button
+        onClick={() => {
+          setExpandedCapstoneTitles(prev => {
+            const newSet = new Set(prev);
+            if (isExpanded) {
+              newSet.delete(groupId);
+            } else {
+              newSet.add(groupId);
+            }
+            return newSet;
+          });
+        }}
+        className="w-full text-left hover:bg-gray-50 rounded px-1 py-1 transition-colors"
+        title={isExpanded ? "Click to collapse" : "Click to expand"}
+      >
+        {isExpanded ? (
+          <span>{text}</span>
+        ) : (
+          <span>{text.slice(0, maxLength)}...</span>
+        )}
+      </button>
+    );
+  };
 
   const getSortIcon = (field: string) => {
     // If capstone sort is active, show it as the active sort for capstoneTitle field
@@ -674,8 +721,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {group.name || "-"}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {group.capstone_title || "-"}
+                <td className="px-6 py-4 text-sm text-gray-900">
+                  <CollapsibleText text={group.capstone_title} groupId={group._id} />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {group.projectManager
