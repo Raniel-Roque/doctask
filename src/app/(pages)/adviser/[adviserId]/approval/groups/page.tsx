@@ -209,7 +209,6 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
           onClose={handleCloseConfirmation}
           onConfirm={handleConfirmAction}
           isSubmitting={isSubmitting}
-          networkError={null}
           action={actionType}
         />
 

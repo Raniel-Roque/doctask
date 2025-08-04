@@ -61,6 +61,53 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Utility function to handle common error patterns
+  const handleError = (error: unknown, operation: string) => {
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        setNotification({
+          type: "error",
+          message: "Request timed out. Please try again.",
+        });
+      } else if (error.message.includes("Network error")) {
+        setNotification({
+          type: "error",
+          message: "Network error - please check your internet connection",
+        });
+      } else if (error.message.includes("already exists")) {
+        setNotification({
+          type: "error",
+          message: `A group with these members already exists`,
+        });
+      } else if (error.message.includes("not found")) {
+        setNotification({
+          type: "error",
+          message: operation === "delete" ? "Group could not be found" : "One or more selected users could not be found",
+        });
+      } else if (error.message.includes("permission denied")) {
+        setNotification({
+          type: "error",
+          message: `You don't have permission to ${operation} this group`,
+        });
+      } else if (error.message.includes("ArgumentValidationError")) {
+        setNotification({
+          type: "error",
+          message: "Please check your input and try again",
+        });
+      } else {
+        setNotification({
+          type: "error",
+          message: `Failed to ${operation} group. Please try again.`,
+        });
+      }
+    } else {
+      setNotification({
+        type: "error",
+        message: "An unexpected error occurred. Please try again.",
+      });
+    }
+  };
+
   const queryParams = useMemo(() => {
     // Determine which sort to use
     let finalSortField = sortField;
@@ -207,50 +254,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         message: "Group added successfully!",
       });
     } catch (error) {
-      // Handle specific error cases
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          setNotification({
-            type: "error",
-            message: "Request timed out. Please try again.",
-          });
-        } else if (error.message.includes("Network error")) {
-          setNotification({
-            type: "error",
-            message: "Network error - please check your internet connection",
-          });
-        } else if (error.message.includes("already exists")) {
-          setNotification({
-            type: "error",
-            message: "A group with these members already exists",
-          });
-        } else if (error.message.includes("not found")) {
-          setNotification({
-            type: "error",
-            message: "One or more selected users could not be found",
-          });
-        } else if (error.message.includes("permission denied")) {
-          setNotification({
-            type: "error",
-            message: "You don't have permission to create this group",
-          });
-        } else if (error.message.includes("ArgumentValidationError")) {
-          setNotification({
-            type: "error",
-            message: "Please check your input and try again",
-          });
-        } else {
-          setNotification({
-            type: "error",
-            message: "Failed to create group. Please try again.",
-          });
-        }
-      } else {
-        setNotification({
-          type: "error",
-          message: "An unexpected error occurred. Please try again.",
-        });
-      }
+      handleError(error, "create");
     } finally {
       setIsSubmitting(false);
     }
@@ -284,49 +288,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         message: "Group updated successfully!",
       });
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          setNotification({
-            type: "error",
-            message: "Request timed out. Please try again.",
-          });
-        } else if (error.message.includes("Network error")) {
-          setNotification({
-            type: "error",
-            message: "Network error - please check your internet connection",
-          });
-        } else if (error.message.includes("already exists")) {
-          setNotification({
-            type: "error",
-            message: "A group with these members already exists",
-          });
-        } else if (error.message.includes("not found")) {
-          setNotification({
-            type: "error",
-            message: "One or more selected users could not be found",
-          });
-        } else if (error.message.includes("permission denied")) {
-          setNotification({
-            type: "error",
-            message: "You don't have permission to update this group",
-          });
-        } else if (error.message.includes("ArgumentValidationError")) {
-          setNotification({
-            type: "error",
-            message: "Please check your input and try again",
-          });
-        } else {
-          setNotification({
-            type: "error",
-            message: "Failed to update group. Please try again.",
-          });
-        }
-      } else {
-        setNotification({
-          type: "error",
-          message: "An unexpected error occurred. Please try again.",
-        });
-      }
+      handleError(error, "update");
     } finally {
       setIsSubmitting(false);
     }
@@ -345,39 +307,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         message: "Group deleted successfully!",
       });
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          setNotification({
-            type: "error",
-            message: "Request timed out. Please try again.",
-          });
-        } else if (error.message.includes("Network error")) {
-          setNotification({
-            type: "error",
-            message: "Network error - please check your internet connection",
-          });
-        } else if (error.message.includes("not found")) {
-          setNotification({
-            type: "error",
-            message: "Group could not be found",
-          });
-        } else if (error.message.includes("permission denied")) {
-          setNotification({
-            type: "error",
-            message: "You don't have permission to delete this group",
-          });
-        } else {
-          setNotification({
-            type: "error",
-            message: "Failed to delete group. Please try again.",
-          });
-        }
-      } else {
-        setNotification({
-          type: "error",
-          message: "An unexpected error occurred. Please try again.",
-        });
-      }
+      handleError(error, "delete");
     } finally {
       setIsSubmitting(false);
       setIsDeleting(false);
@@ -489,7 +419,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           onClose={() => setIsEditingGroup(null)}
           onSubmit={handleEditGroup}
           isSubmitting={isSubmitting}
-          networkError={null}
           members={
             isEditingGroup
               ? [

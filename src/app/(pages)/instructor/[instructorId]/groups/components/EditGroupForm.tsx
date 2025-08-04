@@ -15,6 +15,11 @@ import { Group } from "./types";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { validateInput } from "../../../../components/SanitizeInput";
 
+// Shared error messages
+const ERROR_MESSAGES = {
+  INVALID_CAPSTONE_TITLE: "Capstone Title validation failed",
+} as const;
+
 interface User {
   _id: string;
   first_name: string;
@@ -26,7 +31,6 @@ interface User {
 interface EditGroupFormProps {
   isOpen: boolean;
   isSubmitting: boolean;
-  networkError?: string | null;
   onClose: () => void;
   onSubmit: (formData: {
     projectManager: string;
@@ -43,7 +47,6 @@ interface EditGroupFormProps {
 export default function EditGroupForm({
   isOpen,
   isSubmitting,
-  networkError = null,
   onClose,
   onSubmit,
   members,
@@ -276,12 +279,12 @@ export default function EditGroupForm({
     if (formData.capstoneTitle) {
       const { isValid, message } = validateInput(
         formData.capstoneTitle,
-        "text",
+        "capstoneTitle",
       );
       if (!isValid) {
         setValidationErrors((prev) => ({
           ...prev,
-          capstoneTitle: message || "Invalid capstone title",
+          capstoneTitle: message || ERROR_MESSAGES.INVALID_CAPSTONE_TITLE,
         }));
         return;
       }
@@ -327,12 +330,11 @@ export default function EditGroupForm({
           </div>
 
           {/* Error Messages */}
-          {(networkError || Object.keys(validationErrors).length > 0) && (
+          {(Object.keys(validationErrors).length > 0) && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2 text-red-700">
                 <FaExclamationTriangle />
                 <div className="flex flex-col gap-1">
-                  {networkError && <span>{networkError}</span>}
                   {Object.entries(validationErrors).map(([field, message]) => (
                     <span key={field}>{message}</span>
                   ))}

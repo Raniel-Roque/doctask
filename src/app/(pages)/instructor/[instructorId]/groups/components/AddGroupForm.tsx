@@ -14,6 +14,11 @@ import {
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { validateInput } from "../../../../components/SanitizeInput";
 
+// Shared error messages
+const ERROR_MESSAGES = {
+  INVALID_CAPSTONE_TITLE: "Capstone Title validation failed",
+} as const;
+
 interface AddGroupFormProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,7 +30,6 @@ interface AddGroupFormProps {
     grade: number;
   }) => void;
   isSubmitting?: boolean;
-  networkError?: string | null;
   projectManagers: {
     _id: string;
     first_name: string;
@@ -51,7 +55,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   onClose,
   onSubmit,
   isSubmitting = false,
-  networkError = null,
   projectManagers,
   members,
   advisers,
@@ -330,17 +333,17 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     const errors: typeof validationErrors = {};
 
     if (!formData.projectManager) {
-      errors.projectManager = "Project manager is required";
+      errors.projectManager = "Project Manager is required";
     }
 
     // Validate capstone title if provided
     if (formData.capstoneTitle) {
       const { isValid, message } = validateInput(
         formData.capstoneTitle,
-        "text",
+        "capstoneTitle",
       );
       if (!isValid) {
-        errors.capstoneTitle = message || "Invalid capstone title";
+        errors.capstoneTitle = message || ERROR_MESSAGES.INVALID_CAPSTONE_TITLE;
       }
     }
 
@@ -360,46 +363,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
           error instanceof Error ? error.message : "Failed to create group",
       });
     }
-  };
-
-  // Function to format error message
-  const formatErrorMessage = (error: string | null): string => {
-    if (!error) return "";
-
-    // Handle network-specific errors
-    if (error.includes("Network error")) {
-      return "Network error - please check your internet connection";
-    }
-    if (error.includes("timeout") || error.includes("timed out")) {
-      return "Request timed out. Please try again.";
-    }
-
-    // Handle common Convex error patterns
-    if (error.includes("ArgumentValidationError")) {
-      if (error.includes("projectManagerId")) {
-        return "Please select a valid Project Manager";
-      }
-      if (error.includes("memberIds")) {
-        return "Please select valid group members";
-      }
-      if (error.includes("adviserId")) {
-        return "Please select a valid Adviser";
-      }
-    }
-
-    // Handle other common error patterns
-    if (error.includes("already exists")) {
-      return "This group already exists";
-    }
-    if (error.includes("not found")) {
-      return "One or more selected users could not be found";
-    }
-    if (error.includes("permission denied")) {
-      return "You don't have permission to create this group";
-    }
-
-    // Default error message
-    return "An error occurred while creating the group. Please try again.";
   };
 
   if (!isOpen) return null;
@@ -429,14 +392,11 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
           </div>
 
           {/* Error Messages */}
-          {(networkError || Object.keys(validationErrors).length > 0) && (
+          {(Object.keys(validationErrors).length > 0) && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2 text-red-700">
                 <FaExclamationTriangle />
                 <div className="flex flex-col gap-1">
-                  {networkError && (
-                    <span>{formatErrorMessage(networkError)}</span>
-                  )}
                   {Object.entries(validationErrors).map(([field, message]) => (
                     <span key={field}>{message}</span>
                   ))}

@@ -98,6 +98,13 @@ export const VALIDATION_RULES = {
     message: "Can only contain letters, numbers, and basic punctuation",
     required: false,
   },
+  // Capstone title
+  capstoneTitle: {
+    maxLength: 255,
+    pattern: /^[a-zA-Z0-9\s.,!?-]+$/,
+    message: "Capstone Title can only contain letters, numbers, and basic punctuation",
+    required: false,
+  },
 } as const;
 
 // =========================================
@@ -109,11 +116,6 @@ export const validateInput = (
 ): { isValid: boolean; message?: string } => {
   const rules = VALIDATION_RULES[type];
 
-  // Check if required
-  if (rules.required && !value) {
-    return { isValid: false, message: `${type} is required` };
-  }
-
   // Skip validation if not required and empty
   if (!rules.required && !value) {
     return { isValid: true };
@@ -121,9 +123,10 @@ export const validateInput = (
 
   // Check max length
   if (value.length > rules.maxLength) {
+    const fieldName = type === "capstoneTitle" ? "Capstone Title" : type;
     return {
       isValid: false,
-      message: `${type} must be less than ${rules.maxLength} characters`,
+      message: `${fieldName} must be less than ${rules.maxLength} characters`,
     };
   }
 

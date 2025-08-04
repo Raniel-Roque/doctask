@@ -14,7 +14,6 @@ interface GroupActionConfirmationProps {
   onClose: () => void;
   onConfirm: () => void;
   isSubmitting?: boolean;
-  networkError?: string | null;
   action: "accept" | "reject";
 }
 
@@ -24,7 +23,6 @@ export default function GroupActionConfirmation({
   onClose,
   onConfirm,
   isSubmitting = false,
-  networkError = null,
   action,
 }: GroupActionConfirmationProps) {
   if (!isOpen || !group) return null;
@@ -46,16 +44,6 @@ export default function GroupActionConfirmation({
           <FaExclamationTriangle size={24} color={iconColor} />
           {title}
         </h2>
-
-        {/* Error Message */}
-        {networkError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-2 text-red-700">
-              <FaExclamationTriangle />
-              <span>{networkError}</span>
-            </div>
-          </div>
-        )}
 
         {/* Confirmation Message */}
         <p className="mb-8 text-gray-600">

@@ -13,7 +13,6 @@ interface DeleteGroupConfirmationProps {
   onClose: () => void;
   onConfirm: () => void;
   isSubmitting?: boolean;
-  networkError?: string | null;
 }
 
 const DeleteGroupConfirmation: React.FC<DeleteGroupConfirmationProps> = ({
@@ -22,7 +21,6 @@ const DeleteGroupConfirmation: React.FC<DeleteGroupConfirmationProps> = ({
   onClose,
   onConfirm,
   isSubmitting = false,
-  networkError = null,
 }) => {
   if (!isOpen || !group) return null;
 
@@ -34,16 +32,6 @@ const DeleteGroupConfirmation: React.FC<DeleteGroupConfirmationProps> = ({
           <FaExclamationTriangle size={24} color="#DC2626" />
           Confirm Delete
         </h2>
-
-        {/* Error Message */}
-        {networkError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-2 text-red-700">
-              <FaExclamationTriangle />
-              <span>{networkError}</span>
-            </div>
-          </div>
-        )}
 
         {/* Confirmation Message */}
         <p className="mb-8 text-gray-600">
