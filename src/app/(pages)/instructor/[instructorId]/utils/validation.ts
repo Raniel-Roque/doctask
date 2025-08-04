@@ -34,6 +34,16 @@ export const VALIDATION_RULES = {
 } as const;
 
 // =========================================
+// Field Name Mapping
+// =========================================
+const FIELD_LABELS: Record<keyof typeof VALIDATION_RULES, string> = {
+  firstName: "First name",
+  middleName: "Middle name",
+  lastName: "Last name",
+  email: "Email",
+};
+
+// =========================================
 // Validation Functions
 // =========================================
 export const validateField = (
@@ -41,10 +51,11 @@ export const validateField = (
   fieldName: keyof typeof VALIDATION_RULES,
 ): string | null => {
   const rules = VALIDATION_RULES[fieldName];
+  const fieldLabel = FIELD_LABELS[fieldName];
 
   // Check if required
   if (rules.required && !value) {
-    return `${fieldName} is required`;
+    return `${fieldLabel} is required`;
   }
 
   // Skip validation if not required and empty
@@ -54,7 +65,7 @@ export const validateField = (
 
   // Check max length
   if (value.length > rules.maxLength) {
-    return `${fieldName} must be less than ${rules.maxLength} characters`;
+    return `${fieldLabel} must be less than ${rules.maxLength} characters`;
   }
 
   // Check pattern
