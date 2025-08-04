@@ -45,8 +45,8 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
 
     try {
       await onVerify(password, abortControllerRef.current.signal);
-      // If successful, close the modal
-      handleClose();
+      // If successful, don't close - let parent handle the transition
+      // handleClose(); // Removed this line
     } catch (err) {
       // Only set error if the request wasn't aborted
       if (err instanceof Error && err.name !== "AbortError") {
@@ -125,13 +125,6 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
-                data-form-type="other"
-                data-lpignore="true"
-                data-1p-ignore="true"
-                data-bwignore="true"
-                data-chrome-autofill="off"
-                data-chrome-password-manager="off"
-                data-chrome-breach-detection="off"
                 disabled={isVerifying || loading}
               />
               <button
