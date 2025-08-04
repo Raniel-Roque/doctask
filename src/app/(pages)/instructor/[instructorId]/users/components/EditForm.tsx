@@ -15,7 +15,6 @@ import { User, EditFormData } from "./types";
 import { validateUserForm } from "../../utils/validation";
 import { NotificationBanner } from "../../../../components/NotificationBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
-import { validateInput } from "../../../../components/SanitizeInput";
 
 // =========================================
 // Types
@@ -166,25 +165,6 @@ export default function EditForm({
       return;
     }
 
-    // Additional validation using SanitizeInput with trimmed data
-    const nameValidation = validateInput(trimmedFormData.first_name, "name");
-    if (!nameValidation.isValid) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        first_name: nameValidation.message || "Invalid first name",
-      }));
-      return;
-    }
-
-    const emailValidation = validateInput(trimmedFormData.email, "email");
-    if (!emailValidation.isValid) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        email: emailValidation.message || "Invalid email",
-      }));
-      return;
-    }
-
     // Check if role has changed (for students only)
     if (isStudent && user && trimmedFormData.subrole !== user.subrole) {
       setShowRoleChangeConfirmation(true);
@@ -268,7 +248,6 @@ export default function EditForm({
                       ? "border-red-500"
                       : "border-gray-300"
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
-                  required
                   disabled={isSubmitting}
                   autoComplete="off"
                   autoCorrect="off"
@@ -317,7 +296,6 @@ export default function EditForm({
                       ? "border-red-500"
                       : "border-gray-300"
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
-                  required
                   disabled={isSubmitting}
                   autoComplete="off"
                   autoCorrect="off"
@@ -342,7 +320,6 @@ export default function EditForm({
                 className={`w-full px-4 py-2 rounded-lg border-2 ${
                   validationErrors.email ? "border-red-500" : "border-gray-300"
                 } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
-                required
                 disabled={isSubmitting}
                 autoComplete="off"
                 autoCorrect="off"

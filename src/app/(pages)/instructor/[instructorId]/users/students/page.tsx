@@ -228,7 +228,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     if (!formData.email.trim()) return "Email is required";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       return "Invalid email format";
-    if (formData.subrole === undefined) return "Role is required";
     return null;
   };
 

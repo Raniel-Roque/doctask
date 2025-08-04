@@ -81,7 +81,7 @@ export const VALIDATION_RULES = {
   name: {
     maxLength: 50,
     pattern: /^[a-zA-Z\s-']+$/,
-    message: "Can only contain letters, spaces, hyphens, and apostrophes",
+    message: "Name can only contain letters, spaces, hyphens, and apostrophes",
     required: true,
   },
   // Email
