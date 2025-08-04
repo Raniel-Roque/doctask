@@ -301,7 +301,7 @@ export const AddForm = ({
                 Email <span className="text-red-500">*</span>
               </label>
               <input
-                type="email"
+                type="text"
                 id="email"
                 name="email"
                 value={formData.email}

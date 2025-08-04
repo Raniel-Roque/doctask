@@ -66,7 +66,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const [notification, setNotification] = useState<NotificationType | null>(
     null,
   );
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -283,7 +283,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
       logUserAction();
 
       setDeleteUser(null);
-      setSuccessMessage("Adviser deleted successfully");
+      setNotification({
+        type: "success",
+        message: "Adviser deleted successfully",
+      });
     } catch (error) {
       logUserAction();
       setNotification({
@@ -304,7 +307,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     if (!formData.email.trim()) return "Email is required";
     if (formData.email.length > 100) return "Email must be less than 100 characters";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      return "Email must be in a valid format (e.g., user@domain.com)";
+      return "Invalid email format";
     return null;
   };
 
@@ -410,7 +413,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
         }),
       });
 
-      setSuccessMessage("Adviser added successfully");
+      setNotification({
+        type: "success",
+        message: "Adviser added successfully",
+      });
       setIsAddingUser(false);
       setAddFormData({
         first_name: "",
@@ -483,7 +489,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
 
       setResetPasswordUser(null);
-      setSuccessMessage("Password reset successfully");
+      setNotification({
+        type: "success",
+        message: "Password reset successfully",
+      });
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === "AbortError") {
@@ -535,7 +544,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to process request");
+        throw new Error(data.error || "An error occurred while processing your request");
       }
 
       // Log the action
@@ -557,7 +566,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
         },
       });
 
-      setSuccessMessage(`Account ${action}ed successfully`);
+      setNotification({
+        type: "success",
+        message: `Account ${action}ed successfully`,
+      });
       setSelectedUser(null);
     } catch (error) {
       setNotification({
@@ -732,11 +744,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
         {/* Notification */}
         <NotificationBanner
-          message={notification?.message || successMessage}
+          message={notification?.message || ""}
           type={notification?.type || "success"}
           onClose={() => {
             setNotification(null);
-            setSuccessMessage(null);
           }}
         />
 
