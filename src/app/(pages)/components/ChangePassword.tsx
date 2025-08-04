@@ -174,7 +174,7 @@ export default function ChangePassword({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
         <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">Change Password</h2>
