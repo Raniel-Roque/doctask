@@ -438,22 +438,12 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
     }
   };
 
-  // Helper: Today's date in YYYY-MM-DD format
+  // Helper: Today's date in YYYY-MM-DD format (maximum selectable date)
   const todayStr = React.useMemo(() => {
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const dd = String(today.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  }, []);
-
-  // Helper: Minimum age date (16 years ago from today)
-  const minAgeDateStr = React.useMemo(() => {
-    const today = new Date();
-    const minAgeDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
-    const yyyy = minAgeDate.getFullYear();
-    const mm = String(minAgeDate.getMonth() + 1).padStart(2, "0");
-    const dd = String(minAgeDate.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
   }, []);
 
@@ -547,7 +537,6 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
               placeholder={userData?.dateOfBirth ? undefined : "YYYY-MM-DD"}
               className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm"
               max={todayStr}
-              min={minAgeDateStr}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
