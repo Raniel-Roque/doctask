@@ -28,12 +28,18 @@ export async function POST(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     const { instructorId, backupData, idMappings } = await request.json();
     if (!instructorId) {
-      return new NextResponse("Missing instructorId", { status: 400 });
+      return NextResponse.json(
+        { error: "Missing instructorId" },
+        { status: 400 }
+      );
     }
 
     // Initialize Convex client
@@ -44,7 +50,10 @@ export async function POST(request: Request) {
       id: instructorId as Id<"users">,
     });
     if (!instructorConvexUser) {
-      return new NextResponse("Instructor not found", { status: 404 });
+      return NextResponse.json(
+        { error: "Instructor not found" },
+        { status: 404 }
+      );
     }
 
     // Initialize Clerk client

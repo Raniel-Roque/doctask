@@ -156,7 +156,10 @@ export async function POST(request: Request) {
   try {
     const { backup, instructorId } = await request.json();
     if (!backup || !instructorId) {
-      return new NextResponse("Missing required fields", { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     // Initialize Convex client
@@ -582,9 +585,12 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    return new NextResponse(
-      error instanceof Error ? error.message : "Failed to restore database",
-      { status: 500 },
+    console.error("Restore error:", error);
+    return NextResponse.json(
+      { 
+        error: error instanceof Error ? error.message : "Failed to restore database" 
+      },
+      { status: 500 }
     );
   }
 }
