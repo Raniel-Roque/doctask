@@ -28,6 +28,8 @@ import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { FaSignOutAlt, FaExclamationTriangle } from "react-icons/fa";
 import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
 
+
+
 interface BackupAndRestorePageProps {
   params: Promise<{ instructorId: string }>;
 }
@@ -227,7 +229,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       const key = await importKey(keyString);
 
       // Decrypt the backup
-      const backup = await decryptData(encryptedData, key);
+      const backup = await decryptData(encryptedData, key) as Record<string, unknown>;
 
       const response = await fetch("/api/convex/restore", {
         method: "POST",
@@ -549,35 +551,34 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               <FaExclamationTriangle className="w-5 h-5" />
               Are You Sure?
             </DialogTitle>
-            <DialogDescription className="text-left">
-              <div className="space-y-3">
-                <p className="font-semibold text-red-700">
-                  This action will permanently delete all current data and
-                  replace it with the backup.
-                </p>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-700 font-medium mb-2">
-                    ⚠️ Warning:
-                  </p>
-                  <ul className="text-sm text-red-600 space-y-1">
-                    <li>
-                      • All existing users, groups, and documents will be
-                      deleted
-                    </li>
-                    <li>• All current data will be permanently lost</li>
-                    <li>• This action cannot be undone</li>
-                    <li>• You will be logged out after the restore</li>
-                  </ul>
-                </div>
-                <p className="text-sm text-gray-600">
-                  Selected file:{" "}
-                  <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                    {selectedZipFile?.name}
-                  </span>
-                </p>
-              </div>
-            </DialogDescription>
           </DialogHeader>
+
+          <div className="space-y-3">
+            <p className="font-semibold text-red-700">
+              This action will permanently delete all current data and
+              replace it with the backup.
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-700 font-medium mb-2">
+                ⚠️ Warning:
+              </p>
+              <ul className="text-sm text-red-600 space-y-1">
+                <li>
+                  • All existing users, groups, and documents will be
+                  deleted
+                </li>
+                <li>• All current data will be permanently lost</li>
+                <li>• This action cannot be undone</li>
+                <li>• You will be logged out after the restore</li>
+              </ul>
+            </div>
+            <p className="text-sm text-gray-600">
+              Selected file:{" "}
+              <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                {selectedZipFile?.name}
+              </span>
+            </p>
+          </div>
 
           <DialogFooter>
             <Button
@@ -614,12 +615,12 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       {/* Restore Success Dialog */}
       <Dialog open={showRestoreSuccess} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-[425px]">
-          <div className="flex items-center gap-3 mb-4">
-            <FaSignOutAlt size={24} color="#B54A4A" />
-            <h2 className="text-xl font-semibold text-gray-900">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <FaSignOutAlt size={24} color="#B54A4A" />
               Restore Successful!
-            </h2>
-          </div>
+            </DialogTitle>
+          </DialogHeader>
 
           <p className="text-gray-600 mb-6">
             Your database has been successfully restored. You will be logged out
