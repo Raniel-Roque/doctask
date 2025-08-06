@@ -123,6 +123,10 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     } else if (pendingAction === "restore") {
       setShowRestoreConfirm(true);
     }
+    
+    // Close the password verification modal after successful verification
+    setShowPasswordVerify(false);
+    setPendingAction(null);
   };
 
   const initiateAction = (action: "download" | "restore") => {
@@ -441,6 +445,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           if (!isRestoring) {
             setShowRestoreConfirm(open);
             if (!open) {
+              setShowPasswordVerify(false);
+              setPendingAction(null);
               setSelectedZipFile(null);
             }
           }
@@ -499,6 +505,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               variant="outline"
               onClick={() => {
                 setShowRestoreConfirm(false);
+                setShowPasswordVerify(false);
+                setPendingAction(null);
                 setSelectedZipFile(null);
               }}
               disabled={isRestoring}
@@ -526,6 +534,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           if (!isRestoring) {
             setShowRestoreWarning(open);
             if (!open) {
+              setShowRestoreConfirm(false);
+              setShowPasswordVerify(false);
+              setPendingAction(null);
               setSelectedZipFile(null);
             }
           }
@@ -572,6 +583,9 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               variant="outline"
               onClick={() => {
                 setShowRestoreWarning(false);
+                setShowRestoreConfirm(false);
+                setShowPasswordVerify(false);
+                setPendingAction(null);
                 setSelectedZipFile(null);
               }}
               disabled={isRestoring}
