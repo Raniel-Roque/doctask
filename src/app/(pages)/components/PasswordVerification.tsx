@@ -77,7 +77,8 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
       <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">{title}</h2>
@@ -157,14 +158,24 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
           </div>
         </form>
 
-        <NotificationBanner
-          message={error}
-          type="error"
-          onClose={() => setError(null)}
-          autoClose={false}
-        />
+        {/* Render notification banner outside the modal container to avoid z-index issues */}
       </div>
     </div>
+    
+    {/* Notification banner rendered outside modal container */}
+    {error && (
+      <div className="fixed inset-0 pointer-events-none z-[99999]">
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 pointer-events-auto">
+          <NotificationBanner
+            message={error}
+            type="error"
+            onClose={() => setError(null)}
+            autoClose={false}
+          />
+        </div>
+      </div>
+    )}
+  </>
   );
 };
 

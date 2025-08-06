@@ -422,6 +422,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
       {/* Password Verification Modal */}
       <PasswordVerification
+        key={`password-verify-${showPasswordVerify}-${pendingAction}`}
         isOpen={showPasswordVerify}
         onClose={() => {
           setShowPasswordVerify(false);
