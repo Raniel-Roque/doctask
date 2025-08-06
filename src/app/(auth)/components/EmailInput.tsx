@@ -45,9 +45,8 @@ const EmailInput: React.FC<EmailInputProps> = ({
       <input
         id={name}
         name={name}
-        type="email"
+        type="text"
         autoComplete="email"
-        required
         value={email}
         onChange={handleChange}
         className="appearance-none rounded-lg relative block w-full pl-10 pr-3 h-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"

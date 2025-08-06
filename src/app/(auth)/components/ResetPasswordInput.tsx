@@ -11,6 +11,7 @@ interface ResetPasswordInputProps {
   showConfirmPassword: boolean;
   setShowConfirmPassword: (show: boolean) => void;
   loading?: boolean;
+  isValid?: boolean; // Add validation prop
   onSubmit: (e: React.FormEvent) => void;
   email?: string; // Add email prop for accessibility
 }
@@ -25,6 +26,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
   showConfirmPassword,
   setShowConfirmPassword,
   loading = false,
+  isValid = false,
   onSubmit,
   email,
 }) => {
@@ -109,7 +111,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
       <div>
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !isValid}
           className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-[#B54A4A] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
         >
           {loading ? "Resetting..." : "Reset Password"}

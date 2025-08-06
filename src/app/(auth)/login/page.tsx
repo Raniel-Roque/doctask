@@ -161,8 +161,27 @@ const LoginPage = () => {
     e.preventDefault();
     if (!isLoaded) return;
 
+    // Prevent submission if email is empty
+    if (!email || email.trim() === "") {
+      setNotification({
+        message: "Please enter your email address",
+        type: "error",
+      });
+      return;
+    }
+
     // Convert email to lowercase only when submitting
     const emailToCheck = email.toLowerCase();
+
+    // Custom email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailToCheck)) {
+      setNotification({
+        message: "Please enter a valid email address",
+        type: "error",
+      });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -262,6 +281,16 @@ const LoginPage = () => {
 
   const handleAutocomplete = async (email: string) => {
     if (!isLoaded) return;
+
+    // Custom email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setNotification({
+        message: "Please enter a valid email address",
+        type: "error",
+      });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -398,6 +427,31 @@ const LoginPage = () => {
     e.preventDefault();
     if (!isLoaded) return;
 
+    // Prevent submission if verification code is empty
+    if (!code || code.trim() === "") {
+      setNotification({
+        message: "Please enter the verification code sent to your email",
+        type: "error",
+      });
+      return;
+    }
+
+    if (code.length !== 6) {
+      setNotification({
+        message: "Verification code must be exactly 6 digits",
+        type: "error",
+      });
+      return;
+    }
+
+    if (!/^\d{6}$/.test(code)) {
+      setNotification({
+        message: "Verification code must contain only numbers",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -455,17 +509,32 @@ const LoginPage = () => {
         }
       } else {
         setNotification({
-          message: "Invalid code. Please try again.",
+          message:
+            "Invalid verification code. Please check your email and try again.",
           type: "error",
         });
         setCode(""); // Clear the code input on error
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
-      setNotification({
-        message: errorMessage || "Invalid code. Please try again.",
-        type: "error",
-      });
+      if (errorMessage.toLowerCase().includes("expired")) {
+        setNotification({
+          message: "Verification code has expired. Please request a new code.",
+          type: "error",
+        });
+      } else if (errorMessage.toLowerCase().includes("invalid")) {
+        setNotification({
+          message:
+            "Invalid verification code. Please check your email and try again.",
+          type: "error",
+        });
+      } else {
+        setNotification({
+          message:
+            "Verification failed. Please try again or request a new code.",
+          type: "error",
+        });
+      }
       setCode(""); // Clear the code input on error
     } finally {
       setLoading(false);
@@ -475,6 +544,12 @@ const LoginPage = () => {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoaded) return;
+
+    // Prevent submission if password is empty
+    if (!password || password.trim() === "") {
+      setNotification({ message: "Please enter your password", type: "error" });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -938,6 +1013,34 @@ const LoginPage = () => {
                     onSubmit={async (e) => {
                       e.preventDefault();
                       if (!isLoaded) return;
+
+                      // Prevent submission if verification code is empty
+                      if (!code || code.trim() === "") {
+                        setNotification({
+                          message:
+                            "Please enter the verification code sent to your email",
+                          type: "error",
+                        });
+                        return;
+                      }
+
+                      if (code.length !== 6) {
+                        setNotification({
+                          message: "Verification code must be exactly 6 digits",
+                          type: "error",
+                        });
+                        return;
+                      }
+
+                      if (!/^\d{6}$/.test(code)) {
+                        setNotification({
+                          message:
+                            "Verification code must contain only numbers",
+                          type: "error",
+                        });
+                        return;
+                      }
+
                       setLoading(true);
                       try {
                         const result = await signIn.attemptFirstFactor({
@@ -948,15 +1051,35 @@ const LoginPage = () => {
                           setForgotStepIndex(1);
                         } else {
                           setNotification({
-                            message: "Invalid code. Please try again.",
+                            message:
+                              "Invalid verification code. Please check your email and try again.",
                             type: "error",
                           });
                         }
-                      } catch {
-                        setNotification({
-                          message: "Invalid code. Please try again.",
-                          type: "error",
-                        });
+                      } catch (err) {
+                        const errorMessage =
+                          err instanceof Error ? err.message : "";
+                        if (errorMessage.toLowerCase().includes("expired")) {
+                          setNotification({
+                            message:
+                              "Verification code has expired. Please request a new code.",
+                            type: "error",
+                          });
+                        } else if (
+                          errorMessage.toLowerCase().includes("invalid")
+                        ) {
+                          setNotification({
+                            message:
+                              "Invalid verification code. Please check your email and try again.",
+                            type: "error",
+                          });
+                        } else {
+                          setNotification({
+                            message:
+                              "Verification failed. Please try again or request a new code.",
+                            type: "error",
+                          });
+                        }
                       } finally {
                         setLoading(false);
                       }
@@ -976,6 +1099,16 @@ const LoginPage = () => {
                   setShowConfirmPassword={setShowConfirmPassword}
                   loading={loading}
                   email={email}
+                  isValid={
+                    password.length >= 8 &&
+                    /[a-z]/.test(password) &&
+                    /[A-Z]/.test(password) &&
+                    /\d/.test(password) &&
+                    /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(password) &&
+                    password === confirmPassword &&
+                    password.trim() !== "" &&
+                    confirmPassword.trim() !== ""
+                  }
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!isLoaded) return;
@@ -983,89 +1116,46 @@ const LoginPage = () => {
                     // Clear any existing notifications
                     setNotification({ message: "", type: "info" });
 
-                    // Validate password match
+                    // Prevent submission if passwords are empty
+                    if (!password || password.trim() === "") {
+                      setNotification({
+                        message: "Please enter your new password",
+                        type: "error",
+                      });
+                      return;
+                    }
+
+                    if (!confirmPassword || confirmPassword.trim() === "") {
+                      setNotification({
+                        message: "Please confirm your new password",
+                        type: "error",
+                      });
+                      return;
+                    }
+
+                    // Basic validation to prevent submission when requirements aren't met
                     if (password !== confirmPassword) {
-                      setNotification({
-                        message:
-                          "Passwords do not match. Please make sure both passwords are identical.",
-                        type: "error",
-                      });
-                      return;
+                      return; // Don't submit, let visual requirements show the error
                     }
 
-                    // Validate password strength
                     if (password.length < 8) {
-                      setNotification({
-                        message:
-                          "Password is too weak. Please use at least 8 characters.",
-                        type: "error",
-                      });
-                      return;
+                      return; // Don't submit, let visual requirements show the error
                     }
 
-                    // Check for common weak password patterns
-                    const weakPasswordPatterns = [
-                      /^12345678$/,
-                      /^password$/,
-                      /^qwertyui$/,
-                      /^abcdefgh$/,
-                      /^11111111$/,
-                      /^00000000$/,
-                    ];
-
-                    if (
-                      weakPasswordPatterns.some((pattern) =>
-                        pattern.test(password.toLowerCase()),
-                      )
-                    ) {
-                      setNotification({
-                        message:
-                          "Password is too common. Please choose a more secure password.",
-                        type: "error",
-                      });
-                      return;
-                    }
-
-                    // Validate password complexity requirements
+                    // Check if all requirements are met
                     const hasLowercase = /[a-z]/.test(password);
                     const hasUppercase = /[A-Z]/.test(password);
                     const hasNumber = /\d/.test(password);
                     const hasSpecialChar =
                       /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(password);
 
-                    if (!hasLowercase) {
-                      setNotification({
-                        message:
-                          "Password must contain at least 1 lowercase character.",
-                        type: "error",
-                      });
-                      return;
-                    }
-
-                    if (!hasUppercase) {
-                      setNotification({
-                        message:
-                          "Password must contain at least 1 uppercase character.",
-                        type: "error",
-                      });
-                      return;
-                    }
-
-                    if (!hasNumber) {
-                      setNotification({
-                        message: "Password must contain at least 1 number.",
-                        type: "error",
-                      });
-                      return;
-                    }
-
-                    if (!hasSpecialChar) {
-                      setNotification({
-                        message:
-                          "Password must contain at least 1 special character (!\"#$%&'()*+,-./:;<=>?@[]^_`{|}~).",
-                        type: "error",
-                      });
-                      return;
+                    if (
+                      !hasLowercase ||
+                      !hasUppercase ||
+                      !hasNumber ||
+                      !hasSpecialChar
+                    ) {
+                      return; // Don't submit, let visual requirements show the error
                     }
 
                     setLoading(true);
