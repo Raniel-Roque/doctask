@@ -28,17 +28,14 @@ export async function POST(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { instructorId, backupData, idMappings } = await request.json();
     if (!instructorId) {
       return NextResponse.json(
         { error: "Missing instructorId" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -52,7 +49,7 @@ export async function POST(request: Request) {
     if (!instructorConvexUser) {
       return NextResponse.json(
         { error: "Instructor not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 

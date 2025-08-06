@@ -74,6 +74,7 @@ export const DeleteConfirmation = ({
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 mt-8">
           <button
+            type="button"
             onClick={handleCancel}
             className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border-2 border-gray-300 flex items-center gap-2"
             disabled={isSubmitting}

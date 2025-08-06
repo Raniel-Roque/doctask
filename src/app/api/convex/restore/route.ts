@@ -158,7 +158,7 @@ export async function POST(request: Request) {
     if (!backup || !instructorId) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -586,10 +586,11 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : "Failed to restore database" 
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to restore database",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

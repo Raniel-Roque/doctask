@@ -84,6 +84,7 @@ export const ValidationError = ({
         {/* Action Button */}
         <div className="mt-6 flex justify-end">
           <button
+            type="button"
             onClick={handleClose}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
           >

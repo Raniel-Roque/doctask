@@ -123,7 +123,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     } else if (pendingAction === "restore") {
       setShowRestoreConfirm(true);
     }
-    
+
     // Close the password verification modal after successful verification
     setShowPasswordVerify(false);
     setPendingAction(null);

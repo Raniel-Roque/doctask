@@ -79,103 +79,103 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">{title}</h2>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <FaTimes className="h-6 w-6" />
-          </button>
-        </div>
-
-        <p className="text-gray-600 mb-6">{description}</p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Hidden username field for accessibility and password managers */}
-          {userEmail && (
-            <input
-              type="email"
-              name="username"
-              value={userEmail.toLowerCase()}
-              readOnly
-              style={{ display: "none" }}
-              autoComplete="username"
-            />
-          )}
-
-          <div>
-            <label
-              htmlFor="currentPassword"
-              className="block text-sm font-medium text-gray-700 mb-1"
+        <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">{title}</h2>
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              Current Password
-            </label>
-            <div className="relative">
+              <FaTimes className="h-6 w-6" />
+            </button>
+          </div>
+
+          <p className="text-gray-600 mb-6">{description}</p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Hidden username field for accessibility and password managers */}
+            {userEmail && (
               <input
-                type={showPassword ? "text" : "password"}
-                id="currentPassword"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-                placeholder="Enter your current password"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                disabled={isVerifying || loading}
+                type="email"
+                name="username"
+                value={userEmail.toLowerCase()}
+                readOnly
+                style={{ display: "none" }}
+                autoComplete="username"
               />
+            )}
+
+            <div>
+              <label
+                htmlFor="currentPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Current Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="currentPassword"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  placeholder="Enter your current password"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  disabled={isVerifying || loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={isVerifying || loading}
+                >
+                  {showPassword ? <FaEye /> : <FaEyeSlash />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-4">
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                onClick={handleClose}
                 disabled={isVerifying || loading}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
               >
-                {showPassword ? <FaEye /> : <FaEyeSlash />}
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isVerifying || loading || !password.trim()}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+              >
+                {isVerifying || loading ? "Verifying..." : buttonText}
               </button>
             </div>
-          </div>
+          </form>
 
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isVerifying || loading}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isVerifying || loading || !password.trim()}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
-            >
-              {isVerifying || loading ? "Verifying..." : buttonText}
-            </button>
-          </div>
-        </form>
-
-        {/* Render notification banner outside the modal container to avoid z-index issues */}
-      </div>
-    </div>
-    
-    {/* Notification banner rendered outside modal container */}
-    {error && (
-      <div className="fixed inset-0 pointer-events-none z-[99999]">
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 pointer-events-auto">
-          <NotificationBanner
-            message={error}
-            type="error"
-            onClose={() => setError(null)}
-            autoClose={false}
-          />
+          {/* Render notification banner outside the modal container to avoid z-index issues */}
         </div>
       </div>
-    )}
-  </>
+
+      {/* Notification banner rendered outside modal container */}
+      {error && (
+        <div className="fixed inset-0 pointer-events-none z-[99999]">
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 pointer-events-auto">
+            <NotificationBanner
+              message={error}
+              type="error"
+              onClose={() => setError(null)}
+              autoClose={false}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
