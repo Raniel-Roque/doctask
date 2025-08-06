@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "DocTask",
   description: "A Collaborative Documentation and Management Desktop App",
   icons: {
-    icon: "/doctask.ico",
+    icon: "/doctask.webp",
   },
 };
 

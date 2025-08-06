@@ -488,7 +488,7 @@ export const Navbar = ({
             title="Go home"
           >
             <Image
-              src="/doctask.ico"
+                              src="/doctask.webp"
               alt="DocTask Logo"
               width={40}
               height={40}
