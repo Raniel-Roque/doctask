@@ -4,6 +4,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { NotificationBanner } from "./NotificationBanner";
+import { useModalFocus } from "@/hooks/use-modal-focus";
 
 interface TermsAndServiceProps {
   isOpen: boolean;
@@ -25,6 +26,13 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
   const [showTermsOfService, setShowTermsOfService] = useState(false);
 
   const updateTermsAgreement = useMutation(api.mutations.updateTermsAgreement);
+
+  // Use modal focus management hook
+  const modalRef = useModalFocus({
+    isOpen,
+    onClose: () => onDisagree(),
+    focusFirstInput: false, // No input fields in this modal
+  });
 
   const handleAgree = async () => {
     if (!user) return;
@@ -207,7 +215,13 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div
+        ref={modalRef}
+        className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="terms-modal-title"
+      >
         {showPrivacyPolicy ? (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -241,7 +255,10 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
         ) : (
           <div>
             <div className="flex justify-center items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2
+                id="terms-modal-title"
+                className="text-2xl font-bold text-gray-900"
+              >
                 Terms of Service & Privacy Policy
               </h2>
             </div>

@@ -7,6 +7,7 @@ import {
   FaBan,
 } from "react-icons/fa";
 import { Group } from "./types";
+import { useModalFocus } from "@/hooks/use-modal-focus";
 
 interface GroupActionConfirmationProps {
   group: Group | null;
@@ -25,6 +26,13 @@ export default function GroupActionConfirmation({
   isSubmitting = false,
   action,
 }: GroupActionConfirmationProps) {
+  // Use modal focus management hook
+  const modalRef = useModalFocus({
+    isOpen,
+    onClose,
+    focusFirstInput: false, // No input fields in this modal
+  });
+
   if (!isOpen || !group) return null;
 
   const isAccept = action === "accept";
@@ -38,9 +46,18 @@ export default function GroupActionConfirmation({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+      <div
+        ref={modalRef}
+        className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="group-action-modal-title"
+      >
         {/* Header */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+        <h2
+          id="group-action-modal-title"
+          className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3"
+        >
           <FaExclamationTriangle size={24} color={iconColor} />
           {title}
         </h2>

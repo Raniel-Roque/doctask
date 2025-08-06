@@ -15,6 +15,7 @@ import { AddFormData } from "./types";
 import { validateUserForm } from "../../utils/validation";
 import { NotificationBanner } from "../../../../components/NotificationBanner";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
+import { useModalFocus } from "@/hooks/use-modal-focus";
 
 // =========================================
 // Types
@@ -63,6 +64,13 @@ export const AddForm = ({
 
   const roleTriggerRef = useRef<HTMLDivElement>(null);
   const roleDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Use modal focus management hook
+  const modalRef = useModalFocus({
+    isOpen,
+    onClose: () => onClose(),
+    focusFirstInput: true,
+  });
 
   const roles = [
     { value: 0, label: "Project Member" },
@@ -192,10 +200,19 @@ export const AddForm = ({
       <div
         className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${className}`}
       >
-        <div className="bg-white rounded-lg p-8 w-full max-w-4xl shadow-2xl border-2 border-gray-200">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-lg p-8 w-full max-w-4xl shadow-2xl border-2 border-gray-200"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-user-modal-title"
+        >
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h2
+              id="add-user-modal-title"
+              className="text-2xl font-bold text-gray-800 flex items-center gap-2"
+            >
               <FaPlus />
               Add New User
             </h2>

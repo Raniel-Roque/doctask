@@ -20,6 +20,7 @@ import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner"
 
 import { UnsavedChangesConfirmation } from "@/app/(pages)/components/UnsavedChangesConfirmation";
 import DeleteNoteConfirmation from "./DeleteNoteConfirmation";
+import { useModalFocus } from "@/hooks/use-modal-focus";
 
 interface NotesPopupProps {
   isOpen: boolean;
@@ -64,6 +65,13 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   const [endDate, setEndDate] = useState<string>("");
   const [pendingDeleteNoteId, setPendingDeleteNoteId] =
     useState<null | Id<"notes">>(null);
+
+  // Use modal focus management hook
+  const modalRef = useModalFocus({
+    isOpen,
+    onClose: () => onClose(),
+    focusFirstInput: true,
+  });
 
   // Fetch notes
   const notesResult = useQuery(api.fetch.getDocumentNotes, {
@@ -272,11 +280,22 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="notes-modal-title"
+        >
           {/* Main Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Notes</h2>
+              <h2
+                id="notes-modal-title"
+                className="text-xl font-semibold text-gray-900"
+              >
+                Notes
+              </h2>
               <p className="text-sm text-gray-600 mt-1">{documentTitle}</p>
             </div>
             <button

@@ -28,8 +28,6 @@ import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { FaSignOutAlt, FaExclamationTriangle } from "react-icons/fa";
 import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
 
-
-
 interface BackupAndRestorePageProps {
   params: Promise<{ instructorId: string }>;
 }
@@ -229,7 +227,10 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       const key = await importKey(keyString);
 
       // Decrypt the backup
-      const backup = await decryptData(encryptedData, key) as Record<string, unknown>;
+      const backup = (await decryptData(encryptedData, key)) as Record<
+        string,
+        unknown
+      >;
 
       const response = await fetch("/api/convex/restore", {
         method: "POST",
@@ -555,8 +556,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
           <div className="space-y-3">
             <p className="font-semibold text-red-700">
-              This action will permanently delete all current data and
-              replace it with the backup.
+              This action will permanently delete all current data and replace
+              it with the backup.
             </p>
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-sm text-red-700 font-medium mb-2">
@@ -564,8 +565,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               </p>
               <ul className="text-sm text-red-600 space-y-1">
                 <li>
-                  • All existing users, groups, and documents will be
-                  deleted
+                  • All existing users, groups, and documents will be deleted
                 </li>
                 <li>• All current data will be permanently lost</li>
                 <li>• This action cannot be undone</li>

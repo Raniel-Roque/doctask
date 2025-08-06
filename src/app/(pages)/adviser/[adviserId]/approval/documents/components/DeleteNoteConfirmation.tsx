@@ -1,5 +1,6 @@
 import React from "react";
 import { FaTrash } from "react-icons/fa";
+import { useModalFocus } from "@/hooks/use-modal-focus";
 
 interface DeleteNoteConfirmationProps {
   isOpen: boolean;
@@ -12,15 +13,30 @@ const DeleteNoteConfirmation: React.FC<DeleteNoteConfirmationProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  // Use modal focus management hook
+  const modalRef = useModalFocus({
+    isOpen,
+    onClose: () => onCancel(),
+    focusFirstInput: false, // No input fields in this modal
+  });
+
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <div
+        ref={modalRef}
+        className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-note-modal-title"
+      >
         <div className="flex items-center gap-3 mb-4">
           <div className="text-red-500">
             <FaTrash />
           </div>
-          <h3 className="text-lg font-semibold">Delete Note</h3>
+          <h3 id="delete-note-modal-title" className="text-lg font-semibold">
+            Delete Note
+          </h3>
         </div>
         <p className="text-gray-600 mb-6">
           Are you sure you want to delete this note? This action cannot be

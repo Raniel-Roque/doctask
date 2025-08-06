@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FaExclamationTriangle, FaPlus, FaTimes } from "react-icons/fa";
+import { useModalFocus } from "@/hooks/use-modal-focus";
 
 interface AdviserCodePopupProps {
   isOpen: boolean;
@@ -19,6 +20,13 @@ export const AdviserCodePopup: React.FC<AdviserCodePopupProps> = ({
   clearInputRef,
 }) => {
   const [code, setCode] = useState("");
+
+  // Use modal focus management hook
+  const modalRef = useModalFocus({
+    isOpen,
+    onClose: () => onClose(),
+    focusFirstInput: true,
+  });
 
   // Expose a clear function to parent
   useEffect(() => {
@@ -51,9 +59,18 @@ export const AdviserCodePopup: React.FC<AdviserCodePopupProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+      <div
+        ref={modalRef}
+        className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl border-2 border-gray-200"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="adviser-code-modal-title"
+      >
         {/* Header */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+        <h2
+          id="adviser-code-modal-title"
+          className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3"
+        >
           <FaPlus size={24} className="text-blue-600" />
           Enter Adviser Code
         </h2>

@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 
 import { NotificationBanner } from "./NotificationBanner";
+import { useModalFocus } from "@/hooks/use-modal-focus";
 
 interface PasswordVerificationProps {
   isOpen: boolean;
@@ -29,6 +30,13 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Use modal focus management hook
+  const modalRef = useModalFocus({
+    isOpen,
+    onClose: () => onClose(),
+    focusFirstInput: true,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,9 +87,17 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-lg p-6 w-full max-w-md relative"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="password-modal-title"
+        >
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">{title}</h2>
+            <h2 id="password-modal-title" className="text-2xl font-bold">
+              {title}
+            </h2>
             <button
               onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"

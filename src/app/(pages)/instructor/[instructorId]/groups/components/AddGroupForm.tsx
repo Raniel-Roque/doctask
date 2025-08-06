@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { validateInput } from "../../../../components/SanitizeInput";
+import { useModalFocus } from "@/hooks/use-modal-focus";
 
 // Shared error messages
 const ERROR_MESSAGES = {
@@ -91,6 +92,13 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   const projectManagerTriggerRef = useRef<HTMLDivElement>(null);
   const adviserTriggerRef = useRef<HTMLDivElement>(null);
   const membersTriggerRef = useRef<HTMLDivElement>(null);
+
+  // Use modal focus management hook
+  const modalRef = useModalFocus({
+    isOpen,
+    onClose: () => onClose(),
+    focusFirstInput: true,
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -373,12 +381,18 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
         className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isOpen ? "" : "hidden"}`}
       >
         <div
-          ref={formRef}
+          ref={modalRef}
           className="bg-white rounded-lg p-8 w-full max-w-2xl shadow-2xl border-2 border-gray-200"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
         >
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h2
+              id="modal-title"
+              className="text-2xl font-bold text-gray-800 flex items-center gap-2"
+            >
               <FaPlus />
               Add New Group
             </h2>

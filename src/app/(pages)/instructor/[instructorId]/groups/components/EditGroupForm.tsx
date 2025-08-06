@@ -14,6 +14,7 @@ import {
 import { Group } from "./types";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { validateInput } from "../../../../components/SanitizeInput";
+import { useModalFocus } from "@/hooks/use-modal-focus";
 
 // Shared error messages
 const ERROR_MESSAGES = {
@@ -82,6 +83,13 @@ export default function EditGroupForm({
   const membersTriggerRef = useRef<HTMLDivElement>(null);
   const adviserDropdownRef = useRef<HTMLDivElement>(null);
   const membersDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Use modal focus management hook
+  const modalRef = useModalFocus({
+    isOpen,
+    onClose: () => onClose(),
+    focusFirstInput: true,
+  });
 
   // Update form data when group changes
   useEffect(() => {
@@ -313,10 +321,19 @@ export default function EditGroupForm({
       <div
         className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isOpen ? "" : "hidden"}`}
       >
-        <div className="bg-white rounded-lg p-8 w-full max-w-4xl shadow-2xl border-2 border-gray-200">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-lg p-8 w-full max-w-4xl shadow-2xl border-2 border-gray-200"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-modal-title"
+        >
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h2
+              id="edit-modal-title"
+              className="text-2xl font-bold text-gray-800 flex items-center gap-2"
+            >
               <FaEdit />
               Edit Group
             </h2>
