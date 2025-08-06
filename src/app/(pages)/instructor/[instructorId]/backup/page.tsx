@@ -25,7 +25,7 @@ import {
 import JSZip from "jszip";
 import { useUser, useClerk } from "@clerk/clerk-react";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
-import { FaSignOutAlt } from "react-icons/fa";
+import { FaSignOutAlt, FaExclamationTriangle } from "react-icons/fa";
 import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
 
 interface BackupAndRestorePageProps {
@@ -72,6 +72,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [showRestoreWarning, setShowRestoreWarning] = useState(false);
   const [showPasswordVerify, setShowPasswordVerify] = useState(false);
   const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
   const [notification, setNotification] = useState<{
@@ -505,8 +506,81 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
               Cancel
             </Button>
             <Button
-              onClick={confirmRestore}
+              onClick={() => {
+                setShowRestoreConfirm(false);
+                setShowRestoreWarning(true);
+              }}
               disabled={!selectedZipFile || isRestoring}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Are You Sure Warning Dialog */}
+      <Dialog
+        open={showRestoreWarning}
+        onOpenChange={(open) => {
+          if (!isRestoring) {
+            setShowRestoreWarning(open);
+            if (!open) {
+              setSelectedZipFile(null);
+            }
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <FaExclamationTriangle className="w-5 h-5" />
+              Are You Sure?
+            </DialogTitle>
+            <DialogDescription className="text-left">
+              <div className="space-y-3">
+                <p className="font-semibold text-red-700">
+                  This action will permanently delete all current data and
+                  replace it with the backup.
+                </p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-700 font-medium mb-2">
+                    ⚠️ Warning:
+                  </p>
+                  <ul className="text-sm text-red-600 space-y-1">
+                    <li>
+                      • All existing users, groups, and documents will be
+                      deleted
+                    </li>
+                    <li>• All current data will be permanently lost</li>
+                    <li>• This action cannot be undone</li>
+                    <li>• You will be logged out after the restore</li>
+                  </ul>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Selected file:{" "}
+                  <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                    {selectedZipFile?.name}
+                  </span>
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRestoreWarning(false);
+                setSelectedZipFile(null);
+              }}
+              disabled={isRestoring}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmRestore}
+              disabled={isRestoring}
               className="bg-red-600 hover:bg-red-700"
             >
               {isRestoring ? (
@@ -515,7 +589,7 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
                   Restoring...
                 </>
               ) : (
-                "Confirm Restore"
+                "Yes, Restore Database"
               )}
             </Button>
           </DialogFooter>
