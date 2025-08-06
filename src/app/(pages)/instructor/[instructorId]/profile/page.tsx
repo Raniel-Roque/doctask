@@ -261,7 +261,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         type="success"
         onClose={() => setSuccessMessage(null)}
       />
-      
+
       {/* Error Messages */}
       <NotificationBanner
         message={notification?.message || null}

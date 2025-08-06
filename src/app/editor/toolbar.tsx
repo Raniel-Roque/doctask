@@ -13,7 +13,6 @@ import {
   ListCollapseIcon,
   ListIcon,
   ListOrderedIcon,
-  ListTodoIcon,
   LucideIcon,
   MessageSquarePlusIcon,
   MinusIcon,
@@ -1127,12 +1126,6 @@ export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
         icon: MessageSquarePlusIcon,
         isActive: editor?.isActive("liveblocksCommentMark"),
         onClick: () => editor?.chain().focus().addPendingComment().run(),
-      },
-      {
-        label: "Task List",
-        icon: ListTodoIcon,
-        isActive: editor?.isActive("taskList"),
-        onClick: () => editor?.chain().focus().toggleTaskList().run(),
       },
       {
         label: "Remove Formatting",

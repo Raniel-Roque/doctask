@@ -1346,11 +1346,6 @@ const LoginPage = () => {
             </div>
           </div>
         )}
-
-        {/* College of Computer Studies Text - bottom right */}
-        <div className="absolute bottom-0 right-0 mb-4 mr-4 text-sm text-red-200 font-light select-none">
-          College of Computer Studies
-        </div>
       </div>
     </div>
   );
