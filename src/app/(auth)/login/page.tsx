@@ -518,10 +518,10 @@ const LoginPage = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
       if (errorMessage.toLowerCase().includes("expired")) {
-        setNotification({
+      setNotification({
           message: "Verification code has expired. Please request a new code.",
-          type: "error",
-        });
+        type: "error",
+      });
       } else if (errorMessage.toLowerCase().includes("invalid")) {
         setNotification({
           message:
@@ -1060,11 +1060,11 @@ const LoginPage = () => {
                         const errorMessage =
                           err instanceof Error ? err.message : "";
                         if (errorMessage.toLowerCase().includes("expired")) {
-                          setNotification({
+                        setNotification({
                             message:
                               "Verification code has expired. Please request a new code.",
-                            type: "error",
-                          });
+                          type: "error",
+                        });
                         } else if (
                           errorMessage.toLowerCase().includes("invalid")
                         ) {

@@ -58,7 +58,6 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         </div>
         <input
           type={showPassword ? "text" : "password"}
-          required
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white disabled:bg-gray-50 disabled:opacity-100"
@@ -86,7 +85,6 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         </div>
         <input
           type={showConfirmPassword ? "text" : "password"}
-          required
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           className="appearance-none rounded-lg relative block w-full pl-10 pr-10 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white disabled:bg-gray-50 disabled:opacity-100"
