@@ -334,10 +334,23 @@ export const Editor = ({
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      Table,
+      Table.configure({
+        resizable: true,
+        handleWidth: 5,
+        cellMinWidth: 100,
+        View: undefined,
+      }),
       TableRow,
-      TableCell,
-      TableHeader,
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'table-cell',
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'table-header',
+        },
+      }),
       ResizeImage.configure({
         allowBase64: true,
         // Prevent unnecessary re-renders during drag operations
@@ -459,6 +472,55 @@ export const Editor = ({
       const isInTable = editor.isActive("table");
 
       if (isInTable) {
+        // Handle Enter key in tables
+        if (event.key === "Enter") {
+          const { state } = editor;
+          const { selection } = state;
+          const { $from } = selection;
+          
+          // Check if we're in the last cell of the table
+          const table = $from.node(-1);
+          const tablePos = $from.before(-1);
+          const tableEnd = tablePos + table.nodeSize;
+          
+          // If we're at the end of the last cell, create a new paragraph after the table
+          if ($from.pos === tableEnd - 1) {
+            event.preventDefault();
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(tableEnd, { type: "paragraph" })
+              .run();
+            return;
+          }
+          
+          // If we're in the middle of a cell, let the default behavior handle it
+          // (creates a new line within the cell)
+        }
+        
+        // Handle Arrow keys for better table navigation
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          const { state } = editor;
+          const { selection } = state;
+          const { $from } = selection;
+          
+          // Check if we're at the edge of the table
+          const table = $from.node(-1);
+          const tablePos = $from.before(-1);
+          const tableEnd = tablePos + table.nodeSize;
+          
+          if (event.key === "ArrowDown" && $from.pos === tableEnd - 1) {
+            // We're at the bottom of the table, move to next paragraph
+            event.preventDefault();
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(tableEnd, { type: "paragraph" })
+              .run();
+            return;
+          }
+        }
+
         // Delete table with Ctrl+Shift+Delete
         if (event.ctrlKey && event.shiftKey && event.key === "Delete") {
           event.preventDefault();
@@ -478,8 +540,8 @@ export const Editor = ({
         }
       }
 
-      // Handle Tab key for list indentation
-      if (event.key === "Tab") {
+      // Handle Tab key for list indentation (only when not in table)
+      if (event.key === "Tab" && !isInTable) {
         const isInList =
           editor.isActive("bulletList") || editor.isActive("orderedList");
 
