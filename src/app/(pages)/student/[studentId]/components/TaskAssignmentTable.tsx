@@ -55,7 +55,7 @@ interface Document {
 interface TaskAssignmentTableProps {
   tasks: Task[];
   status: "loading" | "error" | "idle" | "no_group";
-  currentUserId: string;
+  currentUserId: Id<"users">; // Fix type from string to Id<"users">
   mode: "manager" | "member";
   groupMembers?: Array<{
     _id: Id<"users">;
@@ -128,25 +128,13 @@ export const TaskAssignmentTable = ({
   // Add Convex mutations
   const updateTaskStatus = useMutation(api.mutations.updateTaskStatus);
   const updateTaskAssignment = useMutation(api.mutations.updateTaskAssignment);
-  const updateDocumentContent = useMutation(
-    api.mutations.updateDocumentContent,
-  );
-  const submitDocumentForReview = useMutation(
-    api.mutations.submitDocumentForReview,
-  );
-  const cancelDocumentSubmission = useMutation(
-    api.mutations.cancelDocumentSubmission,
-  );
+  const submitDocumentForReview = useMutation(api.mutations.submitDocumentForReview);
+  const cancelDocumentSubmission = useMutation(api.mutations.cancelDocumentSubmission);
 
   // Memoize mutation functions to avoid dependency issues
-  const memoizedUpdateTaskStatus = useCallback(updateTaskStatus, [
-    updateTaskStatus,
-  ]);
+  const memoizedUpdateTaskStatus = useCallback(updateTaskStatus, [updateTaskStatus]);
   const memoizedUpdateTaskAssignment = useCallback(updateTaskAssignment, [
     updateTaskAssignment,
-  ]);
-  const memoizedUpdateDocumentContent = useCallback(updateDocumentContent, [
-    updateDocumentContent,
   ]);
   const memoizedSubmitDocumentForReview = useCallback(submitDocumentForReview, [
     submitDocumentForReview,
@@ -368,7 +356,7 @@ export const TaskAssignmentTable = ({
       await memoizedUpdateTaskAssignment({
         taskId: task._id,
         assignedStudentIds: newAssignments,
-        userId: currentUserId as Id<"users">,
+        userId: currentUserId,
       });
     } finally {
       setUpdatingAssignment(null);
@@ -397,7 +385,7 @@ export const TaskAssignmentTable = ({
       await memoizedUpdateTaskAssignment({
         taskId: task._id,
         assignedStudentIds: newAssignments,
-        userId: currentUserId as Id<"users">,
+        userId: currentUserId,
       });
     } finally {
       setUpdatingAssignment(null);
@@ -426,13 +414,13 @@ export const TaskAssignmentTable = ({
   // Check if user can edit the task
   const canEditTask = (task: Task) => {
     if (mode === "manager") return true;
-    return task.assigned_student_ids.includes(currentUserId as Id<"users">);
+    return task.assigned_student_ids.includes(currentUserId);
   };
 
   // Check if user can Edit Document status
   const canEditTaskStatus = (task: Task) => {
     if (mode === "manager") return true;
-    return task.assigned_student_ids.includes(currentUserId as Id<"users">);
+    return task.assigned_student_ids.includes(currentUserId);
   };
 
   // Check if chapter has subparts
@@ -481,8 +469,9 @@ export const TaskAssignmentTable = ({
   const canEditDocument = (task: Task) => {
     const documentStatus = getDocumentStatus(task.chapter);
     // Can edit if document is not submitted (0), approved (2), or rejected (3)
-    // For approved documents, task status doesn't matter
-    return documentStatus === 0 || documentStatus === 2 || documentStatus === 3;
+    // AND user is assigned to the task (for members) or is manager
+    const canEditStatus = documentStatus === 0 || documentStatus === 2 || documentStatus === 3;
+    return canEditStatus && canEditTask(task);
   };
 
   // Handle status change
@@ -494,7 +483,7 @@ export const TaskAssignmentTable = ({
       await memoizedUpdateTaskStatus({
         taskId: taskId as Id<"taskAssignments">,
         newStatus,
-        userId: currentUserId as Id<"users">,
+        userId: currentUserId,
       });
 
       // Call the parent callback if provided
@@ -521,7 +510,7 @@ export const TaskAssignmentTable = ({
       await memoizedSubmitDocumentForReview({
         groupId: document.group_id,
         documentPart: chapter,
-        userId: currentUserId as Id<"users">,
+        userId: currentUserId,
       });
 
       setNotification({
@@ -556,7 +545,7 @@ export const TaskAssignmentTable = ({
       await memoizedCancelDocumentSubmission({
         groupId: document.group_id,
         documentPart: chapter,
-        userId: currentUserId as Id<"users">,
+        userId: currentUserId,
       });
 
       setNotification({
@@ -581,15 +570,6 @@ export const TaskAssignmentTable = ({
     // Find the document that matches this task's chapter
     const document = documents.find((doc) => doc.chapter === task.chapter);
     if (document) {
-      try {
-        await memoizedUpdateDocumentContent({
-          documentId: document._id,
-          content: document.content,
-          userId: currentUserId as Id<"users">,
-        });
-      } catch {
-        // Optionally handle error
-      }
       const path = `/student/${currentUserId}/${mode}/docs/${document._id}`;
       router.push(path);
     }
@@ -1324,19 +1304,18 @@ export const TaskAssignmentTable = ({
                                   >
                                     <FaEye className="w-4 h-4" />
                                   </button>
-                                  {canEditTask(chapterTasks[0]) &&
-                                    canEditDocument(chapterTasks[0]) && (
-                                      <button
-                                        className="text-purple-600 hover:text-purple-800 transition-colors"
-                                        title="Edit Document"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditDocument(chapterTasks[0]);
-                                        }}
-                                      >
-                                        <FaEdit className="w-4 h-4" />
-                                      </button>
-                                    )}
+                                  {canEditDocument(chapterTasks[0]) && (
+                                    <button
+                                      className="text-purple-600 hover:text-purple-800 transition-colors"
+                                      title="Edit Document"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditDocument(chapterTasks[0]);
+                                      }}
+                                    >
+                                      <FaEdit className="w-4 h-4" />
+                                    </button>
+                                  )}
                                   <button
                                     className="text-green-600 hover:text-green-800 transition-colors"
                                     title="Download Document"
@@ -1551,19 +1530,18 @@ export const TaskAssignmentTable = ({
                                 >
                                   <FaEye className="w-4 h-4" />
                                 </button>
-                                {canEditTask(chapterTasks[0]) &&
-                                  canEditDocument(chapterTasks[0]) && (
-                                    <button
-                                      className="text-purple-600 hover:text-purple-800 transition-colors"
-                                      title="Edit Document"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditDocument(chapterTasks[0]);
-                                      }}
-                                    >
-                                      <FaEdit className="w-4 h-4" />
-                                    </button>
-                                  )}
+                                {canEditDocument(chapterTasks[0]) && (
+                                  <button
+                                    className="text-purple-600 hover:text-purple-800 transition-colors"
+                                    title="Edit Document"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditDocument(chapterTasks[0]);
+                                    }}
+                                  >
+                                    <FaEdit className="w-4 h-4" />
+                                  </button>
+                                )}
                                 <button
                                   className="text-green-600 hover:text-green-800 transition-colors"
                                   title="Download Document"

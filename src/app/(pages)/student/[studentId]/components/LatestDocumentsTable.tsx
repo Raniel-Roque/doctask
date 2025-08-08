@@ -261,7 +261,7 @@ export const LatestDocumentsTable = ({
       await submitDocumentForReview({
         groupId: doc.group_id,
         documentPart: doc.chapter,
-        userId: currentUserId as Id<"users">,
+        userId: currentUserId,
       });
 
       setNotification({
@@ -289,7 +289,7 @@ export const LatestDocumentsTable = ({
       await cancelDocumentSubmission({
         groupId: doc.group_id,
         documentPart: doc.chapter,
-        userId: currentUserId as Id<"users">,
+        userId: currentUserId,
       });
 
       setNotification({
