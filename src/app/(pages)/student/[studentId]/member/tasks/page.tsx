@@ -90,7 +90,7 @@ const MemberTasksPage = ({ params }: MemberTasksPageProps) => {
         <TaskAssignmentTable
           tasks={transformTasks()}
           status={getStatus()}
-          currentUserId={studentId}
+          currentUserId={studentId as Id<"users">}
           mode="member"
           groupMembers={taskAssignments?.groupMembers}
           documents={documents?.documents || []}
