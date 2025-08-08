@@ -2019,3 +2019,63 @@ export const getUserTermsAgreement = query({
     }
   },
 });
+
+export const getDocumentVersionsWithContributors = query({
+  args: {
+    groupId: v.id("groupsTable"),
+    chapter: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get all documents for this group and chapter (excluding deleted ones)
+      const documents = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) =>
+          q.eq("group_id", args.groupId).eq("chapter", args.chapter),
+        )
+        .filter((q) => q.eq(q.field("isDeleted"), false)) // Only get non-deleted documents
+        .order("desc") // Newest first
+        .collect();
+
+      // Get all unique contributor user IDs
+      const allContributorIds = documents
+        .flatMap(doc => doc.contributors || [])
+        .filter((id, index, array) => array.indexOf(id) === index); // Remove duplicates
+
+      // Fetch all contributor users (excluding deleted users)
+      const contributors = await Promise.all(
+        allContributorIds.map(async (userId) => {
+          const user = await ctx.db.get(userId);
+          return user && !user.isDeleted ? {
+            id: userId,
+            name: `${user.first_name} ${user.last_name}`.trim(),
+          } : null;
+        })
+      );
+
+      const validContributors = contributors.filter(c => c !== null);
+
+      // Map documents with contributor names
+      const documentsWithContributors = documents.map(doc => ({
+        ...doc,
+        contributorNames: (doc.contributors || [])
+          .map(userId => {
+            const contributor = validContributors.find(c => c?.id === userId);
+            return contributor?.name || 'Unknown User';
+          })
+          .filter(name => name !== 'Unknown User')
+      }));
+
+      return {
+        success: true,
+        versions: documentsWithContributors,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch versions",
+        versions: []
+      };
+    }
+  },
+});

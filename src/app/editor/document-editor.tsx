@@ -7,6 +7,7 @@ import { Editor } from "./editor";
 import { ImageDragDropWrapper } from "./image-drag-drop";
 import { VersionHistoryPanel } from "./version-history-panel";
 import DOMPurify from "dompurify";
+import { Id } from "../../../convex/_generated/dataModel";
 
 // SafeHtml component for secure rendering
 export function SafeHtml({ html }: { html: string }) {
@@ -24,6 +25,7 @@ interface DocumentEditorProps {
   saveToDatabase?: () => Promise<void>;
   toolbarMode?: "default" | "adviserViewOnly";
   backUrl?: string;
+  documentId?: Id<"documents">;
 }
 
 export const DocumentEditor = ({
@@ -37,6 +39,7 @@ export const DocumentEditor = ({
   saveToDatabase,
   toolbarMode = "default",
   backUrl,
+  documentId,
 }: DocumentEditorProps) => {
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
 
@@ -91,6 +94,7 @@ export const DocumentEditor = ({
                 isEditable={isEditable}
                 userType={userType}
                 suppressReadOnlyBanner={true}
+                documentId={documentId}
               />
             </div>
           </div>

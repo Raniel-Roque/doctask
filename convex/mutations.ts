@@ -2208,13 +2208,48 @@ export const createDocumentVersion = mutation({
         throw new Error("No live document found to create version from");
       }
 
-      // Create a new version by copying the live document data
+      // Get the last version to know when to start tracking from
+      const lastVersion = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) =>
+          q.eq("group_id", args.groupId).eq("chapter", args.chapter),
+        )
+        .filter((q) => q.eq(q.field("isDeleted"), false)) // Only consider non-deleted versions
+        .order("desc") // Newest first
+        .first();
+
+      // Get all edits since the last version (or since document creation if no previous version)
+      const lastVersionTime = lastVersion && lastVersion._id !== liveDocument._id 
+        ? lastVersion._creationTime 
+        : liveDocument._creationTime;
+
+      const recentEdits = await ctx.db
+        .query("documentEdits")
+        .withIndex("by_document", (q) => q.eq("documentId", liveDocument._id))
+        .filter((q) => 
+          q.and(
+            q.gte(q.field("editedAt"), lastVersionTime),
+            q.eq(q.field("versionCreated"), false)
+          )
+        )
+        .collect();
+
+      // Get unique user IDs who edited
+      const contributorIds = [...new Set(recentEdits.map(edit => edit.userId))];
+
+      // Mark these edits as captured in a version
+      for (const edit of recentEdits) {
+        await ctx.db.patch(edit._id, { versionCreated: true });
+      }
+
+      // Create a new version by copying the live document data with contributors
       const newVersionId = await ctx.db.insert("documents", {
         group_id: liveDocument.group_id,
         chapter: liveDocument.chapter,
         title: liveDocument.title,
         content: liveDocument.content,
         isDeleted: false,
+        contributors: contributorIds,
       });
 
       return {
@@ -2777,6 +2812,31 @@ export const resetTaskStatusForChapter = mutation({
       return { success: true };
     } catch (error) {
       throw error;
+    }
+  },
+});
+
+export const trackDocumentEdit = mutation({
+  args: {
+    documentId: v.id("documents"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Record the edit
+      await ctx.db.insert("documentEdits", {
+        documentId: args.documentId,
+        userId: args.userId,
+        editedAt: Date.now(),
+        versionCreated: false, // Will be set to true when version is created
+      });
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to track edit",
+      };
     }
   },
 });

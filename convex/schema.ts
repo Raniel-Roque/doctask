@@ -148,7 +148,21 @@ export default defineSchema({
     title: v.string(),
     content: v.string(),
     isDeleted: v.boolean(),
+    contributors: v.optional(v.array(v.id("users"))), // User IDs who edited this version
   }).index("by_group_chapter", ["group_id", "chapter"]),
+
+  // =========================================
+  // Document Edits Table (Track edits between versions)
+  // =========================================
+  documentEdits: defineTable({
+    documentId: v.id("documents"), // Reference to the live document
+    userId: v.id("users"), // User who made the edit
+    editedAt: v.number(), // Timestamp of the edit
+    versionCreated: v.boolean(), // Whether this edit was captured in a version
+  })
+    .index("by_document", ["documentId"])
+    .index("by_user", ["userId"])
+    .index("by_version_status", ["versionCreated"]),
 
   // =========================================
   // Images Table (For collaborative document images)

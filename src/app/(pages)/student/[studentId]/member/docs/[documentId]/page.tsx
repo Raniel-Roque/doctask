@@ -389,6 +389,7 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       chapter={document.chapter}
       saveToDatabase={saveToDatabase}
       liveDocumentId={liveDocumentData?.documentId || undefined}
+      documentId={liveDocumentData?.documentId || undefined}
     />
   );
 };

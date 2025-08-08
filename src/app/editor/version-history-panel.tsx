@@ -17,7 +17,6 @@ import { useEditorStore } from "@/store/use-editor-store";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import type { Doc } from "../../../convex/_generated/dataModel";
 
 interface VersionHistoryPanelProps {
   isOpen: boolean;
@@ -50,7 +49,6 @@ export const VersionHistoryPanel = ({
   const [show, setShow] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [localVersions, setLocalVersions] = useState<Doc<"documents">[]>([]);
   const [revertConfirmId, setRevertConfirmId] = useState<string | null>(null);
   const [revertingId, setRevertingId] = useState<string | null>(null);
 
@@ -90,16 +88,15 @@ export const VersionHistoryPanel = ({
     clerkId: user?.id || "",
   });
 
-  // Fetch document versions (manager only)
+  // Fetch document versions with contributors
   const versionsData = useQuery(
-    api.fetch.getDocumentVersions,
-    groupId && chapter && currentUser?._id
+    api.fetch.getDocumentVersionsWithContributors,
+    groupId && chapter
       ? {
           groupId: groupId as Id<"groupsTable">,
           chapter,
-          userId: currentUser._id,
         }
-      : "skip",
+      : "skip"
   );
 
   // Create version mutation
@@ -113,7 +110,7 @@ export const VersionHistoryPanel = ({
 
   useEffect(() => {
     if (versionsData && versionsData.success) {
-      setLocalVersions(versionsData.versions);
+      // setLocalVersions(versionsData.versions); // This line was removed
     }
   }, [versionsData]);
 
@@ -197,7 +194,7 @@ export const VersionHistoryPanel = ({
         userId: currentUser._id as Id<"users">,
       });
       showNotification("Version deleted!", "success");
-      setLocalVersions((prev) => prev.filter((v) => v._id !== versionId));
+      // setLocalVersions((prev) => prev.filter((v) => v._id !== versionId)); // This line was removed
       setDeleteConfirmId(null);
     } catch (error) {
       showNotification(
@@ -334,17 +331,17 @@ export const VersionHistoryPanel = ({
             {/* Version List */}
             <div className="space-y-2">
               <div className="text-sm font-medium text-gray-700 mb-2">
-                Versions ({localVersions.length})
+                Versions ({versionsData.versions?.length || 0})
               </div>
 
-              {localVersions.length === 0 ? (
+              {!versionsData.versions || versionsData.versions.length === 0 ? (
                 <div className="text-sm text-gray-500 text-center py-8">
                   No versions created yet.
                   <br />
                   Create your first version to start tracking changes.
                 </div>
               ) : (
-                localVersions.map((version, index) => (
+                versionsData.versions.map((version, index) => (
                   <div
                     key={version._id}
                     className="p-3 border border-gray-200 rounded-md hover:bg-gray-50"
@@ -352,12 +349,19 @@ export const VersionHistoryPanel = ({
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="text-sm font-medium">
-                          Version {localVersions.length - index}
+                          Version {versionsData.versions.length - index}
                         </div>
                         <div className="text-xs text-gray-500 flex items-center mt-1">
                           <Clock className="h-3 w-3 mr-1" />
                           {formatDate(version._creationTime)}
                         </div>
+                        {/* Display contributors */}
+                        {version.contributorNames && version.contributorNames.length > 0 && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            <span className="font-medium">Edited by:</span>{" "}
+                            {version.contributorNames.join(", ")}
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button

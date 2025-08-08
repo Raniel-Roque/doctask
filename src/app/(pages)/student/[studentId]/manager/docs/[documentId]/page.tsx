@@ -393,6 +393,7 @@ const ManagerDocumentEditor = ({ params }: ManagerDocumentEditorProps) => {
       chapter={document.chapter}
       saveToDatabase={saveToDatabase}
       liveDocumentId={liveDocumentData?.documentId || undefined}
+      documentId={liveDocumentData?.documentId || undefined}
     />
   );
 };

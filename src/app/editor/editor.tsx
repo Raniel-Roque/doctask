@@ -28,6 +28,11 @@ import { useOthers, useSelf, useMyPresence } from "@liveblocks/react/suspense";
 import { Threads } from "./threads";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { Id } from "../../../convex/_generated/dataModel";
 
 // Custom hook to handle room presence and trigger external save
 const useRoomPresence = (others: readonly unknown[], self: unknown) => {
@@ -68,6 +73,7 @@ interface EditorProps {
   isEditable?: boolean;
   userType?: "manager" | "member" | "adviser";
   suppressReadOnlyBanner?: boolean;
+  documentId?: Id<"documents">; // Add document ID for tracking edits
 }
 
 interface NotificationState {
@@ -80,8 +86,17 @@ export const Editor = ({
   isEditable = true,
   userType = "manager",
   suppressReadOnlyBanner = false,
+  documentId, // Destructure documentId
 }: EditorProps) => {
   const { setEditor } = useEditorStore();
+  const { user } = useUser();
+  const trackEditMutation = useMutation(api.mutations.trackDocumentEdit);
+  
+  // Get current user's Convex ID
+  const currentUser = useQuery(api.fetch.getUserByClerkId, {
+    clerkId: user?.id || "",
+  });
+  
   const liveblocks = useLiveblocksExtension({
     initialContent,
     offlineSupport_experimental: true,
@@ -182,6 +197,21 @@ export const Editor = ({
   const editor = useEditor({
     immediatelyRender: false,
     editable: isEditable, // Disable editing when isEditable is false
+    onUpdate: () => {
+      // Track document edits for contributor system
+      if (isEditable && self?.info?.name && currentUser?._id && documentId) {
+        // This will be called whenever the document content changes
+        // TODO: We need to get the current document ID to track edits
+        // For now, we'll just log that an edit occurred
+        console.log("Document edited by user:", self.info.name);
+        
+        // TODO: Implement actual tracking when we have document ID
+        trackEditMutation({
+          documentId: documentId, // We need this from props or context
+          userId: currentUser._id,
+        });
+      }
+    },
     editorProps: {
       attributes: {
         style:

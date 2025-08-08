@@ -23,6 +23,7 @@ interface RoomProps {
   chapter?: string;
   saveToDatabase?: () => Promise<void>;
   liveDocumentId?: string;
+  documentId?: Id<"documents">; // Add document ID for tracking edits
   toolbarMode?: "default" | "adviserViewOnly";
   backUrl?: string;
 }
@@ -151,7 +152,7 @@ export function Room(props: RoomProps) {
           fallback={<FullscreenLoader label="Loading document editor..." />}
         >
           {props.title && props.isEditable !== undefined && props.userType ? (
-            <DocumentEditor {...props} />
+            <DocumentEditor {...props} documentId={props.documentId} />
           ) : (
             props.children
           )}
