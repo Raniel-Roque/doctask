@@ -2354,7 +2354,10 @@ export const deleteDocumentVersion = mutation({
     if (group.project_manager_id !== args.userId) {
       throw new Error("Only the project manager can delete document versions");
     }
-    await ctx.db.delete(args.documentId);
+    
+    // Soft delete the document to preserve contributor data and audit trail
+    await ctx.db.patch(args.documentId, { isDeleted: true });
+    
     return { success: true };
   },
 });

@@ -2042,13 +2042,14 @@ export const getDocumentVersionsWithContributors = query({
         .flatMap(doc => doc.contributors || [])
         .filter((id, index, array) => array.indexOf(id) === index); // Remove duplicates
 
-      // Fetch all contributor users (excluding deleted users)
+      // Fetch all contributor users (including deleted users for historical accuracy)
       const contributors = await Promise.all(
         allContributorIds.map(async (userId) => {
           const user = await ctx.db.get(userId);
-          return user && !user.isDeleted ? {
+          return user ? {
             id: userId,
-            name: `${user.first_name} ${user.last_name}`.trim(),
+            name: user.isDeleted ? "Deleted User" : `${user.first_name} ${user.last_name}`.trim(),
+            isDeleted: user.isDeleted,
           } : null;
         })
       );
@@ -2063,7 +2064,6 @@ export const getDocumentVersionsWithContributors = query({
             const contributor = validContributors.find(c => c?.id === userId);
             return contributor?.name || 'Unknown User';
           })
-          .filter(name => name !== 'Unknown User')
       }));
 
       return {
