@@ -159,6 +159,7 @@ export default defineSchema({
     userId: v.id("users"), // User who made the edit
     editedAt: v.number(), // Timestamp of the edit
     versionCreated: v.boolean(), // Whether this edit was captured in a version
+    editCount: v.number(), // Number of edits made by this user since last version
   })
     .index("by_document", ["documentId"])
     .index("by_user", ["userId"])

@@ -45,17 +45,20 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
 
   useEffect(() => {
     if (editorUsers && recentEdits) {
-      // Since we now have unique edit records per user, we can simply map them
-      // Each user will have editCount = 1 since they only have one edit record
+      // Map users with their actual edit counts from the database
       const uniqueEditors = editorUsers
         .filter(user => user && !user.isDeleted)
-        .map(user => ({
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          editCount: 1, // Each user has 1 edit record
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
+        .map(user => {
+          // Find the corresponding edit record for this user
+          const userEdit = recentEdits.find(edit => edit.userId === user._id);
+          return {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            editCount: userEdit?.editCount || 1, // Use actual edit count from database
+          };
+        })
+        .sort((a, b) => b.editCount - a.editCount) // Sort by edit count (highest first)
         .slice(0, 3); // Show top 3 editors max
 
       setRecentEditors(uniqueEditors);
@@ -98,7 +101,7 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
               <div key={editor._id} className="flex items-center justify-between text-sm">
                 <span className="text-gray-700">{editor.name}</span>
                                  <span className="text-gray-500 text-xs">
-                   1 edit
+                   {editor.editCount} edit{editor.editCount !== 1 ? 's' : ''}
                  </span>
               </div>
             ))}

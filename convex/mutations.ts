@@ -2355,7 +2355,21 @@ export const deleteDocumentVersion = mutation({
       throw new Error("Only the project manager can delete document versions");
     }
     
-    // Soft delete the document to preserve contributor data and audit trail
+    // Get the live document (earliest document for this group/chapter)
+    const liveDocument = await ctx.db
+      .query("documents")
+      .withIndex("by_group_chapter", (q) =>
+        q.eq("group_id", document.group_id).eq("chapter", document.chapter),
+      )
+      .order("asc") // Oldest first - this is the live document
+      .first();
+    
+    // Prevent deletion of the live document
+    if (document._id === liveDocument?._id) {
+      throw new Error("Cannot delete the live document. Only versions can be deleted.");
+    }
+    
+    // Soft delete the version to preserve contributor data and audit trail
     await ctx.db.patch(args.documentId, { isDeleted: true });
     
     return { success: true };
@@ -2839,9 +2853,10 @@ export const trackDocumentEdit = mutation({
         .first();
 
       if (existingEdit) {
-        // Update the existing edit timestamp instead of creating a new one
+        // Update the existing edit timestamp and increment edit count
         await ctx.db.patch(existingEdit._id, {
           editedAt: Date.now(),
+          editCount: (existingEdit.editCount || 1) + 1, // Increment edit count
         });
       } else {
         // Create a new edit record only if this user hasn't edited yet
@@ -2850,6 +2865,7 @@ export const trackDocumentEdit = mutation({
           userId: args.userId,
           editedAt: Date.now(),
           versionCreated: false, // Will be set to true when version is created
+          editCount: 1, // Start with 1 edit
         });
       }
 

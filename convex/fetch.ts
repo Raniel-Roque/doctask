@@ -2027,13 +2027,27 @@ export const getDocumentVersionsWithContributors = query({
   },
   handler: async (ctx, args) => {
     try {
-      // Get all documents for this group and chapter (excluding deleted ones)
+      // Get the live document (earliest document for this group/chapter)
+      const liveDocument = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) =>
+          q.eq("group_id", args.groupId).eq("chapter", args.chapter),
+        )
+        .order("asc") // Oldest first - this is the live document
+        .first();
+
+      // Get all documents for this group and chapter (excluding deleted ones and the live document)
       const documents = await ctx.db
         .query("documents")
         .withIndex("by_group_chapter", (q) =>
           q.eq("group_id", args.groupId).eq("chapter", args.chapter),
         )
-        .filter((q) => q.eq(q.field("isDeleted"), false)) // Only get non-deleted documents
+        .filter((q) => 
+          q.and(
+            q.eq(q.field("isDeleted"), false),
+            liveDocument ? q.neq(q.field("_id"), liveDocument._id) : q.eq(q.field("_id"), q.field("_id")) // Exclude live document
+          )
+        )
         .order("desc") // Newest first
         .collect();
 
@@ -2048,7 +2062,7 @@ export const getDocumentVersionsWithContributors = query({
           const user = await ctx.db.get(userId);
           return user ? {
             id: userId,
-            name: user.isDeleted ? "Deleted User" : `${user.first_name} ${user.last_name}`.trim(),
+            name: user.isDeleted ? "Deleted User" : `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`.trim(),
             isDeleted: user.isDeleted,
           } : null;
         })
