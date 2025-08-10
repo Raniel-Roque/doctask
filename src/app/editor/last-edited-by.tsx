@@ -3,7 +3,11 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ChevronDownIcon } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -21,7 +25,11 @@ interface RecentEditor {
   editCount: number;
 }
 
-export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps) => {
+export const LastEditedBy = ({
+  documentId,
+  groupId,
+  chapter,
+}: LastEditedByProps) => {
   const [recentEditors, setRecentEditors] = useState<RecentEditor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,7 +46,7 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
   });
 
   // Get user details for recent editors
-  const editorUserIds = recentEdits?.map(edit => edit.userId) || [];
+  const editorUserIds = recentEdits?.map((edit) => edit.userId) || [];
   const editorUsers = useQuery(api.fetch.getUsersByIds, {
     userIds: editorUserIds,
   });
@@ -47,10 +55,10 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
     if (editorUsers && recentEdits) {
       // Map users with their actual edit counts from the database
       const uniqueEditors = editorUsers
-        .filter(user => user && !user.isDeleted)
-        .map(user => {
+        .filter((user) => user && !user.isDeleted)
+        .map((user) => {
           // Find the corresponding edit record for this user
-          const userEdit = recentEdits.find(edit => edit.userId === user._id);
+          const userEdit = recentEdits.find((edit) => edit.userId === user._id);
           return {
             _id: user._id,
             name: user.name,
@@ -70,7 +78,7 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
     return null;
   }
 
-    return (
+  return (
     <Popover>
       <PopoverTrigger asChild>
         <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800 transition-colors cursor-pointer">
@@ -95,19 +103,25 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
       </PopoverTrigger>
       <PopoverContent className="w-64 p-3" align="end">
         <div className="space-y-2">
-          <h4 className="font-medium text-sm text-gray-900">All recent editors</h4>
+          <h4 className="font-medium text-sm text-gray-900">
+            All recent editors
+          </h4>
           <div className="space-y-1">
             {recentEditors.map((editor) => (
-              <div key={editor._id} className="flex items-center justify-between text-sm">
+              <div
+                key={editor._id}
+                className="flex items-center justify-between text-sm"
+              >
                 <span className="text-gray-700">{editor.name}</span>
-                                 <span className="text-gray-500 text-xs">
-                   {editor.editCount} edit{editor.editCount !== 1 ? 's' : ''}
-                 </span>
+                <span className="text-gray-500 text-xs">
+                  {editor.editCount} edit{editor.editCount !== 1 ? "s" : ""}
+                </span>
               </div>
             ))}
           </div>
           <div className="text-xs text-gray-500 pt-1 border-t">
-            Since last version ({new Date(liveDocument?.lastVersionTime || 0).toLocaleDateString()})
+            Since last version (
+            {new Date(liveDocument?.lastVersionTime || 0).toLocaleDateString()})
           </div>
         </div>
       </PopoverContent>

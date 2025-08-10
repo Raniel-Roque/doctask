@@ -128,11 +128,17 @@ export const TaskAssignmentTable = ({
   // Add Convex mutations
   const updateTaskStatus = useMutation(api.mutations.updateTaskStatus);
   const updateTaskAssignment = useMutation(api.mutations.updateTaskAssignment);
-  const submitDocumentForReview = useMutation(api.mutations.submitDocumentForReview);
-  const cancelDocumentSubmission = useMutation(api.mutations.cancelDocumentSubmission);
+  const submitDocumentForReview = useMutation(
+    api.mutations.submitDocumentForReview,
+  );
+  const cancelDocumentSubmission = useMutation(
+    api.mutations.cancelDocumentSubmission,
+  );
 
   // Memoize mutation functions to avoid dependency issues
-  const memoizedUpdateTaskStatus = useCallback(updateTaskStatus, [updateTaskStatus]);
+  const memoizedUpdateTaskStatus = useCallback(updateTaskStatus, [
+    updateTaskStatus,
+  ]);
   const memoizedUpdateTaskAssignment = useCallback(updateTaskAssignment, [
     updateTaskAssignment,
   ]);
@@ -470,7 +476,8 @@ export const TaskAssignmentTable = ({
     const documentStatus = getDocumentStatus(task.chapter);
     // Can edit if document is not submitted (0), approved (2), or rejected (3)
     // AND user is assigned to the task (for members) or is manager
-    const canEditStatus = documentStatus === 0 || documentStatus === 2 || documentStatus === 3;
+    const canEditStatus =
+      documentStatus === 0 || documentStatus === 2 || documentStatus === 3;
     return canEditStatus && canEditTask(task);
   };
 

@@ -496,7 +496,7 @@ export const Navbar = ({
             title="Go home"
           >
             <Image
-                              src="/doctask.webp"
+              src="/doctask.webp"
               alt="DocTask Logo"
               width={40}
               height={40}
@@ -732,7 +732,7 @@ export const Navbar = ({
 
         {/* User avatars on the right side */}
         <div className="pr-4 py-1 flex items-center gap-2">
-          <LastEditedBy 
+          <LastEditedBy
             documentId={documentId}
             groupId={groupId}
             chapter={chapter}

@@ -74,6 +74,7 @@ interface EditorProps {
   userType?: "manager" | "member" | "adviser";
   suppressReadOnlyBanner?: boolean;
   documentId?: Id<"documents">; // Add document ID for tracking edits
+  onManualSave?: () => Promise<void>; // Add manual save function
 }
 
 interface NotificationState {
@@ -87,17 +88,18 @@ export const Editor = ({
   userType = "manager",
   suppressReadOnlyBanner = false,
   documentId, // Destructure documentId
+  onManualSave, // Destructure onManualSave
 }: EditorProps) => {
   const { setEditor } = useEditorStore();
   const { user } = useUser();
   const trackEditMutation = useMutation(api.mutations.trackDocumentEdit);
   const [hasInitialized, setHasInitialized] = useState(false);
-  
+
   // Get current user's Convex ID
   const currentUser = useQuery(api.fetch.getUserByClerkId, {
     clerkId: user?.id || "",
   });
-  
+
   const liveblocks = useLiveblocksExtension({
     initialContent,
     offlineSupport_experimental: true,
@@ -208,10 +210,16 @@ export const Editor = ({
     onUpdate: () => {
       // Track document edits for contributor system
       // Only track after the editor has fully initialized to prevent false positives
-      if (isEditable && self?.info?.name && currentUser?._id && documentId && hasInitialized) {
+      if (
+        isEditable &&
+        self?.info?.name &&
+        currentUser?._id &&
+        documentId &&
+        hasInitialized
+      ) {
         // This will be called whenever the document content changes
         console.log("Document edited by user:", self.info.name);
-        
+
         trackEditMutation({
           documentId: documentId,
           userId: currentUser._id,
@@ -379,12 +387,12 @@ export const Editor = ({
       TableRow,
       TableCell.configure({
         HTMLAttributes: {
-          class: 'table-cell',
+          class: "table-cell",
         },
       }),
       TableHeader.configure({
         HTMLAttributes: {
-          class: 'table-header',
+          class: "table-header",
         },
       }),
       ResizeImage.configure({
@@ -513,17 +521,17 @@ export const Editor = ({
           // Let the default behavior handle Enter (creates new lines within cells)
           // No custom logic needed - TipTap handles this naturally
         }
-        
+
         // Handle Tab key for table navigation
         if (event.key === "Tab") {
           const { state } = editor;
           const { selection } = state;
           const { $from } = selection;
-          
+
           // Find the table node and its position
           let tableNode = null;
           let tablePos = -1;
-          
+
           // Walk up the node tree to find the table
           for (let depth = $from.depth; depth >= 0; depth--) {
             const node = $from.node(depth);
@@ -533,12 +541,12 @@ export const Editor = ({
               break;
             }
           }
-          
+
           if (tableNode && tablePos !== -1) {
             // Check if we're at the last cell of the table
             const tableEnd = tablePos + tableNode.nodeSize;
             const isAtLastCell = $from.pos >= tableEnd - 2; // Approximate last cell position
-            
+
             if (isAtLastCell && !event.shiftKey) {
               // We're at the last cell and pressing Tab (not Shift+Tab), exit table
               event.preventDefault();
@@ -549,7 +557,7 @@ export const Editor = ({
                 .run();
               return;
             }
-            
+
             if ($from.pos <= tablePos + 2 && event.shiftKey) {
               // We're at the first cell and pressing Shift+Tab, exit table
               event.preventDefault();
@@ -562,17 +570,17 @@ export const Editor = ({
             }
           }
         }
-        
-        // Handle Arrow keys for better table navigation
+
+        // Handle Arrow keys for better table navigation (ONLY in tables)
         if (event.key === "ArrowDown" || event.key === "ArrowUp") {
           const { state } = editor;
           const { selection } = state;
           const { $from } = selection;
-          
+
           // Find the table node and its position
           let tableNode = null;
           let tablePos = -1;
-          
+
           // Walk up the node tree to find the table
           for (let depth = $from.depth; depth >= 0; depth--) {
             const node = $from.node(depth);
@@ -582,12 +590,12 @@ export const Editor = ({
               break;
             }
           }
-          
+
           if (tableNode && tablePos !== -1) {
             if (event.key === "ArrowDown") {
               // Check if we're at the bottom of the table
               const tableEnd = tablePos + tableNode.nodeSize;
-              
+
               if ($from.pos >= tableEnd - 1) {
                 // We're at the bottom of the table, exit and create new paragraph
                 event.preventDefault();
@@ -600,7 +608,7 @@ export const Editor = ({
                 return;
               }
             }
-            
+
             if (event.key === "ArrowUp") {
               // Check if we're at the top of the table
               if ($from.pos <= tablePos + 1) {
@@ -654,13 +662,25 @@ export const Editor = ({
           }
         }
       }
+
+      // Handle Ctrl+S for manual save
+      if (event.ctrlKey && event.key === "s") {
+        event.preventDefault();
+        if (onManualSave && isEditable) {
+          onManualSave();
+        }
+        return;
+      }
+
+      // For all other cases (including arrow keys outside tables), let TipTap handle naturally
+      // This ensures proper navigation through images, paragraphs, etc.
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [editor, isEditable]);
+  }, [editor, isEditable, onManualSave]);
 
   // Room presence tracking
   useRoomPresence(others, self);

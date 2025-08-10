@@ -119,7 +119,7 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
           className="flex items-center gap-3"
         >
           <Image
-                            src="/doctask.webp"
+            src="/doctask.webp"
             alt="Logo"
             width={45}
             height={45}

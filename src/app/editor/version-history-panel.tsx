@@ -96,7 +96,7 @@ export const VersionHistoryPanel = ({
           groupId: groupId as Id<"groupsTable">,
           chapter,
         }
-      : "skip"
+      : "skip",
   );
 
   // Create version mutation
@@ -356,12 +356,13 @@ export const VersionHistoryPanel = ({
                           {formatDate(version._creationTime)}
                         </div>
                         {/* Display contributors */}
-                        {version.contributorNames && version.contributorNames.length > 0 && (
-                          <div className="text-xs text-gray-600 mt-1">
-                            <span className="font-medium">Edited by:</span>{" "}
-                            {version.contributorNames.join(", ")}
-                          </div>
-                        )}
+                        {version.contributorNames &&
+                          version.contributorNames.length > 0 && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              <span className="font-medium">Edited by:</span>{" "}
+                              {version.contributorNames.join(", ")}
+                            </div>
+                          )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button

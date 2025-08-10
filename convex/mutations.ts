@@ -2219,23 +2219,26 @@ export const createDocumentVersion = mutation({
         .first();
 
       // Get all edits since the last version (or since document creation if no previous version)
-      const lastVersionTime = lastVersion && lastVersion._id !== liveDocument._id 
-        ? lastVersion._creationTime 
-        : liveDocument._creationTime;
+      const lastVersionTime =
+        lastVersion && lastVersion._id !== liveDocument._id
+          ? lastVersion._creationTime
+          : liveDocument._creationTime;
 
       const recentEdits = await ctx.db
         .query("documentEdits")
         .withIndex("by_document", (q) => q.eq("documentId", liveDocument._id))
-        .filter((q) => 
+        .filter((q) =>
           q.and(
             q.gte(q.field("editedAt"), lastVersionTime),
-            q.eq(q.field("versionCreated"), false)
-          )
+            q.eq(q.field("versionCreated"), false),
+          ),
         )
         .collect();
 
       // Get unique user IDs who edited
-      const contributorIds = [...new Set(recentEdits.map(edit => edit.userId))];
+      const contributorIds = [
+        ...new Set(recentEdits.map((edit) => edit.userId)),
+      ];
 
       // Mark these edits as captured in a version
       for (const edit of recentEdits) {
@@ -2354,7 +2357,7 @@ export const deleteDocumentVersion = mutation({
     if (group.project_manager_id !== args.userId) {
       throw new Error("Only the project manager can delete document versions");
     }
-    
+
     // Get the live document (earliest document for this group/chapter)
     const liveDocument = await ctx.db
       .query("documents")
@@ -2363,15 +2366,17 @@ export const deleteDocumentVersion = mutation({
       )
       .order("asc") // Oldest first - this is the live document
       .first();
-    
+
     // Prevent deletion of the live document
     if (document._id === liveDocument?._id) {
-      throw new Error("Cannot delete the live document. Only versions can be deleted.");
+      throw new Error(
+        "Cannot delete the live document. Only versions can be deleted.",
+      );
     }
-    
+
     // Soft delete the version to preserve contributor data and audit trail
     await ctx.db.patch(args.documentId, { isDeleted: true });
-    
+
     return { success: true };
   },
 });
@@ -2844,17 +2849,20 @@ export const trackDocumentEdit = mutation({
       const existingEdit = await ctx.db
         .query("documentEdits")
         .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .filter((q) => 
+        .filter((q) =>
           q.and(
             q.eq(q.field("userId"), args.userId),
-            q.eq(q.field("versionCreated"), false)
-          )
+            q.eq(q.field("versionCreated"), false),
+          ),
         )
         .first();
 
       if (existingEdit) {
         // Update the existing edit timestamp and increment edit count
-        const newEditCount = Math.min((existingEdit.editCount || 1) + 1, 999999); // Cap at 999,999
+        const newEditCount = Math.min(
+          (existingEdit.editCount || 1) + 1,
+          999999,
+        ); // Cap at 999,999
         await ctx.db.patch(existingEdit._id, {
           editedAt: Date.now(),
           editCount: newEditCount, // Increment edit count with limit

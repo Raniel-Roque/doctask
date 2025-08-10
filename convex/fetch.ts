@@ -2042,42 +2042,47 @@ export const getDocumentVersionsWithContributors = query({
         .withIndex("by_group_chapter", (q) =>
           q.eq("group_id", args.groupId).eq("chapter", args.chapter),
         )
-        .filter((q) => 
+        .filter((q) =>
           q.and(
             q.eq(q.field("isDeleted"), false),
-            liveDocument ? q.neq(q.field("_id"), liveDocument._id) : q.eq(q.field("_id"), q.field("_id")) // Exclude live document
-          )
+            liveDocument
+              ? q.neq(q.field("_id"), liveDocument._id)
+              : q.eq(q.field("_id"), q.field("_id")), // Exclude live document
+          ),
         )
         .order("desc") // Newest first
         .collect();
 
       // Get all unique contributor user IDs
       const allContributorIds = documents
-        .flatMap(doc => doc.contributors || [])
+        .flatMap((doc) => doc.contributors || [])
         .filter((id, index, array) => array.indexOf(id) === index); // Remove duplicates
 
       // Fetch all contributor users (including deleted users for historical accuracy)
       const contributors = await Promise.all(
         allContributorIds.map(async (userId) => {
           const user = await ctx.db.get(userId);
-          return user ? {
-            id: userId,
-            name: user.isDeleted ? "Deleted User" : `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`.trim(),
-            isDeleted: user.isDeleted,
-          } : null;
-        })
+          return user
+            ? {
+                id: userId,
+                name: user.isDeleted
+                  ? "Deleted User"
+                  : `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`.trim(),
+                isDeleted: user.isDeleted,
+              }
+            : null;
+        }),
       );
 
-      const validContributors = contributors.filter(c => c !== null);
+      const validContributors = contributors.filter((c) => c !== null);
 
       // Map documents with contributor names
-      const documentsWithContributors = documents.map(doc => ({
+      const documentsWithContributors = documents.map((doc) => ({
         ...doc,
-        contributorNames: (doc.contributors || [])
-          .map(userId => {
-            const contributor = validContributors.find(c => c?.id === userId);
-            return contributor?.name || 'Unknown User';
-          })
+        contributorNames: (doc.contributors || []).map((userId) => {
+          const contributor = validContributors.find((c) => c?.id === userId);
+          return contributor?.name || "Unknown User";
+        }),
       }));
 
       return {
@@ -2087,8 +2092,9 @@ export const getDocumentVersionsWithContributors = query({
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to fetch versions",
-        versions: []
+        error:
+          error instanceof Error ? error.message : "Failed to fetch versions",
+        versions: [],
       };
     }
   },
@@ -2109,7 +2115,9 @@ export const getLiveDocument = query({
       const liveDocument = await ctx.db
         .query("documents")
         .withIndex("by_group_chapter", (q) =>
-          q.eq("group_id", args.groupId as Id<"groupsTable">).eq("chapter", args.chapter),
+          q
+            .eq("group_id", args.groupId as Id<"groupsTable">)
+            .eq("chapter", args.chapter),
         )
         .order("asc") // Oldest first - this is the live document
         .first();
@@ -2122,7 +2130,9 @@ export const getLiveDocument = query({
       const lastVersion = await ctx.db
         .query("documents")
         .withIndex("by_group_chapter", (q) =>
-          q.eq("group_id", args.groupId as Id<"groupsTable">).eq("chapter", args.chapter),
+          q
+            .eq("group_id", args.groupId as Id<"groupsTable">)
+            .eq("chapter", args.chapter),
         )
         .filter((q) => q.eq(q.field("isDeleted"), false))
         .order("desc") // Newest first
@@ -2130,7 +2140,8 @@ export const getLiveDocument = query({
 
       return {
         _id: liveDocument._id,
-        lastVersionTime: lastVersion?._creationTime || liveDocument._creationTime,
+        lastVersionTime:
+          lastVersion?._creationTime || liveDocument._creationTime,
       };
     } catch {
       return null;
@@ -2155,11 +2166,11 @@ export const getRecentDocumentEdits = query({
       const recentEdits = await ctx.db
         .query("documentEdits")
         .withIndex("by_document", (q) => q.eq("documentId", args.documentId!))
-        .filter((q) => 
+        .filter((q) =>
           q.and(
             q.gte(q.field("editedAt"), args.sinceVersionTime),
-            q.eq(q.field("versionCreated"), false)
-          )
+            q.eq(q.field("versionCreated"), false),
+          ),
         )
         .order("desc") // Most recent first
         .collect();
@@ -2180,16 +2191,18 @@ export const getUsersByIds = query({
       const users = await Promise.all(
         args.userIds.map(async (userId) => {
           const user = await ctx.db.get(userId);
-          return user ? {
-            _id: user._id,
-            name: `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`.trim(),
-            email: user.email,
-            isDeleted: user.isDeleted,
-          } : null;
-        })
+          return user
+            ? {
+                _id: user._id,
+                name: `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`.trim(),
+                email: user.email,
+                isDeleted: user.isDeleted,
+              }
+            : null;
+        }),
       );
 
-      return users.filter(user => user !== null);
+      return users.filter((user) => user !== null);
     } catch {
       return [];
     }

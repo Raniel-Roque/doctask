@@ -784,7 +784,7 @@ const LoginPage = () => {
       <div className="w-full md:w-[65%] bg-gradient-to-r from-white to-gray-200 border-l-8 border-[#B54A4A] flex flex-col items-center justify-center p-8 md:p-12 shadow-lg">
         <div className="text-center max-w-2xl">
           <Image
-                            src="/doctask.webp"
+            src="/doctask.webp"
             alt="DocTask Logo"
             width={180}
             height={180}
