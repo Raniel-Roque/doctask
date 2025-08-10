@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
 import { useEffect, useState } from "react";
 
 interface LastEditedByProps {
@@ -48,17 +48,17 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
         editCounts.set(edit.userId, (editCounts.get(edit.userId) || 0) + 1);
       });
 
-             // Get unique recent editors with their edit counts
-       const uniqueEditors = editorUsers
-         .filter(user => user && !user.isDeleted)
-         .map(user => ({
-           _id: user._id,
-           name: user.name,
-           email: user.email,
-           editCount: editCounts.get(user._id) || 0,
-         }))
-         .sort((a, b) => b.editCount - a.editCount) // Sort by edit count
-         .slice(0, 5); // Show top 5 editors
+                    // Get unique recent editors with their edit counts
+        const uniqueEditors = editorUsers
+          .filter(user => user && !user.isDeleted)
+          .map(user => ({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            editCount: editCounts.get(user._id) || 0,
+          }))
+          .sort((a, b) => b.editCount - a.editCount) // Sort by edit count
+          .slice(0, 3); // Show top 3 editors max
 
       setRecentEditors(uniqueEditors);
       setIsLoading(false);
@@ -69,25 +69,21 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
     return null;
   }
 
-  return (
-    <div className="flex items-center gap-2 text-sm text-gray-600 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-gray-200 shadow-sm">
+    return (
+    <div className="flex items-center gap-1 text-sm text-gray-600">
       <span className="font-medium">Last edited by:</span>
       <div className="flex items-center gap-1">
-                 {recentEditors.slice(0, 3).map((editor, index) => (
-           <div key={editor._id} className="flex items-center gap-1">
-             <Avatar className="w-6 h-6">
-               <AvatarFallback className="text-xs bg-blue-100 text-blue-600">
-                 {editor.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-               </AvatarFallback>
-             </Avatar>
-             {index < Math.min(recentEditors.length - 1, 2) && (
-               <span className="text-gray-400">,</span>
-             )}
-           </div>
-         ))}
-        {recentEditors.length > 3 && (
-          <span className="text-gray-500 text-xs">
-            +{recentEditors.length - 3} more
+        {recentEditors.slice(0, 2).map((editor, index) => (
+          <span key={editor._id} className="text-gray-700">
+            {editor.name}
+            {index < Math.min(recentEditors.length - 1, 1) && (
+              <span className="text-gray-400">, </span>
+            )}
+          </span>
+        ))}
+        {recentEditors.length > 2 && (
+          <span className="text-gray-500">
+            +{recentEditors.length - 2} more
           </span>
         )}
       </div>

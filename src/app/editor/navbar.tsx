@@ -35,6 +35,8 @@ import { useEditorStore } from "@/store/use-editor-store";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { CloudSavingIndicator } from "./cloud-saving-indicator";
 import { Avatars } from "./avatars";
+import { LastEditedBy } from "./last-edited-by";
+import { Id } from "../../../convex/_generated/dataModel";
 
 interface NavbarProps {
   title?: string;
@@ -44,6 +46,9 @@ interface NavbarProps {
   onOpenVersionHistory?: () => void;
   backUrl?: string;
   onManualSave?: (isManualSave?: boolean) => Promise<void>;
+  documentId?: Id<"documents">;
+  groupId?: string;
+  chapter?: string;
 }
 
 interface NotificationState {
@@ -59,6 +64,9 @@ export const Navbar = ({
   onOpenVersionHistory,
   backUrl,
   onManualSave,
+  documentId,
+  groupId,
+  chapter,
 }: NavbarProps) => {
   const [selectedRows, setSelectedRows] = useState(1);
   const [selectedCols, setSelectedCols] = useState(1);
@@ -724,6 +732,11 @@ export const Navbar = ({
 
         {/* User avatars on the right side */}
         <div className="pr-4 py-1 flex items-center gap-2">
+          <LastEditedBy 
+            documentId={documentId}
+            groupId={groupId}
+            chapter={chapter}
+          />
           <Avatars />
         </div>
       </nav>
