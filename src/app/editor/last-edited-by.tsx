@@ -45,23 +45,18 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
 
   useEffect(() => {
     if (editorUsers && recentEdits) {
-      // Create a map of user IDs to edit counts
-      const editCounts = new Map<Id<"users">, number>();
-      recentEdits.forEach(edit => {
-        editCounts.set(edit.userId, (editCounts.get(edit.userId) || 0) + 1);
-      });
-
-                    // Get unique recent editors with their edit counts
-        const uniqueEditors = editorUsers
-          .filter(user => user && !user.isDeleted)
-          .map(user => ({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            editCount: editCounts.get(user._id) || 0,
-          }))
-          .sort((a, b) => b.editCount - a.editCount) // Sort by edit count
-          .slice(0, 3); // Show top 3 editors max
+      // Since we now have unique edit records per user, we can simply map them
+      // Each user will have editCount = 1 since they only have one edit record
+      const uniqueEditors = editorUsers
+        .filter(user => user && !user.isDeleted)
+        .map(user => ({
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          editCount: 1, // Each user has 1 edit record
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
+        .slice(0, 3); // Show top 3 editors max
 
       setRecentEditors(uniqueEditors);
       setIsLoading(false);
@@ -102,9 +97,9 @@ export const LastEditedBy = ({ documentId, groupId, chapter }: LastEditedByProps
             {recentEditors.map((editor) => (
               <div key={editor._id} className="flex items-center justify-between text-sm">
                 <span className="text-gray-700">{editor.name}</span>
-                <span className="text-gray-500 text-xs">
-                  {editor.editCount} edit{editor.editCount !== 1 ? 's' : ''}
-                </span>
+                                 <span className="text-gray-500 text-xs">
+                   1 edit
+                 </span>
               </div>
             ))}
           </div>

@@ -2826,13 +2826,32 @@ export const trackDocumentEdit = mutation({
   },
   handler: async (ctx, args) => {
     try {
-      // Record the edit
-      await ctx.db.insert("documentEdits", {
-        documentId: args.documentId,
-        userId: args.userId,
-        editedAt: Date.now(),
-        versionCreated: false, // Will be set to true when version is created
-      });
+      // Check if this user already has an edit record for this document that hasn't been versioned yet
+      const existingEdit = await ctx.db
+        .query("documentEdits")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .filter((q) => 
+          q.and(
+            q.eq(q.field("userId"), args.userId),
+            q.eq(q.field("versionCreated"), false)
+          )
+        )
+        .first();
+
+      if (existingEdit) {
+        // Update the existing edit timestamp instead of creating a new one
+        await ctx.db.patch(existingEdit._id, {
+          editedAt: Date.now(),
+        });
+      } else {
+        // Create a new edit record only if this user hasn't edited yet
+        await ctx.db.insert("documentEdits", {
+          documentId: args.documentId,
+          userId: args.userId,
+          editedAt: Date.now(),
+          versionCreated: false, // Will be set to true when version is created
+        });
+      }
 
       return { success: true };
     } catch (error) {

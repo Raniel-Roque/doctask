@@ -2135,7 +2135,9 @@ export const getRecentDocumentEdits = query({
         return [];
       }
 
-      // Get all edits for this document since the last version was created
+      // Get unique edits for this document since the last version was created
+      // Since we now update existing records instead of creating new ones,
+      // we just need to get the unique user edits
       const recentEdits = await ctx.db
         .query("documentEdits")
         .withIndex("by_document", (q) => q.eq("documentId", args.documentId!))
@@ -2166,7 +2168,7 @@ export const getUsersByIds = query({
           const user = await ctx.db.get(userId);
           return user ? {
             _id: user._id,
-            name: `${user.first_name} ${user.last_name}`.trim(),
+            name: `${user.first_name} ${user.middle_name ? user.middle_name + ' ' : ''}${user.last_name}`.trim(),
             email: user.email,
             isDeleted: user.isDeleted,
           } : null;
