@@ -2854,9 +2854,10 @@ export const trackDocumentEdit = mutation({
 
       if (existingEdit) {
         // Update the existing edit timestamp and increment edit count
+        const newEditCount = Math.min((existingEdit.editCount || 1) + 1, 999999); // Cap at 999,999
         await ctx.db.patch(existingEdit._id, {
           editedAt: Date.now(),
-          editCount: (existingEdit.editCount || 1) + 1, // Increment edit count
+          editCount: newEditCount, // Increment edit count with limit
         });
       } else {
         // Create a new edit record only if this user hasn't edited yet
