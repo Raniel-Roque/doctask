@@ -514,6 +514,55 @@ export const Editor = ({
           // No custom logic needed - TipTap handles this naturally
         }
         
+        // Handle Tab key for table navigation
+        if (event.key === "Tab") {
+          const { state } = editor;
+          const { selection } = state;
+          const { $from } = selection;
+          
+          // Find the table node and its position
+          let tableNode = null;
+          let tablePos = -1;
+          
+          // Walk up the node tree to find the table
+          for (let depth = $from.depth; depth >= 0; depth--) {
+            const node = $from.node(depth);
+            if (node.type.name === "table") {
+              tableNode = node;
+              tablePos = $from.before(depth);
+              break;
+            }
+          }
+          
+          if (tableNode && tablePos !== -1) {
+            // Check if we're at the last cell of the table
+            const tableEnd = tablePos + tableNode.nodeSize;
+            const isAtLastCell = $from.pos >= tableEnd - 2; // Approximate last cell position
+            
+            if (isAtLastCell && !event.shiftKey) {
+              // We're at the last cell and pressing Tab (not Shift+Tab), exit table
+              event.preventDefault();
+              editor
+                .chain()
+                .focus()
+                .insertContentAt(tableEnd, { type: "paragraph" })
+                .run();
+              return;
+            }
+            
+            if ($from.pos <= tablePos + 2 && event.shiftKey) {
+              // We're at the first cell and pressing Shift+Tab, exit table
+              event.preventDefault();
+              editor
+                .chain()
+                .focus()
+                .insertContentAt(tablePos, { type: "paragraph" })
+                .run();
+              return;
+            }
+          }
+        }
+        
         // Handle Arrow keys for better table navigation
         if (event.key === "ArrowDown" || event.key === "ArrowUp") {
           const { state } = editor;
@@ -546,6 +595,7 @@ export const Editor = ({
                   .chain()
                   .focus()
                   .insertContentAt(tableEnd, { type: "paragraph" })
+                  .setTextSelection(tableEnd + 1) // Set cursor position correctly
                   .run();
                 return;
               }
@@ -560,6 +610,7 @@ export const Editor = ({
                   .chain()
                   .focus()
                   .insertContentAt(tablePos, { type: "paragraph" })
+                  .setTextSelection(tablePos + 1) // Set cursor position correctly
                   .run();
                 return;
               }
