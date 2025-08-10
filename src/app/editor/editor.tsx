@@ -91,6 +91,7 @@ export const Editor = ({
   const { setEditor } = useEditorStore();
   const { user } = useUser();
   const trackEditMutation = useMutation(api.mutations.trackDocumentEdit);
+  const [hasInitialized, setHasInitialized] = useState(false);
   
   // Get current user's Convex ID
   const currentUser = useQuery(api.fetch.getUserByClerkId, {
@@ -197,17 +198,22 @@ export const Editor = ({
   const editor = useEditor({
     immediatelyRender: false,
     editable: isEditable, // Disable editing when isEditable is false
+    onCreate: () => {
+      // Mark editor as initialized after creation to prevent false edit tracking
+      // Add a small delay to ensure editor is fully ready
+      setTimeout(() => {
+        setHasInitialized(true);
+      }, 100);
+    },
     onUpdate: () => {
       // Track document edits for contributor system
-      if (isEditable && self?.info?.name && currentUser?._id && documentId) {
+      // Only track after the editor has fully initialized to prevent false positives
+      if (isEditable && self?.info?.name && currentUser?._id && documentId && hasInitialized) {
         // This will be called whenever the document content changes
-        // TODO: We need to get the current document ID to track edits
-        // For now, we'll just log that an edit occurred
         console.log("Document edited by user:", self.info.name);
         
-        // TODO: Implement actual tracking when we have document ID
         trackEditMutation({
-          documentId: documentId, // We need this from props or context
+          documentId: documentId,
           userId: currentUser._id,
         });
       }
