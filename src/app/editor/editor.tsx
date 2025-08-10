@@ -502,30 +502,10 @@ export const Editor = ({
       const isInTable = editor.isActive("table");
 
       if (isInTable) {
-        // Handle Enter key in tables
+        // Handle Enter key in tables - let it create new lines within cells
         if (event.key === "Enter") {
-          const { state } = editor;
-          const { selection } = state;
-          const { $from } = selection;
-          
-          // Check if we're in the last cell of the table
-          const table = $from.node(-1);
-          const tablePos = $from.before(-1);
-          const tableEnd = tablePos + table.nodeSize;
-          
-          // If we're at the end of the last cell, create a new paragraph after the table
-          if ($from.pos === tableEnd - 1) {
-            event.preventDefault();
-            editor
-              .chain()
-              .focus()
-              .insertContentAt(tableEnd, { type: "paragraph" })
-              .run();
-            return;
-          }
-          
-          // If we're in the middle of a cell, let the default behavior handle it
-          // (creates a new line within the cell)
+          // Let the default behavior handle Enter (creates new lines within cells)
+          // No custom logic needed - TipTap handles this naturally
         }
         
         // Handle Arrow keys for better table navigation
@@ -534,20 +514,50 @@ export const Editor = ({
           const { selection } = state;
           const { $from } = selection;
           
-          // Check if we're at the edge of the table
-          const table = $from.node(-1);
-          const tablePos = $from.before(-1);
-          const tableEnd = tablePos + table.nodeSize;
+          // Find the table node and its position
+          let tableNode = null;
+          let tablePos = -1;
           
-          if (event.key === "ArrowDown" && $from.pos === tableEnd - 1) {
-            // We're at the bottom of the table, move to next paragraph
-            event.preventDefault();
-            editor
-              .chain()
-              .focus()
-              .insertContentAt(tableEnd, { type: "paragraph" })
-              .run();
-            return;
+          // Walk up the node tree to find the table
+          for (let depth = $from.depth; depth >= 0; depth--) {
+            const node = $from.node(depth);
+            if (node.type.name === "table") {
+              tableNode = node;
+              tablePos = $from.before(depth);
+              break;
+            }
+          }
+          
+          if (tableNode && tablePos !== -1) {
+            if (event.key === "ArrowDown") {
+              // Check if we're at the bottom of the table
+              const tableEnd = tablePos + tableNode.nodeSize;
+              
+              if ($from.pos >= tableEnd - 1) {
+                // We're at the bottom of the table, exit and create new paragraph
+                event.preventDefault();
+                editor
+                  .chain()
+                  .focus()
+                  .insertContentAt(tableEnd, { type: "paragraph" })
+                  .run();
+                return;
+              }
+            }
+            
+            if (event.key === "ArrowUp") {
+              // Check if we're at the top of the table
+              if ($from.pos <= tablePos + 1) {
+                // We're at the top of the table, exit and create paragraph before
+                event.preventDefault();
+                editor
+                  .chain()
+                  .focus()
+                  .insertContentAt(tablePos, { type: "paragraph" })
+                  .run();
+                return;
+              }
+            }
           }
         }
 

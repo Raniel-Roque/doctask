@@ -2079,3 +2079,103 @@ export const getDocumentVersionsWithContributors = query({
     }
   },
 });
+
+// =========================================
+// LAST EDITED BY QUERIES
+// =========================================
+
+export const getLiveDocument = query({
+  args: {
+    groupId: v.string(),
+    chapter: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Get the live document (earliest document for this group/chapter)
+      const liveDocument = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) =>
+          q.eq("group_id", args.groupId as Id<"groupsTable">).eq("chapter", args.chapter),
+        )
+        .order("asc") // Oldest first - this is the live document
+        .first();
+
+      if (!liveDocument || liveDocument.isDeleted) {
+        return null;
+      }
+
+      // Get the last version (most recent non-deleted version) to determine the start time
+      const lastVersion = await ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) =>
+          q.eq("group_id", args.groupId as Id<"groupsTable">).eq("chapter", args.chapter),
+        )
+        .filter((q) => q.eq(q.field("isDeleted"), false))
+        .order("desc") // Newest first
+        .first();
+
+      return {
+        _id: liveDocument._id,
+        lastVersionTime: lastVersion?._creationTime || liveDocument._creationTime,
+      };
+    } catch {
+      return null;
+    }
+  },
+});
+
+export const getRecentDocumentEdits = query({
+  args: {
+    documentId: v.optional(v.id("documents")),
+    sinceVersionTime: v.number(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      if (!args.documentId) {
+        return [];
+      }
+
+      // Get all edits for this document since the last version was created
+      const recentEdits = await ctx.db
+        .query("documentEdits")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId!))
+        .filter((q) => 
+          q.and(
+            q.gte(q.field("editedAt"), args.sinceVersionTime),
+            q.eq(q.field("versionCreated"), false)
+          )
+        )
+        .order("desc") // Most recent first
+        .collect();
+
+      return recentEdits;
+    } catch {
+      return [];
+    }
+  },
+});
+
+export const getUsersByIds = query({
+  args: {
+    userIds: v.array(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const users = await Promise.all(
+        args.userIds.map(async (userId) => {
+          const user = await ctx.db.get(userId);
+          return user ? {
+            _id: user._id,
+            name: `${user.first_name} ${user.last_name}`.trim(),
+            email: user.email,
+            isDeleted: user.isDeleted,
+          } : null;
+        })
+      );
+
+      return users.filter(user => user !== null);
+    } catch {
+      return [];
+    }
+  },
+});

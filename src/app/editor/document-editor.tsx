@@ -6,6 +6,7 @@ import { Toolbar } from "./toolbar";
 import { Editor } from "./editor";
 import { ImageDragDropWrapper } from "./image-drag-drop";
 import { VersionHistoryPanel } from "./version-history-panel";
+import { LastEditedBy } from "./last-edited-by";
 import DOMPurify from "dompurify";
 import { Id } from "../../../convex/_generated/dataModel";
 
@@ -89,6 +90,14 @@ export const DocumentEditor = ({
         <ImageDragDropWrapper isEditable={isEditable}>
           <div className="flex justify-center print:!block print:!w-full print:!p-0 print:!m-0">
             <div className="max-w-screen-lg w-full flex flex-col px-4 py-4 gap-y-2 print:!max-w-none print:!p-0 print:!m-0 print:!block print:!gap-0 print:!w-full">
+              {/* Last Edited By component positioned in top right */}
+              <div className="flex justify-end mb-2 print:hidden">
+                <LastEditedBy 
+                  documentId={documentId}
+                  groupId={groupId}
+                  chapter={chapter}
+                />
+              </div>
               <Editor
                 initialContent={initialContent}
                 isEditable={isEditable}
