@@ -98,7 +98,6 @@ export const DocumentEditor = ({
                 userType={userType}
                 suppressReadOnlyBanner={true}
                 documentId={documentId}
-                onManualSave={saveToDatabase}
               />
             </div>
           </div>

@@ -74,7 +74,6 @@ interface EditorProps {
   userType?: "manager" | "member" | "adviser";
   suppressReadOnlyBanner?: boolean;
   documentId?: Id<"documents">; // Add document ID for tracking edits
-  onManualSave?: () => Promise<void>; // Add manual save function
 }
 
 interface NotificationState {
@@ -88,7 +87,6 @@ export const Editor = ({
   userType = "manager",
   suppressReadOnlyBanner = false,
   documentId, // Destructure documentId
-  onManualSave, // Destructure onManualSave
 }: EditorProps) => {
   const { setEditor } = useEditorStore();
   const { user } = useUser();
@@ -663,14 +661,7 @@ export const Editor = ({
         }
       }
 
-      // Handle Ctrl+S for manual save
-      if (event.ctrlKey && event.key === "s") {
-        event.preventDefault();
-        if (onManualSave && isEditable) {
-          onManualSave();
-        }
-        return;
-      }
+      
 
       // For all other cases (including arrow keys outside tables), let TipTap handle naturally
       // This ensures proper navigation through images, paragraphs, etc.
@@ -680,7 +671,7 @@ export const Editor = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [editor, isEditable, onManualSave]);
+  }, [editor, isEditable]);
 
   // Room presence tracking
   useRoomPresence(others, self);

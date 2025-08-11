@@ -22,7 +22,6 @@ interface RecentEditor {
   _id: Id<"users">;
   name: string;
   email: string;
-  editCount: number;
 }
 
 export const LastEditedBy = ({
@@ -53,21 +52,16 @@ export const LastEditedBy = ({
 
   useEffect(() => {
     if (editorUsers && recentEdits) {
-      // Map users with their actual edit counts from the database
+      // Map users who have edited the document
       const uniqueEditors = editorUsers
         .filter((user) => user && !user.isDeleted)
-        .map((user) => {
-          // Find the corresponding edit record for this user
-          const userEdit = recentEdits.find((edit) => edit.userId === user._id);
-          return {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            editCount: userEdit?.editCount || 1, // Use actual edit count from database
-          };
-        })
-        .sort((a, b) => b.editCount - a.editCount) // Sort by edit count (highest first)
-        .slice(0, 3); // Show top 3 editors max
+        .map((user) => ({
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
+        .slice(0, 5); // Show top 5 editors max
 
       setRecentEditors(uniqueEditors);
       setIsLoading(false);
@@ -110,12 +104,9 @@ export const LastEditedBy = ({
             {recentEditors.map((editor) => (
               <div
                 key={editor._id}
-                className="flex items-center justify-between text-sm"
+                className="text-sm"
               >
                 <span className="text-gray-700">{editor.name}</span>
-                <span className="text-gray-500 text-xs">
-                  {editor.editCount} edit{editor.editCount !== 1 ? "s" : ""}
-                </span>
               </div>
             ))}
           </div>
