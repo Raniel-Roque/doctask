@@ -7,13 +7,11 @@ import {
   FaSortUp,
   FaSortDown,
   FaFilter,
-  FaDownload,
 } from "react-icons/fa";
 import { useState, useRef, useEffect } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
-import { downloadLogTextReport } from "./LogTextReport";
 
 // =========================================
 // Types
@@ -191,18 +189,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
         : undefined,
   });
 
-  // Fetch all filtered logs for download (without pagination)
-  const allFilteredLogsData = useQuery(api.fetch.getLogsWithDetails, {
-    userRole: 1, // Adviser role
-    userId: adviserId as Id<"users">,
-    pageSize: 10000, // Large number to get all logs
-    pageNumber: 1,
-    action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
-    entityType:
-      entityTypeFilter !== ENTITY_TYPES.ALL
-        ? [entityTypeFilter.toLowerCase()]
-        : undefined,
-  });
+
 
   const logs: Log[] =
     logsData && "logs" in logsData
@@ -300,25 +287,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     return [LOG_ACTIONS.ACCEPT_GROUP, LOG_ACTIONS.REJECT_GROUP];
   };
 
-  const handleDownloadReport = () => {
-    const allLogs = allFilteredLogsData && "logs" in allFilteredLogsData
-      ? allFilteredLogsData.logs
-      : Array.isArray(allFilteredLogsData)
-        ? allFilteredLogsData
-        : [];
-    
-    const title = "My Activity Logs";
-    
-    const filters = {
-      searchTerm: searchTerm || undefined,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
-      entityTypeFilters: entityTypeFilter !== ENTITY_TYPES.ALL ? [entityTypeFilter] : undefined,
-    };
 
-    downloadLogTextReport(allLogs, title, 1, filters); // 1 = adviser role
-  };
 
   // =========================================
   // Collapsible Text Component
@@ -689,19 +658,6 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                 ))}
               </select>
               <span className="text-sm text-gray-700">entries per page</span>
-              {logs.length > 0 && (
-                <>
-                  <span className="text-gray-300 mx-1">|</span>
-                  <button
-                    onClick={handleDownloadReport}
-                    className="text-blue-600 cursor-pointer hover:underline text-sm font-medium flex items-center gap-1"
-                    title="Download Log Report"
-                  >
-                    <FaDownload size={12} />
-                    Download Report
-                  </button>
-                </>
-              )}
             </div>
           </div>
           <div className="flex items-center space-x-2">
