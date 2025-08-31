@@ -11,7 +11,6 @@ import {
   FaMinus,
   FaPlus,
   FaFilter,
-  FaDownload,
 } from "react-icons/fa"; // Import icons and pagination icons
 import { User, Group } from "./types";
 import DeleteGroupConfirmation from "./DeleteGroupConfirmation";
@@ -904,7 +903,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       title="Download Report"
                       style={{ minWidth: 90, display: "inline-block" }}
                     >
-                      <FaDownload size={12} />
                       Download Report
                     </span>
                   )}

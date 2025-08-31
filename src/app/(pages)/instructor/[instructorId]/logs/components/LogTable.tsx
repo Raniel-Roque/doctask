@@ -7,7 +7,6 @@ import {
   FaSortUp,
   FaSortDown,
   FaFilter,
-  FaDownload,
 } from "react-icons/fa";
 import { useState, useRef, useEffect } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
@@ -1383,7 +1382,6 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                     className="text-blue-600 cursor-pointer hover:underline text-sm font-medium flex items-center gap-1"
                     title="Download Log Report"
                   >
-                    <FaDownload size={12} />
                     Download Report
                   </button>
                 </>

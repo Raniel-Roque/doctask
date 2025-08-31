@@ -11,7 +11,6 @@ import {
   FaSortDown,
   FaLock,
   FaFilter,
-  FaDownload,
 } from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 import { useState, useRef, useEffect } from "react";
@@ -628,7 +627,6 @@ export const UserTable = ({
                       title="Download Report"
                       style={{ minWidth: 90, display: "inline-block" }}
                     >
-                      <FaDownload size={12} />
                       Download Report
                     </span>
                   )}
