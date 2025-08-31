@@ -196,15 +196,39 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const actionButtonRef = useRef<HTMLButtonElement>(null);
   const entityButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Add state for dropdown positions
+  const [dropdownPositions, setDropdownPositions] = useState({
+    action: { left: 0, top: 0 },
+    entity: { left: 0, top: 0 },
+    instructor: { left: 0, top: 0 },
+    adviser: { left: 0, top: 0 },
+  });
+
   useEffect(() => {
     if (showActionDropdown) {
       setTempActionFilters(appliedActionFilters);
+      // Update position
+      if (actionButtonRef.current) {
+        const rect = actionButtonRef.current.getBoundingClientRect();
+        setDropdownPositions(prev => ({
+          ...prev,
+          action: { left: rect.left, top: rect.bottom + 8 }
+        }));
+      }
     }
   }, [showActionDropdown, appliedActionFilters]);
 
   useEffect(() => {
     if (showInstructorDropdown) {
       setTempInstructorFilters(instructorFilters);
+      // Update position
+      if (instructorButtonRef.current) {
+        const rect = instructorButtonRef.current.getBoundingClientRect();
+        setDropdownPositions(prev => ({
+          ...prev,
+          instructor: { left: rect.left, top: rect.bottom + 8 }
+        }));
+      }
     }
   }, [showInstructorDropdown, instructorFilters]);
 
@@ -845,8 +869,12 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                 {showInstructorDropdown && (
                   <div
                     ref={instructorDropdownRef}
-                    className="absolute left-0 top-full z-20 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    style={{ minWidth: 220 }}
+                    className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    style={{ 
+                      minWidth: 220,
+                      left: dropdownPositions.instructor.left,
+                      top: dropdownPositions.instructor.top
+                    }}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="p-3 border-b">
@@ -915,8 +943,12 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                 {showAdviserDropdown && (
                   <div
                     ref={adviserDropdownRef}
-                    className="absolute left-0 top-full z-20 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    style={{ minWidth: 220 }}
+                    className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    style={{ 
+                      minWidth: 220,
+                      left: adviserButtonRef.current?.getBoundingClientRect().left || 0,
+                      top: (adviserButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                    }}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="p-3 border-b">
@@ -1008,7 +1040,11 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                   {showActionDropdown && (
                     <div
                       ref={actionDropdownRef}
-                      className="absolute left-0 top-full z-20 mt-2 min-w-[200px] bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      className="fixed z-50 mt-2 min-w-[200px] bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      style={{
+                        left: actionButtonRef.current?.getBoundingClientRect().left || 0,
+                        top: (actionButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                      }}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
@@ -1079,7 +1115,11 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                   {showActionDropdown && (
                     <div
                       ref={actionDropdownRef}
-                      className="absolute left-0 top-full z-20 mt-2 min-w-[200px] bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      className="fixed z-50 mt-2 min-w-[200px] bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      style={{
+                        left: actionButtonRef.current?.getBoundingClientRect().left || 0,
+                        top: (actionButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                      }}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
@@ -1151,7 +1191,11 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                   {showEntityDropdown && (
                     <div
                       ref={entityDropdownRef}
-                      className="absolute left-0 top-full z-20 mt-2 min-w-[180px] bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      className="fixed z-50 mt-2 min-w-[180px] bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      style={{
+                        left: entityButtonRef.current?.getBoundingClientRect().left || 0,
+                        top: (entityButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                      }}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">

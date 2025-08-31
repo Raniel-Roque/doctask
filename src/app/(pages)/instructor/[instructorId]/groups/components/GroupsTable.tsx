@@ -437,8 +437,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 {showCapstoneDropdown && (
                   <div
                     ref={capstoneDropdownRef}
-                    className="absolute left-0 top-full z-20 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    style={{ minWidth: 220 }}
+                    className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    style={{ 
+                      minWidth: 220,
+                      left: capstoneButtonRef.current?.getBoundingClientRect().left || 0,
+                      top: (capstoneButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                    }}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="px-3 py-2 border-b flex items-center justify-between">
@@ -546,8 +550,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 {showAdviserDropdown && (
                   <div
                     ref={adviserDropdownRef}
-                    className="absolute left-0 top-full z-20 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    style={{ minWidth: 220 }}
+                    className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    style={{ 
+                      minWidth: 220,
+                      left: adviserButtonRef.current?.getBoundingClientRect().left || 0,
+                      top: (adviserButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                    }}
                   >
                     <div className="p-3 border-b">
                       <div className="relative">
@@ -647,8 +655,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 {showGradeDropdown && (
                   <div
                     ref={gradeDropdownRef}
-                    className="absolute left-0 top-full z-20 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    style={{ minWidth: 220 }}
+                    className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    style={{ 
+                      minWidth: 220,
+                      left: gradeButtonRef.current?.getBoundingClientRect().left || 0,
+                      top: (gradeButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                    }}
                   >
                     <div
                       className="max-h-52 overflow-y-auto px-3 py-2 flex flex-col gap-1"

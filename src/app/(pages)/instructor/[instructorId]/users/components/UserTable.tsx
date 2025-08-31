@@ -340,7 +340,11 @@ export const UserTable = ({
                 {showStatusDropdown && (
                   <div
                     ref={statusDropdownRef}
-                    className="absolute left-0 top-full z-20 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    className="fixed z-50 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    style={{
+                      left: statusButtonRef.current?.getBoundingClientRect().left || 0,
+                      top: (statusButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                    }}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
@@ -412,7 +416,11 @@ export const UserTable = ({
                   {showRoleDropdown && onRoleFilterChange && (
                     <div
                       ref={roleDropdownRef}
-                      className="absolute left-0 top-full z-20 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      className="fixed z-50 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      style={{
+                        left: roleButtonRef.current?.getBoundingClientRect().left || 0,
+                        top: (roleButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                      }}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
