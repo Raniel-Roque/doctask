@@ -102,10 +102,7 @@ export const LastEditedBy = ({
           </h4>
           <div className="space-y-1">
             {recentEditors.map((editor) => (
-              <div
-                key={editor._id}
-                className="text-sm"
-              >
+              <div key={editor._id} className="text-sm">
                 <span className="text-gray-700">{editor.name}</span>
               </div>
             ))}

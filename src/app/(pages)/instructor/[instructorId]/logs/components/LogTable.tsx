@@ -7,11 +7,13 @@ import {
   FaSortUp,
   FaSortDown,
   FaFilter,
+  FaDownload,
 } from "react-icons/fa";
 import { useState, useRef, useEffect } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
+import { downloadLogTextReport } from "./LogTextReport";
 
 // =========================================
 // Types
@@ -310,6 +312,26 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
         : undefined,
   });
 
+  // Fetch all filtered logs for download (without pagination)
+  const allFilteredLogsQuery = useQuery(api.fetch.getLogsWithDetails, {
+    userRole: userRole,
+    pageSize: 10000, // Large number to get all logs
+    pageNumber: 1,
+    action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
+    entityType:
+      appliedEntityTypeFilters.length > 0
+        ? appliedEntityTypeFilters.map((e) => e.toLowerCase())
+        : undefined,
+    instructorIds:
+      instructorFilters.length > 0
+        ? instructorFilters.map((id) => id as Id<"users">)
+        : undefined,
+    adviserIds:
+      adviserFilters.length > 0
+        ? adviserFilters.map((id) => id as Id<"users">)
+        : undefined,
+  });
+
   const logs: Log[] = logsQuery?.logs || [];
   const totalCount = logsQuery?.totalCount || 0;
   const totalPages = logsQuery?.totalPages || 1;
@@ -522,6 +544,23 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
     localStorage.setItem("logsPageSize", size.toString());
+  };
+
+  const handleDownloadReport = () => {
+    const allLogs = allFilteredLogsQuery?.logs || [];
+    const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
+    
+    const filters = {
+      searchTerm: searchTerm || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
+      entityTypeFilters: appliedEntityTypeFilters.length > 0 ? appliedEntityTypeFilters : undefined,
+      instructorFilters: instructorFilters.length > 0 ? instructorFilters : undefined,
+      adviserFilters: adviserFilters.length > 0 ? adviserFilters : undefined,
+    };
+
+    downloadLogTextReport(allLogs, title, userRole, filters);
   };
 
   // Helper: normalize string for search
@@ -1292,6 +1331,19 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                 ))}
               </select>
               <span className="text-sm text-gray-700">entries per page</span>
+              {totalCount > 0 && (
+                <>
+                  <span className="text-gray-300 mx-1">|</span>
+                  <button
+                    onClick={handleDownloadReport}
+                    className="text-blue-600 cursor-pointer hover:underline text-sm font-medium flex items-center gap-1"
+                    title="Download Log Report"
+                  >
+                    <FaDownload size={12} />
+                    Download Report
+                  </button>
+                </>
+              )}
             </div>
           </div>
           <div className="flex items-center space-x-2">

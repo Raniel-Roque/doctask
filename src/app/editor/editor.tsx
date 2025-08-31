@@ -661,8 +661,6 @@ export const Editor = ({
         }
       }
 
-      
-
       // For all other cases (including arrow keys outside tables), let TipTap handle naturally
       // This ensures proper navigation through images, paragraphs, etc.
     };
