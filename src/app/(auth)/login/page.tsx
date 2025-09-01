@@ -1410,15 +1410,35 @@ const LoginPage = () => {
 
                   {/* Linux */}
                   <button
-                    disabled
-                    className="w-full text-left px-3 py-2 text-sm text-gray-400 cursor-not-allowed rounded-md flex items-center gap-2"
-                    title="Coming soon"
+                    onClick={() => {
+                      try {
+                        const link = document.createElement("a");
+                        link.href =
+                          "https://github.com/Raniel-Roque/doctask/releases/download/Linux/DocTask-1.0.0.AppImage";
+                        link.download = "DocTask-1.0.0.AppImage";
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+
+                        document.body.appendChild(link);
+                        link.click();
+
+                        setTimeout(() => {
+                          if (document.body.contains(link)) {
+                            document.body.removeChild(link);
+                          }
+                        }, 100);
+                      } catch {
+                        window.open(
+                          "https://github.com/Raniel-Roque/doctask/releases/download/Linux/DocTask-1.0.0.AppImage",
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
                   >
                     <span className="text-orange-600">🐧</span>
                     Linux (.AppImage)
-                    <span className="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-auto">
-                      Soon
-                    </span>
                   </button>
 
                   {/* Mac */}
