@@ -1314,14 +1314,16 @@ const LoginPage = () => {
                   if (userAgent.includes("win")) {
                     // Windows
                     downloadUrl =
-                      "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
+                      "https://github.com/Raniel-Roque/doctask/releases/download/Windows/DocTask-Setup-1.0.0.exe";
                     fileName = "DocTask-Setup-1.0.0.exe";
                   } else if (userAgent.includes("mac")) {
                     // macOS - currently unavailable
                     showUnavailableMessage = true;
                   } else if (userAgent.includes("linux")) {
-                    // Linux - currently unavailable
-                    showUnavailableMessage = true;
+                    // Linux
+                    downloadUrl =
+                      "https://github.com/Raniel-Roque/doctask/releases/download/Linux/DocTask-1.0.0.AppImage";
+                    fileName = "DocTask-1.0.0.AppImage";
                   } else {
                     // Default to Windows for unknown OS
                     downloadUrl =
