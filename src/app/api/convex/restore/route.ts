@@ -3,11 +3,11 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { clerkClient } from "@clerk/nextjs/server";
 import { generatePassword } from "@/utils/passwordGeneration";
-import { Resend } from "resend";
+import { getResendInstance, resendConfig } from "@/lib/resend-config";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { Liveblocks } from "@liveblocks/node";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = getResendInstance();
 
 interface BackupUser {
   _id: string;
@@ -290,7 +290,7 @@ export async function POST(request: Request) {
 
       // Send welcome email
       await resend.emails.send({
-        from: "DocTask <onboarding@resend.dev>",
+        from: resendConfig.from.default,
         to: user.email,
         subject: "Welcome to DocTask",
         html: `

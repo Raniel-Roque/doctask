@@ -4,9 +4,9 @@ import { api } from "../../../../../convex/_generated/api";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { generatePassword } from "@/utils/passwordGeneration";
-import { Resend } from "resend";
+import { getResendInstance, resendConfig } from "@/lib/resend-config";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = getResendInstance();
 
 interface BackupUser {
   _id: string;
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
 
     // Send welcome email with new credentials
     await resend.emails.send({
-      from: "DocTask <onboarding@resend.dev>",
+      from: resendConfig.from.default,
       to: instructorConvexUser.email,
       subject: "Your DocTask Account Has Been Restored",
       html: `
