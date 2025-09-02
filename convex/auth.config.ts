@@ -1,7 +1,7 @@
 const config = {
   providers: [
     {
-      domain: "https://neutral-liger-17.clerk.accounts.dev",
+      domain: "https://clerk.doctask.site",
       applicationID: "convex",
     },
   ],
