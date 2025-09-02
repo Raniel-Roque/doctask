@@ -8,7 +8,7 @@ export const resendConfig = {
   // Email sender configuration
   from: {
     // Change this to your verified domain when ready
-    default: "DocTask <onboarding@resend.dev>",
+    default: "DocTask <noreply@doctask.site>",
     // You can add more sender options here
     // support: "DocTask Support <support@yourdomain.com>",
     // noreply: "DocTask <noreply@yourdomain.com>",
@@ -18,15 +18,15 @@ export const resendConfig = {
   templates: {
     welcome: {
       subject: "Welcome to DocTask",
-      from: "DocTask <onboarding@resend.dev>",
+      from: "DocTask <noreply@doctask.site>",
     },
     resetPassword: {
       subject: "DocTask - Your Password Has Been Reset",
-      from: "DocTask <onboarding@resend.dev>",
+      from: "DocTask <noreply@doctask.site>",
     },
     updateEmail: {
       subject: "Welcome to DocTask - Your Account Details",
-      from: "DocTask <onboarding@resend.dev>",
+      from: "DocTask <noreply@doctask.site>",
     },
   },
 
