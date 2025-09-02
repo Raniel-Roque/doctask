@@ -16,7 +16,6 @@ export const CancelAdviserRequestPopup: React.FC<
   const modalRef = useModalFocus({
     isOpen,
     onClose,
-    focusFirstInput: false, // No input fields in this modal
   });
 
   if (!isOpen) return null;

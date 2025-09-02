@@ -71,7 +71,6 @@ export default function EditForm({
   const modalRef = useModalFocus({
     isOpen: !!user,
     onClose: () => onClose(),
-    focusFirstInput: true,
   });
 
   const roles = [

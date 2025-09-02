@@ -69,7 +69,6 @@ export const AddForm = ({
   const modalRef = useModalFocus({
     isOpen,
     onClose: () => onClose(),
-    focusFirstInput: true,
   });
 
   const roles = [

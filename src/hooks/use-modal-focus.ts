@@ -9,7 +9,7 @@ interface UseModalFocusOptions {
 export const useModalFocus = ({
   isOpen,
   onClose,
-  focusFirstInput = true,
+  focusFirstInput = false,
 }: UseModalFocusOptions) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);

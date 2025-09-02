@@ -27,7 +27,6 @@ const DeleteGroupConfirmation: React.FC<DeleteGroupConfirmationProps> = ({
   const modalRef = useModalFocus({
     isOpen,
     onClose,
-    focusFirstInput: false, // No input fields in this modal
   });
 
   if (!isOpen || !group) return null;
