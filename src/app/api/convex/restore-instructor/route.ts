@@ -4,7 +4,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { generatePassword } from "@/utils/passwordGeneration";
-import { getResendInstance, resendConfig, getEmailAssetUrl } from "@/lib/resend-config";
+import { getResendInstance, resendConfig } from "@/lib/resend-config";
 
 const resend = getResendInstance();
 
@@ -86,9 +86,6 @@ export async function POST(request: Request) {
       subject: "Your DocTask Account Has Been Restored",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="text-align:center; margin-bottom:16px;">
-            <img src="${getEmailAssetUrl("/doctask.png")}" alt="DocTask" width="96" height="96" style="border-radius:50%; border:3px solid #000;" />
-          </div>
           <h2 style="color: #333;">Your DocTask Account Has Been Restored!</h2>
           
           <p>Dear ${instructorConvexUser.first_name} ${instructorConvexUser.last_name},</p>

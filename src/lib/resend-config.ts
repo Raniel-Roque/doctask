@@ -44,12 +44,3 @@ export const getResendInstance = () => {
   resendConfig.validateConfig();
   return new Resend(resendConfig.apiKey);
 };
-
-// Helper to build absolute asset URLs for emails
-export const getEmailAssetUrl = (path: string) => {
-  const base = process.env.EMAIL_ASSET_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "";
-  if (!base) return path; // fallback to given path if base unknown
-  const trimmedBase = base.endsWith("/") ? base.slice(0, -1) : base;
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${trimmedBase}${normalizedPath}`;
-};

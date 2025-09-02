@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getResendInstance, resendConfig, getEmailAssetUrl } from "@/lib/resend-config";
+import { getResendInstance, resendConfig } from "@/lib/resend-config";
 
 const resend = getResendInstance();
 
@@ -31,9 +31,6 @@ export async function POST(request: Request) {
       subject: resendConfig.templates.updateEmail.subject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="text-align:center; margin-bottom:16px;">
-            <img src="${getEmailAssetUrl("/doctask.png")}" alt="DocTask" width="96" height="96" style="border-radius:50%; border:3px solid #000;" />
-          </div>
           <h2 style="color: #333;">Welcome to DocTask!</h2>
           
           <p>Dear ${firstName} ${lastName},</p>
