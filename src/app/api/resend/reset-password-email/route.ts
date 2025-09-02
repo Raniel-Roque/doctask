@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="text-align:center; margin-bottom:16px;">
-            <img src="${getEmailAssetUrl("/doctask.webp")}" alt="DocTask" width="96" height="96" style="border-radius:50%; border:3px solid #000;" />
+            <img src="${getEmailAssetUrl("/doctask.png")}" alt="DocTask" width="96" height="96" style="border-radius:50%; border:3px solid #000;" />
           </div>
           <h2 style="color: #333;">Password Reset Notification</h2>
           
