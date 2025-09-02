@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
@@ -18,6 +18,7 @@ const SmartRedirect = () => {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const router = useRouter();
+  const [showReload, setShowReload] = useState(false);
 
   const convexUser = useQuery(api.fetch.getUserByClerkId, {
     clerkId: user?.id ?? "",
@@ -72,8 +73,35 @@ const SmartRedirect = () => {
     }
   }, [isLoaded, isSignedIn, user, convexUser, router]);
 
+  // Safety timeout: if auth/loading hangs too long, show reload UI
+  useEffect(() => {
+    const isWaiting = !isLoaded || (isSignedIn && (!user || !convexUser));
+    if (isWaiting) {
+      setShowReload(false);
+      const id = setTimeout(() => setShowReload(true), 10000); // 10s
+      return () => clearTimeout(id);
+    } else {
+      setShowReload(false);
+    }
+  }, [isLoaded, isSignedIn, user, convexUser]);
+
   // Show minimal loading only if we're still determining the destination
   if (!isLoaded || (isSignedIn && (!user || !convexUser))) {
+    if (showReload) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-white">
+          <div className="text-center">
+            <p className="text-gray-700 mb-4">Something went wrong while loading. Please reload.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <LoadingSpinner size="md" text="Loading..." />
