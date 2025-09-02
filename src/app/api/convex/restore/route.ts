@@ -234,6 +234,9 @@ export async function POST(request: Request) {
     // Delete logs
     await convex.mutation(api.restore.deleteAllLogs);
 
+    // Delete images (database + storage files)
+    await convex.mutation(api.restore.deleteAllImages);
+
     // Delete users (except current user)
     await convex.mutation(api.restore.deleteAllUsers, {
       currentUserId: instructor._id,
