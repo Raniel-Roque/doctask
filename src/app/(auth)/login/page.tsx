@@ -1309,7 +1309,7 @@ const LoginPage = () => {
                   const userAgent = navigator.userAgent.toLowerCase();
                   let downloadUrl = "";
                   let fileName = "";
-                  let showUnavailableMessage = false;
+                  
 
                   if (userAgent.includes("win")) {
                     // Windows
@@ -1317,8 +1317,10 @@ const LoginPage = () => {
                       "https://github.com/Raniel-Roque/doctask/releases/download/Windows/DocTask-Setup-1.0.0.exe";
                     fileName = "DocTask-Setup-1.0.0.exe";
                   } else if (userAgent.includes("mac")) {
-                    // macOS - currently unavailable
-                    showUnavailableMessage = true;
+                    // macOS
+                    downloadUrl =
+                      "https://github.com/Raniel-Roque/doctask/releases/download/MacOS/DocTask-1.0.0-mac.zip";
+                    fileName = "DocTask-1.0.0-mac.zip";
                   } else if (userAgent.includes("linux")) {
                     // Linux
                     downloadUrl =
@@ -1331,15 +1333,7 @@ const LoginPage = () => {
                     fileName = "DocTask-Setup-1.0.0.exe";
                   }
 
-                  if (showUnavailableMessage) {
-                    // Show notification that the platform is not yet available
-                    setNotification({
-                      message:
-                        "Desktop app for your platform is coming soon! Please use the web version for now.",
-                      type: "info",
-                    });
-                    return;
-                  }
+                  
 
                   // Download the appropriate version
                   try {
@@ -1443,15 +1437,35 @@ const LoginPage = () => {
 
                   {/* Mac */}
                   <button
-                    disabled
-                    className="w-full text-left px-3 py-2 text-sm text-gray-400 cursor-not-allowed rounded-md flex items-center gap-2"
-                    title="Coming soon"
+                    onClick={() => {
+                      try {
+                        const link = document.createElement("a");
+                        link.href =
+                          "https://github.com/Raniel-Roque/doctask/releases/download/MacOS/DocTask-1.0.0-mac.zip";
+                        link.download = "DocTask-1.0.0-mac.zip";
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+
+                        document.body.appendChild(link);
+                        link.click();
+
+                        setTimeout(() => {
+                          if (document.body.contains(link)) {
+                            document.body.removeChild(link);
+                          }
+                        }, 100);
+                      } catch {
+                        window.open(
+                          "https://github.com/Raniel-Roque/doctask/releases/download/MacOS/DocTask-1.0.0-mac.zip",
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
                   >
                     <span className="text-gray-600">🍎</span>
-                    macOS (.dmg)
-                    <span className="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-auto">
-                      Soon
-                    </span>
+                    macOS (.zip)
                   </button>
                 </div>
               </div>
