@@ -1398,7 +1398,6 @@ const LoginPage = () => {
                     }}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
                   >
-                    <span className="text-blue-600">🪟</span>
                     Windows (.exe)
                   </button>
 
@@ -1431,7 +1430,6 @@ const LoginPage = () => {
                     }}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
                   >
-                    <span className="text-orange-600">🐧</span>
                     Linux (.AppImage)
                   </button>
 
@@ -1464,7 +1462,6 @@ const LoginPage = () => {
                     }}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
                   >
-                    <span className="text-gray-600">🍎</span>
                     macOS (.zip)
                   </button>
                 </div>
