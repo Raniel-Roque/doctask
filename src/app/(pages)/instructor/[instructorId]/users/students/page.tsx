@@ -839,7 +839,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       if (users.length === 0) {
         setNotification({
           type: "error",
-          message: "No valid user data found in the Excel file. Please ensure the file has the correct format:\n\nRequired columns: First Name, Last Name, Email\nOptional columns: Middle Name, Role\n\nRole values: 'Manager' or 'Member' (or 'Project Manager'/'Project Member')\n\nExample:\nFirst Name | Last Name | Email | Role\nJohn | Doe | john@email.com | Manager",
+          message: "Invalid Excel format. Required: First Name, Last Name, Email. Optional: Middle Name, Role (Manager/Member)",
         });
         return;
       }
