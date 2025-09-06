@@ -280,13 +280,13 @@ export const UserTable = ({
             <FaPlus /> Add User
           </button>
           {onExcelUpload && (
-            <div className="relative">
+            <div className="relative inline-block">
               <input
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={onExcelUpload}
                 disabled={isUploading}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
                 id="excel-upload"
               />
               <label
@@ -295,10 +295,10 @@ export const UserTable = ({
                   "Excel Format: First Name | Middle Name | Last Name | Email | Role\nRequired: First Name, Last Name, Email\nRole: Manager/Member or Project Manager/Project Member" :
                   "Excel Format: First Name | Middle Name | Last Name | Email\nRequired: First Name, Last Name, Email"
                 }
-                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white transition-colors duration-200 ${
+                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white transition-all duration-200 select-none ${
                   isUploading
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
+                    : 'bg-green-600 hover:bg-green-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 active:bg-green-800'
                 }`}
               >
                 {isUploading ? (
