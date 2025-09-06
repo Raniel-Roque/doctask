@@ -25,6 +25,7 @@ import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChange
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { apiRequest } from "@/lib/utils";
 import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
+import * as ExcelJS from "exceljs";
 
 // =========================================
 // Types
@@ -94,6 +95,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     (() => void) | null
   >(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   // Removed networkError state - using notification banner instead
 
   // =========================================
@@ -644,6 +647,350 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   };
 
   // =========================================
+  // Excel Upload Functions for Students
+  // =========================================
+  const parseExcelFile = async (file: File): Promise<AddFormData[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const data = e.target?.result;
+          if (!data) {
+            reject(new Error("Failed to read file"));
+            return;
+          }
+
+          const workbook = new ExcelJS.Workbook();
+          await workbook.xlsx.load(data as ArrayBuffer);
+          
+          const worksheet = workbook.getWorksheet(1); // Get first worksheet
+          if (!worksheet) {
+            reject(new Error("No worksheet found in the Excel file"));
+            return;
+          }
+
+          const rows: AddFormData[] = [];
+          let headerRow: string[] = [];
+          let isFirstRow = true;
+
+          worksheet.eachRow((row) => {
+            const rowData = row.values as (string | number | undefined)[];
+            
+            if (isFirstRow) {
+              // Skip the first element (undefined) and get header row
+              headerRow = rowData.slice(1).map((cell: string | number | undefined) => 
+                cell?.toString().toLowerCase().trim() || ""
+              );
+              isFirstRow = false;
+              return;
+            }
+
+            // Skip empty rows
+            if (!rowData || rowData.length <= 1) return;
+
+            // Extract data starting from index 1 (skip undefined first element)
+            const rowValues = rowData.slice(1);
+            
+            // Create object mapping based on header
+            const userData: Record<string, string> = {};
+            headerRow.forEach((header, index) => {
+              const value = rowValues[index]?.toString().trim() || "";
+              if (header.includes("first") && header.includes("name")) {
+                userData.first_name = value;
+              } else if (header.includes("middle") && header.includes("name")) {
+                userData.middle_name = value;
+              } else if (header.includes("last") && header.includes("name")) {
+                userData.last_name = value;
+              } else if (header.includes("email")) {
+                userData.email = value;
+              } else if (header.includes("role")) {
+                userData.role = value;
+              }
+            });
+
+            // Only add if we have required fields
+            if (userData.first_name && userData.last_name && userData.email) {
+              // Parse role to subrole
+              let subrole = 0; // Default to Project Member
+              if (userData.role) {
+                const roleLower = userData.role.toLowerCase().trim();
+                if (roleLower.includes("manager") || roleLower.includes("project manager")) {
+                  subrole = 1; // Project Manager
+                } else if (roleLower.includes("member") || roleLower.includes("project member")) {
+                  subrole = 0; // Project Member
+                }
+              }
+
+              rows.push({
+                first_name: userData.first_name,
+                middle_name: userData.middle_name || "",
+                last_name: userData.last_name,
+                email: userData.email,
+                subrole: subrole,
+              });
+            }
+          });
+
+          resolve(rows);
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      reader.onerror = () => {
+        reject(new Error("Failed to read file"));
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const validateBulkUsers = (users: AddFormData[]): { valid: AddFormData[]; errors: string[] } => {
+    const validUsers: AddFormData[] = [];
+    const errors: string[] = [];
+    const emailSet = new Set<string>();
+
+    users.forEach((user, index) => {
+      const rowNumber = index + 2; // +2 because we skip header row and arrays are 0-indexed
+      
+      // Check required fields
+      if (!user.first_name.trim()) {
+        errors.push(`Row ${rowNumber}: First name is required`);
+        return;
+      }
+      if (!user.last_name.trim()) {
+        errors.push(`Row ${rowNumber}: Last name is required`);
+        return;
+      }
+      if (!user.email.trim()) {
+        errors.push(`Row ${rowNumber}: Email is required`);
+        return;
+      }
+
+      // Check email format
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) {
+        errors.push(`Row ${rowNumber}: Invalid email format`);
+        return;
+      }
+
+      // Check email length
+      if (user.email.length > 100) {
+        errors.push(`Row ${rowNumber}: Email must be less than 100 characters`);
+        return;
+      }
+
+      // Check for duplicate emails in the file
+      if (emailSet.has(user.email.toLowerCase())) {
+        errors.push(`Row ${rowNumber}: Duplicate email found in the file`);
+        return;
+      }
+
+      // Check for duplicate emails in existing users
+      const existingUser = searchResult.users.find(
+        existingUser => existingUser.email.toLowerCase() === user.email.toLowerCase()
+      );
+      if (existingUser) {
+        errors.push(`Row ${rowNumber}: Email already exists in the system`);
+        return;
+      }
+
+      emailSet.add(user.email.toLowerCase());
+      validUsers.push(user);
+    });
+
+    return { valid: validUsers, errors };
+  };
+
+  const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+    ];
+    
+    if (!validTypes.includes(file.type)) {
+      setNotification({
+        type: "error",
+        message: "Please upload a valid Excel file (.xlsx or .xls)",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setNotification({
+        type: "error",
+        message: "File size must be less than 5MB",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // Parse Excel file
+      const users = await parseExcelFile(file);
+      
+      if (users.length === 0) {
+        setNotification({
+          type: "error",
+          message: "No valid user data found in the Excel file. Please ensure the file has the correct format with First Name, Last Name, Email, and Role columns.",
+        });
+        return;
+      }
+
+      // Validate users
+      const { valid: validUsers, errors: validationErrors } = validateBulkUsers(users);
+      
+      if (validationErrors.length > 0) {
+        setNotification({
+          type: "error",
+          message: `Validation errors found:\n${validationErrors.slice(0, 5).join('\n')}${validationErrors.length > 5 ? `\n... and ${validationErrors.length - 5} more errors` : ''}`,
+        });
+        return;
+      }
+
+      if (validUsers.length === 0) {
+        setNotification({
+          type: "error",
+          message: "No valid users to import after validation",
+        });
+        return;
+      }
+
+      // Create users one by one with progress tracking
+      let successCount = 0;
+      let errorCount = 0;
+      const creationErrors: string[] = [];
+
+      for (let i = 0; i < validUsers.length; i++) {
+        const user = validUsers[i];
+        setUploadProgress(Math.round(((i + 1) / validUsers.length) * 100));
+
+        try {
+          // Call distributed-safe API route for creation
+          const response = await fetch("/api/clerk/create-user", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: sanitizeInput(user.email, {
+                maxLength: 100,
+                trim: true,
+                removeHtml: true,
+              }),
+              firstName: toSentenceCase(
+                sanitizeInput(user.first_name, {
+                  maxLength: 50,
+                  trim: true,
+                  removeHtml: true,
+                }),
+              ),
+              lastName: toSentenceCase(
+                sanitizeInput(user.last_name, {
+                  maxLength: 50,
+                  trim: true,
+                  removeHtml: true,
+                }),
+              ),
+              middleName: user.middle_name
+                ? toSentenceCase(
+                    sanitizeInput(user.middle_name, {
+                      maxLength: 50,
+                      trim: true,
+                      removeHtml: true,
+                    }),
+                  )
+                : undefined,
+              role: 0, // 0 = student
+              subrole: user.subrole,
+              instructorId: instructorId,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to create user");
+          }
+
+          const data = await response.json();
+
+          // Send welcome email via Resend
+          try {
+            await fetch("/api/resend/welcome-email", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                firstName: sanitizeInput(user.first_name, {
+                  maxLength: 50,
+                  trim: true,
+                  removeHtml: true,
+                }),
+                lastName: sanitizeInput(user.last_name, {
+                  maxLength: 50,
+                  trim: true,
+                  removeHtml: true,
+                }),
+                email: sanitizeInput(user.email, {
+                  maxLength: 100,
+                  trim: true,
+                  removeHtml: true,
+                }),
+                password: data.user.password,
+              }),
+            });
+          } catch (emailError) {
+            // Email sending failed, but user was created successfully
+            console.warn("Failed to send welcome email:", emailError);
+          }
+
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          creationErrors.push(`${user.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      // Show results
+      if (successCount > 0 && errorCount === 0) {
+        setNotification({
+          type: "success",
+          message: `Successfully imported ${successCount} student${successCount > 1 ? 's' : ''}`,
+        });
+      } else if (successCount > 0 && errorCount > 0) {
+        setNotification({
+          type: "warning",
+          message: `Imported ${successCount} student${successCount > 1 ? 's' : ''} successfully. ${errorCount} failed:\n${creationErrors.slice(0, 3).join('\n')}${creationErrors.length > 3 ? `\n... and ${creationErrors.length - 3} more errors` : ''}`,
+        });
+      } else {
+        setNotification({
+          type: "error",
+          message: `Failed to import any students:\n${creationErrors.slice(0, 5).join('\n')}${creationErrors.length > 5 ? `\n... and ${creationErrors.length - 5} more errors` : ''}`,
+        });
+      }
+
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message: error instanceof Error ? error.message : "Failed to process Excel file",
+      });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  // =========================================
   // Render
   // =========================================
   return (
@@ -685,6 +1032,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           onPageSizeChange={handlePageSizeChange}
           isStudent={true}
           isDeleting={isDeleting}
+          onExcelUpload={handleExcelUpload}
+          isUploading={isUploading}
+          uploadProgress={uploadProgress}
         />
 
         {/* Add Form */}
