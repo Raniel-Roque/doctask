@@ -81,7 +81,7 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
       <h3 className="text-lg font-semibold mb-4">Privacy Policy</h3>
       <div className="space-y-4 text-sm text-gray-700">
         <p>
-          <strong>Last updated:</strong> {new Date().toLocaleDateString()}
+          <strong>Effective date:</strong> September 9, 2025
         </p>
 
         <section>
@@ -146,7 +146,7 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
       <h3 className="text-lg font-semibold mb-4">Terms of Service</h3>
       <div className="space-y-4 text-sm text-gray-700">
         <p>
-          <strong>Last updated:</strong> {new Date().toLocaleDateString()}
+          <strong>Effective date:</strong> September 9, 2025
         </p>
 
         <section>

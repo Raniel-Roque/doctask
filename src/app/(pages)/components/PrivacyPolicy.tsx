@@ -38,129 +38,87 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
 
         <div className="space-y-6 text-gray-700">
           <p>
-            <strong>Last updated:</strong> {new Date().toLocaleDateString()}
+            <strong>Effective date:</strong> September 9, 2025
           </p>
 
           <section>
-            <h3 className="text-lg font-semibold mb-3">
-              1. Information We Collect
-            </h3>
-            <p className="mb-2">
-              We collect information you provide directly to us, such as when
-              you create an account, update your profile, or communicate with
-              us. This may include your name, email address, and other contact
-              information.
-            </p>
-            <p>
-              We also collect information about your use of our services,
-              including your interactions with documents, groups, and other
-              users.
-            </p>
-          </section>
-
-          <section>
-            <h3 className="text-lg font-semibold mb-3">
-              2. How We Use Your Information
-            </h3>
-            <p className="mb-2">We use the information we collect to:</p>
+            <h3 className="text-lg font-semibold mb-3">1. Information We Collect</h3>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Provide, maintain, and improve our services</li>
-              <li>Process and manage your account</li>
-              <li>Communicate with you about your account and our services</li>
-              <li>Ensure the security of our platform</li>
-              <li>Comply with legal obligations</li>
+              <li>Account information (name, email, profile image, Clerk ID, role/subrole).</li>
+              <li>Groups and assignments (group membership, instructor/adviser relationships).</li>
+              <li>Content you create (documents, notes/comments, uploaded images, titles/chapters/statuses).</li>
+              <li>Collaboration signals (presence, cursors, selections) for real‑time features.</li>
+              <li>Usage/log data (device, IP, timestamps, errors, rate‑limit and health checks).</li>
+              <li>Cookies/local storage (authentication cookies, resend timers, flow flags).</li>
             </ul>
           </section>
 
           <section>
-            <h3 className="text-lg font-semibold mb-3">
-              3. Information Sharing
-            </h3>
-            <p className="mb-2">
-              We do not sell, trade, or otherwise transfer your personal
-              information to third parties without your consent, except as
-              described in this policy or as required by law.
-            </p>
-            <p>We may share your information with:</p>
+            <h3 className="text-lg font-semibold mb-3">2. How We Use Your Information</h3>
+            <p className="mb-2">We process personal information to:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Service providers who assist us in operating our platform</li>
-              <li>
-                Other users within your group (as necessary for collaboration)
-              </li>
-              <li>Law enforcement when required by law</li>
+              <li>Authenticate users and manage sessions (Clerk).</li>
+              <li>Provide collaboration and presence (Liveblocks).</li>
+              <li>Store/synchronize documents, tasks, and groups (Convex).</li>
+              <li>Track document edits for contributor features.</li>
+              <li>Operate image uploads and media delivery.</li>
+              <li>Maintain security, detect abuse, and apply rate limits.</li>
+              <li>Monitor availability and reliability (health checks).</li>
+              <li>Comply with legal obligations and enforce terms.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3 className="text-lg font-semibold mb-3">3. Information Sharing</h3>
+            <p className="mb-2">We do not sell personal information. We share information only as necessary to operate and protect the service:</p>
+            <ul className="list-disc list-inside space-y-1 ml-4">
+              <li>Processors: Clerk (auth), Convex (data), Liveblocks (realtime).</li>
+              <li>Organization members: limited profile visibility for collaboration.</li>
+              <li>Legal and safety: to comply with law or protect rights and security.</li>
             </ul>
           </section>
 
           <section>
             <h3 className="text-lg font-semibold mb-3">4. Data Security</h3>
-            <p>
-              We implement appropriate security measures to protect your
-              personal information against unauthorized access, alteration,
-              disclosure, or destruction. This includes encryption, secure
-              servers, and regular security assessments.
-            </p>
+            <p>We use appropriate administrative, technical, and organizational safeguards (HTTPS, access controls, rate‑limiting, reviews). No method of transmission or storage is fully secure.</p>
           </section>
 
           <section>
             <h3 className="text-lg font-semibold mb-3">5. Your Rights</h3>
-            <p className="mb-2">
-              You have the following rights regarding your personal information:
-            </p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Access your personal information</li>
-              <li>Update or correct your information</li>
-              <li>Delete your account and associated data</li>
-              <li>Request a copy of your data</li>
-              <li>Withdraw your consent at any time</li>
-            </ul>
+            <p className="mb-2">Subject to law, you may request access, correction, deletion, export, or restriction of processing, and withdraw consent where applicable.</p>
           </section>
 
           <section>
             <h3 className="text-lg font-semibold mb-3">6. Data Retention</h3>
-            <p>
-              We retain your personal information for as long as your account is
-              active or as needed to provide you services. We will delete your
-              information when you delete your account or when it&apos;s no
-              longer needed for the purposes outlined in this policy.
-            </p>
+            <p>We retain data while your account is active and as required for operations and legal obligations. Documents and collaboration data persist until removed by authorized users or per institutional policy. Logs and rate‑limit data are retained for shorter operational windows.</p>
           </section>
 
           <section>
-            <h3 className="text-lg font-semibold mb-3">
-              7. Cookies and Tracking
-            </h3>
-            <p>
-              We use cookies and similar technologies to enhance your
-              experience, analyze usage, and provide personalized content. You
-              can control cookie settings through your browser.
-            </p>
+            <h3 className="text-lg font-semibold mb-3">7. Cookies and Local Storage</h3>
+            <p>Authentication cookies (Clerk) and local storage are used for essential login flows (e.g., resend timers) and preferences. You can control non‑essential storage in your browser.</p>
           </section>
 
           <section>
-            <h3 className="text-lg font-semibold mb-3">
-              8. Changes to This Policy
-            </h3>
-            <p>
-              We may update this Privacy Policy from time to time. We will
-              notify you of any changes by posting the new policy on this page
-              and updating the &quot;Last updated&quot; date.
-            </p>
+            <h3 className="text-lg font-semibold mb-3">8. International Transfers</h3>
+            <p>Processors may operate in multiple jurisdictions. We implement safeguards for cross‑border transfers where required.</p>
           </section>
 
           <section>
-            <h3 className="text-lg font-semibold mb-3">9. Contact Us</h3>
+            <h3 className="text-lg font-semibold mb-3">9. Children’s Privacy</h3>
+            <p>The service is designed for educational/institutional users. If a child’s information was provided without proper authorization, contact us for removal.</p>
+          </section>
+
+          <section>
+            <h3 className="text-lg font-semibold mb-3">10. Changes to This Policy</h3>
+            <p>We may update this policy and will notify you of material changes via the product or email where appropriate.</p>
+          </section>
+
+          <section>
+            <h3 className="text-lg font-semibold mb-3">11. Contact Us</h3>
             <p>
               If you have any questions about this Privacy Policy or our data
-              practices, please contact us at:
+              practices, please contact your capstone instructor.
             </p>
-            <div className="mt-2 p-3 bg-gray-50 rounded">
-              <p>
-                <strong>Email:</strong> privacy@doctask.com
-              </p>
-              <p>
-                <strong>Address:</strong> [Your Company Address]
-              </p>
-            </div>
           </section>
         </div>
       </div>

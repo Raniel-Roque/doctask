@@ -38,7 +38,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({
 
         <div className="space-y-6 text-gray-700">
           <p>
-            <strong>Last updated:</strong> {new Date().toLocaleDateString()}
+            <strong>Effective date:</strong> September 9, 2025
           </p>
 
           <section>
