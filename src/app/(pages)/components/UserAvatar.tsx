@@ -56,6 +56,9 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       alt={`${firstName} ${lastName}`}
       width={size}
       height={size}
+      loading="lazy"
+      decoding="async"
+      sizes={`${size}px`}
       style={{
         width: size,
         height: size,

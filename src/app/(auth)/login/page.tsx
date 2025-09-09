@@ -788,6 +788,9 @@ const LoginPage = () => {
             alt="DocTask Logo"
             width={180}
             height={180}
+            priority
+            fetchPriority="high"
+            sizes="(max-width: 768px) 120px, 180px"
             className="rounded-full mb-8 mx-auto shadow-xl border-4 border-black"
           />
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 tracking-wider">

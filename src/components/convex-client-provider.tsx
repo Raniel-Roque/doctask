@@ -9,6 +9,7 @@ import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { SessionTimeout } from "./session-timeout";
 import { TermsAgreementWrapper } from "@/app/(pages)/components/TermsAgreementWrapper";
+import { NetworkStatusBanner } from "@/app/(pages)/components/NetworkStatusBanner";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -249,9 +250,16 @@ function AuthStatusGate({ children }: { children: ReactNode }) {
 function AuthCheck({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isPublicPage = pathname === "/login";
+  const [authSlow, setAuthSlow] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setAuthSlow(true), 6000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+      <NetworkStatusBanner />
       <Authenticated>
         <SessionTimeout />
         <RedirectHandler />
@@ -267,8 +275,13 @@ function AuthCheck({ children }: { children: ReactNode }) {
         {isPublicPage ? (
           children
         ) : (
-          <div className="flex items-center justify-center min-h-screen bg-white text-lg font-semibold">
-            Loading authentication...
+          <div className="flex flex-col items-center justify-center min-h-screen bg-white text-center px-6">
+            <div className="text-lg font-semibold">Loading authentication...</div>
+            {authSlow && (
+              <div className="mt-2 text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                Taking longer than usual. Please check your internet connection.
+              </div>
+            )}
           </div>
         )}
       </AuthLoading>

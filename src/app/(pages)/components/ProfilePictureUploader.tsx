@@ -110,6 +110,9 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
             alt="Profile"
             width={192}
             height={192}
+            loading="lazy"
+            decoding="async"
+            sizes="192px"
             className="w-full h-full object-cover"
           />
         ) : (

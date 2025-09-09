@@ -58,6 +58,9 @@ const Avatar = ({ src, name }: AvatarProps) => {
         alt={name}
         width={AVATAR_SIZE}
         height={AVATAR_SIZE}
+        loading="lazy"
+        decoding="async"
+        sizes={`${AVATAR_SIZE}px`}
         className="rounded-full object-cover"
       />
     </div>
