@@ -105,21 +105,15 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
 
           <section>
             <h3 className="text-lg font-semibold mb-3">9. Children’s Privacy</h3>
-            <p>The service is designed for educational/institutional users. If a child’s information was provided without proper authorization, contact us for removal.</p>
+            <p>The service is designed for educational/institutional users. If a child’s information was provided without proper authorization, request removal through your institution.</p>
           </section>
 
           <section>
             <h3 className="text-lg font-semibold mb-3">10. Changes to This Policy</h3>
-            <p>We may update this policy and will notify you of material changes via the product or email where appropriate.</p>
+            <p>We may update this policy and will notify you of material changes via the product</p>
           </section>
 
-          <section>
-            <h3 className="text-lg font-semibold mb-3">11. Contact Us</h3>
-            <p>
-              If you have any questions about this Privacy Policy or our data
-              practices, please contact your capstone instructor.
-            </p>
-          </section>
+          
         </div>
       </div>
     </div>

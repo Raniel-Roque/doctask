@@ -129,13 +129,7 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
           </p>
         </section>
 
-        <section>
-          <h4 className="font-semibold mb-2">6. Contact Us</h4>
-          <p>
-            If you have any questions about this Privacy Policy, please contact
-            us at privacy@doctask.com
-          </p>
-        </section>
+        
       </div>
     </div>
   );
@@ -202,13 +196,7 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
           </p>
         </section>
 
-        <section>
-          <h4 className="font-semibold mb-2">7. Contact Information</h4>
-          <p>
-            If you have any questions about these Terms of Service, please
-            contact us at terms@doctask.com
-          </p>
-        </section>
+        
       </div>
     </div>
   );

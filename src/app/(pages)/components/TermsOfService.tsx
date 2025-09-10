@@ -183,23 +183,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({
             </p>
           </section>
 
-          <section>
-            <h3 className="text-lg font-semibold mb-3">
-              12. Contact Information
-            </h3>
-            <p>
-              If you have any questions about these Terms of Service, please
-              contact us at:
-            </p>
-            <div className="mt-2 p-3 bg-gray-50 rounded">
-              <p>
-                <strong>Email:</strong> terms@doctask.com
-              </p>
-              <p>
-                <strong>Address:</strong> [Your Company Address]
-              </p>
-            </div>
-          </section>
+          
         </div>
       </div>
     </div>
