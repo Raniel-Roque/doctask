@@ -35,7 +35,7 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
   const modalRef = useModalFocus({
     isOpen,
     onClose: () => onClose(),
-    focusFirstInput: true,
+    focusFirstInput: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

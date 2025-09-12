@@ -25,7 +25,7 @@ export const AdviserCodePopup: React.FC<AdviserCodePopupProps> = ({
   const modalRef = useModalFocus({
     isOpen,
     onClose: () => onClose(),
-    focusFirstInput: true,
+    focusFirstInput: false,
   });
 
   // Expose a clear function to parent

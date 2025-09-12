@@ -65,8 +65,8 @@ export default function EditGroupForm({
 
   const [initialFormData, setInitialFormData] = useState(formData);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] =
-    useState(false);
+  const [showUnsavedChanges, setShowUnsavedChanges] = useState(false);
+
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: string;
   }>({});
@@ -88,7 +88,7 @@ export default function EditGroupForm({
   const modalRef = useModalFocus({
     isOpen,
     onClose: () => onClose(),
-    focusFirstInput: true,
+    focusFirstInput: false,
   });
 
   // Update form data when group changes
@@ -109,9 +109,9 @@ export default function EditGroupForm({
 
   // Check for unsaved changes
   useEffect(() => {
-    const hasChanges =
-      JSON.stringify(formData) !== JSON.stringify(initialFormData);
-    setHasUnsavedChanges(hasChanges);
+    setHasUnsavedChanges(
+      JSON.stringify(formData) !== JSON.stringify(initialFormData),
+    );
   }, [formData, initialFormData]);
 
   // Close all dropdowns
@@ -214,7 +214,7 @@ export default function EditGroupForm({
     e.stopPropagation();
 
     if (hasUnsavedChanges) {
-      setShowUnsavedChangesDialog(true);
+      setShowUnsavedChanges(true);
     } else {
       closeForm();
     }
@@ -454,17 +454,6 @@ export default function EditGroupForm({
                           <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
                             <FaSearch />
                           </div>
-                          {adviserSearch && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setAdviserSearch("");
-                              }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                              <FaTimes size={12} />
-                            </button>
-                          )}
                         </div>
                       </div>
                       <div className="max-h-48 overflow-y-auto">
@@ -608,17 +597,6 @@ export default function EditGroupForm({
                         <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
                           <FaSearch />
                         </div>
-                        {membersSearch && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMembersSearch("");
-                            }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          >
-                            <FaTimes size={12} />
-                          </button>
-                        )}
                       </div>
                     </div>
                     <div className="max-h-48 overflow-y-auto">
@@ -692,7 +670,7 @@ export default function EditGroupForm({
               <button
                 type="submit"
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !hasUnsavedChanges}
               >
                 {isSubmitting ? (
                   <>
@@ -715,12 +693,12 @@ export default function EditGroupForm({
 
       {/* Notifications */}
       <UnsavedChangesConfirmation
-        isOpen={showUnsavedChangesDialog}
+        isOpen={showUnsavedChanges}
         onContinue={() => {
-          setShowUnsavedChangesDialog(false);
-          closeForm();
+          setShowUnsavedChanges(false);
+          onClose();
         }}
-        onCancel={() => setShowUnsavedChangesDialog(false)}
+        onCancel={() => setShowUnsavedChanges(false)}
       />
     </>
   );

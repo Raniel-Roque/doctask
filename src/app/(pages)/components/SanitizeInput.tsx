@@ -52,7 +52,7 @@ export const sanitizeInput = (
       .replace(/[&]/g, "&amp;")
       .replace(/["]/g, "&quot;")
       .replace(/[']/g, "&#x27;")
-      .replace(/[/]/g, "&#x2F;");
+      .replace(/[\/]/g, "&#x2F;");
   }
 
   // Apply max length if specified
@@ -101,9 +101,9 @@ export const VALIDATION_RULES = {
   // Capstone title
   capstoneTitle: {
     maxLength: 255,
-    pattern: /^[a-zA-Z0-9\s.,!?-]+$/,
+    pattern: /^[a-zA-Z0-9\s.,!?;:-]+$/,
     message:
-      "Capstone Title can only contain letters, numbers, and basic punctuation",
+      "Capstone Title can include letters, numbers, spaces, . , ! ? : ; -",
     required: false,
   },
 } as const;

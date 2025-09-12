@@ -199,6 +199,23 @@ export default function EditForm({
     onClose();
   };
 
+  // Track initial form data and detect unsaved changes
+  const [initialFormData, setInitialFormData] = useState<EditFormData>(formData);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  React.useEffect(() => {
+    if (user) {
+      setInitialFormData(formData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  React.useEffect(() => {
+    setHasUnsavedChanges(
+      JSON.stringify(formData) !== JSON.stringify(initialFormData),
+    );
+  }, [formData, initialFormData]);
+
   if (!user) return null;
 
   // =========================================
@@ -472,7 +489,7 @@ export default function EditForm({
               <button
                 type="submit"
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !hasUnsavedChanges}
               >
                 {isSubmitting ? (
                   <>

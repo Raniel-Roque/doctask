@@ -70,7 +70,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   const modalRef = useModalFocus({
     isOpen,
     onClose: () => onClose(),
-    focusFirstInput: true,
+    focusFirstInput: false,
   });
 
   // Fetch notes
@@ -275,6 +275,11 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
     });
   };
 
+  // Sanitize YYYY-MM-DD input while preserving caret behavior in controlled input
+  const sanitizeDateInput = (value: string) => {
+    return value.replace(/[^0-9-]/g, "").slice(0, 10);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -326,14 +331,15 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                   </button>
                 )}
                 <input
-                  type="date"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="YYYY-MM-DD"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   value={startDate}
                   onChange={(e) => {
-                    setStartDate(e.target.value);
+                    setStartDate(sanitizeDateInput(e.target.value));
                     setCurrentPage(1);
                   }}
-                  max={new Date().toISOString().split("T")[0]}
                 />
               </div>
               <span className="self-center text-gray-500 text-sm">to</span>
@@ -353,15 +359,15 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                   </button>
                 )}
                 <input
-                  type="date"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="YYYY-MM-DD"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   value={endDate}
                   onChange={(e) => {
-                    setEndDate(e.target.value);
+                    setEndDate(sanitizeDateInput(e.target.value));
                     setCurrentPage(1);
                   }}
-                  min={startDate || undefined}
-                  max={new Date().toISOString().split("T")[0]}
                 />
               </div>
             </div>

@@ -97,7 +97,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   const modalRef = useModalFocus({
     isOpen,
     onClose: () => onClose(),
-    focusFirstInput: true,
+    focusFirstInput: false,
   });
 
   useEffect(() => {

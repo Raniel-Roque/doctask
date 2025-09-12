@@ -20,7 +20,7 @@ export const ModalFocusDemo: React.FC<ModalFocusDemoProps> = ({
   const modalRef = useModalFocus({
     isOpen,
     onClose,
-    focusFirstInput: true,
+    focusFirstInput: false,
   });
 
   if (!isOpen) return null;
