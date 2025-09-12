@@ -26,6 +26,7 @@ const LoginPage = () => {
   const { signOut, isSignedIn } = useAuth();
   const { user } = useUser();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -43,6 +44,10 @@ const LoginPage = () => {
   const [forgotStepIndex, setForgotStepIndex] = useState(0); // 0: code, 1: reset password
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // Check for success parameters in URL
@@ -113,6 +118,9 @@ const LoginPage = () => {
       router.replace("/");
     }
   }, [isLoaded, isSignedIn, user, router]);
+
+  // Avoid SSR/CSR mismatch by rendering only after mount
+  if (!mounted) return null;
 
   if (isMobile) {
     return (

@@ -176,6 +176,15 @@ export const UserTable = ({
     sortDirection,
   });
 
+  // Export readiness and key strengthening
+  const exportUsers = Array.isArray(allFilteredUsersQuery?.users)
+    ? (allFilteredUsersQuery?.users as User[])
+    : [];
+  const exportReady = Array.isArray(allFilteredUsersQuery?.users);
+  const exportIdsChecksum = exportUsers.length
+    ? `${exportUsers[0]._id}-${exportUsers[exportUsers.length - 1]._id}-${exportUsers.length}`
+    : `empty-${users.length}-${totalCount}`;
+
   // =========================================
   // Helper Functions
   // =========================================
@@ -650,48 +659,73 @@ export const UserTable = ({
             {!isDeleting && users.length > 0 && !isLoading && (
               <>
                 <span className="text-gray-300 mx-1">|</span>
-                <PDFDownloadLink
-                  document={
-                    <PDFReport
-                      users={allFilteredUsersQuery?.users || []}
-                      title={
-                        showRoleColumn ? "Students Report" : "Advisers Report"
-                      }
-                      filters={{
-                        status: statusFilter,
-                        subrole: showRoleColumn
-                          ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
-                            ? "MANAGER"
-                            : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
-                              ? "MEMBER"
-                              : "ALL ROLE"
-                          : undefined,
-                      }}
-                      isStudent={isStudent}
-                      adviserCodes={adviserCodes}
-                    />
-                  }
-                  fileName={(() => {
-                    const role = showRoleColumn ? "Student" : "Adviser";
-                    const filters = [
-                      `Status-${statusFilter}`,
-                      `Role-${roleFilter}`,
-                    ];
-                    const date = new Date();
-                    const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}_${date.getHours().toString().padStart(2, "0")}${date.getMinutes().toString().padStart(2, "0")}${date.getSeconds().toString().padStart(2, "0")}`;
-                    return `${role}Report-${filters.join("_")}-${dateTime}.pdf`;
-                  })()}
-                >
-                  {() => (
-                    <span
-                      className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
-                      title="Download Report"
-                      style={{ minWidth: 90, display: "inline-block" }}
-                    >
-                      Download Report
-                    </span>
-                  )}
-                </PDFDownloadLink>
+                {exportReady ? (
+                  <PDFDownloadLink
+                    key={`pdf-users-${users.length}-${totalCount}-${statusFilter}-${roleFilter}-${showRoleColumn}-${Boolean(isStudent)}-${searchTerm}-${exportIdsChecksum}`}
+                    document={
+                      <PDFReport
+                        users={exportUsers}
+                        title={
+                          showRoleColumn ? "Students Report" : "Advisers Report"
+                        }
+                        filters={{
+                          status: statusFilter,
+                          subrole: showRoleColumn
+                            ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
+                              ? "MANAGER"
+                              : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
+                                ? "MEMBER"
+                                : "ALL ROLE"
+                            : undefined,
+                        }}
+                        isStudent={isStudent}
+                        adviserCodes={adviserCodes}
+                      />
+                    }
+                    fileName={(() => {
+                      const role = showRoleColumn ? "Student" : "Adviser";
+                      const filters = [
+                        `Status-${statusFilter}`,
+                        `Role-${roleFilter}`,
+                      ];
+                      const date = new Date();
+                      const dateTime = `${date.getFullYear()}${(date.getMonth() + 1)
+                        .toString()
+                        .padStart(2, "0")}${date
+                        .getDate()
+                        .toString()
+                        .padStart(2, "0")}_${date
+                        .getHours()
+                        .toString()
+                        .padStart(2, "0")}${date
+                        .getMinutes()
+                        .toString()
+                        .padStart(2, "0")}${date
+                        .getSeconds()
+                        .toString()
+                        .padStart(2, "0")}`;
+                      return `${role}Report-${filters.join("_")}-${dateTime}.pdf`;
+                    })()}
+                  >
+                    {() => (
+                      <span
+                        className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
+                        title="Download Report"
+                        style={{ minWidth: 90, display: "inline-block" }}
+                      >
+                        Download Report
+                      </span>
+                    )}
+                  </PDFDownloadLink>
+                ) : (
+                  <span
+                    className="text-gray-400 text-sm font-medium ml-2 cursor-not-allowed"
+                    title="Preparing report..."
+                    style={{ minWidth: 120, display: "inline-block" }}
+                  >
+                    Preparing report...
+                  </span>
+                )}
               </>
             )}
           </div>

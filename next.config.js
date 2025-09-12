@@ -37,6 +37,15 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/favicon.ico",
+        destination: "/doctask.ico",
+        permanent: false,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

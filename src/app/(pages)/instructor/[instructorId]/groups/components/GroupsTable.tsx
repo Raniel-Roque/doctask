@@ -94,7 +94,7 @@ interface GroupsTableProps {
     >
   >;
   capstoneSortDirection: "asc" | "desc" | "none";
-  setCapstoneSortDirection: React.Dispatch<
+  setCapstoneSortDirection?: React.Dispatch<
     React.SetStateAction<"asc" | "desc" | "none">
   >;
   onCapstoneSortApply: (direction: "asc" | "desc" | "none") => void;
@@ -241,6 +241,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   const uniqueAdvisers = Array.from(
     new Set(advisers.map((adviser: User) => getFullName(adviser))),
   ).sort();
+
+  // Strengthen key with group IDs checksum
+  const exportReady = Array.isArray(groups) && groups.length >= 0;
+  const exportIdsChecksum = groups.length
+    ? `${groups[0]._id}-${groups[groups.length - 1]._id}-${groups.length}`
+    : `empty-${totalCount}`;
 
   // =========================================
   // Collapsible Text Component
@@ -882,31 +888,43 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
             {!isDeleting && groups.length > 0 && status === "idle" && (
               <>
                 <div className="h-6 w-px bg-gray-300"></div>
-                <PDFDownloadLink
-                  key={`pdf-${searchTerm}-${adviserFilters.join(",")}-${gradeFilters.join(",")}`}
-                  document={
-                    <GroupPDFReport
-                      groups={groups}
-                      title="Groups Report"
-                      filters={{
-                        searchTerm,
-                        adviserFilters,
-                        gradeFilters,
-                      }}
-                    />
-                  }
-                  fileName={`GroupsReport-${adviserFilters.join(",")}_${gradeFilters.join(",")}_${new Date().toISOString().slice(0, 10)}.pdf`}
-                >
-                  {() => (
-                    <span
-                      className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
-                      title="Download Report"
-                      style={{ minWidth: 90, display: "inline-block" }}
-                    >
-                      Download Report
-                    </span>
-                  )}
-                </PDFDownloadLink>
+                {exportReady ? (
+                  <PDFDownloadLink
+                    key={`pdf-groups-${searchTerm}-${adviserFilters.join(",")}-${gradeFilters.join(",")}-${groups.length}-${totalCount}-${exportIdsChecksum}`}
+                    document={
+                      <GroupPDFReport
+                        groups={groups}
+                        title="Groups Report"
+                        filters={{
+                          searchTerm,
+                          adviserFilters,
+                          gradeFilters,
+                        }}
+                      />
+                    }
+                    fileName={`GroupsReport-${adviserFilters.join(",")}_${gradeFilters.join(",")}_${new Date()
+                      .toISOString()
+                      .slice(0, 10)}.pdf`}
+                  >
+                    {() => (
+                      <span
+                        className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
+                        title="Download Report"
+                        style={{ minWidth: 90, display: "inline-block" }}
+                      >
+                        Download Report
+                      </span>
+                    )}
+                  </PDFDownloadLink>
+                ) : (
+                  <span
+                    className="text-gray-400 text-sm font-medium ml-2 cursor-not-allowed"
+                    title="Preparing report..."
+                    style={{ minWidth: 120, display: "inline-block" }}
+                  >
+                    Preparing report...
+                  </span>
+                )}
               </>
             )}
           </div>
