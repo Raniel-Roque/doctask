@@ -396,7 +396,7 @@ export default function EditGroupForm({
                     <button
                       type="button"
                       onClick={handleClearAdviser}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
+                      className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors"
                     >
                       Clear
                     </button>
@@ -531,7 +531,7 @@ export default function EditGroupForm({
                   <button
                     type="button"
                     onClick={handleClearMembers}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
+                    className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors"
                   >
                     Clear All
                   </button>
