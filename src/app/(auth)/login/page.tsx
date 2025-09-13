@@ -1340,7 +1340,7 @@ const LoginPage = () => {
                   } else {
                     // Default to Windows for unknown OS
                     downloadUrl =
-                      "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
+                      "https://github.com/Raniel-Roque/doctask/releases/download/Windows/DocTask-Setup-1.0.0.exe";
                     fileName = "DocTask-Setup-1.0.0.exe";
                   }
 
@@ -1386,7 +1386,7 @@ const LoginPage = () => {
                       try {
                         const link = document.createElement("a");
                         link.href =
-                          "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe";
+                          "https://github.com/Raniel-Roque/doctask/releases/download/Windows/DocTask-Setup-1.0.0.exe";
                         link.download = "DocTask-Setup-1.0.0.exe";
                         link.target = "_blank";
                         link.rel = "noopener noreferrer";
@@ -1401,7 +1401,7 @@ const LoginPage = () => {
                         }, 100);
                       } catch {
                         window.open(
-                          "https://github.com/Raniel-Roque/doctask/releases/download/v1.0.0/DocTask-Setup-1.0.0.exe",
+                          "https://github.com/Raniel-Roque/doctask/releases/download/Windows/DocTask-Setup-1.0.0.exe",
                           "_blank",
                           "noopener,noreferrer",
                         );
