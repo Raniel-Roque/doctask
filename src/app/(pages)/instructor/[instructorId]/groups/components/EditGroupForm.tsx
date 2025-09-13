@@ -26,7 +26,6 @@ interface User {
   first_name: string;
   middle_name?: string;
   last_name: string;
-  group_id?: string;
 }
 
 interface EditGroupFormProps {
@@ -605,13 +604,8 @@ export default function EditGroupForm({
                           const isSelected = formData.members.includes(
                             member._id,
                           );
-                          const isInThisGroup =
-                            group &&
-                            String(member.group_id) === String(group._id);
-                          const isUnassigned = !member.group_id;
                           return (
                             !isSelected &&
-                            (isUnassigned || isInThisGroup) &&
                             filterMembers(member)
                           );
                         })
@@ -635,13 +629,8 @@ export default function EditGroupForm({
                         const isSelected = formData.members.includes(
                           member._id,
                         );
-                        const isInThisGroup =
-                          group &&
-                          String(member.group_id) === String(group._id);
-                        const isUnassigned = !member.group_id;
                         return (
                           !isSelected &&
-                          (isUnassigned || isInThisGroup) &&
                           filterMembers(member)
                         );
                       }).length === 0 && (

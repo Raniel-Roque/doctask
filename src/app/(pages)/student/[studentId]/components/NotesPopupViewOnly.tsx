@@ -110,9 +110,6 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
     });
   };
 
-  const sanitizeDateInput = (value: string) => {
-    return value.replace(/[^0-9-]/g, "").slice(0, 10);
-  };
 
   if (!isOpen) return null;
 
@@ -165,13 +162,12 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                   </button>
                 )}
                 <input
-                  type="text"
-                  inputMode="numeric"
+                  type="date"
                   placeholder="YYYY-MM-DD"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-12"
                   value={startDate}
                   onChange={(e) => {
-                    setStartDate(sanitizeDateInput(e.target.value));
+                    setStartDate(e.target.value);
                     setCurrentPage(1);
                   }}
                 />
@@ -193,13 +189,12 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                   </button>
                 )}
                 <input
-                  type="text"
-                  inputMode="numeric"
+                  type="date"
                   placeholder="YYYY-MM-DD"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-12"
                   value={endDate}
                   onChange={(e) => {
-                    setEndDate(sanitizeDateInput(e.target.value));
+                    setEndDate(e.target.value);
                     setCurrentPage(1);
                   }}
                 />

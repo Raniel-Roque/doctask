@@ -275,10 +275,6 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
     });
   };
 
-  // Sanitize YYYY-MM-DD input while preserving caret behavior in controlled input
-  const sanitizeDateInput = (value: string) => {
-    return value.replace(/[^0-9-]/g, "").slice(0, 10);
-  };
 
   if (!isOpen) return null;
 
@@ -331,13 +327,12 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                   </button>
                 )}
                 <input
-                  type="text"
-                  inputMode="numeric"
+                  type="date"
                   placeholder="YYYY-MM-DD"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   value={startDate}
                   onChange={(e) => {
-                    setStartDate(sanitizeDateInput(e.target.value));
+                    setStartDate(e.target.value);
                     setCurrentPage(1);
                   }}
                 />
@@ -359,13 +354,12 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                   </button>
                 )}
                 <input
-                  type="text"
-                  inputMode="numeric"
+                  type="date"
                   placeholder="YYYY-MM-DD"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   value={endDate}
                   onChange={(e) => {
-                    setEndDate(sanitizeDateInput(e.target.value));
+                    setEndDate(e.target.value);
                     setCurrentPage(1);
                   }}
                 />

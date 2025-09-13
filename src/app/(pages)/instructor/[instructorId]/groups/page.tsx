@@ -422,16 +422,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           onClose={() => setIsEditingGroup(null)}
           onSubmit={handleEditGroup}
           isSubmitting={isSubmitting}
-          members={
-            isEditingGroup
-              ? [
-                  ...isEditingGroup.member_ids
-                    .map((id) => users.find((u) => u && u._id === id))
-                    .filter((user): user is User => !!user),
-                  ...members,
-                ]
-              : members
-          }
+          members={members}
           advisers={advisers}
           group={isEditingGroup}
         />
