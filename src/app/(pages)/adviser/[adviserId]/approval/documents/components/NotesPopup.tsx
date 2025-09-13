@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FaPlus,
   FaEdit,
@@ -20,7 +20,6 @@ import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner"
 
 import { UnsavedChangesConfirmation } from "@/app/(pages)/components/UnsavedChangesConfirmation";
 import DeleteNoteConfirmation from "./DeleteNoteConfirmation";
-import { useModalFocus } from "@/hooks/use-modal-focus";
 
 interface NotesPopupProps {
   isOpen: boolean;
@@ -66,12 +65,45 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   const [pendingDeleteNoteId, setPendingDeleteNoteId] =
     useState<null | Id<"notes">>(null);
 
-  // Use modal focus management hook
-  const modalRef = useModalFocus({
-    isOpen,
-    onClose: () => onClose(),
-    focusFirstInput: false,
-  });
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap logic
+  useEffect(() => {
+    if (!isOpen) return;
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    // Get all focusable elements
+    const focusableSelectors = [
+      'a[href]', 'button:not([disabled])', 'textarea:not([disabled])', 'input:not([disabled])', 'select:not([disabled])', '[tabindex]:not([tabindex="-1"])'
+    ];
+    const focusableEls = modal.querySelectorAll<HTMLElement>(focusableSelectors.join(','));
+    if (focusableEls.length > 0) {
+      focusableEls[0].focus();
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Tab') {
+        const focusable = Array.from(focusableEls);
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (focusable.length === 0) return;
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    }
+    modal.addEventListener('keydown', handleKeyDown);
+    return () => modal.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   // Fetch notes
   const notesResult = useQuery(api.fetch.getDocumentNotes, {
@@ -287,6 +319,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="notes-modal-title"
+          tabIndex={-1}
         >
           {/* Main Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
