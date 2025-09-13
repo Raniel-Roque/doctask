@@ -553,7 +553,7 @@ export default function EditGroupForm({
                       return (
                         <div
                           key={memberId}
-                          className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2 text-sm whitespace-nowrap"
+                          className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2 text-sm whitespace-nowrap max-w-full"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleMemberRemove(memberId);

@@ -149,10 +149,13 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
   // Get users for forms
   const users = useQuery(api.fetch.getUsers) || [];
+  
+  // Get all groups for proper filtering (not just current page)
+  const allGroups = useQuery(api.fetch.getAllGroupsForFiltering) || [];
 
   // Filter project managers (role 0, subrole 1, not already a project manager)
   const usedManagerIds = new Set(
-    searchResult?.groups.map((g) => g.project_manager_id) || [],
+    allGroups.map((g) => g.project_manager_id) || [],
   );
   const projectManagers = users.filter(
     (u) => u && u.role === 0 && u.subrole === 1 && !usedManagerIds.has(u._id),
@@ -160,7 +163,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
   // Filter members (role 0, subrole 0, not already in a group)
   const usedMemberIds = new Set(
-    searchResult?.groups.flatMap((g) => g.member_ids) || [],
+    allGroups.flatMap((g) => g.member_ids) || [],
   );
   const members = users.filter(
     (u) => u && u.role === 0 && u.subrole === 0 && !usedMemberIds.has(u._id),

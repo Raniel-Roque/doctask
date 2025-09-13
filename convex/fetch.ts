@@ -2208,3 +2208,18 @@ export const getUsersByIds = query({
     }
   },
 });
+
+export const getAllGroupsForFiltering = query({
+  handler: async (ctx) => {
+    try {
+      const groups = await ctx.db
+        .query("groupsTable")
+        .collect()
+        .then((results) => results.filter((g) => !g.isDeleted));
+
+      return groups;
+    } catch {
+      return [];
+    }
+  },
+});
