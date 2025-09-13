@@ -458,7 +458,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       <button
                         type="button"
                         onClick={handleClearProjectManager}
-                        className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                        className="text-blue-600 hover:text-blue-800 text-sm inline-block"
                       >
                         Clear
                       </button>
@@ -566,7 +566,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       <button
                         type="button"
                         onClick={handleClearAdviser}
-                        className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                        className="text-blue-600 hover:text-blue-800 text-sm inline-block"
                       >
                         Clear
                       </button>
@@ -675,7 +675,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                     <button
                       type="button"
                       onClick={handleClearMembers}
-                      className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                      className="text-blue-600 hover:text-blue-800 text-sm inline-block"
                     >
                       Clear All
                     </button>
