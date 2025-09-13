@@ -300,16 +300,19 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
   };
 
   const handleClearProjectManager = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setFormData((prev) => ({ ...prev, projectManager: "" }));
   };
 
   const handleClearAdviser = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setFormData((prev) => ({ ...prev, adviser: "" }));
   };
 
   const handleClearMembers = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setFormData((prev) => ({ ...prev, members: [] }));
   };

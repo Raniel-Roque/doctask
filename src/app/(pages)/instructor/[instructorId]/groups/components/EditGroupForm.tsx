@@ -264,12 +264,14 @@ export default function EditGroupForm({
 
   // Handle clear members
   const handleClearMembers = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setFormData((prev) => ({ ...prev, members: [] }));
   };
 
   // Handle clear adviser
   const handleClearAdviser = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setFormData((prev) => ({ ...prev, adviser: null }));
   };
