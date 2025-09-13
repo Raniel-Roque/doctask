@@ -396,7 +396,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               <th
                 ref={capstoneThRef}
                 scope="col"
-                className="relative px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer w-48"
+                className="relative px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowCapstoneDropdown(!showCapstoneDropdown);
@@ -741,7 +741,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {group.name || "-"}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900 w-48">
+                <td className="px-6 py-4 text-sm text-gray-900">
                   <CollapsibleText
                     text={group.capstone_title}
                     groupId={group._id}
