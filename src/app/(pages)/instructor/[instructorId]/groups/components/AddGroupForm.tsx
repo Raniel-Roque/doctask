@@ -451,7 +451,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
             <div className="flex gap-4">
               {/* Project Manager */}
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="block text-sm font-medium text-gray-700 mb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <FaUserTie color="#4B5563" />
@@ -467,7 +467,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       </button>
                     )}
                   </div>
-                </label>
+                </div>
                 <div className="relative">
                   <div
                     ref={projectManagerTriggerRef}
@@ -559,7 +559,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
 
               {/* Adviser */}
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="block text-sm font-medium text-gray-700 mb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <FaUserGraduate color="#4B5563" />
@@ -575,7 +575,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       </button>
                     )}
                   </div>
-                </label>
+                </div>
                 <div className="relative">
                   <div
                     ref={adviserTriggerRef}
@@ -668,7 +668,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
 
             {/* Members */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="block text-sm font-medium text-gray-700 mb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <FaUsers color="#4B5563" />
@@ -684,7 +684,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                     </button>
                   )}
                 </div>
-              </label>
+              </div>
               <div className="relative">
                 <div
                   ref={membersTriggerRef}

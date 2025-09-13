@@ -389,7 +389,7 @@ export default function EditGroupForm({
             <div className="flex gap-4">
               {/* Adviser */}
               <div className="dropdown-container w-[70%]">
-                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+                <div className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <FaUserTie color="#6B7280" />
                     Adviser
@@ -403,7 +403,7 @@ export default function EditGroupForm({
                       Clear
                     </button>
                   )}
-                </label>
+                </div>
                 <div className="relative">
                   <div
                     ref={adviserTriggerRef}
@@ -524,7 +524,7 @@ export default function EditGroupForm({
 
             {/* Members */}
             <div className="dropdown-container">
-              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+              <div className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FaUsers color="#6B7280" />
                   Members
@@ -538,7 +538,7 @@ export default function EditGroupForm({
                     Clear All
                   </button>
                 )}
-              </label>
+              </div>
               <div className="relative">
                 <div
                   ref={membersTriggerRef}
