@@ -699,7 +699,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                         return (
                           <span
                             key={index}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 whitespace-nowrap max-w-full"
+                            className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 flex-shrink-0"
                           >
                             {user
                               ? `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`
