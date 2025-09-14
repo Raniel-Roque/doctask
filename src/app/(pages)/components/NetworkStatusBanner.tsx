@@ -11,9 +11,10 @@ const HEALTH_ENDPOINT = "/api/health";
 
 export function NetworkStatusBanner() {
   const [state, setState] = useState<NetworkState>(() => ({
-    status: typeof navigator !== "undefined" && navigator.onLine
-      ? "online"
-      : "offline",
+    status:
+      typeof navigator !== "undefined" && navigator.onLine
+        ? "online"
+        : "offline",
     unstable: false,
   }));
   const [details, setDetails] = useState<string | null>(null);
@@ -61,9 +62,12 @@ export function NetworkStatusBanner() {
       // Initial immediate check
       void tick();
       // Polling cadence changes based on state on each tick
-      intervalRef.current = window.setInterval(() => {
-        void tick();
-      }, isOffline ? 5000 : 15000);
+      intervalRef.current = window.setInterval(
+        () => {
+          void tick();
+        },
+        isOffline ? 5000 : 15000,
+      );
     },
     [isOffline],
   );
@@ -99,16 +103,16 @@ export function NetworkStatusBanner() {
     ? "You are offline."
     : details || "Connection is unstable. Trying to reconnect...";
 
-  const type = isOffline ? "error" : "warning" as const;
+  const type = isOffline ? "error" : ("warning" as const);
 
   return (
     <NotificationBanner
       message={message}
       type={type}
-      onClose={() => { /* persist banner until state changes */ }}
+      onClose={() => {
+        /* persist banner until state changes */
+      }}
       autoClose={false}
     />
   );
 }
-
-

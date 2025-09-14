@@ -75,15 +75,22 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
 
     // Get all focusable elements
     const focusableSelectors = [
-      'a[href]', 'button:not([disabled])', 'textarea:not([disabled])', 'input:not([disabled])', 'select:not([disabled])', '[tabindex]:not([tabindex="-1"])'
+      "a[href]",
+      "button:not([disabled])",
+      "textarea:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
     ];
-    const focusableEls = modal.querySelectorAll<HTMLElement>(focusableSelectors.join(','));
+    const focusableEls = modal.querySelectorAll<HTMLElement>(
+      focusableSelectors.join(","),
+    );
     if (focusableEls.length > 0) {
       focusableEls[0].focus();
     }
 
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Tab') {
+      if (e.key === "Tab") {
         const focusable = Array.from(focusableEls);
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
@@ -101,8 +108,8 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
         }
       }
     }
-    modal.addEventListener('keydown', handleKeyDown);
-    return () => modal.removeEventListener('keydown', handleKeyDown);
+    modal.addEventListener("keydown", handleKeyDown);
+    return () => modal.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
   // Fetch notes
@@ -306,7 +313,6 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
       minute: "2-digit",
     });
   };
-
 
   if (!isOpen) return null;
 

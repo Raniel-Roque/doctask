@@ -196,7 +196,11 @@ export default function EditGroupForm({
     const lastNameFirst =
       `${member.last_name} ${member.first_name} ${member.middle_name ? member.middle_name : ""}`.toLowerCase();
     const searchTerm = membersSearch.toLowerCase();
-    return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm) || member.email?.toLowerCase().includes(searchTerm);
+    return (
+      fullName.includes(searchTerm) ||
+      lastNameFirst.includes(searchTerm) ||
+      member.email?.toLowerCase().includes(searchTerm)
+    );
   };
 
   const filterAdvisers = (adviser: User) => {
@@ -205,7 +209,11 @@ export default function EditGroupForm({
     const lastNameFirst =
       `${adviser.last_name} ${adviser.first_name} ${adviser.middle_name ? adviser.middle_name : ""}`.toLowerCase();
     const searchTerm = adviserSearch.toLowerCase();
-    return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm) || adviser.email?.toLowerCase().includes(searchTerm);
+    return (
+      fullName.includes(searchTerm) ||
+      lastNameFirst.includes(searchTerm) ||
+      adviser.email?.toLowerCase().includes(searchTerm)
+    );
   };
 
   // Handle close with unsaved changes check
@@ -472,8 +480,16 @@ export default function EditGroupForm({
                             }}
                           >
                             <div>
-                              <div>{adviser.first_name} {adviser.middle_name ? adviser.middle_name + " " : ""}{adviser.last_name}</div>
-                              <div className="text-xs text-gray-500">{adviser.email}</div>
+                              <div>
+                                {adviser.first_name}{" "}
+                                {adviser.middle_name
+                                  ? adviser.middle_name + " "
+                                  : ""}
+                                {adviser.last_name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {adviser.email}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -566,7 +582,13 @@ export default function EditGroupForm({
                           }}
                         >
                           <div className="flex items-center justify-between">
-                            <span>{member?.first_name} {member?.middle_name ? member.middle_name + " " : ""}{member?.last_name}</span>
+                            <span>
+                              {member?.first_name}{" "}
+                              {member?.middle_name
+                                ? member.middle_name + " "
+                                : ""}
+                              {member?.last_name}
+                            </span>
                           </div>
                           <FaTimes color="#2563EB" size={12} />
                         </div>
@@ -610,10 +632,7 @@ export default function EditGroupForm({
                           const isSelected = formData.members.includes(
                             member._id,
                           );
-                          return (
-                            !isSelected &&
-                            filterMembers(member)
-                          );
+                          return !isSelected && filterMembers(member);
                         })
                         .sort((a, b) => {
                           const aName =
@@ -629,8 +648,16 @@ export default function EditGroupForm({
                             onClick={() => handleMemberSelect(member)}
                           >
                             <div>
-                              <div>{member.first_name} {member.middle_name ? member.middle_name + " " : ""}{member.last_name}</div>
-                              <div className="text-xs text-gray-500">{member.email}</div>
+                              <div>
+                                {member.first_name}{" "}
+                                {member.middle_name
+                                  ? member.middle_name + " "
+                                  : ""}
+                                {member.last_name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {member.email}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -638,10 +665,7 @@ export default function EditGroupForm({
                         const isSelected = formData.members.includes(
                           member._id,
                         );
-                        return (
-                          !isSelected &&
-                          filterMembers(member)
-                        );
+                        return !isSelected && filterMembers(member);
                       }).length === 0 && (
                         <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
                           No more members available. Please register more users

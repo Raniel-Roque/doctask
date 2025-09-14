@@ -593,7 +593,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const parseExcelFile = async (file: File): Promise<AddFormData[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = async (e) => {
         try {
           const data = e.target?.result;
@@ -604,7 +604,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
           const workbook = new XLSX.Workbook();
           await workbook.xlsx.load(data as ArrayBuffer);
-          
+
           const worksheet = workbook.getWorksheet(1); // Get first worksheet
           if (!worksheet) {
             reject(new Error("No worksheet found in the Excel file"));
@@ -617,12 +617,15 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
           worksheet.eachRow((row) => {
             const rowData = row.values as (string | number | undefined)[];
-            
+
             if (isFirstRow) {
               // Skip the first element (undefined) and get header row
-              headerRow = rowData.slice(1).map((cell: string | number | undefined) => 
-                cell?.toString().toLowerCase().trim() || ""
-              );
+              headerRow = rowData
+                .slice(1)
+                .map(
+                  (cell: string | number | undefined) =>
+                    cell?.toString().toLowerCase().trim() || "",
+                );
               isFirstRow = false;
               return;
             }
@@ -632,7 +635,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
             // Extract data starting from index 1 (skip undefined first element)
             const rowValues = rowData.slice(1);
-            
+
             // Create object mapping based on header
             const userData: Record<string, string> = {};
             headerRow.forEach((header, index) => {
@@ -674,14 +677,16 @@ const UsersPage = ({ params }: UsersPageProps) => {
     });
   };
 
-  const validateBulkUsers = (users: AddFormData[]): { valid: AddFormData[]; errors: string[] } => {
+  const validateBulkUsers = (
+    users: AddFormData[],
+  ): { valid: AddFormData[]; errors: string[] } => {
     const validUsers: AddFormData[] = [];
     const errors: string[] = [];
     const emailSet = new Set<string>();
 
     users.forEach((user, index) => {
       const rowNumber = index + 2; // +2 because we skip header row and arrays are 0-indexed
-      
+
       // Check required fields
       if (!user.first_name.trim()) {
         errors.push(`Row ${rowNumber}: First name is required`);
@@ -716,7 +721,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
       // Check for duplicate emails in existing users
       const existingUser = searchResult.users.find(
-        existingUser => existingUser.email.toLowerCase() === user.email.toLowerCase()
+        (existingUser) =>
+          existingUser.email.toLowerCase() === user.email.toLowerCase(),
       );
       if (existingUser) {
         errors.push(`Row ${rowNumber}: Email already exists in the system`);
@@ -730,16 +736,18 @@ const UsersPage = ({ params }: UsersPageProps) => {
     return { valid: validUsers, errors };
   };
 
-  const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     // Validate file type
     const validTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-      'application/vnd.ms-excel', // .xls
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+      "application/vnd.ms-excel", // .xls
     ];
-    
+
     if (!validTypes.includes(file.type)) {
       setNotification({
         type: "error",
@@ -763,22 +771,24 @@ const UsersPage = ({ params }: UsersPageProps) => {
     try {
       // Parse Excel file
       const users = await parseExcelFile(file);
-      
+
       if (users.length === 0) {
         setNotification({
           type: "error",
-          message: "Invalid Excel format. Required: First Name, Last Name, Email. Optional: Middle Name",
+          message:
+            "Invalid Excel format. Required: First Name, Last Name, Email. Optional: Middle Name",
         });
         return;
       }
 
       // Validate users
-      const { valid: validUsers, errors: validationErrors } = validateBulkUsers(users);
-      
+      const { valid: validUsers, errors: validationErrors } =
+        validateBulkUsers(users);
+
       if (validationErrors.length > 0) {
         setNotification({
           type: "error",
-          message: `Validation errors found:\n${validationErrors.slice(0, 5).join('\n')}${validationErrors.length > 5 ? `\n... and ${validationErrors.length - 5} more errors` : ''}`,
+          message: `Validation errors found:\n${validationErrors.slice(0, 5).join("\n")}${validationErrors.length > 5 ? `\n... and ${validationErrors.length - 5} more errors` : ""}`,
         });
         return;
       }
@@ -883,7 +893,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
           successCount++;
         } catch (error) {
           errorCount++;
-          creationErrors.push(`${user.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          creationErrors.push(
+            `${user.email}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          );
         }
       }
 
@@ -891,30 +903,32 @@ const UsersPage = ({ params }: UsersPageProps) => {
       if (successCount > 0 && errorCount === 0) {
         setNotification({
           type: "success",
-          message: `Successfully imported ${successCount} adviser${successCount > 1 ? 's' : ''}`,
+          message: `Successfully imported ${successCount} adviser${successCount > 1 ? "s" : ""}`,
         });
       } else if (successCount > 0 && errorCount > 0) {
         setNotification({
           type: "warning",
-          message: `Imported ${successCount} adviser${successCount > 1 ? 's' : ''} successfully. ${errorCount} failed:\n${creationErrors.slice(0, 3).join('\n')}${creationErrors.length > 3 ? `\n... and ${creationErrors.length - 3} more errors` : ''}`,
+          message: `Imported ${successCount} adviser${successCount > 1 ? "s" : ""} successfully. ${errorCount} failed:\n${creationErrors.slice(0, 3).join("\n")}${creationErrors.length > 3 ? `\n... and ${creationErrors.length - 3} more errors` : ""}`,
         });
       } else {
         setNotification({
           type: "error",
-          message: `Failed to import any advisers:\n${creationErrors.slice(0, 5).join('\n')}${creationErrors.length > 5 ? `\n... and ${creationErrors.length - 5} more errors` : ''}`,
+          message: `Failed to import any advisers:\n${creationErrors.slice(0, 5).join("\n")}${creationErrors.length > 5 ? `\n... and ${creationErrors.length - 5} more errors` : ""}`,
         });
       }
-
     } catch (error) {
       setNotification({
         type: "error",
-        message: error instanceof Error ? error.message : "Failed to process Excel file",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to process Excel file",
       });
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
       // Reset file input
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 

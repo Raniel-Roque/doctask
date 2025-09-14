@@ -149,7 +149,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
   // Get users for forms
   const users = useQuery(api.fetch.getUsers) || [];
-  
+
   // Get all groups for proper filtering (not just current page)
   const allGroups = useQuery(api.fetch.getAllGroupsForFiltering) || [];
 
@@ -162,9 +162,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   );
 
   // Filter members (role 0, subrole 0, not already in a group)
-  const usedMemberIds = new Set(
-    allGroups.flatMap((g) => g.member_ids) || [],
-  );
+  const usedMemberIds = new Set(allGroups.flatMap((g) => g.member_ids) || []);
   const members = users.filter(
     (u) => u && u.role === 0 && u.subrole === 0 && !usedMemberIds.has(u._id),
   );
@@ -377,7 +375,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         {/* Groups Table */}
         <GroupsTable
           groups={processedGroups}
-          advisers={advisers}
           onEdit={(group) => setIsEditingGroup(group)}
           onDelete={handleDeleteGroup}
           onAdd={() => setIsAddingGroup(true)}

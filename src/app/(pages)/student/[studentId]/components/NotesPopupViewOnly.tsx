@@ -110,7 +110,6 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
     });
   };
 
-
   if (!isOpen) return null;
 
   return (

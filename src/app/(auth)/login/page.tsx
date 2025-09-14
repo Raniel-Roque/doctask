@@ -1320,7 +1320,6 @@ const LoginPage = () => {
                   const userAgent = navigator.userAgent.toLowerCase();
                   let downloadUrl = "";
                   let fileName = "";
-                  
 
                   if (userAgent.includes("win")) {
                     // Windows
@@ -1343,8 +1342,6 @@ const LoginPage = () => {
                       "https://github.com/Raniel-Roque/doctask/releases/download/Windows/DocTask-Setup-1.0.0.exe";
                     fileName = "DocTask-Setup-1.0.0.exe";
                   }
-
-                  
 
                   // Download the appropriate version
                   try {

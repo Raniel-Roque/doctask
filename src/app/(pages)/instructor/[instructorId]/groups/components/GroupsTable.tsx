@@ -151,13 +151,11 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     Set<string>
   >(new Set());
 
-
   useEffect(() => {
     if (showGradeDropdown) {
       setTempGradeFilters(gradeFilters);
     }
   }, [showGradeDropdown, gradeFilters]);
-
 
   useEffect(() => {
     if (!showGradeDropdown) return;
@@ -198,7 +196,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     }
   }, [showCapstoneDropdown, capstoneFilter, capstoneSortDirection]);
 
-
   const handleViewMembers = (group: Group) => {
     setSelectedGroup(group);
     setShowMembersModal(true);
@@ -209,12 +206,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     setSelectedGroup(null);
   };
 
-
-
   // Function to display project manager with email under name
   const getProjectManagerDisplay = (user: User) => (
     <div>
-      <div>{user.last_name}, {user.first_name}{user.middle_name ? ` ${user.middle_name}` : ""}</div>
+      <div>
+        {user.last_name}, {user.first_name}
+        {user.middle_name ? ` ${user.middle_name}` : ""}
+      </div>
       <div className="text-xs text-gray-500">{user.email}</div>
     </div>
   );
@@ -222,11 +220,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   // Function to display adviser with email under name
   const getAdviserDisplay = (user: User) => (
     <div>
-      <div>{user.last_name}, {user.first_name}{user.middle_name ? ` ${user.middle_name}` : ""}</div>
+      <div>
+        {user.last_name}, {user.first_name}
+        {user.middle_name ? ` ${user.middle_name}` : ""}
+      </div>
       <div className="text-xs text-gray-500">{user.email}</div>
     </div>
   );
-
 
   // Strengthen key with group IDs checksum
   const exportReady = Array.isArray(groups) && groups.length >= 0;
@@ -304,7 +304,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     }
     setTempGradeFilters(newFilters);
   };
-
 
   const handleSaveGradeFilters = () => {
     setGradeFilters(tempGradeFilters);
@@ -409,10 +408,14 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   <div
                     ref={capstoneDropdownRef}
                     className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    style={{ 
+                    style={{
                       minWidth: 220,
-                      left: capstoneButtonRef.current?.getBoundingClientRect().left || 0,
-                      top: (capstoneButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                      left:
+                        capstoneButtonRef.current?.getBoundingClientRect()
+                          .left || 0,
+                      top:
+                        (capstoneButtonRef.current?.getBoundingClientRect()
+                          .bottom || 0) + 8,
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -492,9 +495,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
+                onClick={() => onSort("adviser")}
               >
-                ADVISER
+                <div className="flex items-center justify-center">
+                  ADVISER
+                  <span className="ml-1">{getSortIcon("adviser")}</span>
+                </div>
               </th>
               <th
                 ref={gradeThRef}
@@ -528,10 +535,14 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   <div
                     ref={gradeDropdownRef}
                     className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    style={{ 
+                    style={{
                       minWidth: 220,
-                      left: gradeButtonRef.current?.getBoundingClientRect().left || 0,
-                      top: (gradeButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
+                      left:
+                        gradeButtonRef.current?.getBoundingClientRect().left ||
+                        0,
+                      top:
+                        (gradeButtonRef.current?.getBoundingClientRect()
+                          .bottom || 0) + 8,
                     }}
                   >
                     <div
@@ -614,20 +625,21 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {group.projectManager ? getProjectManagerDisplay(group.projectManager) : "-"}
+                  {group.projectManager
+                    ? getProjectManagerDisplay(group.projectManager)
+                    : "-"}
                 </td>
                 <td className="px-6 py-4 text-center">
-                      <button
+                  <button
                     onClick={() => handleViewMembers(group)}
                     className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                        disabled={!group.members || group.members.length === 0}
-                      >
+                    disabled={!group.members || group.members.length === 0}
+                  >
                     <FaUser className="mr-1" size={12} />
-                    {group.members && group.members.length > 0 
-                      ? `${group.members.length} member${group.members.length === 1 ? '' : 's'}`
-                      : 'No members'
-                    }
-                      </button>
+                    {group.members && group.members.length > 0
+                      ? `${group.members.length} member${group.members.length === 1 ? "" : "s"}`
+                      : "No members"}
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {group.adviser ? getAdviserDisplay(group.adviser) : "-"}

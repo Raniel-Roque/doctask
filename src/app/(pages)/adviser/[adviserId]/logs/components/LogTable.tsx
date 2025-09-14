@@ -187,6 +187,8 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
       entityTypeFilter !== ENTITY_TYPES.ALL
         ? [entityTypeFilter.toLowerCase()]
         : undefined,
+    sortField,
+    sortDirection,
   });
 
 
@@ -204,10 +206,11 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
         const shortId = log.affected_entity_id.toString().slice(-4);
         return {
           display: `${log.affectedEntity.first_name} ${log.affectedEntity.middle_name ? log.affectedEntity.middle_name + " " : ""}${log.affectedEntity.last_name}`,
+          email: log.affectedEntity.email || "",
           id: shortId,
         };
       }
-      return { display: "-", id: null };
+      return { display: "-", email: "", id: null };
     }
     // For groups, show "Project manager last name + et al." if project manager info is available
     if (log.affected_entity_type === "group") {
@@ -215,16 +218,18 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
       if (log.affectedEntity?.projectManager?.last_name) {
         return {
           display: `${log.affectedEntity.projectManager.last_name} et al`,
+          email: "",
           id: shortId,
         };
       } else {
         return {
           display: "Unknown Group",
+          email: "",
           id: shortId,
         };
       }
     }
-    return { display: "-", id: null };
+    return { display: "-", email: "", id: null };
   };
 
   const getSortIcon = (field: SortField) => {
@@ -297,14 +302,16 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     maxLength = 10,
     column,
     id,
+    email,
   }: {
     text: string | null;
     maxLength?: number;
     column: keyof ExpandedColumns;
     id?: string | null;
+    email?: string;
   }) => {
     if (!text) return <span>-</span>;
-    if (text.length <= maxLength && !id) return <span>{text}</span>;
+    if (text.length <= maxLength && !id && !email) return <span>{text}</span>;
 
     const isExpanded = expandedColumns[column];
 
@@ -319,14 +326,16 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
         className="w-full text-left"
       >
         {isExpanded ? (
-          <span>
-            {text}
+          <div>
+            <div>{text}</div>
+            {email && <div className="text-xs text-gray-500">{email}</div>}
             {id && <span className="text-gray-500 ml-1">(ID: {id})</span>}
-          </span>
+          </div>
         ) : (
-          <span>
-            {text.length > maxLength ? `${text.slice(0, maxLength)}...` : text}
-          </span>
+          <div>
+            <div>{text.length > maxLength ? `${text.slice(0, maxLength)}...` : text}</div>
+            {email && <div className="text-xs text-gray-500">{email}</div>}
+          </div>
         )}
       </button>
     );
@@ -614,6 +623,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                         maxLength={20}
                         column="affectedEntity"
                         id={affectedEntity.id}
+                        email={affectedEntity.email}
                       />
                     </td>
                     <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line w-full">

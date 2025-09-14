@@ -490,11 +490,15 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           const user = projectManagers.find(
                             (u) => u._id === formData.projectManager,
                           );
-                          return user
-                            ? (
-                              <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
-                            )
-                            : formData.projectManager;
+                          return user ? (
+                            <span>
+                              {user.first_name}{" "}
+                              {user.middle_name ? user.middle_name + " " : ""}
+                              {user.last_name}
+                            </span>
+                          ) : (
+                            formData.projectManager
+                          );
                         })()}
                       </div>
                     ) : (
@@ -533,11 +537,14 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       </div>
                       <div className="max-h-48 overflow-y-auto">
                         {projectManagers
-                          .filter((user) =>
-                            `${user.first_name} ${user.last_name}`
-                              .toLowerCase()
-                              .includes(projectManagerSearch.toLowerCase()) ||
-                            user.email?.toLowerCase().includes(projectManagerSearch.toLowerCase()),
+                          .filter(
+                            (user) =>
+                              `${user.first_name} ${user.last_name}`
+                                .toLowerCase()
+                                .includes(projectManagerSearch.toLowerCase()) ||
+                              user.email
+                                ?.toLowerCase()
+                                .includes(projectManagerSearch.toLowerCase()),
                           )
                           .map((user) => (
                             <div
@@ -546,16 +553,27 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                               onClick={() => handleProjectManagerSelect(user)}
                             >
                               <div>
-                                <div>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</div>
-                                <div className="text-xs text-gray-500">{user.email}</div>
+                                <div>
+                                  {user.first_name}{" "}
+                                  {user.middle_name
+                                    ? user.middle_name + " "
+                                    : ""}
+                                  {user.last_name}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {user.email}
+                                </div>
                               </div>
                             </div>
                           ))}
-                        {projectManagers.filter((user) =>
-                          `${user.first_name} ${user.last_name}`
-                            .toLowerCase()
-                            .includes(projectManagerSearch.toLowerCase()) ||
-                          user.email?.toLowerCase().includes(projectManagerSearch.toLowerCase()),
+                        {projectManagers.filter(
+                          (user) =>
+                            `${user.first_name} ${user.last_name}`
+                              .toLowerCase()
+                              .includes(projectManagerSearch.toLowerCase()) ||
+                            user.email
+                              ?.toLowerCase()
+                              .includes(projectManagerSearch.toLowerCase()),
                         ).length === 0 && (
                           <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
                             No more project managers available. Please register
@@ -603,11 +621,15 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           const user = advisers.find(
                             (u) => u._id === formData.adviser,
                           );
-                          return user
-                            ? (
-                              <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
-                            )
-                            : formData.adviser;
+                          return user ? (
+                            <span>
+                              {user.first_name}{" "}
+                              {user.middle_name ? user.middle_name + " " : ""}
+                              {user.last_name}
+                            </span>
+                          ) : (
+                            formData.adviser
+                          );
                         })()}
                       </div>
                     ) : (
@@ -646,11 +668,14 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                       </div>
                       <div className="max-h-48 overflow-y-auto">
                         {advisers
-                          .filter((user) =>
-                            `${user.first_name} ${user.last_name}`
-                              .toLowerCase()
-                              .includes(adviserSearch.toLowerCase()) ||
-                            user.email?.toLowerCase().includes(adviserSearch.toLowerCase()),
+                          .filter(
+                            (user) =>
+                              `${user.first_name} ${user.last_name}`
+                                .toLowerCase()
+                                .includes(adviserSearch.toLowerCase()) ||
+                              user.email
+                                ?.toLowerCase()
+                                .includes(adviserSearch.toLowerCase()),
                           )
                           .map((user) => (
                             <div
@@ -659,16 +684,27 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                               onClick={() => handleAdviserSelect(user)}
                             >
                               <div>
-                                <div>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</div>
-                                <div className="text-xs text-gray-500">{user.email}</div>
+                                <div>
+                                  {user.first_name}{" "}
+                                  {user.middle_name
+                                    ? user.middle_name + " "
+                                    : ""}
+                                  {user.last_name}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {user.email}
+                                </div>
                               </div>
                             </div>
                           ))}
-                        {advisers.filter((user) =>
-                          `${user.first_name} ${user.last_name}`
-                            .toLowerCase()
-                            .includes(adviserSearch.toLowerCase()) ||
-                          user.email?.toLowerCase().includes(adviserSearch.toLowerCase()),
+                        {advisers.filter(
+                          (user) =>
+                            `${user.first_name} ${user.last_name}`
+                              .toLowerCase()
+                              .includes(adviserSearch.toLowerCase()) ||
+                            user.email
+                              ?.toLowerCase()
+                              .includes(adviserSearch.toLowerCase()),
                         ).length === 0 && (
                           <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">
                             No more advisers available. Please register more
@@ -721,7 +757,13 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 flex-shrink-0"
                           >
                             <div>
-                              <span>{user?.first_name} {user?.middle_name ? user?.middle_name + " " : ""}{user?.last_name}</span>
+                              <span>
+                                {user?.first_name}{" "}
+                                {user?.middle_name
+                                  ? user?.middle_name + " "
+                                  : ""}
+                                {user?.last_name}
+                              </span>
                             </div>
                             <button
                               type="button"
@@ -775,7 +817,9 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             (`${user.first_name} ${user.last_name}`
                               .toLowerCase()
                               .includes(memberSearch.toLowerCase()) ||
-                            user.email?.toLowerCase().includes(memberSearch.toLowerCase())) &&
+                              user.email
+                                ?.toLowerCase()
+                                .includes(memberSearch.toLowerCase())) &&
                             !formData.members.includes(user._id),
                         )
                         .sort((a, b) => {
@@ -792,8 +836,14 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             onClick={() => handleMemberSelect(user)}
                           >
                             <div>
-                              <div>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</div>
-                              <div className="text-xs text-gray-500">{user.email}</div>
+                              <div>
+                                {user.first_name}{" "}
+                                {user.middle_name ? user.middle_name + " " : ""}
+                                {user.last_name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {user.email}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -802,7 +852,9 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           (`${user.first_name} ${user.last_name}`
                             .toLowerCase()
                             .includes(memberSearch.toLowerCase()) ||
-                          user.email?.toLowerCase().includes(memberSearch.toLowerCase())) &&
+                            user.email
+                              ?.toLowerCase()
+                              .includes(memberSearch.toLowerCase())) &&
                           !formData.members.includes(user._id),
                       ).length === 0 && (
                         <div className="px-4 py-3 text-gray-500 text-sm text-center cursor-not-allowed">

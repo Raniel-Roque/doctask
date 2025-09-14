@@ -200,7 +200,8 @@ export default function EditForm({
   };
 
   // Track initial form data and detect unsaved changes
-  const [initialFormData, setInitialFormData] = useState<EditFormData>(formData);
+  const [initialFormData, setInitialFormData] =
+    useState<EditFormData>(formData);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   React.useEffect(() => {

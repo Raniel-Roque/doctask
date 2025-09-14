@@ -128,8 +128,6 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
             your consent at any time.
           </p>
         </section>
-
-        
       </div>
     </div>
   );
@@ -186,17 +184,6 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
             trademark, and other intellectual property laws.
           </p>
         </section>
-
-        <section>
-          <h4 className="font-semibold mb-2">6. Termination</h4>
-          <p>
-            We may terminate or suspend your account and bar access to the
-            service immediately, without prior notice or liability, under our
-            sole discretion.
-          </p>
-        </section>
-
-        
       </div>
     </div>
   );

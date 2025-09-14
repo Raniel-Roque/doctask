@@ -153,21 +153,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({
           </section>
 
           <section>
-            <h3 className="text-lg font-semibold mb-3">9. Termination</h3>
-            <p className="mb-2">
-              We may terminate or suspend your account and bar access to the
-              service immediately, without prior notice or liability, under our
-              sole discretion.
-            </p>
-            <p>
-              Upon termination, your right to use the service will cease
-              immediately. If you wish to terminate your account, you may simply
-              discontinue using the service.
-            </p>
-          </section>
-
-          <section>
-            <h3 className="text-lg font-semibold mb-3">10. Governing Law</h3>
+            <h3 className="text-lg font-semibold mb-3">9. Governing Law</h3>
             <p>
               These Terms shall be interpreted and governed by the laws of [Your
               Jurisdiction], without regard to its conflict of law provisions.
@@ -175,15 +161,13 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({
           </section>
 
           <section>
-            <h3 className="text-lg font-semibold mb-3">11. Changes to Terms</h3>
+            <h3 className="text-lg font-semibold mb-3">10. Changes to Terms</h3>
             <p>
               We reserve the right to modify or replace these Terms at any time.
               If a revision is material, we will provide at least 30 days notice
               prior to any new terms taking effect.
             </p>
           </section>
-
-          
         </div>
       </div>
     </div>

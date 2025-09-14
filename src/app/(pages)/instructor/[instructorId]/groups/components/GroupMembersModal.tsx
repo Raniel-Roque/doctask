@@ -70,7 +70,9 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                   <div>
                     <div className="font-medium text-gray-900">
                       {projectManager.last_name}, {projectManager.first_name}
-                      {projectManager.middle_name ? ` ${projectManager.middle_name}` : ""}
+                      {projectManager.middle_name
+                        ? ` ${projectManager.middle_name}`
+                        : ""}
                     </div>
                     <div className="text-sm text-gray-600 mt-1">
                       {projectManager.email}
@@ -95,8 +97,10 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                 {allMembers
                   .slice()
                   .sort((a, b) => {
-                    const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
-                    const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+                    const aName =
+                      `${a.last_name} ${a.first_name}`.toLowerCase();
+                    const bName =
+                      `${b.last_name} ${b.first_name}`.toLowerCase();
                     return aName.localeCompare(bName);
                   })
                   .map((member) => (
@@ -141,7 +145,9 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                   <div>
                     <div className="font-medium text-gray-900">
                       {group.adviser.last_name}, {group.adviser.first_name}
-                      {group.adviser.middle_name ? ` ${group.adviser.middle_name}` : ""}
+                      {group.adviser.middle_name
+                        ? ` ${group.adviser.middle_name}`
+                        : ""}
                     </div>
                     <div className="text-sm text-gray-600 mt-1">
                       {group.adviser.email}

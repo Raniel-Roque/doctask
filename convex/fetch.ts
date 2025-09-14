@@ -513,7 +513,10 @@ export const searchUsers = query({
           .query("users")
           .filter((q) => {
             const roleFilter = q.eq(q.field("role"), role);
-            const emailFilter = q.eq(q.field("email"), searchTerm.toLowerCase());
+            const emailFilter = q.eq(
+              q.field("email"),
+              searchTerm.toLowerCase(),
+            );
             const emailVerifiedFilter =
               emailVerified !== undefined
                 ? q.eq(q.field("email_verified"), emailVerified)
@@ -535,7 +538,11 @@ export const searchUsers = query({
           .then((results) => results.filter((u) => !u.isDeleted));
 
         // Combine and deduplicate results
-        results = [...firstNameResults, ...lastNameResults, ...emailResults].filter(
+        results = [
+          ...firstNameResults,
+          ...lastNameResults,
+          ...emailResults,
+        ].filter(
           (user, index, self) =>
             index === self.findIndex((u) => u._id === user._id),
         );
@@ -659,9 +666,7 @@ export const searchGroups = query({
           const adviserName = adviser
             ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`.toLowerCase()
             : "";
-          const adviserEmail = adviser
-            ? adviser.email.toLowerCase()
-            : "";
+          const adviserEmail = adviser ? adviser.email.toLowerCase() : "";
           const memberNames = members.map((m) =>
             `${m.first_name} ${m.last_name}`.toLowerCase(),
           );
@@ -788,6 +793,21 @@ export const searchGroups = query({
               break;
             case "grade":
               comparison = (a.grade || 0) - (b.grade || 0);
+              break;
+            case "adviser":
+              const aAdviser = a.adviser_id
+                ? users.find((u) => u._id === a.adviser_id)
+                : null;
+              const bAdviser = b.adviser_id
+                ? users.find((u) => u._id === b.adviser_id)
+                : null;
+              const aAdviserName = aAdviser
+                ? `${aAdviser.last_name} ${aAdviser.first_name}`
+                : "";
+              const bAdviserName = bAdviser
+                ? `${bAdviser.last_name} ${bAdviser.first_name}`
+                : "";
+              comparison = aAdviserName.localeCompare(bAdviserName);
               break;
           }
           return sortDirection === "asc" ? comparison : -comparison;
@@ -1866,6 +1886,8 @@ export const getLogsWithDetails = query({
     entityType: v.optional(v.union(v.string(), v.array(v.string()))), // allow string or array
     instructorIds: v.optional(v.array(v.id("users"))), // Array of instructor IDs to filter by
     adviserIds: v.optional(v.array(v.id("users"))), // Array of adviser IDs to filter by
+    sortField: v.optional(v.string()),
+    sortDirection: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     let logs: Array<{
@@ -1934,8 +1956,41 @@ export const getLogsWithDetails = query({
       logs = logs.filter((log) => log.affected_entity_type === args.entityType);
     }
 
-    // Sort logs by creation time descending (most recent first)
-    logs.sort((a, b) => b._creationTime - a._creationTime);
+    // Apply sorting if specified, otherwise default to creation time descending
+    if (args.sortField && args.sortDirection) {
+      logs.sort((a, b) => {
+        let comparison = 0;
+        switch (args.sortField) {
+          case "_creationTime":
+            comparison = a._creationTime - b._creationTime;
+            break;
+          case "action":
+            comparison = a.action.localeCompare(b.action);
+            break;
+          case "affected_entity_type":
+            comparison = a.affected_entity_type.localeCompare(
+              b.affected_entity_type,
+            );
+            break;
+          case "user_id":
+            comparison = a.user_id.localeCompare(b.user_id);
+            break;
+          case "affected_entity_id":
+            comparison = a.affected_entity_id.localeCompare(
+              b.affected_entity_id,
+            );
+            break;
+          default:
+            // Default to creation time if unknown field
+            comparison = a._creationTime - b._creationTime;
+            break;
+        }
+        return args.sortDirection === "asc" ? comparison : -comparison;
+      });
+    } else {
+      // Default sort by creation time descending (most recent first)
+      logs.sort((a, b) => b._creationTime - a._creationTime);
+    }
 
     // Pagination
     const pageSize = args.pageSize ?? 5;
