@@ -54,7 +54,7 @@ const useSaveToDatabase = (
       : "skip",
   );
 
-  const saveToDatabase = async (isManualSave = false) => {
+  const saveToDatabase = async (isManualSave = false, forceSave = false) => {
     if (!editor || !document || !currentUser?._id || !isEditable) return;
 
     // Always save to the live document, not the current document
@@ -65,7 +65,8 @@ const useSaveToDatabase = (
 
     const content = editor.getHTML();
     // Compare against live document content, not current document content
-    if (content !== liveDocument?.content || isManualSave) {
+    // Also save if forceSave is true (for rejected documents that need status update)
+    if (content !== liveDocument?.content || isManualSave || forceSave) {
       try {
         setIsSaving(true);
         setSaveError(null);
@@ -227,9 +228,18 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
         editor.setEditable(false);
       } else {
         editor.setEditable(true);
+        
+        // If this is a rejected document (status 3) and we can edit it,
+        // force a save to update the status from rejected to not submitted
+        if (currentDocumentStatus?.status === 3) {
+          // Use setTimeout to ensure the editor is fully initialized
+          setTimeout(() => {
+            saveToDatabase(false, true); // forceSave = true
+          }, 1000);
+        }
       }
     }
-  }, [editor, document, currentUser, isEditable]);
+  }, [editor, document, currentUser, isEditable, currentDocumentStatus, saveToDatabase]);
 
   // Smart auto-save: frequent when solo, less frequent when collaborative - ONLY in edit mode
   useEffect(() => {
