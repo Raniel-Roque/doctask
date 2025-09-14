@@ -156,6 +156,7 @@ export const LatestDocumentsTable = ({
 
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
   const [notesPopupDoc, setNotesPopupDoc] = useState<Document | null>(null);
+  const [viewedNotesDocuments, setViewedNotesDocuments] = useState<Set<string>>(new Set());
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -2833,7 +2834,8 @@ export const LatestDocumentsTable = ({
                         {!["title_page", "appendix_a", "appendix_d"].includes(
                           doc.chapter,
                         ) &&
-                          doc.note_count > 0 && (
+                          doc.note_count > 0 && 
+                          !viewedNotesDocuments.has(doc._id) && (
                             <>
                               <span className="mx-3 text-gray-300 select-none">
                                 |
@@ -2844,6 +2846,8 @@ export const LatestDocumentsTable = ({
                                 onClick={() => {
                                   setNotesPopupDoc(doc);
                                   setNotesPopupOpen(true);
+                                  // Mark this document's notes as viewed
+                                  setViewedNotesDocuments(prev => new Set(prev).add(doc._id));
                                 }}
                               >
                                 <FaStickyNote className="w-4 h-4" />
