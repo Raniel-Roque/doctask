@@ -15,11 +15,11 @@ interface GroupsTableProps {
   groups: Group[];
   onAccept: (group: Group) => void;
   onReject: (group: Group) => void;
-  sortField: "name" | "capstoneTitle" | "projectManager";
+  sortField: "name" | "capstoneTitle";
   sortDirection: "asc" | "desc";
-  onSort: (field: "name" | "capstoneTitle" | "projectManager") => void;
+  onSort: (field: "name" | "capstoneTitle") => void;
   getSortIcon: (
-    field: "name" | "capstoneTitle" | "projectManager",
+    field: "name" | "capstoneTitle",
   ) => React.ReactNode;
   currentPage: number;
   totalPages: number;
@@ -138,21 +138,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
-                  onClick={() => onSort("projectManager")}
-                >
-                  <div className="flex items-center justify-center">
-                    Project Manager
-                    <span className="ml-1">
-                      {getSortIcon("projectManager")}
-                    </span>
-                  </div>
-                </th>
-                <th
-                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
                 >
-                  Members
+                  Group Members
                 </th>
                 <th
                   scope="col"
@@ -166,7 +154,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               {status === "loading" && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={4}
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     Loading...
@@ -176,7 +164,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               {status === "error" && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={4}
                     className="px-6 py-4 text-center text-red-500"
                   >
                     An error occurred while loading groups. Please try again.
@@ -186,7 +174,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               {status === "idle" && !hasResults && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={4}
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     No group requests available at this time.
@@ -204,11 +192,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       groupId={group._id}
                     />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {group.projectManager
-                      ? getFullName(group.projectManager)
-                      : "-"}
-                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -216,31 +199,44 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                           onClick={() => toggleExpand(group._id)}
                           className="text-gray-500 hover:text-gray-700 focus:outline-none"
                           disabled={
-                            !group.members || group.members.length === 0
+                            !group.members && !group.projectManager
                           }
                         >
-                          {group.members && group.members.length > 0 ? (
-                            expandedGroupId === group._id ? (
-                              <FaMinus color="#6B7280" />
-                            ) : (
-                              <FaPlus color="#6B7280" />
-                            )
-                          ) : null}
+                          {(() => {
+                            const memberCount = (group.members?.length || 0) + (group.projectManager ? 1 : 0);
+                            return memberCount > 0 ? (
+                              expandedGroupId === group._id ? (
+                                <FaMinus color="#6B7280" />
+                              ) : (
+                                <FaPlus color="#6B7280" />
+                              )
+                            ) : null;
+                          })()}
                         </button>
                         <span className="ml-2">
-                          {group.members && group.members.length > 0 ? (
-                            `${group.members.length} member${group.members.length === 1 ? "" : "s"}`
-                          ) : (
-                            <span className="text-gray-500">-</span>
-                          )}
+                          {(() => {
+                            const memberCount = (group.members?.length || 0) + (group.projectManager ? 1 : 0);
+                            return memberCount > 0 ? (
+                              `${memberCount} member${memberCount === 1 ? "" : "s"}`
+                            ) : (
+                              <span className="text-gray-500">-</span>
+                            );
+                          })()}
                         </span>
                       </div>
                     </div>
-                    {group.members &&
-                      group.members.length > 0 &&
-                      expandedGroupId === group._id && (
+                    {(() => {
+                      const memberCount = (group.members?.length || 0) + (group.projectManager ? 1 : 0);
+                      return memberCount > 0 && expandedGroupId === group._id && (
                         <div className="mt-2 pl-6">
                           <ul className="list-disc list-inside">
+                            {/* Project Manager */}
+                            {group.projectManager && (
+                              <li className="text-sm text-gray-600 font-medium">
+                                {getFullName(group.projectManager)} (Project Manager)
+                              </li>
+                            )}
+                            {/* Regular Members */}
                             {group.members
                               ?.slice()
                               .sort((a, b) => {
@@ -260,7 +256,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                               ))}
                           </ul>
                         </div>
-                      )}
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center justify-center gap-2">
