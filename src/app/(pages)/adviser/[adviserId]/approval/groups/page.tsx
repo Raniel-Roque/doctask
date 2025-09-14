@@ -19,7 +19,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const { adviserId } = use(params);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<
-    "name" | "capstoneTitle" | "projectManager"
+    "name" | "capstoneTitle"
   >("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);

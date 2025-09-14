@@ -2322,11 +2322,11 @@ export const LatestDocumentsTable = ({
                     if (adviser?.pending && adviser.pendingName) {
                       adviserUI = (
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-yellow-600">
                             Adviser: Pending Approval from {adviser.pendingName}
                           </span>
                           <button
-                            className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
                             onClick={() =>
                               adviser.onCancel && adviser.onCancel()
                             }
@@ -2364,7 +2364,7 @@ export const LatestDocumentsTable = ({
                     if (adviser?.pending && adviser.pendingName) {
                       adviserUI = (
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-yellow-600">
                             Adviser: Pending Approval from {adviser.pendingName}
                           </span>
                         </div>
