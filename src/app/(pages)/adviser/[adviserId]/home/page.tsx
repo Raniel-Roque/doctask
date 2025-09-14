@@ -93,7 +93,7 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
                   Total Groups Handled
                 </p>
                 <h3 className="text-2xl font-bold mt-1">
-                  {adviserGroups.length}
+                  {totalCount}
                 </h3>
               </div>
               <div className="bg-purple-100 p-3 rounded-full">

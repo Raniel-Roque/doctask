@@ -377,9 +377,9 @@ export const LatestDocumentsTable = ({
       // Add special documents (Title Page, Appendix A, Appendix D) as DOCX regardless of format
       // These are always generated as DOCX since they don't have PDF equivalents
       const specialDocuments = [
-        { chapter: "title_page", title: "Title Page" },
-        { chapter: "appendix_a", title: "Appendix A" },
-        { chapter: "appendix_d", title: "Appendix D" },
+        { chapter: "title_page", title: "Title Page", templatePath: "/templates/Title Page Template.docx" },
+        { chapter: "appendix_a", title: "Appendix A", templatePath: "/templates/Appendix A Template.docx" },
+        { chapter: "appendix_d", title: "Appendix D", templatePath: "/templates/Appendix D Template.docx" },
       ];
 
       for (const specialDoc of specialDocuments) {
@@ -401,6 +401,15 @@ export const LatestDocumentsTable = ({
             }
 
             zip.file(`${specialDoc.title} Data.docx`, docxBlob);
+
+            // Add the template file
+            try {
+              const templateResponse = await fetch(specialDoc.templatePath);
+              if (templateResponse.ok) {
+                const templateBlob = await templateResponse.blob();
+                zip.file(`${specialDoc.title} Template.docx`, templateBlob);
+              }
+            } catch {}
           } catch {}
         }
       }
