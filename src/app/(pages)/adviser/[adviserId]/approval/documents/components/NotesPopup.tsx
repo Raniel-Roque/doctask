@@ -370,6 +370,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                   placeholder="YYYY-MM-DD"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   value={startDate}
+                  max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => {
                     setStartDate(e.target.value);
                     setCurrentPage(1);
@@ -397,6 +398,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                   placeholder="YYYY-MM-DD"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   value={endDate}
+                  max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => {
                     setEndDate(e.target.value);
                     setCurrentPage(1);

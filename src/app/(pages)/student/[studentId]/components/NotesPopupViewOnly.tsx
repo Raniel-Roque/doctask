@@ -1,18 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FaChevronDown,
   FaChevronUp,
   FaChevronLeft,
   FaChevronRight,
-  FaStickyNote,
   FaTimes,
+  FaPlus,
 } from "react-icons/fa";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import { useModalFocus } from "@/hooks/use-modal-focus";
 
 interface NotesPopupViewOnlyProps {
   isOpen: boolean;
@@ -43,12 +42,52 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  // Use modal focus management hook
-  const modalRef = useModalFocus({
-    isOpen,
-    onClose: () => onClose(),
-    focusFirstInput: false,
-  });
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap logic (matching NotesPopup.tsx)
+  useEffect(() => {
+    if (!isOpen) return;
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    // Get all focusable elements
+    const focusableSelectors = [
+      "a[href]",
+      "button:not([disabled])",
+      "textarea:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ];
+    const focusableEls = modal.querySelectorAll<HTMLElement>(
+      focusableSelectors.join(","),
+    );
+    if (focusableEls.length > 0) {
+      focusableEls[0].focus();
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Tab") {
+        const focusable = Array.from(focusableEls);
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (focusable.length === 0) return;
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    }
+    modal.addEventListener("keydown", handleKeyDown);
+    return () => modal.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
 
   const toggleNoteExpansion = (noteId: string) => {
     const newExpanded = new Set(expandedNotes);
@@ -120,13 +159,14 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
           className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="notes-view-modal-title"
+          aria-labelledby="notes-modal-title"
+          tabIndex={-1}
         >
           {/* Main Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
               <h2
-                id="notes-view-modal-title"
+                id="notes-modal-title"
                 className="text-xl font-semibold text-gray-900"
               >
                 Notes
@@ -149,13 +189,13 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                 {startDate && (
                   <button
                     type="button"
-                    className="absolute right-2 text-blue-600 hover:text-blue-800 text-xs px-1 py-0.5 bg-white rounded"
-                    style={{ top: "50%", transform: "translateY(-50%)" }}
+                    className="absolute -top-1 right-0 text-blue-600 hover:text-blue-800 text-xs z-20 bg-white px-1"
                     onClick={() => {
                       setStartDate("");
                       setCurrentPage(1);
                     }}
                     tabIndex={-1}
+                    style={{ transform: "translateY(-100%)" }}
                   >
                     Clear
                   </button>
@@ -163,8 +203,9 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                 <input
                   type="date"
                   placeholder="YYYY-MM-DD"
-                  className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-12"
+                  className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   value={startDate}
+                  max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => {
                     setStartDate(e.target.value);
                     setCurrentPage(1);
@@ -176,13 +217,13 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                 {endDate && (
                   <button
                     type="button"
-                    className="absolute right-2 text-blue-600 hover:text-blue-800 text-xs px-1 py-0.5 bg-white rounded"
-                    style={{ top: "50%", transform: "translateY(-50%)" }}
+                    className="absolute -top-1 right-0 text-blue-600 hover:text-blue-800 text-xs z-20 bg-white px-1"
                     onClick={() => {
                       setEndDate("");
                       setCurrentPage(1);
                     }}
                     tabIndex={-1}
+                    style={{ transform: "translateY(-100%)" }}
                   >
                     Clear
                   </button>
@@ -190,8 +231,9 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                 <input
                   type="date"
                   placeholder="YYYY-MM-DD"
-                  className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm pr-12"
+                  className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   value={endDate}
+                  max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => {
                     setEndDate(e.target.value);
                     setCurrentPage(1);
@@ -207,9 +249,7 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
             <div className="space-y-3">
               {notes.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <span className="w-8 h-8 mx-auto mb-2 text-gray-300 flex items-center justify-center">
-                    <FaStickyNote className="w-8 h-8 text-gray-300" />
-                  </span>
+                  <FaPlus className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   <p>No notes from adviser yet.</p>
                 </div>
               ) : (
