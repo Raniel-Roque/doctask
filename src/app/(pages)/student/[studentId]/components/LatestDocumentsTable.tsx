@@ -2834,8 +2834,7 @@ export const LatestDocumentsTable = ({
                         {!["title_page", "appendix_a", "appendix_d"].includes(
                           doc.chapter,
                         ) &&
-                          doc.note_count > 0 && 
-                          !viewedNotesDocuments.has(doc._id) && (
+                          doc.note_count > 0 && (
                             <>
                               <span className="mx-3 text-gray-300 select-none">
                                 |
@@ -2851,9 +2850,11 @@ export const LatestDocumentsTable = ({
                                 }}
                               >
                                 <FaStickyNote className="w-4 h-4" />
-                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                  {doc.note_count > 99 ? "99+" : doc.note_count}
-                                </span>
+                                {!viewedNotesDocuments.has(doc._id) && (
+                                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                    {doc.note_count > 99 ? "99+" : doc.note_count}
+                                  </span>
+                                )}
                               </button>
                             </>
                           )}
