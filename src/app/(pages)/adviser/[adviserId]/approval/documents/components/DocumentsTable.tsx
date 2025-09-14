@@ -21,9 +21,7 @@ import GroupMembersModal from "./GroupMembersModal";
 
 interface DocumentsTableProps {
   groups: Group[];
-  onSort: (
-    field: "name" | "capstoneTitle" | "documentCount",
-  ) => void;
+  onSort: (field: "name" | "capstoneTitle" | "documentCount") => void;
   getSortIcon: (
     field: "name" | "capstoneTitle" | "documentCount",
   ) => React.ReactNode;
@@ -120,10 +118,6 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 
   const toggleExpand = (groupId: string) => {
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
-  };
-
-  const getFullName = (user: User) => {
-    return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
   };
 
   const getStatusColor = (status: number) => {

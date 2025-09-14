@@ -9,23 +9,25 @@ const groupMatchesSearch = (
   searchTerm: string,
 ): boolean => {
   const searchLower = searchTerm.toLowerCase();
-  
+
   const projectManager = group.project_manager_id
     ? users.find((u) => u._id === group.project_manager_id)
     : null;
-  
+
   if (!projectManager) return false;
 
-  const managerName = `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
+  const managerName =
+    `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
   const groupName = `${projectManager.last_name} et al`.toLowerCase();
   const managerEmail = projectManager.email.toLowerCase();
   const capstoneTitle = (group.capstone_title || "").toLowerCase();
 
   // Search in group members
-  const groupMembers = group.member_ids
-    ?.map((id) => users.find((u) => u._id === id))
-    .filter((u): u is NonNullable<typeof u> => u !== undefined) || [];
-  
+  const groupMembers =
+    group.member_ids
+      ?.map((id) => users.find((u) => u._id === id))
+      .filter((u): u is NonNullable<typeof u> => u !== undefined) || [];
+
   const memberNames = groupMembers.map((m) =>
     `${m.first_name} ${m.last_name}`.toLowerCase(),
   );
@@ -346,7 +348,8 @@ export const getPendingGroupIdsForAdviser = query({
 
         // Filter capstone results to only include groups in requests for this adviser AND not deleted
         const capstoneFiltered = capstoneResults.filter(
-          (group) => adviser.requests_group_ids?.includes(group._id) && !group.isDeleted,
+          (group) =>
+            adviser.requests_group_ids?.includes(group._id) && !group.isDeleted,
         );
 
         // Also search by project manager names and member details
