@@ -724,7 +724,6 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                           >
                             <div>
                               <span>{user?.first_name} {user?.middle_name ? user?.middle_name + " " : ""}{user?.last_name}</span>
-                              <span className="ml-2 text-xs text-gray-500">{user?.email}</span>
                             </div>
                             <button
                               type="button"

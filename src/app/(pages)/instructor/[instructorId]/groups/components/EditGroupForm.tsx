@@ -567,7 +567,6 @@ export default function EditGroupForm({
                         >
                           <div className="flex items-center justify-between">
                             <span>{member?.first_name} {member?.middle_name ? member.middle_name + " " : ""}{member?.last_name}</span>
-                            <span className="ml-2 text-xs text-gray-500">{member?.email}</span>
                           </div>
                           <FaTimes color="#2563EB" size={12} />
                         </div>

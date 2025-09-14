@@ -331,10 +331,12 @@ export const getPendingGroupIdsForAdviser = query({
           const managerName =
             `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
           const groupName = `${projectManager.last_name} et al`.toLowerCase();
+          const managerEmail = projectManager.email.toLowerCase();
 
           return (
             managerName.includes(searchTerm.toLowerCase()) ||
-            groupName.includes(searchTerm.toLowerCase())
+            groupName.includes(searchTerm.toLowerCase()) ||
+            managerEmail.includes(searchTerm.toLowerCase())
           );
         });
 
@@ -475,7 +477,7 @@ export const searchUsers = query({
           .collect()
           .then((results) => results.filter((u) => !u.isDeleted));
       } else {
-        // Search in both first name and last name
+        // Search in first name, last name, and email
         const firstNameResults = await ctx.db
           .query("users")
           .withSearchIndex("search_by_first_name", (q) => {
@@ -506,8 +508,34 @@ export const searchUsers = query({
           .collect()
           .then((results) => results.filter((u) => !u.isDeleted));
 
+        // Also search by email using a regular query since we don't have an email search index
+        const emailResults = await ctx.db
+          .query("users")
+          .filter((q) => {
+            const roleFilter = q.eq(q.field("role"), role);
+            const emailFilter = q.eq(q.field("email"), searchTerm.toLowerCase());
+            const emailVerifiedFilter =
+              emailVerified !== undefined
+                ? q.eq(q.field("email_verified"), emailVerified)
+                : null;
+            const subroleFilter =
+              subrole !== undefined ? q.eq(q.field("subrole"), subrole) : null;
+
+            // Combine all filters
+            let finalFilter = q.and(roleFilter, emailFilter);
+            if (emailVerifiedFilter) {
+              finalFilter = q.and(finalFilter, emailVerifiedFilter);
+            }
+            if (subroleFilter) {
+              finalFilter = q.and(finalFilter, subroleFilter);
+            }
+            return finalFilter;
+          })
+          .collect()
+          .then((results) => results.filter((u) => !u.isDeleted));
+
         // Combine and deduplicate results
-        results = [...firstNameResults, ...lastNameResults].filter(
+        results = [...firstNameResults, ...lastNameResults, ...emailResults].filter(
           (user, index, self) =>
             index === self.findIndex((u) => u._id === user._id),
         );
@@ -625,20 +653,30 @@ export const searchGroups = query({
           const projectManagerName = projectManager
             ? `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase()
             : "";
+          const projectManagerEmail = projectManager
+            ? projectManager.email.toLowerCase()
+            : "";
           const adviserName = adviser
             ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`.toLowerCase()
+            : "";
+          const adviserEmail = adviser
+            ? adviser.email.toLowerCase()
             : "";
           const memberNames = members.map((m) =>
             `${m.first_name} ${m.last_name}`.toLowerCase(),
           );
+          const memberEmails = members.map((m) => m.email.toLowerCase());
 
           return searchTerms.every(
             (term) =>
               groupName.includes(term) ||
               capstoneTitle.includes(term) ||
               projectManagerName.includes(term) ||
+              projectManagerEmail.includes(term) ||
               adviserName.includes(term) ||
-              memberNames.some((name) => name.includes(term)),
+              adviserEmail.includes(term) ||
+              memberNames.some((name) => name.includes(term)) ||
+              memberEmails.some((email) => email.includes(term)),
           );
         });
       }
@@ -1129,10 +1167,12 @@ export const getAdviserDocuments = query({
           const managerName =
             `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
           const groupName = `${projectManager.last_name} et al`.toLowerCase();
+          const managerEmail = projectManager.email.toLowerCase();
 
           return (
             managerName.includes(searchTerm.toLowerCase()) ||
-            groupName.includes(searchTerm.toLowerCase())
+            groupName.includes(searchTerm.toLowerCase()) ||
+            managerEmail.includes(searchTerm.toLowerCase())
           );
         });
 

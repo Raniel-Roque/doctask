@@ -239,6 +239,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     </span>
   );
 
+  // Function to display user name only (without email) for pills
+  const getUserNameOnly = (user: User) => (
+    <span>
+      {user.last_name}, {user.first_name}{user.middle_name ? ` ${user.middle_name}` : ""}
+    </span>
+  );
+
   // Replace uniqueAdvisers with a unique list of adviser objects (by _id) for filter dropdown
   const uniqueAdviserObjs = Array.from(
     advisers.reduce((map, adviser) => map.set(adviser._id, adviser), new Map()).values()
@@ -777,38 +784,51 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       </button>
                       <span className="ml-2">
                         {group.members && group.members.length > 0 ? (
-                          `${group.members.length} member${group.members.length === 1 ? "" : "s"}`
+                          expandedGroupId === group._id ? (
+                            // Show full names with emails when expanded
+                            <div className="text-sm">
+                              {group.members
+                                ?.slice()
+                                .sort((a, b) => {
+                                  const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
+                                  const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+                                  return aName.localeCompare(bName);
+                                })
+                                .map((member) => (
+                                  <div key={member._id} className="text-gray-600">
+                                    {getUserDisplay(member)}
+                                  </div>
+                                ))}
+                            </div>
+                          ) : (
+                            // Show truncated names when collapsed
+                            <div className="text-sm">
+                              {group.members
+                                ?.slice()
+                                .sort((a, b) => {
+                                  const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
+                                  const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+                                  return aName.localeCompare(bName);
+                                })
+                                .slice(0, 3) // Show only first 3 members
+                                .map((member) => (
+                                  <span key={member._id} className="text-gray-600 mr-2">
+                                    {getUserNameOnly(member)}
+                                  </span>
+                                ))}
+                              {group.members && group.members.length > 3 && (
+                                <span className="text-gray-500">
+                                  +{group.members.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          )
                         ) : (
                           <span className="text-gray-500">-</span>
                         )}
                       </span>
                     </div>
                   </div>
-                  {group.members &&
-                    group.members.length > 0 &&
-                    expandedGroupId === group._id && (
-                      <div className="mt-2 pl-6">
-                        <ul className="list-disc list-inside">
-                          {group.members
-                            ?.slice()
-                            .sort((a, b) => {
-                              const aName =
-                                `${a.last_name} ${a.first_name}`.toLowerCase();
-                              const bName =
-                                `${b.last_name} ${b.first_name}`.toLowerCase();
-                              return aName.localeCompare(bName);
-                            })
-                            .map((member) => (
-                              <li
-                                key={member._id}
-                                className="text-sm text-gray-600"
-                              >
-                                {getUserDisplay(member)}
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                    )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {group.adviser ? getUserDisplay(group.adviser) : "-"}
