@@ -1493,9 +1493,10 @@ export const getHandledGroupsWithProgress = query({
             comparison = aName.localeCompare(bName);
             break;
           case "capstoneTitle":
-            comparison = (a.capstone_title || "").localeCompare(
-              b.capstone_title || "",
-            );
+            // Handle empty titles by treating them as "No title yet" for consistent sorting
+            const aTitle = a.capstone_title || "No title yet";
+            const bTitle = b.capstone_title || "No title yet";
+            comparison = aTitle.localeCompare(bTitle);
             break;
           default:
             // Default to name sorting
