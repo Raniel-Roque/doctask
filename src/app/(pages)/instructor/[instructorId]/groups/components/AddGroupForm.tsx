@@ -546,8 +546,8 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                               onClick={() => handleProjectManagerSelect(user)}
                             >
                               <div>
-                                <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
-                                <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+                                <div>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</div>
+                                <div className="text-xs text-gray-500">{user.email}</div>
                               </div>
                             </div>
                           ))}
@@ -659,8 +659,8 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                               onClick={() => handleAdviserSelect(user)}
                             >
                               <div>
-                                <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
-                                <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+                                <div>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</div>
+                                <div className="text-xs text-gray-500">{user.email}</div>
                               </div>
                             </div>
                           ))}
@@ -792,8 +792,8 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             onClick={() => handleMemberSelect(user)}
                           >
                             <div>
-                              <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
-                              <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+                              <div>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</div>
+                              <div className="text-xs text-gray-500">{user.email}</div>
                             </div>
                           </div>
                         ))}

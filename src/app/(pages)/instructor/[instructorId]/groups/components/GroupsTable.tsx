@@ -8,14 +8,15 @@ import {
   FaTrash,
   FaChevronLeft,
   FaChevronRight,
-  FaMinus,
-  FaPlus,
   FaFilter,
+  FaUser,
+  FaPlus,
 } from "react-icons/fa"; // Import icons and pagination icons
 import { User, Group } from "./types";
 import DeleteGroupConfirmation from "./DeleteGroupConfirmation";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import GroupPDFReport from "./GroupPDFReport";
+import GroupMembersModal from "./GroupMembersModal";
 
 // Capstone Title filter options
 const CAPSTONE_FILTERS = {
@@ -65,7 +66,6 @@ const getGradeDisplay = (grade?: number): { text: string; color: string } => {
 
 interface GroupsTableProps {
   groups: Group[];
-  advisers: User[];
   onEdit: (group: Group) => void;
   onDelete: (group: Group) => void;
   onAdd: () => void;
@@ -82,7 +82,6 @@ interface GroupsTableProps {
   onSearchChange: (term: string) => void;
   status: "idle" | "loading" | "error";
   hasResults: boolean;
-  onAdviserFilterChange: (filters: string[]) => void;
   onGradeFilterChange: (
     filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][],
   ) => void;
@@ -102,7 +101,6 @@ interface GroupsTableProps {
 
 const GroupsTable: React.FC<GroupsTableProps> = ({
   groups,
-  advisers,
   onEdit,
   onDelete,
   onAdd,
@@ -119,7 +117,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   onSearchChange,
   status,
   hasResults,
-  onAdviserFilterChange,
   onGradeFilterChange,
   isDeleting = false,
   capstoneFilter,
@@ -127,11 +124,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   capstoneSortDirection,
   onCapstoneSortApply,
 }) => {
-  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
-  const [adviserFilters, setAdviserFilters] = useState<string[]>([]);
-  const [tempAdviserFilters, setTempAdviserFilters] = useState<string[]>([]);
-  const [showAdviserDropdown, setShowAdviserDropdown] = useState(false);
-  const [adviserSearch, setAdviserSearch] = useState("");
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [gradeFilters, setGradeFilters] = useState<
     (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]
   >([]);
@@ -141,9 +135,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   const [showGradeDropdown, setShowGradeDropdown] = useState(false);
   const gradeDropdownRef = useRef<HTMLDivElement>(null);
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
-  const adviserButtonRef = useRef<HTMLButtonElement>(null);
-  const adviserDropdownRef = useRef<HTMLDivElement>(null);
-  const adviserThRef = useRef<HTMLTableCellElement>(null);
   const gradeThRef = useRef<HTMLTableCellElement>(null);
   const gradeButtonRef = useRef<HTMLButtonElement>(null);
   const capstoneThRef = useRef<HTMLTableCellElement>(null);
@@ -160,11 +151,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     Set<string>
   >(new Set());
 
-  useEffect(() => {
-    if (showAdviserDropdown) {
-      setTempAdviserFilters(adviserFilters);
-    }
-  }, [showAdviserDropdown, adviserFilters]);
 
   useEffect(() => {
     if (showGradeDropdown) {
@@ -172,21 +158,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     }
   }, [showGradeDropdown, gradeFilters]);
 
-  useEffect(() => {
-    if (!showAdviserDropdown) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        adviserDropdownRef.current &&
-        !adviserDropdownRef.current.contains(event.target as Node) &&
-        adviserButtonRef.current &&
-        !adviserButtonRef.current.contains(event.target as Node)
-      ) {
-        setShowAdviserDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showAdviserDropdown]);
 
   useEffect(() => {
     if (!showGradeDropdown) return;
@@ -227,24 +198,18 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     }
   }, [showCapstoneDropdown, capstoneFilter, capstoneSortDirection]);
 
-  const toggleExpand = (groupId: string) => {
-    setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
+
+  const handleViewMembers = (group: Group) => {
+    setSelectedGroup(group);
+    setShowMembersModal(true);
   };
 
-  // Update getFullName to getUserDisplay to include email as subtext
-  const getUserDisplay = (user: User) => (
-    <span>
-      {user.last_name}, {user.first_name}{user.middle_name ? ` ${user.middle_name}` : ""}
-      <span className="ml-2 text-xs text-gray-500">{user.email}</span>
-    </span>
-  );
+  const handleCloseMembersModal = () => {
+    setShowMembersModal(false);
+    setSelectedGroup(null);
+  };
 
-  // Function to display user name only (without email) for pills
-  const getUserNameOnly = (user: User) => (
-    <span>
-      {user.last_name}, {user.first_name}{user.middle_name ? ` ${user.middle_name}` : ""}
-    </span>
-  );
+
 
   // Function to display project manager with email under name
   const getProjectManagerDisplay = (user: User) => (
@@ -254,14 +219,14 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     </div>
   );
 
-  // Replace uniqueAdvisers with a unique list of adviser objects (by _id) for filter dropdown
-  const uniqueAdviserObjs = Array.from(
-    advisers.reduce((map, adviser) => map.set(adviser._id, adviser), new Map()).values()
-  ).sort((a, b) => {
-    const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
-    const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
-    return aName.localeCompare(bName);
-  });
+  // Function to display adviser with email under name
+  const getAdviserDisplay = (user: User) => (
+    <div>
+      <div>{user.last_name}, {user.first_name}{user.middle_name ? ` ${user.middle_name}` : ""}</div>
+      <div className="text-xs text-gray-500">{user.email}</div>
+    </div>
+  );
+
 
   // Strengthen key with group IDs checksum
   const exportReady = Array.isArray(groups) && groups.length >= 0;
@@ -327,15 +292,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   };
 
   // Update filter handlers to call parent component handlers
-  const handleAdviserFilter = (filter: string) => {
-    let newFilters;
-    if (tempAdviserFilters.includes(filter)) {
-      newFilters = tempAdviserFilters.filter((f) => f !== filter);
-    } else {
-      newFilters = [...tempAdviserFilters, filter];
-    }
-    setTempAdviserFilters(newFilters);
-  };
 
   const handleGradeFilter = (
     filter: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS],
@@ -349,16 +305,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     setTempGradeFilters(newFilters);
   };
 
-  const handleSaveAdviserFilters = () => {
-    setAdviserFilters(tempAdviserFilters);
-    onAdviserFilterChange(tempAdviserFilters);
-    setShowAdviserDropdown(false);
-    onPageChange(1);
-  };
-
-  const handleResetAdviserFilters = () => {
-    setTempAdviserFilters([]);
-  };
 
   const handleSaveGradeFilters = () => {
     setGradeFilters(tempGradeFilters);
@@ -368,7 +314,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   };
 
   const handleResetGradeFilters = () => {
-    setTempGradeFilters(gradeFilters);
+    setTempGradeFilters([]);
   };
 
   return (
@@ -421,7 +367,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowCapstoneDropdown(!showCapstoneDropdown);
-                  setShowAdviserDropdown(false);
                   setShowGradeDropdown(false);
                 }}
               >
@@ -434,7 +379,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowCapstoneDropdown(!showCapstoneDropdown);
-                        setShowAdviserDropdown(false);
                         setShowGradeDropdown(false);
                       }}
                       title="Filter capstone titles"
@@ -547,112 +491,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 Members
               </th>
               <th
-                ref={adviserThRef}
                 scope="col"
-                className="relative px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
               >
-                <div className="flex items-center justify-center gap-2">
-                  <span className="font-medium uppercase">ADVISER</span>
-                  <button
-                    type="button"
-                    className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAdviserDropdown(!showAdviserDropdown);
-                    }}
-                    title="Filter advisers"
-                    ref={adviserButtonRef}
-                    style={{ boxShadow: "none" }}
-                  >
-                    <FaFilter
-                      className={
-                        `w-4 h-4 transition-colors ` +
-                        (showAdviserDropdown || adviserFilters.length > 0
-                          ? "text-blue-500"
-                          : "text-white")
-                      }
-                    />
-                  </button>
-                </div>
-                {showAdviserDropdown && (
-                  <div
-                    ref={adviserDropdownRef}
-                    className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    style={{ 
-                      minWidth: 220,
-                      left: adviserButtonRef.current?.getBoundingClientRect().left || 0,
-                      top: (adviserButtonRef.current?.getBoundingClientRect().bottom || 0) + 8
-                    }}
-                  >
-                    <div className="p-3 border-b">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={adviserSearch}
-                          onChange={(e) => setAdviserSearch(e.target.value)}
-                          placeholder="Search advisers..."
-                          className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          autoFocus
-                        />
-                        <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
-                          <FaSearch />
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      className="max-h-52 overflow-y-auto px-3 py-2 flex flex-col gap-1"
-                      style={{ maxHeight: 220 }}
-                    >
-                      <label className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left">
-                        <input
-                          type="checkbox"
-                          checked={tempAdviserFilters.includes("No Adviser")}
-                          onChange={() => handleAdviserFilter("No Adviser")}
-                          className="accent-blue-600"
-                        />
-                        <span className="text-left">No Adviser</span>
-                      </label>
-                      {uniqueAdviserObjs
-                        .filter((adviser) =>
-                          `${adviser.first_name} ${adviser.last_name}`
-                            .toLowerCase()
-                            .includes(adviserSearch.toLowerCase())
-                        )
-                        .slice(0, 10)
-                        .map((adviser) => (
-                          <label
-                            key={adviser._id}
-                            className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={tempAdviserFilters.includes(`${adviser.last_name}, ${adviser.first_name}${adviser.middle_name ? ` ${adviser.middle_name}` : ""}`)}
-                              onChange={() => handleAdviserFilter(`${adviser.last_name}, ${adviser.first_name}${adviser.middle_name ? ` ${adviser.middle_name}` : ""}`)}
-                              className="accent-blue-600"
-                            />
-                            <span className="text-left">
-                              {adviser.last_name}, {adviser.first_name}{adviser.middle_name ? ` ${adviser.middle_name}` : ""}
-                              <span className="ml-2 text-xs text-gray-500">{adviser.email}</span>
-                            </span>
-                          </label>
-                        ))}
-                    </div>
-                    <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
-                      <button
-                        onClick={handleSaveAdviserFilters}
-                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
-                      >
-                        Apply
-                      </button>
-                      <button
-                        onClick={handleResetAdviserFilters}
-                        className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                  </div>
-                )}
+                ADVISER
               </th>
               <th
                 ref={gradeThRef}
@@ -774,72 +616,21 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {group.projectManager ? getProjectManagerDisplay(group.projectManager) : "-"}
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
+                <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => toggleExpand(group._id)}
-                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                    onClick={() => handleViewMembers(group)}
+                    className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                         disabled={!group.members || group.members.length === 0}
                       >
-                        {group.members && group.members.length > 0 ? (
-                          expandedGroupId === group._id ? (
-                            <FaMinus color="#6B7280" />
-                          ) : (
-                            <FaPlus color="#6B7280" />
-                          )
-                        ) : null}
+                    <FaUser className="mr-1" size={12} />
+                    {group.members && group.members.length > 0 
+                      ? `${group.members.length} member${group.members.length === 1 ? '' : 's'}`
+                      : 'No members'
+                    }
                       </button>
-                      <span className="ml-2">
-                        {group.members && group.members.length > 0 ? (
-                          expandedGroupId === group._id ? (
-                            // Show full names with emails when expanded
-                            <div className="text-sm">
-                              {group.members
-                                ?.slice()
-                                .sort((a, b) => {
-                                  const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
-                                  const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
-                                  return aName.localeCompare(bName);
-                                })
-                                .map((member) => (
-                                  <div key={member._id} className="text-gray-600">
-                                    {getUserDisplay(member)}
-                                  </div>
-                                ))}
-                            </div>
-                          ) : (
-                            // Show truncated names when collapsed
-                            <div className="text-sm">
-                              {group.members
-                                ?.slice()
-                                .sort((a, b) => {
-                                  const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
-                                  const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
-                                  return aName.localeCompare(bName);
-                                })
-                                .slice(0, 4) // Show only first 4 members
-                                .map((member) => (
-                                  <span key={member._id} className="text-gray-600 mr-2">
-                                    {getUserNameOnly(member)}
-                                  </span>
-                                ))}
-                              {group.members && group.members.length > 4 && (
-                                <span className="text-gray-500">
-                                  +{group.members.length - 4} more
-                                </span>
-                              )}
-                            </div>
-                          )
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </span>
-                    </div>
-                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {group.adviser ? getUserDisplay(group.adviser) : "-"}
+                  {group.adviser ? getAdviserDisplay(group.adviser) : "-"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   {(() => {
@@ -925,19 +716,18 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 <div className="h-6 w-px bg-gray-300"></div>
                 {exportReady ? (
                   <PDFDownloadLink
-                    key={`pdf-groups-${searchTerm}-${adviserFilters.join(",")}-${gradeFilters.join(",")}-${groups.length}-${totalCount}-${exportIdsChecksum}`}
+                    key={`pdf-groups-${searchTerm}-${gradeFilters.join(",")}-${groups.length}-${totalCount}-${exportIdsChecksum}`}
                     document={
                       <GroupPDFReport
                         groups={groups}
                         title="Groups Report"
                         filters={{
                           searchTerm,
-                          adviserFilters,
                           gradeFilters,
                         }}
                       />
                     }
-                    fileName={`GroupsReport-${adviserFilters.join(",")}_${gradeFilters.join(",")}_${new Date()
+                    fileName={`GroupsReport-${gradeFilters.join(",")}_${new Date()
                       .toISOString()
                       .slice(0, 10)}.pdf`}
                   >
@@ -992,6 +782,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Group Members Modal */}
+      <GroupMembersModal
+        isOpen={showMembersModal}
+        onClose={handleCloseMembersModal}
+        group={selectedGroup}
+      />
     </>
   );
 };
