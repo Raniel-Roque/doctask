@@ -1451,6 +1451,16 @@ export const getHandledGroupsWithProgress = query({
       (pm): pm is NonNullable<typeof pm> => pm !== null,
     );
 
+    // Fetch all group members for these groups
+    const allMemberIds = validGroups.flatMap((g) => g.member_ids || []);
+    const uniqueMemberIds = [...new Set(allMemberIds)]; // Remove duplicates
+    const groupMembers = await Promise.all(
+      uniqueMemberIds.map((id) => ctx.db.get(id)),
+    );
+    const validGroupMembers = groupMembers.filter(
+      (member): member is NonNullable<typeof member> => member !== null,
+    );
+
     const groupsWithProgress = validGroups.map((group, index) => ({
       ...group,
       documentStatuses: allDocumentStatuses[index] || [],
@@ -1530,6 +1540,7 @@ export const getHandledGroupsWithProgress = query({
     return {
       groups: paginatedGroups,
       projectManagers: validProjectManagers,
+      groupMembers: validGroupMembers,
       totalCount,
       totalPages,
     };

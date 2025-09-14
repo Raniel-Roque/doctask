@@ -18,9 +18,7 @@ interface AdviserGroupsPageProps {
 const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const { adviserId } = use(params);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortField, setSortField] = useState<
-    "name" | "capstoneTitle"
-  >("name");
+  const [sortField, setSortField] = useState<"name" | "capstoneTitle">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);

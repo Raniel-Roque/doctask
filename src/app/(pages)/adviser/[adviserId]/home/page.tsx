@@ -41,6 +41,7 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
 
   const adviserGroups = handledGroupsData?.groups || [];
   const projectManagers = handledGroupsData?.projectManagers || [];
+  const groupMembers = handledGroupsData?.groupMembers || [];
   const totalCount = handledGroupsData?.totalCount || 0;
   const totalPages = handledGroupsData?.totalPages || 1;
 
@@ -176,6 +177,7 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
           adviserId={adviserId as Id<"users">}
           groups={adviserGroups}
           projectManagers={projectManagers}
+          groupMembers={groupMembers}
           sortField={sortField}
           sortDirection={sortDirection}
           onSort={handleSort}

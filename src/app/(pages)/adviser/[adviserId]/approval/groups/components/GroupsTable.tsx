@@ -6,10 +6,10 @@ import {
   FaChevronRight,
   FaCheck,
   FaTimes,
-  FaMinus,
-  FaPlus,
+  FaUser,
 } from "react-icons/fa";
 import { Group } from "./types";
+import GroupMembersModal from "./GroupMembersModal";
 
 interface GroupsTableProps {
   groups: Group[];
@@ -18,9 +18,7 @@ interface GroupsTableProps {
   sortField: "name" | "capstoneTitle";
   sortDirection: "asc" | "desc";
   onSort: (field: "name" | "capstoneTitle") => void;
-  getSortIcon: (
-    field: "name" | "capstoneTitle",
-  ) => React.ReactNode;
+  getSortIcon: (field: "name" | "capstoneTitle") => React.ReactNode;
   currentPage: number;
   totalPages: number;
   totalCount: number;
@@ -46,25 +44,22 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   status,
   hasResults,
 }) => {
-  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
 
   // Add state for expanded capstone titles
   const [expandedCapstoneTitles, setExpandedCapstoneTitles] = useState<
     Set<string>
   >(new Set());
 
-  const toggleExpand = (groupId: string) => {
-    setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
+  const handleViewMembers = (group: Group) => {
+    setSelectedGroup(group);
+    setShowMembersModal(true);
   };
 
-  const getFullName = (user: {
-    first_name: string;
-    middle_name?: string;
-    last_name: string;
-  }) => {
-    return `${user.last_name}, ${user.first_name}${
-      user.middle_name ? ` ${user.middle_name}` : ""
-    }`;
+  const handleCloseMembersModal = () => {
+    setShowMembersModal(false);
+    setSelectedGroup(null);
   };
 
   // =========================================
@@ -192,72 +187,22 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       groupId={group._id}
                     />
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <button
-                          onClick={() => toggleExpand(group._id)}
-                          className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                          disabled={
-                            !group.members && !group.projectManager
-                          }
-                        >
-                          {(() => {
-                            const memberCount = (group.members?.length || 0) + (group.projectManager ? 1 : 0);
-                            return memberCount > 0 ? (
-                              expandedGroupId === group._id ? (
-                                <FaMinus color="#6B7280" />
-                              ) : (
-                                <FaPlus color="#6B7280" />
-                              )
-                            ) : null;
-                          })()}
-                        </button>
-                        <span className="ml-2">
-                          {(() => {
-                            const memberCount = (group.members?.length || 0) + (group.projectManager ? 1 : 0);
-                            return memberCount > 0 ? (
-                              `${memberCount} member${memberCount === 1 ? "" : "s"}`
-                            ) : (
-                              <span className="text-gray-500">-</span>
-                            );
-                          })()}
-                        </span>
-                      </div>
-                    </div>
-                    {(() => {
-                      const memberCount = (group.members?.length || 0) + (group.projectManager ? 1 : 0);
-                      return memberCount > 0 && expandedGroupId === group._id && (
-                        <div className="mt-2 pl-6">
-                          <ul className="list-disc list-inside">
-                            {/* Project Manager */}
-                            {group.projectManager && (
-                              <li className="text-sm text-gray-600 font-medium">
-                                {getFullName(group.projectManager)} (Project Manager)
-                              </li>
-                            )}
-                            {/* Regular Members */}
-                            {group.members
-                              ?.slice()
-                              .sort((a, b) => {
-                                const aName =
-                                  `${a.last_name} ${a.first_name}`.toLowerCase();
-                                const bName =
-                                  `${b.last_name} ${b.first_name}`.toLowerCase();
-                                return aName.localeCompare(bName);
-                              })
-                              .map((member) => (
-                                <li
-                                  key={member._id}
-                                  className="text-sm text-gray-600"
-                                >
-                                  {getFullName(member)}
-                                </li>
-                              ))}
-                          </ul>
-                        </div>
-                      );
-                    })()}
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      onClick={() => handleViewMembers(group)}
+                      className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      disabled={!group.members && !group.projectManager}
+                    >
+                      <FaUser className="mr-1" size={12} />
+                      {(() => {
+                        const memberCount =
+                          (group.members?.length || 0) +
+                          (group.projectManager ? 1 : 0);
+                        return memberCount > 0
+                          ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
+                          : "No members";
+                      })()}
+                    </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center justify-center gap-2">
@@ -344,6 +289,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Group Members Modal */}
+      <GroupMembersModal
+        isOpen={showMembersModal}
+        onClose={handleCloseMembersModal}
+        group={selectedGroup}
+      />
     </div>
   );
 };

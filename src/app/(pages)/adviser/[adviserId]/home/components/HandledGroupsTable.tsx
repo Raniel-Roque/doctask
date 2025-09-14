@@ -5,14 +5,18 @@ import {
   FaSearch,
   FaChevronLeft,
   FaChevronRight,
+  FaUser,
 } from "react-icons/fa";
 import { Users } from "lucide-react";
 import Link from "next/link";
 import { Id, Doc } from "../../../../../../../convex/_generated/dataModel";
+import { useState } from "react";
+import GroupMembersModal from "./GroupMembersModal";
 
 interface Group {
   _id: Id<"groupsTable">;
   project_manager_id: Id<"users">;
+  member_ids?: Id<"users">[];
   capstone_title?: string;
   documentStatuses: Doc<"documentStatus">[];
 }
@@ -34,6 +38,7 @@ interface HandledGroupsTableProps {
   adviserId: Id<"users">;
   groups: Group[];
   projectManagers: User[];
+  groupMembers: User[];
   sortField: "name" | "capstoneTitle";
   sortDirection: "asc" | "desc";
   onSort: (field: "name" | "capstoneTitle") => void;
@@ -53,6 +58,7 @@ export const HandledGroupsTable = ({
   adviserId,
   groups,
   projectManagers,
+  groupMembers,
   sortField,
   sortDirection,
   onSort,
@@ -67,6 +73,35 @@ export const HandledGroupsTable = ({
   status,
   hasResults,
 }: HandledGroupsTableProps) => {
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<{
+    _id: string;
+    capstone_title?: string;
+    projectManager?: User;
+    members?: User[];
+  } | null>(null);
+  const handleViewMembers = (group: Group) => {
+    const projectManager = projectManagers.find(
+      (pm) => pm._id === group.project_manager_id,
+    );
+    const members = groupMembers.filter((member) =>
+      group.member_ids?.includes(member._id),
+    );
+
+    setSelectedGroup({
+      _id: group._id,
+      capstone_title: group.capstone_title,
+      projectManager,
+      members,
+    });
+    setShowMembersModal(true);
+  };
+
+  const handleCloseMembersModal = () => {
+    setShowMembersModal(false);
+    setSelectedGroup(null);
+  };
+
   const getSortIcon = (field: "name" | "capstoneTitle") => {
     if (sortField !== field) return <FaSort className="text-gray-400" />;
     return sortDirection === "asc" ? <FaSortUp /> : <FaSortDown />;
@@ -130,6 +165,9 @@ export const HandledGroupsTable = ({
                     </div>
                   </th>
                   <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600">
+                    Group Members
+                  </th>
+                  <th className="text-center pt-1 pb-3 px-4 font-medium text-gray-600">
                     Progress
                   </th>
                   <th
@@ -147,7 +185,7 @@ export const HandledGroupsTable = ({
                 {status === "loading" && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="pt-7 pb-1 text-center text-gray-500"
                     >
                       Loading...
@@ -157,7 +195,7 @@ export const HandledGroupsTable = ({
                 {status === "error" && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="pt-7 pb-1 text-center text-red-500"
                     >
                       An error occurred while loading groups. Please try again.
@@ -167,7 +205,7 @@ export const HandledGroupsTable = ({
                 {status === "idle" && !hasResults && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="pt-7 pb-1 text-center text-gray-500"
                     >
                       No groups handled at this time. Check group requests to
@@ -226,6 +264,24 @@ export const HandledGroupsTable = ({
                       <td className="py-3 px-4">{groupName}</td>
                       <td className="py-3 px-4">
                         {group.capstone_title || "No title yet"}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          onClick={() => handleViewMembers(group)}
+                          className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          disabled={
+                            !group.member_ids || group.member_ids.length === 0
+                          }
+                        >
+                          <FaUser className="mr-1" size={12} />
+                          {(() => {
+                            const memberCount =
+                              (group.member_ids?.length || 0) + 1; // +1 for project manager
+                            return memberCount > 1
+                              ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
+                              : "No members";
+                          })()}
+                        </button>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-center gap-2">
@@ -335,6 +391,13 @@ export const HandledGroupsTable = ({
           </button>
         </div>
       </div>
+
+      {/* Group Members Modal */}
+      <GroupMembersModal
+        isOpen={showMembersModal}
+        onClose={handleCloseMembersModal}
+        group={selectedGroup}
+      />
     </div>
   );
 };
