@@ -54,7 +54,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="text"
                 value={userData?.first_name || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm text-gray-500"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-gray-400 cursor-not-allowed"
               />
             </div>
             <div>
@@ -65,7 +65,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="text"
                 value={userData?.middle_name || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm text-gray-500"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-gray-400 cursor-not-allowed"
               />
             </div>
             <div>
@@ -76,7 +76,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="text"
                 value={userData?.last_name || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm text-gray-500"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-gray-400 cursor-not-allowed"
               />
             </div>
           </div>
@@ -91,7 +91,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="email"
                 value={userData?.email || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm text-gray-500"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-gray-400 cursor-not-allowed"
               />
             </div>
             <div className="col-span-2 flex items-end">

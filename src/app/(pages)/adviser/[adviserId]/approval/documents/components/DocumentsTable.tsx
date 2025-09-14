@@ -8,6 +8,7 @@ import {
   FaEye,
   FaStickyNote,
   FaDownload,
+  FaUser,
 } from "react-icons/fa";
 import { User, Group, Document } from "./types";
 import { useMutation } from "convex/react";
@@ -16,14 +17,15 @@ import { api } from "../../../../../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import NotesPopup from "./NotesPopup";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import GroupMembersModal from "./GroupMembersModal";
 
 interface DocumentsTableProps {
   groups: Group[];
   onSort: (
-    field: "name" | "capstoneTitle" | "projectManager" | "documentCount",
+    field: "name" | "capstoneTitle" | "documentCount",
   ) => void;
   getSortIcon: (
-    field: "name" | "capstoneTitle" | "projectManager" | "documentCount",
+    field: "name" | "capstoneTitle" | "documentCount",
   ) => React.ReactNode;
   currentPage: number;
   totalPages: number;
@@ -66,6 +68,13 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     groupId: Id<"groupsTable">;
     documentPart: string;
     documentTitle: string;
+  } | null>(null);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<{
+    _id: string;
+    capstone_title?: string;
+    projectManager?: User;
+    members?: User[];
   } | null>(null);
   const groupRowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>(
     {},
@@ -257,6 +266,21 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     setSelectedDocument(null);
   };
 
+  const handleViewMembers = (group: Group) => {
+    setSelectedGroup({
+      _id: group._id,
+      capstone_title: group.capstone_title,
+      projectManager: group.projectManager,
+      members: group.members,
+    });
+    setShowMembersModal(true);
+  };
+
+  const handleCloseMembersModal = () => {
+    setShowMembersModal(false);
+    setSelectedGroup(null);
+  };
+
   // Helper function to generate consistent filename format
   const generateFilename = (title: string, extension: string) => {
     const now = new Date();
@@ -420,14 +444,10 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
-                  onClick={() => onSort("projectManager")}
+                  className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
                 >
                   <div className="flex items-center justify-center">
-                    Project Manager
-                    <span className="ml-1">
-                      {getSortIcon("projectManager")}
-                    </span>
+                    Group Members
                   </div>
                 </th>
                 <th
@@ -494,10 +514,22 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {group.capstone_title || "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {group.projectManager
-                        ? getFullName(group.projectManager)
-                        : "-"}
+                    <td className="px-6 py-4 text-center">
+                      <button
+                        onClick={() => handleViewMembers(group)}
+                        className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        disabled={!group.members && !group.projectManager}
+                      >
+                        <FaUser className="mr-1" size={12} />
+                        {(() => {
+                          const memberCount =
+                            (group.members?.length || 0) +
+                            (group.projectManager ? 1 : 0);
+                          return memberCount > 0
+                            ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
+                            : "No members";
+                        })()}
+                      </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center justify-center">
@@ -794,6 +826,13 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
           onClose={() => setNotification(null)}
         />
       )}
+
+      {/* Group Members Modal */}
+      <GroupMembersModal
+        isOpen={showMembersModal}
+        onClose={handleCloseMembersModal}
+        group={selectedGroup}
+      />
     </div>
   );
 };

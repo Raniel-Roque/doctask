@@ -2,6 +2,45 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id, Doc } from "./_generated/dataModel";
 
+// Helper function to check if a group matches search criteria
+const groupMatchesSearch = (
+  group: Doc<"groupsTable">,
+  users: Doc<"users">[],
+  searchTerm: string,
+): boolean => {
+  const searchLower = searchTerm.toLowerCase();
+  
+  const projectManager = group.project_manager_id
+    ? users.find((u) => u._id === group.project_manager_id)
+    : null;
+  
+  if (!projectManager) return false;
+
+  const managerName = `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
+  const groupName = `${projectManager.last_name} et al`.toLowerCase();
+  const managerEmail = projectManager.email.toLowerCase();
+  const capstoneTitle = (group.capstone_title || "").toLowerCase();
+
+  // Search in group members
+  const groupMembers = group.member_ids
+    ?.map((id) => users.find((u) => u._id === id))
+    .filter((u): u is NonNullable<typeof u> => u !== undefined) || [];
+  
+  const memberNames = groupMembers.map((m) =>
+    `${m.first_name} ${m.last_name}`.toLowerCase(),
+  );
+  const memberEmails = groupMembers.map((m) => m.email.toLowerCase());
+
+  return (
+    groupName.includes(searchLower) ||
+    capstoneTitle.includes(searchLower) ||
+    managerName.includes(searchLower) ||
+    managerEmail.includes(searchLower) ||
+    memberNames.some((name) => name.includes(searchLower)) ||
+    memberEmails.some((email) => email.includes(searchLower))
+  );
+};
+
 // =========================================
 // User Queries
 // =========================================
@@ -305,12 +344,12 @@ export const getPendingGroupIdsForAdviser = query({
           .collect()
           .then((results) => results.filter((g) => !g.isDeleted));
 
-        // Filter capstone results to only include groups assigned to this adviser AND not deleted
+        // Filter capstone results to only include groups in requests for this adviser AND not deleted
         const capstoneFiltered = capstoneResults.filter(
-          (group) => adviser.group_ids?.includes(group._id) && !group.isDeleted,
+          (group) => adviser.requests_group_ids?.includes(group._id) && !group.isDeleted,
         );
 
-        // Also search by project manager names
+        // Also search by project manager names and member details
         const allGroups = await ctx.db
           .query("groupsTable")
           .collect()
@@ -321,23 +360,8 @@ export const getPendingGroupIdsForAdviser = query({
           .then((results) => results.filter((u) => !u.isDeleted));
 
         const managerFiltered = allGroups.filter((group) => {
-          if (!adviser.group_ids?.includes(group._id)) return false;
-
-          const projectManager = group.project_manager_id
-            ? users.find((u) => u._id === group.project_manager_id)
-            : null;
-          if (!projectManager) return false;
-
-          const managerName =
-            `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
-          const groupName = `${projectManager.last_name} et al`.toLowerCase();
-          const managerEmail = projectManager.email.toLowerCase();
-
-          return (
-            managerName.includes(searchTerm.toLowerCase()) ||
-            groupName.includes(searchTerm.toLowerCase()) ||
-            managerEmail.includes(searchTerm.toLowerCase())
-          );
+          if (!adviser.requests_group_ids?.includes(group._id)) return false;
+          return groupMatchesSearch(group, users, searchTerm);
         });
 
         // Combine and deduplicate results
@@ -1166,7 +1190,7 @@ export const getAdviserDocuments = query({
           adviser.group_ids?.includes(group._id),
         );
 
-        // Also search by project manager names
+        // Also search by project manager names and member details
         const allGroups = await ctx.db
           .query("groupsTable")
           .collect()
@@ -1178,22 +1202,7 @@ export const getAdviserDocuments = query({
 
         const managerFiltered = allGroups.filter((group) => {
           if (!adviser.group_ids?.includes(group._id)) return false;
-
-          const projectManager = group.project_manager_id
-            ? users.find((u) => u._id === group.project_manager_id)
-            : null;
-          if (!projectManager) return false;
-
-          const managerName =
-            `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase();
-          const groupName = `${projectManager.last_name} et al`.toLowerCase();
-          const managerEmail = projectManager.email.toLowerCase();
-
-          return (
-            managerName.includes(searchTerm.toLowerCase()) ||
-            groupName.includes(searchTerm.toLowerCase()) ||
-            managerEmail.includes(searchTerm.toLowerCase())
-          );
+          return groupMatchesSearch(group, users, searchTerm);
         });
 
         // Combine and deduplicate results
@@ -1469,20 +1478,10 @@ export const getHandledGroupsWithProgress = query({
     // Apply search filter if provided
     let filteredGroups = groupsWithProgress;
     if (args.searchTerm) {
-      const searchLower = args.searchTerm.toLowerCase();
+      // Combine all users for search
+      const allUsers = [...validProjectManagers, ...validGroupMembers];
       filteredGroups = groupsWithProgress.filter((group) => {
-        const projectManager = validProjectManagers.find(
-          (pm) => pm._id === group.project_manager_id,
-        );
-        const groupName = projectManager
-          ? `${projectManager.last_name} et al`
-          : "Unnamed Group";
-        const capstoneTitle = group.capstone_title || "";
-
-        return (
-          groupName.toLowerCase().includes(searchLower) ||
-          capstoneTitle.toLowerCase().includes(searchLower)
-        );
+        return groupMatchesSearch(group, allUsers, args.searchTerm!);
       });
     }
 

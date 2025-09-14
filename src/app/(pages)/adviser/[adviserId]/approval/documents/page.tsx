@@ -20,7 +20,7 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<
-    "name" | "capstoneTitle" | "projectManager" | "documentCount"
+    "name" | "capstoneTitle" | "documentCount"
   >("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,7 +89,7 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
               </div>
               <input
                 type="text"
-                placeholder="Search groups or documents..."
+                placeholder="Search..."
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={searchTerm}
                 onChange={(e) => {
@@ -143,7 +143,7 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
             </div>
             <input
               type="text"
-              placeholder="Search groups or documents..."
+              placeholder="Search..."
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={searchTerm}
               onChange={(e) => {
