@@ -26,6 +26,7 @@ interface User {
   first_name: string;
   middle_name?: string;
   last_name: string;
+  email: string;
 }
 
 interface EditGroupFormProps {
@@ -470,7 +471,10 @@ export default function EditGroupForm({
                               setShowAdviserSearch(false);
                             }}
                           >
-                            {`${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`}
+                            <div className="flex items-center justify-between">
+                              <span>{adviser.first_name} {adviser.middle_name ? adviser.middle_name + " " : ""}{adviser.last_name}</span>
+                              <span className="ml-2 text-xs text-gray-500">{adviser.email}</span>
+                            </div>
                           </div>
                         ))}
                         {advisers.filter(filterAdvisers).length === 0 && (
@@ -561,9 +565,10 @@ export default function EditGroupForm({
                             handleMemberRemove(memberId);
                           }}
                         >
-                          {member
-                            ? `${member.first_name} ${member.middle_name ? member.middle_name + " " : ""}${member.last_name}`
-                            : memberId}
+                          <div className="flex items-center justify-between">
+                            <span>{member?.first_name} {member?.middle_name ? member.middle_name + " " : ""}{member?.last_name}</span>
+                            <span className="ml-2 text-xs text-gray-500">{member?.email}</span>
+                          </div>
                           <FaTimes color="#2563EB" size={12} />
                         </div>
                       );
@@ -624,7 +629,10 @@ export default function EditGroupForm({
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                             onClick={() => handleMemberSelect(member)}
                           >
-                            {`${member.first_name} ${member.middle_name ? member.middle_name + " " : ""}${member.last_name}`}
+                            <div className="flex items-center justify-between">
+                              <span>{member.first_name} {member.middle_name ? member.middle_name + " " : ""}{member.last_name}</span>
+                              <span className="ml-2 text-xs text-gray-500">{member.email}</span>
+                            </div>
                           </div>
                         ))}
                       {members.filter((member) => {

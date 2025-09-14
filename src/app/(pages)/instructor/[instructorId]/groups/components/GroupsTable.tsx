@@ -231,16 +231,22 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     setExpandedGroupId(expandedGroupId === groupId ? null : groupId);
   };
 
-  const getFullName = (user: User) => {
-    return `${user.last_name}, ${user.first_name}${
-      user.middle_name ? ` ${user.middle_name}` : ""
-    }`;
-  };
+  // Update getFullName to getUserDisplay to include email as subtext
+  const getUserDisplay = (user: User) => (
+    <span>
+      {user.last_name}, {user.first_name}{user.middle_name ? ` ${user.middle_name}` : ""}
+      <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+    </span>
+  );
 
-  // Get unique advisers for filter dropdown
-  const uniqueAdvisers = Array.from(
-    new Set(advisers.map((adviser: User) => getFullName(adviser))),
-  ).sort();
+  // Replace uniqueAdvisers with a unique list of adviser objects (by _id) for filter dropdown
+  const uniqueAdviserObjs = Array.from(
+    advisers.reduce((map, adviser) => map.set(adviser._id, adviser), new Map()).values()
+  ).sort((a, b) => {
+    const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
+    const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
+    return aName.localeCompare(bName);
+  });
 
   // Strengthen key with group IDs checksum
   const exportReady = Array.isArray(groups) && groups.length >= 0;
@@ -591,25 +597,28 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                         />
                         <span className="text-left">No Adviser</span>
                       </label>
-                      {uniqueAdvisers
+                      {uniqueAdviserObjs
                         .filter((adviser) =>
-                          adviser
+                          `${adviser.first_name} ${adviser.last_name}`
                             .toLowerCase()
-                            .includes(adviserSearch.toLowerCase()),
+                            .includes(adviserSearch.toLowerCase())
                         )
                         .slice(0, 10)
                         .map((adviser) => (
                           <label
-                            key={adviser}
+                            key={adviser._id}
                             className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
                           >
                             <input
                               type="checkbox"
-                              checked={tempAdviserFilters.includes(adviser)}
-                              onChange={() => handleAdviserFilter(adviser)}
+                              checked={tempAdviserFilters.includes(`${adviser.last_name}, ${adviser.first_name}${adviser.middle_name ? ` ${adviser.middle_name}` : ""}`)}
+                              onChange={() => handleAdviserFilter(`${adviser.last_name}, ${adviser.first_name}${adviser.middle_name ? ` ${adviser.middle_name}` : ""}`)}
                               className="accent-blue-600"
                             />
-                            <span className="text-left">{adviser}</span>
+                            <span className="text-left">
+                              {adviser.last_name}, {adviser.first_name}{adviser.middle_name ? ` ${adviser.middle_name}` : ""}
+                              <span className="ml-2 text-xs text-gray-500">{adviser.email}</span>
+                            </span>
                           </label>
                         ))}
                     </div>
@@ -748,9 +757,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {group.projectManager
-                    ? getFullName(group.projectManager)
-                    : "-"}
+                  {group.projectManager ? getUserDisplay(group.projectManager) : "-"}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-between">
@@ -796,7 +803,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                                 key={member._id}
                                 className="text-sm text-gray-600"
                               >
-                                {getFullName(member)}
+                                {getUserDisplay(member)}
                               </li>
                             ))}
                         </ul>
@@ -804,7 +811,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {group.adviser ? getFullName(group.adviser) : "-"}
+                  {group.adviser ? getUserDisplay(group.adviser) : "-"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   {(() => {

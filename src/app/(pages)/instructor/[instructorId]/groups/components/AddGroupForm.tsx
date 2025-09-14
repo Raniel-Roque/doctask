@@ -36,18 +36,21 @@ interface AddGroupFormProps {
     first_name: string;
     last_name: string;
     middle_name?: string;
+    email?: string;
   }[];
   members: {
     _id: string;
     first_name: string;
     last_name: string;
     middle_name?: string;
+    email?: string;
   }[];
   advisers: {
     _id: string;
     first_name: string;
     last_name: string;
     middle_name?: string;
+    email?: string;
   }[];
 }
 
@@ -256,6 +259,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     first_name: string;
     last_name: string;
     middle_name?: string;
+    email?: string;
   }) => {
     setFormData((prev) => ({ ...prev, projectManager: user._id }));
     setProjectManagerSearch("");
@@ -267,6 +271,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     first_name: string;
     last_name: string;
     middle_name?: string;
+    email?: string;
   }) => {
     if (!formData.members.includes(user._id)) {
       setFormData((prev) => ({
@@ -283,6 +288,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     first_name: string;
     last_name: string;
     middle_name?: string;
+    email?: string;
   }) => {
     setFormData((prev) => ({
       ...prev,
@@ -485,7 +491,12 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             (u) => u._id === formData.projectManager,
                           );
                           return user
-                            ? `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`
+                            ? (
+                              <>
+                                <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
+                                <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+                              </>
+                            )
                             : formData.projectManager;
                         })()}
                       </div>
@@ -536,9 +547,10 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                               className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                               onClick={() => handleProjectManagerSelect(user)}
                             >
-                              {user.first_name}{" "}
-                              {user.middle_name ? user.middle_name + " " : ""}{" "}
-                              {user.last_name}
+                              <div>
+                                <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
+                                <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+                              </div>
                             </div>
                           ))}
                         {projectManagers.filter((user) =>
@@ -593,7 +605,12 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             (u) => u._id === formData.adviser,
                           );
                           return user
-                            ? `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`
+                            ? (
+                              <>
+                                <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
+                                <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+                              </>
+                            )
                             : formData.adviser;
                         })()}
                       </div>
@@ -644,9 +661,10 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                               className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                               onClick={() => handleAdviserSelect(user)}
                             >
-                              {user.first_name}{" "}
-                              {user.middle_name ? user.middle_name + " " : ""}{" "}
-                              {user.last_name}
+                              <div>
+                                <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
+                                <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+                              </div>
                             </div>
                           ))}
                         {advisers.filter((user) =>
@@ -704,9 +722,10 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             key={index}
                             className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 whitespace-nowrap overflow-hidden text-ellipsis min-w-0 flex-shrink-0"
                           >
-                            {user
-                              ? `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`
-                              : memberId}
+                            <div>
+                              <span>{user?.first_name} {user?.middle_name ? user?.middle_name + " " : ""}{user?.last_name}</span>
+                              <span className="ml-2 text-xs text-gray-500">{user?.email}</span>
+                            </div>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -774,9 +793,10 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                             onClick={() => handleMemberSelect(user)}
                           >
-                            {user.first_name}{" "}
-                            {user.middle_name ? user.middle_name + " " : ""}{" "}
-                            {user.last_name}
+                            <div>
+                              <span>{user.first_name} {user.middle_name ? user.middle_name + " " : ""}{user.last_name}</span>
+                              <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+                            </div>
                           </div>
                         ))}
                       {members.filter(
