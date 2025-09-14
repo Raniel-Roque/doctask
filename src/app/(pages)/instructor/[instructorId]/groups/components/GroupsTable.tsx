@@ -246,6 +246,14 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     </span>
   );
 
+  // Function to display project manager with email under name
+  const getProjectManagerDisplay = (user: User) => (
+    <div>
+      <div>{user.last_name}, {user.first_name}{user.middle_name ? ` ${user.middle_name}` : ""}</div>
+      <div className="text-xs text-gray-500">{user.email}</div>
+    </div>
+  );
+
   // Replace uniqueAdvisers with a unique list of adviser objects (by _id) for filter dropdown
   const uniqueAdviserObjs = Array.from(
     advisers.reduce((map, adviser) => map.set(adviser._id, adviser), new Map()).values()
@@ -764,7 +772,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {group.projectManager ? getUserDisplay(group.projectManager) : "-"}
+                  {group.projectManager ? getProjectManagerDisplay(group.projectManager) : "-"}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-between">
@@ -810,15 +818,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                                   const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
                                   return aName.localeCompare(bName);
                                 })
-                                .slice(0, 3) // Show only first 3 members
+                                .slice(0, 4) // Show only first 4 members
                                 .map((member) => (
                                   <span key={member._id} className="text-gray-600 mr-2">
                                     {getUserNameOnly(member)}
                                   </span>
                                 ))}
-                              {group.members && group.members.length > 3 && (
+                              {group.members && group.members.length > 4 && (
                                 <span className="text-gray-500">
-                                  +{group.members.length - 3} more
+                                  +{group.members.length - 4} more
                                 </span>
                               )}
                             </div>

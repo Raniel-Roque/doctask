@@ -196,7 +196,7 @@ export default function EditGroupForm({
     const lastNameFirst =
       `${member.last_name} ${member.first_name} ${member.middle_name ? member.middle_name : ""}`.toLowerCase();
     const searchTerm = membersSearch.toLowerCase();
-    return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm);
+    return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm) || member.email?.toLowerCase().includes(searchTerm);
   };
 
   const filterAdvisers = (adviser: User) => {
@@ -205,7 +205,7 @@ export default function EditGroupForm({
     const lastNameFirst =
       `${adviser.last_name} ${adviser.first_name} ${adviser.middle_name ? adviser.middle_name : ""}`.toLowerCase();
     const searchTerm = adviserSearch.toLowerCase();
-    return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm);
+    return fullName.includes(searchTerm) || lastNameFirst.includes(searchTerm) || adviser.email?.toLowerCase().includes(searchTerm);
   };
 
   // Handle close with unsaved changes check
