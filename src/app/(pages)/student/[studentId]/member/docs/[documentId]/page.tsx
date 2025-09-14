@@ -228,7 +228,7 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
         editor.setEditable(false);
       } else {
         editor.setEditable(true);
-        
+
         // If this is a rejected document (status 3) and we can edit it,
         // force a save to update the status from rejected to not submitted
         if (currentDocumentStatus?.status === 3) {
@@ -239,7 +239,14 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
         }
       }
     }
-  }, [editor, document, currentUser, isEditable, currentDocumentStatus, saveToDatabase]);
+  }, [
+    editor,
+    document,
+    currentUser,
+    isEditable,
+    currentDocumentStatus,
+    saveToDatabase,
+  ]);
 
   // Smart auto-save: frequent when solo, less frequent when collaborative - ONLY in edit mode
   useEffect(() => {

@@ -156,7 +156,28 @@ export const LatestDocumentsTable = ({
 
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
   const [notesPopupDoc, setNotesPopupDoc] = useState<Document | null>(null);
-  const [viewedNotesDocuments, setViewedNotesDocuments] = useState<Set<string>>(new Set());
+  const [viewedNotesDocuments, setViewedNotesDocuments] = useState<Set<string>>(
+    () => {
+      // Load viewed notes from localStorage on component mount
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("viewedNotesDocuments");
+        return stored ? new Set(JSON.parse(stored)) : new Set();
+      }
+      return new Set();
+    },
+  );
+
+  // Track the note count when notes were last viewed
+  const [viewedNoteCounts, setViewedNoteCounts] = useState<
+    Record<string, number>
+  >(() => {
+    // Load viewed note counts from localStorage on component mount
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("viewedNoteCounts");
+      return stored ? JSON.parse(stored) : {};
+    }
+    return {};
+  });
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -378,9 +399,21 @@ export const LatestDocumentsTable = ({
       // Add special documents (Title Page, Appendix A, Appendix D) as DOCX regardless of format
       // These are always generated as DOCX since they don't have PDF equivalents
       const specialDocuments = [
-        { chapter: "title_page", title: "Title Page", templatePath: "/templates/Title Page Template.docx" },
-        { chapter: "appendix_a", title: "Appendix A", templatePath: "/templates/Appendix A Template.docx" },
-        { chapter: "appendix_d", title: "Appendix D", templatePath: "/templates/Appendix D Template.docx" },
+        {
+          chapter: "title_page",
+          title: "Title Page",
+          templatePath: "/templates/Title Page Template.docx",
+        },
+        {
+          chapter: "appendix_a",
+          title: "Appendix A",
+          templatePath: "/templates/Appendix A Template.docx",
+        },
+        {
+          chapter: "appendix_d",
+          title: "Appendix D",
+          templatePath: "/templates/Appendix D Template.docx",
+        },
       ];
 
       for (const specialDoc of specialDocuments) {
@@ -2845,16 +2878,45 @@ export const LatestDocumentsTable = ({
                                 onClick={() => {
                                   setNotesPopupDoc(doc);
                                   setNotesPopupOpen(true);
-                                  // Mark this document's notes as viewed
-                                  setViewedNotesDocuments(prev => new Set(prev).add(doc._id));
+                                  // Mark this document's notes as viewed and save to localStorage
+                                  const newViewedSet = new Set(
+                                    viewedNotesDocuments,
+                                  ).add(doc._id);
+                                  setViewedNotesDocuments(newViewedSet);
+                                  localStorage.setItem(
+                                    "viewedNotesDocuments",
+                                    JSON.stringify([...newViewedSet]),
+                                  );
+
+                                  // Save the current note count when viewed
+                                  const newViewedCounts = {
+                                    ...viewedNoteCounts,
+                                    [doc._id]: doc.note_count,
+                                  };
+                                  setViewedNoteCounts(newViewedCounts);
+                                  localStorage.setItem(
+                                    "viewedNoteCounts",
+                                    JSON.stringify(newViewedCounts),
+                                  );
                                 }}
                               >
                                 <FaStickyNote className="w-4 h-4" />
-                                {!viewedNotesDocuments.has(doc._id) && (
-                                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                    {doc.note_count > 99 ? "99+" : doc.note_count}
-                                  </span>
-                                )}
+                                {(() => {
+                                  const viewedCount =
+                                    viewedNoteCounts[doc._id] || 0;
+                                  const newNotesCount =
+                                    doc.note_count - viewedCount;
+                                  const hasNewNotes = newNotesCount > 0;
+                                  return (
+                                    hasNewNotes && (
+                                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                        {newNotesCount > 99
+                                          ? "99+"
+                                          : newNotesCount}
+                                      </span>
+                                    )
+                                  );
+                                })()}
                               </button>
                             </>
                           )}

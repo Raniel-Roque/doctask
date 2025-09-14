@@ -60,6 +60,9 @@ export const Navbar = ({ studentId }: NavbarProps) => {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
+      // Clear viewed notes from localStorage on logout
+      localStorage.removeItem("viewedNotesDocuments");
+      localStorage.removeItem("viewedNoteCounts");
       await signOut();
       router.replace("/login");
     } finally {

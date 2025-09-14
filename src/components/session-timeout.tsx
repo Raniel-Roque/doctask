@@ -33,6 +33,8 @@ export function SessionTimeout() {
         const timeSinceLastActivity = currentTime - parseInt(storedTime);
         if (timeSinceLastActivity >= TIMEOUT_DURATION) {
           localStorage.removeItem(LAST_ACTIVITY_KEY);
+          localStorage.removeItem("viewedNotesDocuments");
+          localStorage.removeItem("viewedNoteCounts");
           signOut();
           router.replace("/login");
           return;
@@ -72,6 +74,8 @@ export function SessionTimeout() {
 
         if (timeSinceLastActivity >= TIMEOUT_DURATION) {
           localStorage.removeItem(LAST_ACTIVITY_KEY);
+          localStorage.removeItem("viewedNotesDocuments");
+          localStorage.removeItem("viewedNoteCounts");
           signOut();
           router.replace("/login");
         }

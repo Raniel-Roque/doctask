@@ -202,6 +202,28 @@ export const TaskAssignmentTable = ({
   // Add state for notes popup
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
   const [notesPopupDoc, setNotesPopupDoc] = useState<Document | null>(null);
+  const [viewedNotesDocuments, setViewedNotesDocuments] = useState<Set<string>>(
+    () => {
+      // Load viewed notes from localStorage on component mount
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("viewedNotesDocuments");
+        return stored ? new Set(JSON.parse(stored)) : new Set();
+      }
+      return new Set();
+    },
+  );
+
+  // Track the note count when notes were last viewed
+  const [viewedNoteCounts, setViewedNoteCounts] = useState<
+    Record<string, number>
+  >(() => {
+    // Load viewed note counts from localStorage on component mount
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("viewedNoteCounts");
+      return stored ? JSON.parse(stored) : {};
+    }
+    return {};
+  });
 
   // Create a stable dependency from the members list
   const memberIds = useMemo(() => {
@@ -1368,6 +1390,7 @@ export const TaskAssignmentTable = ({
                                           |
                                         </span>
                                         <button
+                                          key={`notes-${chapterTasks[0].chapter}-${viewedNotesDocuments.has(chapterTasks[0].chapter)}`}
                                           className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
                                           title="View Notes"
                                           onClick={() => {
@@ -1379,6 +1402,33 @@ export const TaskAssignmentTable = ({
                                             if (document) {
                                               setNotesPopupDoc(document);
                                               setNotesPopupOpen(true);
+                                              // Mark this document's notes as viewed and save to localStorage
+                                              const newViewedSet = new Set(
+                                                viewedNotesDocuments,
+                                              ).add(document._id);
+                                              setViewedNotesDocuments(
+                                                newViewedSet,
+                                              );
+                                              localStorage.setItem(
+                                                "viewedNotesDocuments",
+                                                JSON.stringify([
+                                                  ...newViewedSet,
+                                                ]),
+                                              );
+
+                                              // Save the current note count when viewed
+                                              const newViewedCounts = {
+                                                ...viewedNoteCounts,
+                                                [document._id]:
+                                                  document.note_count,
+                                              };
+                                              setViewedNoteCounts(
+                                                newViewedCounts,
+                                              );
+                                              localStorage.setItem(
+                                                "viewedNoteCounts",
+                                                JSON.stringify(newViewedCounts),
+                                              );
                                             }
                                           }}
                                         >
@@ -1389,12 +1439,22 @@ export const TaskAssignmentTable = ({
                                                 doc.chapter ===
                                                 chapterTasks[0].chapter,
                                             );
-                                            return document &&
-                                              document.note_count > 0 ? (
+                                            const viewedCount = document
+                                              ? viewedNoteCounts[
+                                                  document._id
+                                                ] || 0
+                                              : 0;
+                                            const newNotesCount = document
+                                              ? document.note_count -
+                                                viewedCount
+                                              : 0;
+                                            const hasNewNotes =
+                                              newNotesCount > 0;
+                                            return hasNewNotes ? (
                                               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                                {document.note_count > 99
+                                                {newNotesCount > 99
                                                   ? "99+"
-                                                  : document.note_count}
+                                                  : newNotesCount}
                                               </span>
                                             ) : null;
                                           })()}
@@ -1590,6 +1650,7 @@ export const TaskAssignmentTable = ({
                                         |
                                       </span>
                                       <button
+                                        key={`notes-${chapterTasks[0].chapter}-${viewedNotesDocuments.has(chapterTasks[0].chapter)}`}
                                         className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
                                         title="View Notes"
                                         onClick={() => {
@@ -1601,6 +1662,31 @@ export const TaskAssignmentTable = ({
                                           if (document) {
                                             setNotesPopupDoc(document);
                                             setNotesPopupOpen(true);
+                                            // Mark this document's notes as viewed and save to localStorage
+                                            const newViewedSet = new Set(
+                                              viewedNotesDocuments,
+                                            ).add(document._id);
+                                            setViewedNotesDocuments(
+                                              newViewedSet,
+                                            );
+                                            localStorage.setItem(
+                                              "viewedNotesDocuments",
+                                              JSON.stringify([...newViewedSet]),
+                                            );
+
+                                            // Save the current note count when viewed
+                                            const newViewedCounts = {
+                                              ...viewedNoteCounts,
+                                              [document._id]:
+                                                document.note_count,
+                                            };
+                                            setViewedNoteCounts(
+                                              newViewedCounts,
+                                            );
+                                            localStorage.setItem(
+                                              "viewedNoteCounts",
+                                              JSON.stringify(newViewedCounts),
+                                            );
                                           }
                                         }}
                                       >
@@ -1611,12 +1697,19 @@ export const TaskAssignmentTable = ({
                                               doc.chapter ===
                                               chapterTasks[0].chapter,
                                           );
-                                          return document &&
-                                            document.note_count > 0 ? (
+                                          const viewedCount = document
+                                            ? viewedNoteCounts[document._id] ||
+                                              0
+                                            : 0;
+                                          const newNotesCount = document
+                                            ? document.note_count - viewedCount
+                                            : 0;
+                                          const hasNewNotes = newNotesCount > 0;
+                                          return hasNewNotes ? (
                                             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                              {document.note_count > 99
+                                              {newNotesCount > 99
                                                 ? "99+"
-                                                : document.note_count}
+                                                : newNotesCount}
                                             </span>
                                           ) : null;
                                         })()}
