@@ -52,9 +52,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const [appliedCapstoneFilter, setAppliedCapstoneFilter] = useState<
     (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS]
   >(CAPSTONE_FILTERS.ALL);
-  const [appliedAdviserFilters, setAppliedAdviserFilters] = useState<string[]>(
-    [],
-  );
   const [appliedGradeFilters, setAppliedGradeFilters] = useState<
     (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]
   >([]);
@@ -129,7 +126,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
       sortField: finalSortField,
       sortDirection: finalSortDirection,
       capstoneFilter: appliedCapstoneFilter,
-      adviserFilters: appliedAdviserFilters,
       gradeFilters: appliedGradeFilters,
     };
   }, [
@@ -140,7 +136,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     sortDirection,
     capstoneSortDirection,
     appliedCapstoneFilter,
-    appliedAdviserFilters,
     appliedGradeFilters,
   ]);
 
@@ -209,10 +204,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     setCurrentPage(1);
   };
 
-  const handleAdviserFilterChange = (filters: string[]) => {
-    setAppliedAdviserFilters(filters);
-    setCurrentPage(1);
-  };
 
   const handleGradeFilterChange = (
     filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][],
@@ -395,7 +386,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           onSearchChange={setSearchTerm}
           status={getStatus()}
           hasResults={searchResult?.hasResults || false}
-          onAdviserFilterChange={handleAdviserFilterChange}
           onGradeFilterChange={handleGradeFilterChange}
           isDeleting={isDeleting}
           capstoneFilter={appliedCapstoneFilter}
