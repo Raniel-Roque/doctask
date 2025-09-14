@@ -1403,6 +1403,11 @@ export const getAdviserDocuments = query({
 export const getHandledGroupsWithProgress = query({
   args: {
     adviserId: v.id("users"),
+    sortField: v.optional(v.string()),
+    sortDirection: v.optional(v.string()),
+    pageSize: v.optional(v.number()),
+    pageNumber: v.optional(v.number()),
+    searchTerm: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Get adviser and their group IDs
@@ -1451,9 +1456,81 @@ export const getHandledGroupsWithProgress = query({
       documentStatuses: allDocumentStatuses[index] || [],
     }));
 
+    // Apply search filter if provided
+    let filteredGroups = groupsWithProgress;
+    if (args.searchTerm) {
+      const searchLower = args.searchTerm.toLowerCase();
+      filteredGroups = groupsWithProgress.filter((group) => {
+        const projectManager = validProjectManagers.find(
+          (pm) => pm._id === group.project_manager_id,
+        );
+        const groupName = projectManager
+          ? `${projectManager.last_name} et al`
+          : "Unnamed Group";
+        const capstoneTitle = group.capstone_title || "";
+
+        return (
+          groupName.toLowerCase().includes(searchLower) ||
+          capstoneTitle.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Apply sorting if specified
+    if (args.sortField && args.sortDirection) {
+      filteredGroups.sort((a, b) => {
+        let comparison = 0;
+        switch (args.sortField) {
+          case "name":
+            const aPM = validProjectManagers.find(
+              (pm) => pm._id === a.project_manager_id,
+            );
+            const bPM = validProjectManagers.find(
+              (pm) => pm._id === b.project_manager_id,
+            );
+            const aName = aPM ? `${aPM.last_name} et al` : "Unnamed Group";
+            const bName = bPM ? `${bPM.last_name} et al` : "Unnamed Group";
+            comparison = aName.localeCompare(bName);
+            break;
+          case "capstoneTitle":
+            comparison = (a.capstone_title || "").localeCompare(
+              b.capstone_title || "",
+            );
+            break;
+          default:
+            // Default to name sorting
+            const aPMDefault = validProjectManagers.find(
+              (pm) => pm._id === a.project_manager_id,
+            );
+            const bPMDefault = validProjectManagers.find(
+              (pm) => pm._id === b.project_manager_id,
+            );
+            const aNameDefault = aPMDefault
+              ? `${aPMDefault.last_name} et al`
+              : "Unnamed Group";
+            const bNameDefault = bPMDefault
+              ? `${bPMDefault.last_name} et al`
+              : "Unnamed Group";
+            comparison = aNameDefault.localeCompare(bNameDefault);
+            break;
+        }
+        return args.sortDirection === "asc" ? comparison : -comparison;
+      });
+    }
+
+    // Apply pagination
+    const pageSize = args.pageSize ?? 5;
+    const pageNumber = args.pageNumber ?? 1;
+    const skip = (pageNumber - 1) * pageSize;
+    const totalCount = filteredGroups.length;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const paginatedGroups = filteredGroups.slice(skip, skip + pageSize);
+
     return {
-      groups: groupsWithProgress,
+      groups: paginatedGroups,
       projectManagers: validProjectManagers,
+      totalCount,
+      totalPages,
     };
   },
 });

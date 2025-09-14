@@ -204,7 +204,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     setCurrentPage(1);
   };
 
-
   const handleGradeFilterChange = (
     filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][],
   ) => {

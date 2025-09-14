@@ -206,17 +206,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     setSelectedGroup(null);
   };
 
-  // Function to display project manager with email under name
-  const getProjectManagerDisplay = (user: User) => (
-    <div>
-      <div>
-        {user.last_name}, {user.first_name}
-        {user.middle_name ? ` ${user.middle_name}` : ""}
-      </div>
-      <div className="text-xs text-gray-500">{user.email}</div>
-    </div>
-  );
-
   // Function to display adviser with email under name
   const getAdviserDisplay = (user: User) => (
     <div>
@@ -479,19 +468,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
-                onClick={() => onSort("projectManager")}
-              >
-                <div className="flex items-center justify-center">
-                  Project Manager
-                  <span className="ml-1">{getSortIcon("projectManager")}</span>
-                </div>
-              </th>
-              <th
-                scope="col"
                 className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
               >
-                Members
+                Group Members
               </th>
               <th
                 scope="col"
@@ -624,21 +603,21 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     groupId={group._id}
                   />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {group.projectManager
-                    ? getProjectManagerDisplay(group.projectManager)
-                    : "-"}
-                </td>
                 <td className="px-6 py-4 text-center">
                   <button
                     onClick={() => handleViewMembers(group)}
                     className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                    disabled={!group.members || group.members.length === 0}
+                    disabled={!group.members && !group.projectManager}
                   >
                     <FaUser className="mr-1" size={12} />
-                    {group.members && group.members.length > 0
-                      ? `${group.members.length} member${group.members.length === 1 ? "" : "s"}`
-                      : "No members"}
+                    {(() => {
+                      const memberCount =
+                        (group.members?.length || 0) +
+                        (group.projectManager ? 1 : 0);
+                      return memberCount > 0
+                        ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
+                        : "No members";
+                    })()}
                   </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

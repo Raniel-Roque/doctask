@@ -32,10 +32,17 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
 
   const handledGroupsData = useQuery(api.fetch.getHandledGroupsWithProgress, {
     adviserId: adviserId as Id<"users">,
+    sortField,
+    sortDirection,
+    pageSize,
+    pageNumber: currentPage,
+    searchTerm,
   });
 
   const adviserGroups = handledGroupsData?.groups || [];
   const projectManagers = handledGroupsData?.projectManagers || [];
+  const totalCount = handledGroupsData?.totalCount || 0;
+  const totalPages = handledGroupsData?.totalPages || 1;
 
   const handleSort = (field: typeof sortField) => {
     if (field === sortField) {
@@ -46,37 +53,9 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
       setSortField(field);
       setSortDirection("asc");
     }
+    // Reset to first page when sorting changes
+    setCurrentPage(1);
   };
-
-  // Filter groups based on search term
-  const filteredGroups = adviserGroups.filter((group) => {
-    if (!searchTerm.trim()) return true;
-
-    const projectManager = projectManagers.find(
-      (pm) => pm._id === group.project_manager_id,
-    );
-    const groupName = projectManager
-      ? `${projectManager.last_name} et al`.toLowerCase()
-      : "";
-    const capstoneTitle = (group.capstone_title || "").toLowerCase();
-
-    const searchTerms = searchTerm
-      .toLowerCase()
-      .split(" ")
-      .filter((term) => term.length > 0);
-    return searchTerms.every(
-      (term) => groupName.includes(term) || capstoneTitle.includes(term),
-    );
-  });
-
-  // Calculate pagination
-  const totalCount = filteredGroups.length;
-  const totalPages = Math.ceil(totalCount / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedGroups = filteredGroups.slice(
-    startIndex,
-    startIndex + pageSize,
-  );
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -85,6 +64,11 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when page size changes
+  };
+
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
+    setCurrentPage(1); // Reset to first page when search changes
   };
 
   return (
@@ -190,13 +174,13 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
       <div className="container mx-auto px-4 pb-8">
         <HandledGroupsTable
           adviserId={adviserId as Id<"users">}
-          groups={paginatedGroups}
+          groups={adviserGroups}
           projectManagers={projectManagers}
           sortField={sortField}
           sortDirection={sortDirection}
           onSort={handleSort}
           searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
+          onSearchChange={handleSearchChange}
           currentPage={currentPage}
           totalPages={totalPages}
           totalCount={totalCount}
@@ -204,7 +188,7 @@ const AdviserHomePage = ({ params }: AdviserHomePageProps) => {
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
           status={handledGroupsData === undefined ? "loading" : "idle"}
-          hasResults={paginatedGroups.length > 0}
+          hasResults={adviserGroups.length > 0}
         />
       </div>
     </div>

@@ -72,22 +72,8 @@ export const HandledGroupsTable = ({
     return sortDirection === "asc" ? <FaSortUp /> : <FaSortDown />;
   };
 
-  // Sort the groups based on the current sort field and direction
-  const sortedGroups = [...groups].sort((a, b) => {
-    let comparison = 0;
-    if (sortField === "name") {
-      const aPM = projectManagers.find((pm) => pm._id === a.project_manager_id);
-      const bPM = projectManagers.find((pm) => pm._id === b.project_manager_id);
-      const aName = aPM ? `${aPM.last_name} et al` : "Unnamed Group";
-      const bName = bPM ? `${bPM.last_name} et al` : "Unnamed Group";
-      comparison = aName.localeCompare(bName);
-    } else if (sortField === "capstoneTitle") {
-      comparison = (a.capstone_title || "").localeCompare(
-        b.capstone_title || "",
-      );
-    }
-    return sortDirection === "asc" ? comparison : -comparison;
-  });
+  // Groups are already sorted by the backend, no need for client-side sorting
+  const sortedGroups = groups;
 
   return (
     <div>

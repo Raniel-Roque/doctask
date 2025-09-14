@@ -16,7 +16,6 @@ interface Group {
   capstone_title?: string;
   projectManager?: User;
   members?: User[];
-  adviser?: User;
 }
 
 interface GroupMembersModalProps {
@@ -79,7 +78,7 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                     </div>
                   </div>
                   <div className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                    Manager
+                    Project Manager
                   </div>
                 </div>
               </div>
@@ -119,7 +118,7 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
                           </div>
                         </div>
                         <div className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
-                          Member
+                          Project Member
                         </div>
                       </div>
                     </div>
@@ -132,34 +131,6 @@ const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
               </div>
             )}
           </div>
-
-          {/* Adviser */}
-          {group.adviser && (
-            <div className="mt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
-                <FaUser className="mr-2 text-purple-600" />
-                Adviser
-              </h3>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {group.adviser.last_name}, {group.adviser.first_name}
-                      {group.adviser.middle_name
-                        ? ` ${group.adviser.middle_name}`
-                        : ""}
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {group.adviser.email}
-                    </div>
-                  </div>
-                  <div className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded-full">
-                    Adviser
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
