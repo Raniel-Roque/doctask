@@ -460,9 +460,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="px-3 py-2 border-b">
-                      <span className="font-semibold text-xs">Filter Capstone Titles</span>
-                    </div>
                     <div className="px-3 py-2 flex flex-col gap-1">
                       {Object.values(CAPSTONE_FILTERS).map((filter) => (
                         <label

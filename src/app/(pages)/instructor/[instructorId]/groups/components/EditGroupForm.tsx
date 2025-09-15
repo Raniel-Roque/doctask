@@ -13,7 +13,7 @@ import {
 } from "react-icons/fa";
 import { Group } from "./types";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
-import { validateInput } from "../../../../components/SanitizeInput";
+import { validateInput, sanitizeInput } from "../../../../components/SanitizeInput";
 import { useModalFocus } from "@/hooks/use-modal-focus";
 
 // Shared error messages
@@ -239,7 +239,7 @@ export default function EditGroupForm({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "capstoneTitle" ? value.trim() : value,
     }));
   };
 
@@ -293,10 +293,17 @@ export default function EditGroupForm({
     closeAllDropdowns();
     setValidationErrors({});
 
-    // Validate capstone title if provided
+    // Sanitize and validate capstone title if provided
     if (formData.capstoneTitle) {
+      const sanitizedTitle = sanitizeInput(formData.capstoneTitle, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength: 255,
+      });
+      
       const { isValid, message } = validateInput(
-        formData.capstoneTitle,
+        sanitizedTitle,
         "capstoneTitle",
       );
       if (!isValid) {
@@ -305,6 +312,12 @@ export default function EditGroupForm({
           capstoneTitle: message || ERROR_MESSAGES.INVALID_CAPSTONE_TITLE,
         }));
         return;
+      } else {
+        // Update form data with sanitized value
+        setFormData((prev) => ({
+          ...prev,
+          capstoneTitle: sanitizedTitle,
+        }));
       }
     }
 

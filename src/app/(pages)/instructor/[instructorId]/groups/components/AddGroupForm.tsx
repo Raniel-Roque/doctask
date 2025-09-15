@@ -12,7 +12,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
-import { validateInput } from "../../../../components/SanitizeInput";
+import { validateInput, sanitizeInput } from "../../../../components/SanitizeInput";
 import { useModalFocus } from "@/hooks/use-modal-focus";
 
 // Shared error messages
@@ -236,7 +236,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "capstoneTitle" ? value.trim() : value,
     }));
   };
 
@@ -353,14 +353,27 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
       errors.projectManager = "Project Manager is required";
     }
 
-    // Validate capstone title if provided
+    // Sanitize and validate capstone title if provided
     if (formData.capstoneTitle) {
+      const sanitizedTitle = sanitizeInput(formData.capstoneTitle, {
+        trim: true,
+        removeHtml: true,
+        escapeSpecialChars: true,
+        maxLength: 255,
+      });
+      
       const { isValid, message } = validateInput(
-        formData.capstoneTitle,
+        sanitizedTitle,
         "capstoneTitle",
       );
       if (!isValid) {
         errors.capstoneTitle = message || ERROR_MESSAGES.INVALID_CAPSTONE_TITLE;
+      } else {
+        // Update form data with sanitized value
+        setFormData((prev) => ({
+          ...prev,
+          capstoneTitle: sanitizedTitle,
+        }));
       }
     }
 
