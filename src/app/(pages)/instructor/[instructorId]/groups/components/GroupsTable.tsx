@@ -331,6 +331,47 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
         >
           <FaPlus /> Add Group
         </button>
+        {!isDeleting && groups.length > 0 && status === "idle" && exportReady && (
+          <PDFDownloadLink
+            key={`pdf-groups-${searchTerm}-${gradeFilters.join(",")}-${groups.length}-${totalCount}-${exportIdsChecksum}`}
+            document={
+              <GroupPDFReport
+                groups={groups}
+                title="Groups Report"
+                filters={{
+                  searchTerm,
+                  gradeFilters,
+                }}
+              />
+            }
+            fileName={`GroupsReport-${gradeFilters.join(",")}_${new Date()
+              .toISOString()
+              .slice(0, 10)}.pdf`}
+          >
+            {({ loading }) => (
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+                disabled={loading}
+                title="Download Report"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                {loading ? "Preparing..." : "Download Report"}
+              </button>
+            )}
+          </PDFDownloadLink>
+        )}
       </div>
 
       {/* Table content */}
@@ -702,47 +743,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               ))}
             </select>
             <span className="text-sm text-gray-700">entries per page</span>
-            {!isDeleting && groups.length > 0 && status === "idle" && (
-              <>
-                <div className="h-6 w-px bg-gray-300"></div>
-                {exportReady ? (
-                  <PDFDownloadLink
-                    key={`pdf-groups-${searchTerm}-${gradeFilters.join(",")}-${groups.length}-${totalCount}-${exportIdsChecksum}`}
-                    document={
-                      <GroupPDFReport
-                        groups={groups}
-                        title="Groups Report"
-                        filters={{
-                          searchTerm,
-                          gradeFilters,
-                        }}
-                      />
-                    }
-                    fileName={`GroupsReport-${gradeFilters.join(",")}_${new Date()
-                      .toISOString()
-                      .slice(0, 10)}.pdf`}
-                  >
-                    {() => (
-                      <span
-                        className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
-                        title="Download Report"
-                        style={{ minWidth: 90, display: "inline-block" }}
-                      >
-                        Download Report
-                      </span>
-                    )}
-                  </PDFDownloadLink>
-                ) : (
-                  <span
-                    className="text-gray-400 text-sm font-medium ml-2 cursor-not-allowed"
-                    title="Preparing report..."
-                    style={{ minWidth: 120, display: "inline-block" }}
-                  >
-                    Preparing report...
-                  </span>
-                )}
-              </>
-            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">

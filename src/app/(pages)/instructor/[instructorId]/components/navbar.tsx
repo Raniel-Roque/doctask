@@ -308,7 +308,7 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
                   }}
                   className={`flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/logs/instructor`) ? "bg-gray-100 font-medium" : ""}`}
                 >
-                  Instructor Logs
+                  General Logs
                 </Link>
                 <Link
                   href={`/instructor/${instructorId}/logs/adviser`}

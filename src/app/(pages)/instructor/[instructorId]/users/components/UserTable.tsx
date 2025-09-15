@@ -355,6 +355,82 @@ export const UserTable = ({
               )}
             </label>
           )}
+          {!isDeleting && users.length > 0 && !isLoading && exportReady && (
+            <PDFDownloadLink
+              key={`pdf-users-${users.length}-${totalCount}-${statusFilter}-${roleFilter}-${showRoleColumn}-${Boolean(isStudent)}-${searchTerm}-${exportIdsChecksum}`}
+              document={
+                <PDFReport
+                  users={exportUsers}
+                  title={
+                    showRoleColumn ? "Students Report" : "Advisers Report"
+                  }
+                  filters={{
+                    status: statusFilter,
+                    subrole: showRoleColumn
+                      ? roleFilter ===
+                        TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
+                        ? "MANAGER"
+                        : roleFilter ===
+                            TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
+                          ? "MEMBER"
+                          : "ALL ROLE"
+                      : undefined,
+                  }}
+                  isStudent={isStudent}
+                  adviserCodes={adviserCodes}
+                />
+              }
+              fileName={(() => {
+                const role = showRoleColumn ? "Student" : "Adviser";
+                const filters = [
+                  `Status-${statusFilter}`,
+                  `Role-${roleFilter}`,
+                ];
+                const date = new Date();
+                const dateTime = `${date.getFullYear()}${(
+                  date.getMonth() + 1
+                )
+                  .toString()
+                  .padStart(2, "0")}${date
+                    .getDate()
+                    .toString()
+                    .padStart(2, "0")}_${date
+                    .getHours()
+                    .toString()
+                    .padStart(2, "0")}${date
+                    .getMinutes()
+                    .toString()
+                    .padStart(2, "0")}${date
+                    .getSeconds()
+                    .toString()
+                    .padStart(2, "0")}`;
+                return `${role}Report-${filters.join("_")}-${dateTime}.pdf`;
+              })()}
+            >
+              {({ loading }) => (
+                <button
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+                  disabled={loading}
+                  title="Download Report"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  {loading ? "Preparing..." : "Download Report"}
+                </button>
+              )}
+            </PDFDownloadLink>
+          )}
         </div>
       </div>
 
@@ -691,82 +767,6 @@ export const UserTable = ({
               ))}
             </select>
             <span className="text-sm text-gray-700">entries per page</span>
-            {!isDeleting && users.length > 0 && !isLoading && (
-              <>
-                <span className="text-gray-300 mx-1">|</span>
-                {exportReady ? (
-                  <PDFDownloadLink
-                    key={`pdf-users-${users.length}-${totalCount}-${statusFilter}-${roleFilter}-${showRoleColumn}-${Boolean(isStudent)}-${searchTerm}-${exportIdsChecksum}`}
-                    document={
-                      <PDFReport
-                        users={exportUsers}
-                        title={
-                          showRoleColumn ? "Students Report" : "Advisers Report"
-                        }
-                        filters={{
-                          status: statusFilter,
-                          subrole: showRoleColumn
-                            ? roleFilter ===
-                              TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
-                              ? "MANAGER"
-                              : roleFilter ===
-                                  TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
-                                ? "MEMBER"
-                                : "ALL ROLE"
-                            : undefined,
-                        }}
-                        isStudent={isStudent}
-                        adviserCodes={adviserCodes}
-                      />
-                    }
-                    fileName={(() => {
-                      const role = showRoleColumn ? "Student" : "Adviser";
-                      const filters = [
-                        `Status-${statusFilter}`,
-                        `Role-${roleFilter}`,
-                      ];
-                      const date = new Date();
-                      const dateTime = `${date.getFullYear()}${(
-                        date.getMonth() + 1
-                      )
-                        .toString()
-                        .padStart(2, "0")}${date
-                        .getDate()
-                        .toString()
-                        .padStart(2, "0")}_${date
-                        .getHours()
-                        .toString()
-                        .padStart(2, "0")}${date
-                        .getMinutes()
-                        .toString()
-                        .padStart(2, "0")}${date
-                        .getSeconds()
-                        .toString()
-                        .padStart(2, "0")}`;
-                      return `${role}Report-${filters.join("_")}-${dateTime}.pdf`;
-                    })()}
-                  >
-                    {() => (
-                      <span
-                        className="text-blue-600 cursor-pointer hover:underline text-sm font-medium ml-2"
-                        title="Download Report"
-                        style={{ minWidth: 90, display: "inline-block" }}
-                      >
-                        Download Report
-                      </span>
-                    )}
-                  </PDFDownloadLink>
-                ) : (
-                  <span
-                    className="text-gray-400 text-sm font-medium ml-2 cursor-not-allowed"
-                    title="Preparing report..."
-                    style={{ minWidth: 120, display: "inline-block" }}
-                  >
-                    Preparing report...
-                  </span>
-                )}
-              </>
-            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">
