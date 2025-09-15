@@ -761,13 +761,13 @@ export const searchGroups = query({
 
       // Grade label to number mapping
       const GRADE_LABEL_TO_NUMBER: { [key: string]: number } = {
-        "No Grade": 0,
-        Approved: 1,
-        "Approved With Revisions": 2,
-        Disapproved: 3,
-        "Accepted With Revisions": 4,
-        "Reoral Defense": 5,
-        "Not Accepted": 6,
+        "NO GRADE": 0,
+        "APPROVED": 1,
+        "APPROVED WITH REVISIONS": 2,
+        "DISAPPROVED": 3,
+        "ACCEPTED WITH REVISIONS": 4,
+        "REORAL DEFENSE": 5,
+        "NOT ACCEPTED": 6,
       };
 
       // Apply grade filter
@@ -777,7 +777,7 @@ export const searchGroups = query({
 
           // Check if any of the selected grade filters match
           return gradeFilters.some((gradeFilter) => {
-            if (gradeFilter.toLowerCase() === "no grade") {
+            if (gradeFilter === "NO GRADE") {
               return grade === undefined || grade === null || grade === 0;
             }
             const gradeNumber = GRADE_LABEL_TO_NUMBER[gradeFilter];

@@ -142,9 +142,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
   const capstoneDropdownRef = useRef<HTMLDivElement>(null);
   const [tempCapstoneFilter, setTempCapstoneFilter] = useState(capstoneFilter);
-  const [tempCapstoneSortDirection, setTempCapstoneSortDirection] = useState(
-    capstoneSortDirection,
-  );
 
   // Add state for expanded capstone titles
   const [expandedCapstoneTitles, setExpandedCapstoneTitles] = useState<
@@ -192,9 +189,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   useEffect(() => {
     if (showCapstoneDropdown) {
       setTempCapstoneFilter(capstoneFilter);
-      setTempCapstoneSortDirection(capstoneSortDirection);
     }
-  }, [showCapstoneDropdown, capstoneFilter, capstoneSortDirection]);
+  }, [showCapstoneDropdown, capstoneFilter]);
 
   const handleViewMembers = (group: Group) => {
     setSelectedGroup(group);
@@ -392,16 +388,11 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               <th
                 ref={capstoneThRef}
                 scope="col"
-                className="relative px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCapstoneDropdown(!showCapstoneDropdown);
-                  setShowGradeDropdown(false);
-                }}
+                className="relative px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
               >
-                <div className="flex items-center justify-center">
+                <div className="flex items-center justify-center gap-2">
                   <span className="font-medium uppercase">CAPSTONE TITLE</span>
-                  <span className="ml-2 flex items-center">
+                  <div className="flex items-center gap-1">
                     <button
                       type="button"
                       className="p-1 bg-transparent border-none outline-none focus:outline-none"
@@ -429,10 +420,30 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                         }
                       />
                     </button>
-                    <span style={{ marginLeft: 0, paddingLeft: 0 }}>
+                    <button
+                      type="button"
+                      className="p-1 bg-transparent border-none outline-none focus:outline-none"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (capstoneSortDirection === "asc") {
+                          onCapstoneSortApply("desc");
+                        } else if (capstoneSortDirection === "desc") {
+                          onCapstoneSortApply("none");
+                        } else {
+                          onCapstoneSortApply("asc");
+                        }
+                      }}
+                      title="Sort capstone titles"
+                      style={{
+                        boxShadow: "none",
+                        marginLeft: 0,
+                        marginRight: 0,
+                        paddingRight: 0,
+                      }}
+                    >
                       {getCapstoneSortIcon()}
-                    </span>
-                  </span>
+                    </button>
+                  </div>
                 </div>
                 {showCapstoneDropdown && (
                   <div
@@ -449,30 +460,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="px-3 py-2 border-b flex items-center justify-between">
-                      <span className="font-semibold text-xs">Sort</span>
-                      <button
-                        type="button"
-                        className="p-1 rounded hover:bg-gray-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (tempCapstoneSortDirection === "asc") {
-                            setTempCapstoneSortDirection("desc");
-                          } else if (tempCapstoneSortDirection === "desc") {
-                            setTempCapstoneSortDirection("none");
-                          } else {
-                            setTempCapstoneSortDirection("asc");
-                          }
-                        }}
-                      >
-                        {tempCapstoneSortDirection === "asc" ? (
-                          <FaSortUp className="w-4 h-4 text-blue-500" />
-                        ) : tempCapstoneSortDirection === "desc" ? (
-                          <FaSortDown className="w-4 h-4 text-blue-500" />
-                        ) : (
-                          <FaSort className="w-4 h-4 text-gray-400" />
-                        )}
-                      </button>
+                    <div className="px-3 py-2 border-b">
+                      <span className="font-semibold text-xs">Filter Capstone Titles</span>
                     </div>
                     <div className="px-3 py-2 flex flex-col gap-1">
                       {Object.values(CAPSTONE_FILTERS).map((filter) => (
@@ -496,12 +485,11 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                         onClick={(e) => {
                           e.stopPropagation();
                           setCapstoneFilter(tempCapstoneFilter);
-                          onCapstoneSortApply(tempCapstoneSortDirection);
                           setShowCapstoneDropdown(false);
                         }}
                         className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                       >
-                        Apply
+                        Apply Filter
                       </button>
                     </div>
                   </div>
