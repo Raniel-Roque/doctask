@@ -70,11 +70,7 @@ const ACTION_COLORS = {
   },
 } as const;
 
-// Add entity type constants
-const ENTITY_TYPES = {
-  ALL: "All Entities",
-  GROUP: "Group",
-} as const;
+// Remove entity type constants - advisers only deal with groups
 
 // =========================================
 // Component
@@ -105,11 +101,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
   const [showActionDropdown, setShowActionDropdown] = useState(false);
   const actionDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [entityTypeFilter, setEntityTypeFilter] = useState<
-    (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES]
-  >(ENTITY_TYPES.ALL);
-  const [showEntityDropdown, setShowEntityDropdown] = useState(false);
-  const entityDropdownRef = useRef<HTMLDivElement>(null);
+  // Remove entity filter state - advisers only deal with groups
 
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -117,21 +109,14 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
   // Update the state to track column-level expansion
   type ExpandedColumns = {
     affectedEntity: boolean;
-    details: boolean;
   };
 
   const [expandedColumns, setExpandedColumns] = useState<ExpandedColumns>({
     affectedEntity: false,
-    details: false,
   });
 
   // Add refs for button elements
   const actionButtonRef = useRef<HTMLButtonElement>(null);
-  const entityButtonRef = useRef<HTMLButtonElement>(null);
-
-  // Add after state declarations
-  const [tempEntityTypeFilter, setTempEntityTypeFilter] =
-    useState(entityTypeFilter);
 
   useEffect(() => {
     if (showActionDropdown) {
@@ -139,9 +124,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     }
   }, [showActionDropdown, appliedActionFilters]);
 
-  useEffect(() => {
-    if (showEntityDropdown) setTempEntityTypeFilter(entityTypeFilter);
-  }, [showEntityDropdown, entityTypeFilter]);
+  // Remove entity dropdown effect
 
   // Click outside handlers
   useEffect(() => {
@@ -160,33 +143,15 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showActionDropdown]);
 
-  useEffect(() => {
-    if (!showEntityDropdown) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        entityDropdownRef.current &&
-        !entityDropdownRef.current.contains(event.target as Node) &&
-        entityButtonRef.current &&
-        !entityButtonRef.current.contains(event.target as Node)
-      ) {
-        setShowEntityDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showEntityDropdown]);
+  // Remove entity dropdown click outside handler
 
-  // Fetch logs with backend multi-select filtering for action and entity type
+  // Fetch logs with backend multi-select filtering for action
   const logsData = useQuery(api.fetch.getLogsWithDetails, {
     userRole: 1, // Adviser role
     userId: adviserId as Id<"users">,
     pageSize,
     pageNumber: currentPage,
     action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
-    entityType:
-      entityTypeFilter !== ENTITY_TYPES.ALL
-        ? [entityTypeFilter.toLowerCase()]
-        : undefined,
     sortField,
     sortDirection,
     // Note: searchTerm, startDate, and endDate are not supported by the backend query yet
@@ -385,7 +350,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, startDate, endDate, appliedActionFilters, entityTypeFilter]);
+  }, [searchTerm, startDate, endDate, appliedActionFilters]);
 
   function getLocalDateString() {
     const now = new Date();
@@ -490,7 +455,6 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowActionDropdown(!showActionDropdown);
-                      setShowEntityDropdown(false);
                     }}
                     title="Filter actions"
                     ref={actionButtonRef}
@@ -550,75 +514,10 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                   </div>
                 )}
               </th>
-              <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider min-w-[10rem]">
-                <div className="flex items-center justify-center gap-2">
-                  <span className="font-medium uppercase">ENTITY</span>
-                  <button
-                    type="button"
-                    className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowEntityDropdown(!showEntityDropdown);
-                      setShowActionDropdown(false);
-                    }}
-                    title="Filter entity type"
-                    ref={entityButtonRef}
-                    style={{ boxShadow: "none" }}
-                  >
-                    <FaFilter
-                      className={
-                        `w-4 h-4 transition-colors ` +
-                        (showEntityDropdown ||
-                        entityTypeFilter !== ENTITY_TYPES.ALL
-                          ? "text-blue-500"
-                          : "text-white")
-                      }
-                    />
-                  </button>
-                </div>
-                {showEntityDropdown && (
-                  <div
-                    ref={entityDropdownRef}
-                    className="absolute left-0 top-full z-20 mt-2 min-w-[180px] bg-white rounded-lg shadow-lg border border-gray-200 text-black"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="max-h-48 overflow-y-auto px-3 py-2 flex flex-col gap-1">
-                      {Object.values(ENTITY_TYPES).map((type) => (
-                        <label
-                          key={type}
-                          className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
-                        >
-                          <input
-                            type="radio"
-                            name="entityTypeFilter"
-                            checked={tempEntityTypeFilter === type}
-                            onChange={() => setTempEntityTypeFilter(type)}
-                            className="accent-blue-600"
-                          />
-                          <span className="text-left">
-                            {type === ENTITY_TYPES.ALL
-                              ? "All Entities"
-                              : "Groups"}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                    <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
-                      <button
-                        onClick={() => {
-                          setShowEntityDropdown(false);
-                          setEntityTypeFilter(tempEntityTypeFilter);
-                          setCurrentPage(1);
-                        }}
-                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
-                      >
-                        Apply
-                      </button>
-                    </div>
-                  </div>
-                )}
+              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider min-w-[15rem]">
+                <span className="font-medium uppercase">ENTITY</span>
               </th>
-              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider flex-1">
+              <th className="px-6 py-3 border-b text-left text-xs font-medium text-white uppercase tracking-wider flex-1">
                 Details
               </th>
             </tr>
@@ -657,7 +556,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-left min-w-[10rem]">
+                    <td className="px-6 py-4 whitespace-nowrap text-left min-w-[15rem]">
                       <CollapsibleText
                         text={affectedEntity.display}
                         maxLength={20}
@@ -666,12 +565,8 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                         email={affectedEntity.email}
                       />
                     </td>
-                    <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line w-full">
-                      <CollapsibleText
-                        text={log.details}
-                        maxLength={20}
-                        column="details"
-                      />
+                    <td className="px-6 py-4 text-left whitespace-pre-line w-full">
+                      <span>{log.details}</span>
                     </td>
                   </tr>
                 );
