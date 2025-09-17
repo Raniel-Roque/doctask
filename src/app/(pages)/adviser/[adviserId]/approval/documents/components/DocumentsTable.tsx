@@ -6,6 +6,7 @@ import {
   FaChevronRight,
   FaChevronDown,
   FaEye,
+  FaEdit,
   FaStickyNote,
   FaDownload,
   FaUser,
@@ -241,6 +242,16 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     const currentUrl = window.location.pathname + window.location.search;
 
     // Navigate to the document view page with the current page as the "from" parameter
+    router.push(
+      `/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}&viewOnly=true`,
+    );
+  };
+
+  const handleEditDocument = (documentId: string) => {
+    // Get current URL to preserve state
+    const currentUrl = window.location.pathname + window.location.search;
+
+    // Navigate to the document edit page with the current page as the "from" parameter
     router.push(
       `/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`,
     );
@@ -556,13 +567,13 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-100">
                                 <tr>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-0">
                                     Document
                                   </th>
                                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     <div className="flex items-center justify-center gap-2">
                                       <select
-                                        className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
+                                        className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm min-w-0"
                                         value={selectedStatus}
                                         onChange={(e) =>
                                           setSelectedStatus(e.target.value)
@@ -594,12 +605,14 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                       key={doc._id}
                                       className="hover:bg-gray-50"
                                     >
-                                      <td className="px-4 py-3 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">
-                                          {doc.title}
+                                      <td className="px-4 py-3">
+                                        <div className="text-sm font-medium text-gray-900 min-w-0">
+                                          <div className="truncate max-w-xs sm:max-w-sm md:max-w-md">
+                                            {doc.title}
+                                          </div>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                                      <td className="px-4 py-3 text-center">
                                         {canChangeStatus(doc) ? (
                                           <div className="relative inline-block">
                                             <select
@@ -668,21 +681,41 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           </span>
                                         )}
                                       </td>
-                                      <td className="px-4 py-3 whitespace-nowrap text-center">
-                                        <div className="flex items-center justify-center gap-2">
+                                      <td className="px-4 py-3 text-center">
+                                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                                          {/* View button - always visible for all documents */}
+                                          <button
+                                            className="text-blue-600 hover:text-blue-800 transition-colors p-1 flex-shrink-0"
+                                            title="View Document"
+                                            onClick={() =>
+                                              handleViewDocument(doc._id)
+                                            }
+                                          >
+                                            <FaEye className="w-4 h-4" />
+                                          </button>
+                                          
+                                          {/* Edit button - only for submitted, approved, or rejected documents */}
                                           {doc.status !== 0 && (
                                             <>
+                                              <span className="mx-1 text-gray-300 select-none hidden sm:inline">|</span>
                                               <button
-                                                className="text-blue-600 hover:text-blue-800 transition-colors p-1"
-                                                title="View Document"
+                                                className="text-purple-600 hover:text-purple-800 transition-colors p-1 flex-shrink-0"
+                                                title="Edit Document"
                                                 onClick={() =>
-                                                  handleViewDocument(doc._id)
+                                                  handleEditDocument(doc._id)
                                                 }
                                               >
-                                                <FaEye className="w-4 h-4" />
+                                                <FaEdit className="w-4 h-4" />
                                               </button>
+                                            </>
+                                          )}
+                                          
+                                          {/* Download button - only for submitted, approved, or rejected documents */}
+                                          {doc.status !== 0 && (
+                                            <>
+                                              <span className="mx-1 text-gray-300 select-none hidden sm:inline">|</span>
                                               <button
-                                                className="text-green-600 hover:text-green-800 transition-colors p-1"
+                                                className="text-green-600 hover:text-green-800 transition-colors p-1 flex-shrink-0"
                                                 title="Download Document"
                                                 onClick={() =>
                                                   handleDownloadDocx(doc)
@@ -697,13 +730,13 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                                   <FaDownload className="w-4 h-4" />
                                                 )}
                                               </button>
-                                              <span className="mx-2 text-gray-300 select-none">
-                                                |
-                                              </span>
                                             </>
                                           )}
+                                          
+                                          {/* Notes button - always visible */}
+                                          <span className="mx-1 text-gray-300 select-none hidden sm:inline">|</span>
                                           <button
-                                            className="text-yellow-500 hover:text-yellow-700 transition-colors p-1"
+                                            className="text-yellow-500 hover:text-yellow-700 transition-colors p-1 flex-shrink-0"
                                             title="Add/Edit Notes"
                                             onClick={() =>
                                               handleNotesClick(doc, group)
