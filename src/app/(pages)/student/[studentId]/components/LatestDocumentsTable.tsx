@@ -310,7 +310,15 @@ export const LatestDocumentsTable = ({
       return false; // No one can edit task status when document is approved
     }
     
-    // Project managers can always edit task status (except for excluded chapters and approved docs)
+    // Check if document is submitted - if so, can only change from incomplete to complete, not vice versa
+    if (doc.status === 1) { // Document is submitted
+      const currentTaskStatus = getTaskStatus(doc);
+      if (currentTaskStatus === 1) { // Task is currently complete
+        return false; // Cannot change from complete to incomplete when document is submitted
+      }
+    }
+    
+    // Project managers can always edit task status (except for excluded chapters, approved docs, and submitted complete tasks)
     if (group.project_manager_id === currentUserId) return true;
     
     // Check if user is assigned to any task for this document

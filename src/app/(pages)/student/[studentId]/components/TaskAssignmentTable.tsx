@@ -469,6 +469,13 @@ export const TaskAssignmentTable = ({
       return false; // No one can edit task status when document is approved
     }
     
+    // Check if document is submitted - if so, can only change from incomplete to complete, not vice versa
+    if (documentStatus === 1) { // Document is submitted
+      if (task.task_status === 1) { // Task is currently complete
+        return false; // Cannot change from complete to incomplete when document is submitted
+      }
+    }
+    
     if (mode === "manager") return true;
     
     // Check if user is assigned to the task
@@ -1206,6 +1213,12 @@ export const TaskAssignmentTable = ({
                   </th>
                   <th
                     scope="col"
+                    className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider"
+                  >
+                    Document Status
+                  </th>
+                  <th
+                    scope="col"
                     className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider relative"
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -1240,7 +1253,7 @@ export const TaskAssignmentTable = ({
                 {status === "loading" && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-6 pt-7 pb-1 text-center text-gray-500"
                     >
                       Loading...
@@ -1250,7 +1263,7 @@ export const TaskAssignmentTable = ({
                 {status === "no_group" && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-6 pt-7 pb-1 text-center text-red-500"
                     >
                       You are not currently assigned to a group. Please contact
@@ -1261,7 +1274,7 @@ export const TaskAssignmentTable = ({
                 {status === "error" && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-6 pt-7 pb-1 text-center text-red-500"
                     >
                       An error occurred while loading tasks. Please try again.
@@ -1273,7 +1286,7 @@ export const TaskAssignmentTable = ({
                   tasks.length === 0 && (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="px-6 pt-7 pb-1 text-center text-gray-500"
                       >
                         No tasks available.
@@ -1286,7 +1299,7 @@ export const TaskAssignmentTable = ({
                   filteredTasks.length === 0 && (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="px-6 pt-7 pb-1 text-center text-gray-500"
                       >
                         No tasks found.
@@ -1317,6 +1330,13 @@ export const TaskAssignmentTable = ({
                                       .replace(/\b\w/g, (l) => l.toUpperCase())}
                                   </div>
                                 </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <span
+                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[getDocumentStatus(chapter)] || STATUS_COLORS[0]}`}
+                                >
+                                  {STATUS_LABELS[getDocumentStatus(chapter)] || STATUS_LABELS[0]}
+                                </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <span
@@ -1599,6 +1619,13 @@ export const TaskAssignmentTable = ({
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <span
+                                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[getDocumentStatus(task.chapter)] || STATUS_COLORS[0]}`}
+                                    >
+                                      {STATUS_LABELS[getDocumentStatus(task.chapter)] || STATUS_LABELS[0]}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center">
                                     {renderStatusDropdown(task)}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
@@ -1620,6 +1647,13 @@ export const TaskAssignmentTable = ({
                               <div className="text-sm font-semibold text-gray-900">
                                 {chapterTasks[0].title}
                               </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[getDocumentStatus(chapter)] || STATUS_COLORS[0]}`}
+                              >
+                                {STATUS_LABELS[getDocumentStatus(chapter)] || STATUS_LABELS[0]}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               {renderStatusDropdown(chapterTasks[0])}
