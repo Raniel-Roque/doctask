@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { FaEye, FaEyeSlash, FaTimes, FaCheck } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 import { useUser } from "@clerk/clerk-react";
 
 import { NotificationBanner } from "./NotificationBanner";
 import PasswordVerification from "./PasswordVerification";
+import { calculatePasswordStrength } from "@/utils/passwordStrength";
+import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
 
 interface ChangePasswordProps {
   isOpen: boolean;
@@ -73,6 +75,9 @@ export default function ChangePassword({
     e.preventDefault();
     if (!isLoaded || !user) return;
 
+    // Calculate password strength using NIST guidelines
+    const passwordStrength = calculatePasswordStrength(newPassword);
+
     if (newPassword !== confirmPassword) {
       setError(
         "Passwords do not match. Please make sure both passwords are identical.",
@@ -80,39 +85,9 @@ export default function ChangePassword({
       return;
     }
 
-    // Validate password strength
-    if (newPassword.length < 8) {
-      setError("Password is too weak. Please use at least 8 characters.");
-      return;
-    }
-
-    // Validate password complexity requirements
-    const hasLowercase = /[a-z]/.test(newPassword);
-    const hasUppercase = /[A-Z]/.test(newPassword);
-    const hasNumber = /\d/.test(newPassword);
-    const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(
-      newPassword,
-    );
-
-    if (!hasLowercase) {
-      setError("Password must contain at least 1 lowercase character.");
-      return;
-    }
-
-    if (!hasUppercase) {
-      setError("Password must contain at least 1 uppercase character.");
-      return;
-    }
-
-    if (!hasNumber) {
-      setError("Password must contain at least 1 number.");
-      return;
-    }
-
-    if (!hasSpecialChar) {
-      setError(
-        "Password must contain at least 1 special character (!@#$%^&*).",
-      );
+    // Validate password using NIST standards
+    if (!passwordStrength.isAcceptable) {
+      setError(passwordStrength.feedback);
       return;
     }
 
@@ -272,96 +247,37 @@ export default function ChangePassword({
                 </div>
               </div>
 
-              {/* Password Requirements */}
+              {/* Password Strength Meter */}
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Password Requirements:
+                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                  Password Strength:
                 </h4>
-                <div className="space-y-1 text-xs">
-                  {(() => {
-                    const hasLowercase = /[a-z]/.test(newPassword);
-                    const hasUppercase = /[A-Z]/.test(newPassword);
-                    const hasNumber = /\d/.test(newPassword);
-                    const hasSpecialChar =
-                      /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(newPassword);
-                    const hasMinLength = newPassword.length >= 8;
-                    const passwordsMatch =
-                      newPassword === confirmPassword &&
-                      confirmPassword.length > 0;
-
-                    return (
-                      <>
-                        <div
-                          className={`flex items-center ${hasMinLength ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {hasMinLength ? (
-                            <FaCheck className="mr-2" />
-                          ) : (
-                            <FaTimes className="mr-2" />
-                          )}
-                          At least 8 characters
-                        </div>
-                        <div
-                          className={`flex items-center ${hasLowercase ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {hasLowercase ? (
-                            <FaCheck className="mr-2" />
-                          ) : (
-                            <FaTimes className="mr-2" />
-                          )}
-                          At least 1 lowercase character
-                        </div>
-                        <div
-                          className={`flex items-center ${hasUppercase ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {hasUppercase ? (
-                            <FaCheck className="mr-2" />
-                          ) : (
-                            <FaTimes className="mr-2" />
-                          )}
-                          At least 1 uppercase character
-                        </div>
-                        <div
-                          className={`flex items-center ${hasNumber ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {hasNumber ? (
-                            <FaCheck className="mr-2" />
-                          ) : (
-                            <FaTimes className="mr-2" />
-                          )}
-                          At least 1 number
-                        </div>
-                        <div
-                          className={`flex items-center ${hasSpecialChar ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {hasSpecialChar ? (
-                            <FaCheck className="mr-2" />
-                          ) : (
-                            <FaTimes className="mr-2" />
-                          )}
-                          At least 1 special character (!@#$%^&*)
-                        </div>
-                        {confirmPassword.length > 0 && (
-                          <div
-                            className={`flex items-center ${passwordsMatch ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {passwordsMatch ? (
-                              <FaCheck className="mr-2" />
-                            ) : (
-                              <FaTimes className="mr-2" />
-                            )}
-                            Passwords match
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
+                <PasswordStrengthMeter 
+                  strength={calculatePasswordStrength(newPassword)} 
+                  showLabel={false}
+                  showFeedback={true}
+                />
+                
+                {/* Password Match Indicator */}
+                {confirmPassword.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div
+                      className={`flex items-center text-xs ${
+                        newPassword === confirmPassword ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      <span className="mr-2">
+                        {newPassword === confirmPassword ? "✓" : "✗"}
+                      </span>
+                      {newPassword === confirmPassword ? "Passwords match" : "Passwords do not match"}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !calculatePasswordStrength(newPassword).isAcceptable || newPassword !== confirmPassword}
                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
               >
                 {isLoading ? "Updating..." : "Update Password"}
