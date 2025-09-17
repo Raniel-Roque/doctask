@@ -2,7 +2,7 @@
 
 import { useState, use } from "react";
 import { Navbar } from "../../components/navbar";
-import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import GroupsTable from "./components/GroupsTable";
 import { Group } from "./components/types";
 import { useQuery, useMutation } from "convex/react";
