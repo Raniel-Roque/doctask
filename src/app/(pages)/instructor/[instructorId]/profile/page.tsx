@@ -247,30 +247,36 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
               </div>
             </div>
 
-            <NotificationBanner
-              message={notification?.message || null}
-              type={notification?.type || "success"}
-              onClose={() => setNotification(null)}
-              autoClose={notification?.type === "error" ? false : true}
-            />
+            {notification && (
+              <NotificationBanner
+                message={notification.message}
+                type={notification.type}
+                onClose={() => setNotification(null)}
+                autoClose={notification.type === "error" ? false : true}
+              />
+            )}
           </div>
         </div>
       )}
 
-      {/* Success/Error Messages */}
-      <NotificationBanner
-        message={successMessage}
-        type="success"
-        onClose={() => setSuccessMessage(null)}
-      />
+      {/* Success Messages */}
+      {successMessage && (
+        <NotificationBanner
+          message={successMessage}
+          type="success"
+          onClose={() => setSuccessMessage(null)}
+        />
+      )}
 
       {/* Error Messages */}
-      <NotificationBanner
-        message={notification?.message || null}
-        type={notification?.type || "error"}
-        onClose={() => setNotification(null)}
-        autoClose={notification?.type === "error" ? false : true}
-      />
+      {notification && (
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+          autoClose={notification.type === "error" ? false : true}
+        />
+      )}
 
       {/* Uploading Notification */}
       <NotificationBanner

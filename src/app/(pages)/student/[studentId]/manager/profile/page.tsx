@@ -62,14 +62,20 @@ const ManagerProfilePage = ({ params }: ManagerProfilePageProps) => {
         </div>
       </div>
       {/* Success/Error Messages */}
-      <NotificationBanner
-        message={notification?.message || successMessage}
-        type={notification?.type || "success"}
-        onClose={() => {
-          setNotification(null);
-          setSuccessMessage(null);
-        }}
-      />
+      {notification && (
+        <NotificationBanner
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+      {successMessage && (
+        <NotificationBanner
+          message={successMessage}
+          type="success"
+          onClose={() => setSuccessMessage(null)}
+        />
+      )}
 
       {/* Uploading Notification */}
       <NotificationBanner

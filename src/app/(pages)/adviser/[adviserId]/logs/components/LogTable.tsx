@@ -158,8 +158,6 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
 
 
   const logs: Log[] = logsQuery?.logs || [];
-  const totalCount = logsQuery?.totalCount || 0;
-  const totalPages = logsQuery?.totalPages || 1;
 
   // Apply frontend filtering for search and date (action is handled by backend)
   const filteredAndSortedLogs = logs
@@ -182,7 +180,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
       if (log.user_id.toString().toLowerCase().includes(term)) return true;
       // Affected entity ID
       if (log.affected_entity_id?.toString().toLowerCase().includes(term))
-        return true;
+    return true;
       // Action (exact or partial match)
       if (log.action.toLowerCase().includes(term)) return true;
       // Details
@@ -194,8 +192,11 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
       return false;
     });
 
-  // Calculate correct pagination info for frontend-filtered results
-  const hasFrontendFilters = searchTerm.trim() || startDate || endDate;
+  // Apply client-side pagination to filtered results
+  const totalFilteredCount = filteredAndSortedLogs.length;
+  const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
+  const skip = (currentPage - 1) * pageSize;
+  const paginatedLogs = filteredAndSortedLogs.slice(skip, skip + pageSize);
 
   const getAffectedEntityName = (log: Log) => {
     if (log.affected_entity_type === "user") {
@@ -532,7 +533,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                   No logs available
                 </td>
               </tr>
-            ) : filteredAndSortedLogs.length === 0 ? (
+            ) : paginatedLogs.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                   {searchTerm || startDate || endDate || appliedActionFilters.length > 0 
@@ -541,7 +542,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                 </td>
               </tr>
             ) : (
-              filteredAndSortedLogs.map((log: Log, index: number) => {
+              paginatedLogs.map((log: Log, index: number) => {
                 const affectedEntity = getAffectedEntityName(log);
                 return (
                   <tr
@@ -582,22 +583,17 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
         <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
           <div className="flex items-center gap-4">
             <p className="text-sm text-gray-700">
-              {hasFrontendFilters ? (
-                <>
-                  Showing {filteredAndSortedLogs.length} of {totalCount} entries
-                  {filteredAndSortedLogs.length !== totalCount && (
-                    <span className="text-blue-600 ml-1">(filtered)</span>
-                  )}
-                </>
-              ) : (
-                <>
-                  Showing {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
-                  {" - "}
-                  {Math.min(currentPage * pageSize, totalCount)}
-                  {" of "}
-                  {totalCount} entries
-                </>
-              )}
+              Showing{" "}
+              <span className="font-medium">
+                {totalFilteredCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+              </span>
+              {" - "}
+              <span className="font-medium">
+                {Math.min(currentPage * pageSize, totalFilteredCount)}
+              </span>
+              {" of "}
+              <span className="font-medium">{totalFilteredCount}</span>
+              {" entries"}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
             <div className="flex items-center gap-2">
@@ -616,39 +612,31 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {hasFrontendFilters ? (
-              <span className="text-sm text-gray-500">
-                All filtered results shown
-              </span>
-            ) : (
-              <>
-                <button
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`p-2 rounded-md ${
-                    currentPage === 1
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <FaChevronLeft />
-                </button>
-                <span className="text-sm text-gray-700">
-                  Page {currentPage} of {Math.max(totalPages, 1)}
-                </span>
-                <button
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === Math.max(totalPages, 1)}
-                  className={`p-2 rounded-md ${
-                    currentPage === Math.max(totalPages, 1)
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <FaChevronRight />
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-md ${
+                currentPage === 1
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <FaChevronLeft />
+            </button>
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {Math.max(totalFilteredPages, 1)}
+            </span>
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage === totalFilteredPages}
+              className={`p-2 rounded-md ${
+                currentPage === totalFilteredPages
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <FaChevronRight />
+            </button>
           </div>
         </div>
       </div>
