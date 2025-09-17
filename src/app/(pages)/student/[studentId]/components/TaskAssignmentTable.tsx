@@ -179,6 +179,7 @@ export const TaskAssignmentTable = ({
 
   // Add state for status filter and expanded chapters
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedDocumentStatus, setSelectedDocumentStatus] = useState<string>("all");
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
     new Set(),
   );
@@ -349,11 +350,15 @@ export const TaskAssignmentTable = ({
     }
   }, [showMemberSelector]);
 
-  // Filter tasks based on selected status
+  // Filter tasks based on selected status and document status
   const filteredTasks = tasks.filter((task) => {
     const statusMatch =
       selectedStatus === "all" || task.task_status === parseInt(selectedStatus);
-    return statusMatch;
+    
+    const documentStatusMatch =
+      selectedDocumentStatus === "all" || getDocumentStatus(task.chapter) === parseInt(selectedDocumentStatus);
+    
+    return statusMatch && documentStatusMatch;
   });
 
   // Status options for the dropdown
@@ -361,6 +366,15 @@ export const TaskAssignmentTable = ({
     { value: "all", label: "STATUS" },
     { value: "0", label: "INCOMPLETE" },
     { value: "1", label: "COMPLETED" },
+  ];
+
+  // Document status options for the dropdown
+  const documentStatusOptions = [
+    { value: "all", label: "Document Status" },
+    { value: "0", label: "Not Submitted" },
+    { value: "1", label: "In Review" },
+    { value: "2", label: "Approved" },
+    { value: "3", label: "Rejected" },
   ];
 
   // Toggle chapter expansion
@@ -1229,9 +1243,21 @@ export const TaskAssignmentTable = ({
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider"
+                    className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider relative"
                   >
-                    Document Status
+                    <div className="flex items-center justify-center gap-2">
+                      <select
+                        className="ml-2 px-2 py-1 text-xs border rounded bg-white text-gray-700 shadow-sm"
+                        value={selectedDocumentStatus}
+                        onChange={(e) => setSelectedDocumentStatus(e.target.value)}
+                      >
+                        {documentStatusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </th>
                   <th
                     scope="col"
