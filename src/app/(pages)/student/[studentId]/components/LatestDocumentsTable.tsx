@@ -524,12 +524,23 @@ export const LatestDocumentsTable = ({
       return;
     }
 
+    // Filter to only approved documents (status === 2)
+    const approvedDocuments = documents.filter(doc => doc.status === 2);
+    
+    if (approvedDocuments.length === 0) {
+      setNotification({
+        message: "No approved documents available for download.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setBulkDownloading(true);
       setShowBulkDownloadPopup(false);
 
-      // Sort documents by chapter order
-      const sortedDocuments = documents.sort((a, b) => {
+      // Sort approved documents by chapter order
+      const sortedDocuments = approvedDocuments.sort((a, b) => {
         const orderA = CHAPTER_ORDER.indexOf(a.chapter);
         const orderB = CHAPTER_ORDER.indexOf(b.chapter);
         if (orderA === -1 && orderB === -1)
@@ -558,6 +569,7 @@ export const LatestDocumentsTable = ({
 
       // Add special documents (Title Page, Appendix A, Appendix D) as DOCX regardless of format
       // These are always generated as DOCX since they don't have PDF equivalents
+      // Only include if the document is approved
       const specialDocuments = [
         {
           chapter: "title_page",
@@ -577,7 +589,7 @@ export const LatestDocumentsTable = ({
       ];
 
       for (const specialDoc of specialDocuments) {
-        const docExists = documents.find(
+        const docExists = approvedDocuments.find(
           (doc) => doc.chapter === specialDoc.chapter,
         );
         if (docExists) {
@@ -618,7 +630,7 @@ export const LatestDocumentsTable = ({
       URL.revokeObjectURL(url);
 
       setNotification({
-        message: `All documents downloaded successfully as ${format.toUpperCase()}!`,
+        message: `All approved documents downloaded successfully as ${format.toUpperCase()}!`,
         type: "success",
       });
     } catch {
@@ -2603,7 +2615,7 @@ export const LatestDocumentsTable = ({
                 </span>
                 <button
                   className="text-gray-600 hover:text-gray-800 transition-colors p-2 border border-gray-200 rounded-full shadow-sm bg-white"
-                  title="Download all documents"
+                  title="Download all approved documents"
                   onClick={() => setShowBulkDownloadPopup(true)}
                   disabled={bulkDownloading}
                 >
@@ -3163,7 +3175,7 @@ export const LatestDocumentsTable = ({
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
-                Download All Documents
+                Download Approved Documents
               </h3>
               <button
                 onClick={() => setShowBulkDownloadPopup(false)}
@@ -3175,8 +3187,8 @@ export const LatestDocumentsTable = ({
             </div>
 
             <p className="text-sm text-gray-600 mb-6">
-              Choose a format to download all documents. The zip file will
-              contain individual documents as separate files.
+              Choose a format to download all approved documents. The zip file will
+              contain individual approved documents as separate files.
             </p>
 
             <div className="space-y-3">
@@ -3208,7 +3220,7 @@ export const LatestDocumentsTable = ({
             </div>
 
             <div className="mt-4 text-xs text-gray-500">
-              <p>• Individual documents will be included as separate files</p>
+              <p>• Only approved documents will be included as separate files</p>
               <p>• All files will be packaged in a zip archive</p>
             </div>
           </div>
