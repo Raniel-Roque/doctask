@@ -13,6 +13,7 @@ import ResetCodeInput from "../components/ResetCodeInput";
 import ResetPasswordInput from "../components/ResetPasswordInput";
 import ResendTimer from "../components/ResendTimer";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { calculatePasswordStrength } from "@/utils/passwordStrength";
 
 interface ClerkError {
   errors: Array<{
@@ -1110,16 +1111,6 @@ const LoginPage = () => {
                   setShowConfirmPassword={setShowConfirmPassword}
                   loading={loading}
                   email={email}
-                  isValid={
-                    password.length >= 8 &&
-                    /[a-z]/.test(password) &&
-                    /[A-Z]/.test(password) &&
-                    /\d/.test(password) &&
-                    /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(password) &&
-                    password === confirmPassword &&
-                    password.trim() !== "" &&
-                    confirmPassword.trim() !== ""
-                  }
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!isLoaded) return;
@@ -1149,23 +1140,9 @@ const LoginPage = () => {
                       return; // Don't submit, let visual requirements show the error
                     }
 
-                    if (password.length < 8) {
-                      return; // Don't submit, let visual requirements show the error
-                    }
-
-                    // Check if all requirements are met
-                    const hasLowercase = /[a-z]/.test(password);
-                    const hasUppercase = /[A-Z]/.test(password);
-                    const hasNumber = /\d/.test(password);
-                    const hasSpecialChar =
-                      /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(password);
-
-                    if (
-                      !hasLowercase ||
-                      !hasUppercase ||
-                      !hasNumber ||
-                      !hasSpecialChar
-                    ) {
+                    // Check if password meets NIST standards
+                    const passwordStrength = calculatePasswordStrength(password);
+                    if (!passwordStrength.isAcceptable) {
                       return; // Don't submit, let visual requirements show the error
                     }
 
@@ -1275,7 +1252,7 @@ const LoginPage = () => {
                       ) {
                         setNotification({
                           message:
-                            "Password does not meet requirements. Please ensure it has at least 8 characters with uppercase, lowercase, numbers, and special characters.",
+                            "Password does not meet requirements. Please ensure it has at least 8 characters and is not too common.",
                           type: "error",
                         });
                       }
