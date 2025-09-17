@@ -323,23 +323,23 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
 
       {/* Active Group Info */}
       {activeGroup && (
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+        <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 overflow-x-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 truncate">
                 {activeGroup.name}
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 truncate">
                 {activeGroup.capstone_title}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 truncate">
                 Project Manager:{" "}
                 {activeGroup.projectManager
                   ? getFullName(activeGroup.projectManager)
                   : "N/A"}
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-center sm:text-right flex-shrink-0">
               <div className="text-2xl font-bold text-[#B54A4A]">
                 {activeGroup.documentCount || 0}
               </div>
@@ -365,11 +365,11 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
 
           {/* Documents Grid */}
           {filteredDocuments.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredDocuments.map((doc) => (
                 <div
                   key={doc._id}
-                  className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                  className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow min-w-0"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -397,9 +397,9 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                       </span>
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>Modified: {formatDate(doc.lastModified)}</span>
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 gap-2">
+                    <span className="flex-shrink-0">Modified: {formatDate(doc.lastModified)}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
                       {/* View button - always visible for all documents */}
                       <button
                         className="text-blue-600 hover:text-blue-800 transition-colors"
