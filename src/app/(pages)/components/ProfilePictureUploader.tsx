@@ -14,12 +14,14 @@ interface ProfilePictureUploaderProps {
   user: User;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
+  onUploading?: (isUploading: boolean) => void;
 }
 
 export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
   user,
   onSuccess,
   onError,
+  onUploading,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showCropper, setShowCropper] = useState(false);
@@ -84,6 +86,7 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
   const handleSaveImage = async (imageData: string) => {
     if (!user) return;
     setIsLoading(true);
+    onUploading?.(true);
     try {
       const response = await fetch("/api/clerk/change-profile", {
         method: "POST",
@@ -108,6 +111,7 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
       );
     } finally {
       setIsLoading(false);
+      onUploading?.(false);
     }
   };
 

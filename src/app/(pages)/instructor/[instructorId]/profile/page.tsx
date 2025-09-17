@@ -25,6 +25,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     message: string;
     type: "error" | "success" | "warning" | "info";
   } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [showWipeModal, setShowWipeModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -153,6 +154,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             userData={userData}
             onSuccess={setSuccessMessage}
             onError={(msg) => setNotification({ message: msg, type: "error" })}
+            onUploading={setIsUploading}
           />
 
           {/* Instructor Commands Section */}
@@ -268,6 +270,14 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         type={notification?.type || "error"}
         onClose={() => setNotification(null)}
         autoClose={notification?.type === "error" ? false : true}
+      />
+
+      {/* Uploading Notification */}
+      <NotificationBanner
+        message={isUploading ? "Uploading profile picture..." : null}
+        type="info"
+        onClose={() => {}} // Don't allow closing during upload
+        autoClose={false}
       />
     </div>
   );

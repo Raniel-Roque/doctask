@@ -11,6 +11,7 @@ interface PrimaryProfileProps {
   userData: Doc<"users"> | null | undefined;
   onSuccess: (msg: string) => void;
   onError: (msg: string) => void;
+  onUploading?: (isUploading: boolean) => void;
 }
 
 export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
@@ -18,6 +19,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
   userData,
   onSuccess,
   onError,
+  onUploading,
 }) => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
@@ -39,6 +41,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
             }}
             onSuccess={onSuccess}
             onError={onError}
+            onUploading={onUploading}
           />
         )}
 
@@ -54,8 +57,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="text"
                 value={userData?.first_name || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm text-gray-500 cursor-not-allowed opacity-75"
-                placeholder="Cannot be edited"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-gray-700 cursor-not-allowed"
               />
             </div>
             <div>
@@ -66,8 +68,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="text"
                 value={userData?.middle_name || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm text-gray-500 cursor-not-allowed opacity-75"
-                placeholder="Cannot be edited"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-gray-700 cursor-not-allowed"
               />
             </div>
             <div>
@@ -78,8 +79,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="text"
                 value={userData?.last_name || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm text-gray-500 cursor-not-allowed opacity-75"
-                placeholder="Cannot be edited"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-gray-700 cursor-not-allowed"
               />
             </div>
           </div>
@@ -94,8 +94,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="email"
                 value={userData?.email || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm text-gray-500 cursor-not-allowed opacity-75"
-                placeholder="Cannot be edited"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-gray-700 cursor-not-allowed"
               />
             </div>
             <div className="col-span-2 flex items-end">

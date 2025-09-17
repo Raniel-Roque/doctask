@@ -24,6 +24,7 @@ const MemberProfilePage = ({ params }: MemberProfilePageProps) => {
     message: string;
     type: "error" | "success" | "warning" | "info";
   } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Fetch user data from Convex
   const userData = useQuery(api.fetch.getUserById, {
@@ -52,6 +53,7 @@ const MemberProfilePage = ({ params }: MemberProfilePageProps) => {
             userData={userData}
             onSuccess={setSuccessMessage}
             onError={(msg) => setNotification({ message: msg, type: "error" })}
+            onUploading={setIsUploading}
           />
           {/* Secondary Profile Section */}
           <div className="mb-4">
@@ -67,6 +69,14 @@ const MemberProfilePage = ({ params }: MemberProfilePageProps) => {
           setNotification(null);
           setSuccessMessage(null);
         }}
+      />
+
+      {/* Uploading Notification */}
+      <NotificationBanner
+        message={isUploading ? "Uploading profile picture..." : null}
+        type="info"
+        onClose={() => {}} // Don't allow closing during upload
+        autoClose={false}
       />
     </div>
   );
