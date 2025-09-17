@@ -508,10 +508,11 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                 <React.Fragment key={group._id}>
                   {/* Main Group Row */}
                   <tr
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 cursor-pointer"
                     ref={(el) => {
                       groupRowRefs.current[group._id] = el;
                     }}
+                    onClick={() => toggleExpand(group._id)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {group.name || "-"}
@@ -521,7 +522,10 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => handleViewMembers(group)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewMembers(group);
+                        }}
                         className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                         disabled={!group.members && !group.projectManager}
                       >
@@ -546,7 +550,10 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center justify-center space-x-2">
                         <button
-                          onClick={() => toggleExpand(group._id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpand(group._id);
+                          }}
                           className="px-3 py-1.5 text-sm bg-[#B54A4A] text-white rounded-md hover:bg-[#A03A3A] focus:outline-none focus:ring-2 focus:ring-[#B54A4A] focus:ring-offset-2 transition-colors"
                           disabled={
                             getAllDocuments(group.documents || []).length === 0
