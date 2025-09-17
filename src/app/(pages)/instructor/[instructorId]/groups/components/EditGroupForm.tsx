@@ -518,11 +518,11 @@ export default function EditGroupForm({
                 </div>
               </div>
 
-              {/* Grade */}
+              {/* Remark */}
               <div className="w-[30%]">
                 <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <FaBook color="#6B7280" />
-                  Grade
+                  Remark
                 </label>
                 <div className="relative">
                   <select
@@ -540,7 +540,7 @@ export default function EditGroupForm({
                     } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white`}
                     disabled={isSubmitting}
                   >
-                    <option value={0}>No grade</option>
+                    <option value={0}>No remark</option>
                     <option value={1}>Approved</option>
                     <option value={2}>Approved With Revisions</option>
                     <option value={3}>Disapproved</option>

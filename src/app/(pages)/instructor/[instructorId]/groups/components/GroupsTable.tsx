@@ -25,8 +25,8 @@ const CAPSTONE_FILTERS = {
   WITHOUT_TITLE: "Without Capstone Title",
 } as const;
 
-export const GRADE_FILTERS = {
-  NO_GRADE: "NO GRADE",
+export const REMARK_FILTERS = {
+  NO_REMARK: "NO REMARK",
   APPROVED: "APPROVED",
   APPROVED_WITH_REVISIONS: "APPROVED WITH REVISIONS",
   DISAPPROVED: "DISAPPROVED",
@@ -35,12 +35,12 @@ export const GRADE_FILTERS = {
   NOT_ACCEPTED: "NOT ACCEPTED",
 } as const;
 
-const getGradeDisplay = (grade?: number): { text: string; color: string } => {
+const getRemarkDisplay = (grade?: number): { text: string; color: string } => {
   if (grade === undefined || grade === null)
-    return { text: "No grade", color: "bg-gray-100 text-gray-800" };
+    return { text: "No remark", color: "bg-gray-100 text-gray-800" };
   switch (grade) {
     case 0:
-      return { text: "No grade", color: "bg-gray-100 text-gray-800" };
+      return { text: "No remark", color: "bg-gray-100 text-gray-800" };
     case 1:
       return { text: "Approved", color: "bg-green-100 text-green-800" };
     case 2:
@@ -60,7 +60,7 @@ const getGradeDisplay = (grade?: number): { text: string; color: string } => {
     case 6:
       return { text: "Not Accepted", color: "bg-red-100 text-red-800" };
     default:
-      return { text: "No grade", color: "bg-gray-100 text-gray-800" };
+      return { text: "No remark", color: "bg-gray-100 text-gray-800" };
   }
 };
 
@@ -82,8 +82,8 @@ interface GroupsTableProps {
   onSearchChange: (term: string) => void;
   status: "idle" | "loading" | "error";
   hasResults: boolean;
-  onGradeFilterChange: (
-    filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][],
+  onRemarkFilterChange: (
+    filters: (typeof REMARK_FILTERS)[keyof typeof REMARK_FILTERS][],
   ) => void;
   isDeleting?: boolean;
   capstoneFilter: (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS];
@@ -117,7 +117,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   onSearchChange,
   status,
   hasResults,
-  onGradeFilterChange,
+  onRemarkFilterChange,
   isDeleting = false,
   capstoneFilter,
   setCapstoneFilter,
@@ -126,17 +126,17 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
 }) => {
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-  const [gradeFilters, setGradeFilters] = useState<
-    (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]
+  const [remarkFilters, setRemarkFilters] = useState<
+    (typeof REMARK_FILTERS)[keyof typeof REMARK_FILTERS][]
   >([]);
-  const [tempGradeFilters, setTempGradeFilters] = useState<
-    (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]
+  const [tempRemarkFilters, setTempRemarkFilters] = useState<
+    (typeof REMARK_FILTERS)[keyof typeof REMARK_FILTERS][]
   >([]);
-  const [showGradeDropdown, setShowGradeDropdown] = useState(false);
-  const gradeDropdownRef = useRef<HTMLDivElement>(null);
+  const [showRemarkDropdown, setShowRemarkDropdown] = useState(false);
+  const remarkDropdownRef = useRef<HTMLDivElement>(null);
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
-  const gradeThRef = useRef<HTMLTableCellElement>(null);
-  const gradeButtonRef = useRef<HTMLButtonElement>(null);
+  const remarkThRef = useRef<HTMLTableCellElement>(null);
+  const remarkButtonRef = useRef<HTMLButtonElement>(null);
   const capstoneThRef = useRef<HTMLTableCellElement>(null);
   const capstoneButtonRef = useRef<HTMLButtonElement>(null);
   const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
@@ -149,26 +149,26 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   >(new Set());
 
   useEffect(() => {
-    if (showGradeDropdown) {
-      setTempGradeFilters(gradeFilters);
+    if (showRemarkDropdown) {
+      setTempRemarkFilters(remarkFilters);
     }
-  }, [showGradeDropdown, gradeFilters]);
+  }, [showRemarkDropdown, remarkFilters]);
 
   useEffect(() => {
-    if (!showGradeDropdown) return;
+    if (!showRemarkDropdown) return;
     function handleClickOutside(event: MouseEvent) {
       if (
-        gradeDropdownRef.current &&
-        !gradeDropdownRef.current.contains(event.target as Node) &&
-        gradeButtonRef.current &&
-        !gradeButtonRef.current.contains(event.target as Node)
+        remarkDropdownRef.current &&
+        !remarkDropdownRef.current.contains(event.target as Node) &&
+        remarkButtonRef.current &&
+        !remarkButtonRef.current.contains(event.target as Node)
       ) {
-        setShowGradeDropdown(false);
+        setShowRemarkDropdown(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showGradeDropdown]);
+  }, [showRemarkDropdown]);
 
   useEffect(() => {
     if (!showCapstoneDropdown) return;
@@ -278,27 +278,27 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
 
   // Update filter handlers to call parent component handlers
 
-  const handleGradeFilter = (
-    filter: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS],
+  const handleRemarkFilter = (
+    filter: (typeof REMARK_FILTERS)[keyof typeof REMARK_FILTERS],
   ) => {
     let newFilters;
-    if (tempGradeFilters.includes(filter)) {
-      newFilters = tempGradeFilters.filter((f) => f !== filter);
+    if (tempRemarkFilters.includes(filter)) {
+      newFilters = tempRemarkFilters.filter((f) => f !== filter);
     } else {
-      newFilters = [...tempGradeFilters, filter];
+      newFilters = [...tempRemarkFilters, filter];
     }
-    setTempGradeFilters(newFilters);
+    setTempRemarkFilters(newFilters);
   };
 
-  const handleSaveGradeFilters = () => {
-    setGradeFilters(tempGradeFilters);
-    onGradeFilterChange(tempGradeFilters);
-    setShowGradeDropdown(false);
+  const handleSaveRemarkFilters = () => {
+    setRemarkFilters(tempRemarkFilters);
+    onRemarkFilterChange(tempRemarkFilters);
+    setShowRemarkDropdown(false);
     onPageChange(1);
   };
 
-  const handleResetGradeFilters = () => {
-    setTempGradeFilters([]);
+  const handleResetRemarkFilters = () => {
+    setTempRemarkFilters([]);
   };
 
   return (
@@ -329,18 +329,18 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
         </button>
         {!isDeleting && groups.length > 0 && status === "idle" && exportReady && (
           <PDFDownloadLink
-            key={`pdf-groups-${searchTerm}-${gradeFilters.join(",")}-${groups.length}-${totalCount}-${exportIdsChecksum}`}
+            key={`pdf-groups-${searchTerm}-${remarkFilters.join(",")}-${groups.length}-${totalCount}-${exportIdsChecksum}`}
             document={
               <GroupPDFReport
                 groups={groups}
                 title="Groups Report"
                 filters={{
                   searchTerm,
-                  gradeFilters,
+                  gradeFilters: remarkFilters,
                 }}
               />
             }
-            fileName={`GroupsReport-${gradeFilters.join(",")}_${new Date()
+            fileName={`GroupsReport-${remarkFilters.join(",")}_${new Date()
               .toISOString()
               .slice(0, 10)}.pdf`}
           >
@@ -399,7 +399,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowCapstoneDropdown(!showCapstoneDropdown);
-                        setShowGradeDropdown(false);
+                        setShowRemarkDropdown(false);
                       }}
                       title="Filter capstone titles"
                       ref={capstoneButtonRef}
@@ -509,44 +509,44 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 </div>
               </th>
               <th
-                ref={gradeThRef}
+                ref={remarkThRef}
                 scope="col"
                 className="relative px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
               >
                 <div className="flex items-center justify-center gap-2">
-                  <span className="font-medium uppercase">GRADE</span>
+                  <span className="font-medium uppercase">REMARK</span>
                   <button
                     type="button"
                     className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowGradeDropdown(!showGradeDropdown);
+                      setShowRemarkDropdown(!showRemarkDropdown);
                     }}
-                    title="Filter grades"
-                    ref={gradeButtonRef}
+                    title="Filter remarks"
+                    ref={remarkButtonRef}
                     style={{ boxShadow: "none" }}
                   >
                     <FaFilter
                       className={
                         `w-4 h-4 transition-colors ` +
-                        (showGradeDropdown || gradeFilters.length > 0
+                        (showRemarkDropdown || remarkFilters.length > 0
                           ? "text-blue-500"
                           : "text-white")
                       }
                     />
                   </button>
                 </div>
-                {showGradeDropdown && (
+                {showRemarkDropdown && (
                   <div
-                    ref={gradeDropdownRef}
+                    ref={remarkDropdownRef}
                     className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
                     style={{
                       minWidth: 220,
                       left:
-                        gradeButtonRef.current?.getBoundingClientRect().left ||
+                        remarkButtonRef.current?.getBoundingClientRect().left ||
                         0,
                       top:
-                        (gradeButtonRef.current?.getBoundingClientRect()
+                        (remarkButtonRef.current?.getBoundingClientRect()
                           .bottom || 0) + 8,
                     }}
                   >
@@ -554,15 +554,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       className="max-h-52 overflow-y-auto px-3 py-2 flex flex-col gap-1"
                       style={{ maxHeight: 220 }}
                     >
-                      {Object.values(GRADE_FILTERS).map((filter) => (
+                      {Object.values(REMARK_FILTERS).map((filter) => (
                         <label
                           key={filter}
                           className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
                         >
                           <input
                             type="checkbox"
-                            checked={tempGradeFilters.includes(filter)}
-                            onChange={() => handleGradeFilter(filter)}
+                            checked={tempRemarkFilters.includes(filter)}
+                            onChange={() => handleRemarkFilter(filter)}
                             className="accent-blue-600"
                           />
                           <span className="text-left">{filter}</span>
@@ -571,13 +571,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     </div>
                     <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
                       <button
-                        onClick={handleSaveGradeFilters}
+                        onClick={handleSaveRemarkFilters}
                         className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                       >
                         Apply
                       </button>
                       <button
-                        onClick={handleResetGradeFilters}
+                        onClick={handleResetRemarkFilters}
                         className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
                       >
                         Reset
@@ -651,7 +651,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
                   {(() => {
-                    const { text, color } = getGradeDisplay(group.grade);
+                    const { text, color } = getRemarkDisplay(group.grade);
                     return (
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}
