@@ -925,7 +925,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                   Entity
                 </th>
               )}
-              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider flex-1">
+              <th className="px-6 py-3 border-b text-left text-xs font-medium text-white uppercase tracking-wider flex-1">
                 Details
               </th>
             </tr>
