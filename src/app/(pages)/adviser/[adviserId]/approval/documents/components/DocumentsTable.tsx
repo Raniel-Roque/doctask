@@ -424,7 +424,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     <div>
       <div className="overflow-x-auto">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '800px' }}>
             <thead className="bg-[#B54A4A] text-white">
               <tr>
                 <th
@@ -564,7 +564,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                       <td colSpan={5} className="px-4 pb-4 pt-0 bg-gray-50">
                         <div className="bg-white rounded-b-lg shadow-md border-x border-b border-gray-200 p-6">
                           <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
+                            <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '600px' }}>
                               <thead className="bg-gray-100">
                                 <tr>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-0">
@@ -681,7 +681,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           </span>
                                         )}
                                       </td>
-                                      <td className="px-4 py-3 text-center">
+                                      <td className="px-4 py-3 text-center" style={{ minWidth: '200px' }}>
                                         <div className="flex items-center justify-center gap-1 flex-wrap">
                                           {/* View button - always visible for all documents */}
                                           <button
@@ -697,7 +697,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           {/* Edit button - only for submitted, approved, or rejected documents */}
                                           {doc.status !== 0 && (
                                             <>
-                                              <span className="mx-1 text-gray-300 select-none hidden sm:inline">|</span>
+                                              <span className="mx-1 text-gray-300 select-none">|</span>
                                               <button
                                                 className="text-purple-600 hover:text-purple-800 transition-colors p-1 flex-shrink-0"
                                                 title="Edit Document"
@@ -713,7 +713,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           {/* Download button - only for submitted, approved, or rejected documents */}
                                           {doc.status !== 0 && (
                                             <>
-                                              <span className="mx-1 text-gray-300 select-none hidden sm:inline">|</span>
+                                              <span className="mx-1 text-gray-300 select-none">|</span>
                                               <button
                                                 className="text-green-600 hover:text-green-800 transition-colors p-1 flex-shrink-0"
                                                 title="Download Document"
@@ -734,7 +734,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           )}
                                           
                                           {/* Notes button - always visible */}
-                                          <span className="mx-1 text-gray-300 select-none hidden sm:inline">|</span>
+                                          <span className="mx-1 text-gray-300 select-none">|</span>
                                           <button
                                             className="text-yellow-500 hover:text-yellow-700 transition-colors p-1 flex-shrink-0"
                                             title="Add/Edit Notes"

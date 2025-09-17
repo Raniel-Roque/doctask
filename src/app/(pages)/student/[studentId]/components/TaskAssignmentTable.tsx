@@ -1372,17 +1372,21 @@ export const TaskAssignmentTable = ({
                                     <FaEye className="w-4 h-4" />
                                   </button>
                                   {canEditDocument(chapterTasks[0]) && (
-                                    <button
-                                      className="text-purple-600 hover:text-purple-800 transition-colors"
-                                      title="Edit Document"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditDocument(chapterTasks[0]);
-                                      }}
-                                    >
-                                      <FaEdit className="w-4 h-4" />
-                                    </button>
+                                    <>
+                                      <span className="mx-1 text-gray-300 select-none">|</span>
+                                      <button
+                                        className="text-purple-600 hover:text-purple-800 transition-colors"
+                                        title="Edit Document"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditDocument(chapterTasks[0]);
+                                        }}
+                                      >
+                                        <FaEdit className="w-4 h-4" />
+                                      </button>
+                                    </>
                                   )}
+                                  <span className="mx-1 text-gray-300 select-none">|</span>
                                   <button
                                     className="text-green-600 hover:text-green-800 transition-colors"
                                     title="Download Document"
@@ -1636,17 +1640,21 @@ export const TaskAssignmentTable = ({
                                   <FaEye className="w-4 h-4" />
                                 </button>
                                 {canEditDocument(chapterTasks[0]) && (
-                                  <button
-                                    className="text-purple-600 hover:text-purple-800 transition-colors"
-                                    title="Edit Document"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditDocument(chapterTasks[0]);
-                                    }}
-                                  >
-                                    <FaEdit className="w-4 h-4" />
-                                  </button>
+                                  <>
+                                    <span className="mx-1 text-gray-300 select-none">|</span>
+                                    <button
+                                      className="text-purple-600 hover:text-purple-800 transition-colors"
+                                      title="Edit Document"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditDocument(chapterTasks[0]);
+                                      }}
+                                    >
+                                      <FaEdit className="w-4 h-4" />
+                                    </button>
+                                  </>
                                 )}
+                                <span className="mx-1 text-gray-300 select-none">|</span>
                                 <button
                                   className="text-green-600 hover:text-green-800 transition-colors"
                                   title="Download Document"

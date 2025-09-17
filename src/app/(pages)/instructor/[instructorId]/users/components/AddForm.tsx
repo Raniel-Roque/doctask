@@ -424,6 +424,7 @@ export const AddForm = ({
                 <FaTimes />
                 Cancel
               </button>
+              <span className="mx-2 text-gray-300 select-none">|</span>
               <button
                 type="submit"
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"

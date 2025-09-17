@@ -2973,22 +2973,28 @@ export const LatestDocumentsTable = ({
                         {!["title_page", "appendix_a", "appendix_d"].includes(
                           doc.chapter,
                         ) && (
-                          <button
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                            title="View Document"
-                            onClick={() => handleViewDocument(doc)}
-                          >
-                            <FaEye className="w-4 h-4" />
-                          </button>
+                          <>
+                            <button
+                              className="text-blue-600 hover:text-blue-800 transition-colors"
+                              title="View Document"
+                              onClick={() => handleViewDocument(doc)}
+                            >
+                              <FaEye className="w-4 h-4" />
+                            </button>
+                            <span className="mx-1 text-gray-300 select-none">|</span>
+                          </>
                         )}
                         {canEditDocument(doc) && (
-                          <button
-                            className="text-purple-600 hover:text-purple-800 transition-colors"
-                            title="Edit Document"
-                            onClick={() => handleEditDocument(doc)}
-                          >
-                            <FaEdit className="w-4 h-4" />
-                          </button>
+                          <>
+                            <button
+                              className="text-purple-600 hover:text-purple-800 transition-colors"
+                              title="Edit Document"
+                              onClick={() => handleEditDocument(doc)}
+                            >
+                              <FaEdit className="w-4 h-4" />
+                            </button>
+                            <span className="mx-1 text-gray-300 select-none">|</span>
+                          </>
                         )}
                         <button
                           className="text-green-600 hover:text-green-800 transition-colors"

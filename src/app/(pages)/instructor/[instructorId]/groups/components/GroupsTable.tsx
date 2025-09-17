@@ -670,6 +670,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     >
                       <FaEdit />
                     </button>
+                    <span className="mx-1 text-gray-300 select-none">|</span>
                     <button
                       onClick={() => setGroupToDelete(group)}
                       className="p-2 text-red-600 hover:text-red-800"
