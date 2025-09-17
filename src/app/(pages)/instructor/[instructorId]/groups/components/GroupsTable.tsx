@@ -35,10 +35,10 @@ export const REMARK_FILTERS = {
   NOT_ACCEPTED: "NOT ACCEPTED",
 } as const;
 
-const getRemarkDisplay = (grade?: number): { text: string; color: string } => {
-  if (grade === undefined || grade === null)
+const getRemarkDisplay = (remark?: number): { text: string; color: string } => {
+  if (remark === undefined || remark === null)
     return { text: "No remark", color: "bg-gray-100 text-gray-800" };
-  switch (grade) {
+  switch (remark) {
     case 0:
       return { text: "No remark", color: "bg-gray-100 text-gray-800" };
     case 1:
@@ -336,7 +336,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 title="Groups Report"
                 filters={{
                   searchTerm,
-                  gradeFilters: remarkFilters,
+                  remarkFilters,
                 }}
               />
             }

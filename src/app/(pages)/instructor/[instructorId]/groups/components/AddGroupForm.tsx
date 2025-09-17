@@ -28,7 +28,7 @@ interface AddGroupFormProps {
     members: string[];
     adviser: string | null;
     capstoneTitle: string;
-    grade: number;
+    remark: number;
   }) => void;
   isSubmitting?: boolean;
   projectManagers: {
@@ -68,7 +68,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     members: [] as string[],
     adviser: "",
     capstoneTitle: "",
-    grade: 0,
+    remark: 0,
   });
 
   const [initialFormData, setInitialFormData] = useState(formData);
@@ -137,7 +137,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
         members: [],
         adviser: "",
         capstoneTitle: "",
-        grade: 0,
+        remark: 0,
       };
       setFormData(emptyForm);
       setInitialFormData(emptyForm);

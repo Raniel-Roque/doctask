@@ -8,7 +8,7 @@ import { useQuery, useMutation } from "convex/react";
 import { User, Group } from "./components/types";
 import AddGroupForm from "./components/AddGroupForm";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
-import GroupsTable, { GRADE_FILTERS } from "./components/GroupsTable";
+import GroupsTable, { REMARK_FILTERS } from "./components/GroupsTable";
 import EditGroupForm from "./components/EditGroupForm";
 
 // Filter constants
@@ -52,8 +52,8 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const [appliedCapstoneFilter, setAppliedCapstoneFilter] = useState<
     (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS]
   >(CAPSTONE_FILTERS.ALL);
-  const [appliedGradeFilters, setAppliedGradeFilters] = useState<
-    (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]
+  const [appliedRemarkFilters, setAppliedRemarkFilters] = useState<
+    (typeof REMARK_FILTERS)[keyof typeof REMARK_FILTERS][]
   >([]);
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -126,7 +126,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
       sortField: finalSortField,
       sortDirection: finalSortDirection,
       capstoneFilter: appliedCapstoneFilter,
-      gradeFilters: appliedGradeFilters,
+      remarkFilters: appliedRemarkFilters,
     };
   }, [
     searchTerm,
@@ -136,7 +136,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     sortDirection,
     capstoneSortDirection,
     appliedCapstoneFilter,
-    appliedGradeFilters,
+    appliedRemarkFilters,
   ]);
 
   // Fetch groups data with search and pagination
@@ -204,10 +204,10 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     setCurrentPage(1);
   };
 
-  const handleGradeFilterChange = (
-    filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][],
+  const handleRemarkFilterChange = (
+    filters: (typeof REMARK_FILTERS)[keyof typeof REMARK_FILTERS][],
   ) => {
-    setAppliedGradeFilters(filters);
+    setAppliedRemarkFilters(filters);
     setCurrentPage(1);
   };
 
@@ -259,7 +259,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     members: string[];
     adviser: string | null;
     capstoneTitle: string;
-    grade: number;
+    remark: number;
   }) => {
     if (!isEditingGroup) return;
 
@@ -273,7 +273,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           ? (formData.adviser as Id<"users">)
           : undefined,
         capstone_title: formData.capstoneTitle,
-        grade: formData.grade,
+        grade: formData.remark,
         instructorId: instructorId as Id<"users">,
       });
       setIsEditingGroup(null);
@@ -385,7 +385,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           onSearchChange={setSearchTerm}
           status={getStatus()}
           hasResults={searchResult?.hasResults || false}
-          onGradeFilterChange={handleGradeFilterChange}
+          onRemarkFilterChange={handleRemarkFilterChange}
           isDeleting={isDeleting}
           capstoneFilter={appliedCapstoneFilter}
           setCapstoneFilter={setAppliedCapstoneFilter}

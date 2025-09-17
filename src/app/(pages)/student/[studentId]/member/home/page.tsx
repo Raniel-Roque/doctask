@@ -111,7 +111,7 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
             }
             currentUserId={studentId as Id<"users">}
             capstoneTitle={groupDetails?.capstone_title ?? "Capstone Documents"}
-            grade={groupDetails?.grade}
+            remark={groupDetails?.grade}
             adviser={adviserObj}
             onShowAdviserPopup={() => {}} // No popup for member
             isSubmitting={false}

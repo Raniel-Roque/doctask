@@ -50,10 +50,10 @@ function getFullName(user?: User) {
   return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
 }
 
-function getGradeText(grade?: number) {
-  switch (grade) {
+function getRemarkText(remark?: number) {
+  switch (remark) {
     case 0:
-      return "No grade";
+      return "No remark";
     case 1:
       return "Approved";
     case 2:
@@ -67,7 +67,7 @@ function getGradeText(grade?: number) {
     case 6:
       return "Not Accepted";
     default:
-      return "No grade";
+      return "No remark";
   }
 }
 
@@ -78,7 +78,7 @@ interface GroupPDFReportProps {
     searchTerm?: string;
     capstoneFilter?: string;
     adviserFilters?: string[];
-    gradeFilters?: string[];
+    remarkFilters?: string[];
   };
 }
 
@@ -105,7 +105,7 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
               <TD style={cellStyle}>Project Manager</TD>
               <TD style={cellStyle}>Members</TD>
               <TD style={cellStyle}>Adviser</TD>
-              <TD style={cellStyle}>Grade</TD>
+              <TD style={cellStyle}>Remark</TD>
             </TH>
             {groups.map((group) => (
               <TR key={group._id}>
@@ -118,7 +118,7 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
                     : "-"}
                 </TD>
                 <TD style={cellStyle}>{getFullName(group.adviser)}</TD>
-                <TD style={cellStyle}>{getGradeText(group.grade)}</TD>
+                <TD style={cellStyle}>{getRemarkText(group.grade)}</TD>
               </TR>
             ))}
           </Table>
@@ -141,7 +141,7 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
               )
                 return false;
               if (
-                key === "gradeFilters" &&
+                key === "remarkFilters" &&
                 Array.isArray(value) &&
                 value.length === 0
               )
@@ -160,7 +160,7 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
                   )
                     return false;
                   if (
-                    key === "gradeFilters" &&
+                    key === "remarkFilters" &&
                     Array.isArray(value) &&
                     value.length === 0
                   )

@@ -57,7 +57,7 @@ interface LatestDocumentsTableProps {
   status: "loading" | "error" | "idle" | "no_group";
   currentUserId: Id<"users">;
   capstoneTitle?: string;
-  grade?: number;
+  remark?: number;
   adviser?: AdviserObj;
   onShowAdviserPopup: () => void;
   isSubmitting: boolean;
@@ -125,7 +125,7 @@ export const LatestDocumentsTable = ({
   status,
   currentUserId,
   capstoneTitle,
-  grade,
+  remark,
   adviser,
   onShowAdviserPopup,
   isSubmitting,
@@ -2363,7 +2363,7 @@ export const LatestDocumentsTable = ({
           </div>
         ) : (
           <>
-            {/* Capstone Title, Adviser, and Grade */}
+            {/* Capstone Title, Adviser, and Remark */}
             <div className="mb-1">
               <h2 className="text-2xl font-bold text-gray-900 break-words max-w-3xl tracking-tight">
                 {displayCapstoneTitle}
@@ -2451,7 +2451,7 @@ export const LatestDocumentsTable = ({
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm font-normal text-gray-700 bg-transparent">
-                  Remark: {REMARK_MAP[grade ?? 0] || "No Remark"}
+                  Remark: {REMARK_MAP[remark ?? 0] || "No Remark"}
                 </span>
                 <button
                   className="text-gray-600 hover:text-gray-800 transition-colors p-2 border border-gray-200 rounded-full shadow-sm bg-white"
