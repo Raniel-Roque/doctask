@@ -260,23 +260,35 @@ export const LatestDocumentsTable = ({
     // If no group information available, default to false
     if (!group) return false;
 
-    // Project managers can edit documents that are not submitted (0), approved (2), or rejected (3)
+    // Once approved by adviser, documents should be read-only
+    if (doc.status === 2) return false; // Approved documents cannot be edited
+
+    // Project managers can edit documents that are not submitted (0) or rejected (3)
     if (group.project_manager_id === currentUserId) {
-      return doc.status === 0 || doc.status === 2 || doc.status === 3; // Can edit not submitted, approved, or rejected documents
+      return doc.status === 0 || doc.status === 3; // Can edit not submitted or rejected documents
     }
 
-    // Members need to be assigned to related tasks and document is not submitted, approved, or rejected
+    // Members need to be assigned to related tasks and document is not submitted or rejected
     const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
     const isAssigned = relatedTasks.some((task) =>
       task.assigned_student_ids.includes(currentUserId),
     );
     return (
-      isAssigned && (doc.status === 0 || doc.status === 2 || doc.status === 3)
-    ); // Can edit not submitted, approved, or rejected documents
+      isAssigned && (doc.status === 0 || doc.status === 3)
+    ); // Can edit not submitted or rejected documents
   };
 
   // Handle submit document for review
   const handleSubmitDocument = async (doc: Document) => {
+    // Check if adviser is assigned before allowing submission
+    if (!adviser || !adviser.first_name) {
+      setNotification({
+        message: "Cannot submit document. Please assign an adviser first.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setSubmittingDocument(doc._id);
 

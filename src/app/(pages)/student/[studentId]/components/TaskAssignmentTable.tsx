@@ -52,6 +52,15 @@ interface Document {
   note_count: number; // Number of notes for this document
 }
 
+interface AdviserObj {
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  pending?: boolean;
+  pendingName?: string;
+  onCancel?: () => void;
+}
+
 interface TaskAssignmentTableProps {
   tasks: Task[];
   status: "loading" | "error" | "idle" | "no_group";
@@ -71,6 +80,7 @@ interface TaskAssignmentTableProps {
     project_manager_id: Id<"users">;
     member_ids: Id<"users">[];
   };
+  adviser?: AdviserObj;
   onStatusChange?: (taskId: string, newStatus: number) => void;
 }
 
@@ -122,6 +132,7 @@ export const TaskAssignmentTable = ({
   groupMembers,
   documents = [],
   group,
+  adviser,
   onStatusChange,
 }: TaskAssignmentTableProps) => {
   const router = useRouter();
@@ -496,10 +507,12 @@ export const TaskAssignmentTable = ({
   // Check if document can be edited (not submitted, approved, or rejected)
   const canEditDocument = (task: Task) => {
     const documentStatus = getDocumentStatus(task.chapter);
-    // Can edit if document is not submitted (0), approved (2), or rejected (3)
+    // Once approved by adviser, documents should be read-only
+    if (documentStatus === 2) return false; // Approved documents cannot be edited
+    
+    // Can edit if document is not submitted (0) or rejected (3)
     // AND user is assigned to the task (for members) or is manager
-    const canEditStatus =
-      documentStatus === 0 || documentStatus === 2 || documentStatus === 3;
+    const canEditStatus = documentStatus === 0 || documentStatus === 3;
     return canEditStatus && canEditTask(task);
   };
 
@@ -526,6 +539,15 @@ export const TaskAssignmentTable = ({
 
   // Handle submit document for review
   const handleSubmitDocument = async (chapter: string) => {
+    // Check if adviser is assigned before allowing submission
+    if (!adviser || !adviser.first_name) {
+      setNotification({
+        message: "Cannot submit document. Please assign an adviser first.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setSubmittingDocument(chapter);
 

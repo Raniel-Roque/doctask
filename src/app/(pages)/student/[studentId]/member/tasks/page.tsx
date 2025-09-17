@@ -37,6 +37,22 @@ const MemberTasksPage = ({ params }: MemberTasksPageProps) => {
       : "skip",
   );
 
+  // Get group details and adviser information
+  const groupDetails = useQuery(
+    api.fetch.getGroupById,
+    groupId ? { groupId: groupId as Id<"groupsTable"> } : "skip",
+  );
+  const adviser = useQuery(
+    api.fetch.getUserById,
+    groupDetails?.adviser_id ? { id: groupDetails.adviser_id } : "skip",
+  );
+  const requestedAdviser = useQuery(
+    api.fetch.getUserById,
+    groupDetails?.requested_adviser
+      ? { id: groupDetails.requested_adviser }
+      : "skip",
+  );
+
   // Set groupId when studentGroup is loaded
   useEffect(() => {
     if (studentGroup?.group_id) {
@@ -77,6 +93,30 @@ const MemberTasksPage = ({ params }: MemberTasksPageProps) => {
     };
   };
 
+  // Construct adviser object
+  const constructAdviser = () => {
+    if (groupDetails?.adviser_id && adviser?.first_name) {
+      return {
+        first_name: adviser.first_name,
+        middle_name: adviser.middle_name,
+        last_name: adviser.last_name,
+      };
+    } else if (
+      groupDetails?.requested_adviser &&
+      !groupDetails.adviser_id &&
+      requestedAdviser?.first_name
+    ) {
+      return {
+        first_name: requestedAdviser.first_name,
+        middle_name: requestedAdviser.middle_name,
+        last_name: requestedAdviser.last_name,
+        pending: true,
+        pendingName: `${requestedAdviser.first_name} ${requestedAdviser.last_name}`,
+      };
+    }
+    return undefined;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar studentId={studentId} />
@@ -95,6 +135,7 @@ const MemberTasksPage = ({ params }: MemberTasksPageProps) => {
           groupMembers={taskAssignments?.groupMembers}
           documents={documents?.documents || []}
           group={constructGroup()}
+          adviser={constructAdviser()}
         />
       </div>
     </div>
