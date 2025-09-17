@@ -38,7 +38,7 @@ interface EditGroupFormProps {
     members: string[];
     adviser: string | null;
     capstoneTitle: string;
-    remark: number;
+    grade: number;
   }) => void;
   members: User[];
   advisers: User[];
@@ -60,7 +60,7 @@ export default function EditGroupForm({
     members: [] as string[],
     adviser: null as string | null,
     capstoneTitle: "",
-    remark: 0,
+    grade: 0,
   });
 
   const [initialFormData, setInitialFormData] = useState(formData);
@@ -99,7 +99,7 @@ export default function EditGroupForm({
         members: group.member_ids || [],
         adviser: group.adviser_id || null,
         capstoneTitle: group.capstone_title || "",
-        remark: group.grade || 0,
+        grade: group.grade || 0,
       };
       setFormData(newFormData);
       setInitialFormData(newFormData);
@@ -324,7 +324,7 @@ export default function EditGroupForm({
     try {
       await onSubmit({
         ...formData,
-        remark: Number(formData.remark), // Ensure remark is a number
+        grade: Number(formData.grade), // Ensure grade is a number
       });
       setHasUnsavedChanges(false);
       setInitialFormData(formData);
@@ -407,7 +407,7 @@ export default function EditGroupForm({
               />
             </div>
 
-            {/* Adviser and Remark */}
+            {/* Adviser and Grade */}
             <div className="flex gap-4">
               {/* Adviser */}
               <div className="dropdown-container w-[70%]">
@@ -526,15 +526,15 @@ export default function EditGroupForm({
                 </label>
                 <div className="relative">
                   <select
-                    value={formData.remark}
+                    value={formData.grade}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        remark: Number(e.target.value),
+                        grade: Number(e.target.value),
                       }))
                     }
                     className={`w-full px-4 py-2 rounded-lg border-2 ${
-                      validationErrors.remark
+                      validationErrors.grade
                         ? "border-red-500"
                         : "border-gray-300"
                     } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white`}

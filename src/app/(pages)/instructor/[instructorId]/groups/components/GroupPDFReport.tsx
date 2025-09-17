@@ -50,8 +50,8 @@ function getFullName(user?: User) {
   return `${user.first_name} ${user.middle_name ? user.middle_name + " " : ""}${user.last_name}`;
 }
 
-function getRemarkText(remark?: number) {
-  switch (remark) {
+function getGradeText(grade?: number) {
+  switch (grade) {
     case 0:
       return "No remark";
     case 1:
@@ -78,7 +78,7 @@ interface GroupPDFReportProps {
     searchTerm?: string;
     capstoneFilter?: string;
     adviserFilters?: string[];
-    remarkFilters?: string[];
+    gradeFilters?: string[];
   };
 }
 
@@ -118,7 +118,7 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
                     : "-"}
                 </TD>
                 <TD style={cellStyle}>{getFullName(group.adviser)}</TD>
-                <TD style={cellStyle}>{getRemarkText(group.grade)}</TD>
+                <TD style={cellStyle}>{getGradeText(group.grade)}</TD>
               </TR>
             ))}
           </Table>
@@ -141,7 +141,7 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
               )
                 return false;
               if (
-                key === "remarkFilters" &&
+                key === "gradeFilters" &&
                 Array.isArray(value) &&
                 value.length === 0
               )
@@ -160,7 +160,7 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
                   )
                     return false;
                   if (
-                    key === "remarkFilters" &&
+                    key === "gradeFilters" &&
                     Array.isArray(value) &&
                     value.length === 0
                   )

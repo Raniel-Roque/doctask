@@ -248,7 +248,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
             }
             currentUserId={studentId as Id<"users">}
             capstoneTitle={groupDetails?.capstone_title ?? "Capstone Documents"}
-            remark={groupDetails?.grade}
+            grade={groupDetails?.grade}
             adviser={adviserObj}
             onShowAdviserPopup={handleShowAdviserPopup}
             isSubmitting={isSubmitting}

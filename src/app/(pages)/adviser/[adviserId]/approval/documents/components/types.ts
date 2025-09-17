@@ -22,7 +22,7 @@ export interface Group {
   projectManager?: User;
   members?: User[];
   adviser?: User;
-  remark?: number;
+  grade?: number;
   documentCount: number;
   documents: Document[];
 }

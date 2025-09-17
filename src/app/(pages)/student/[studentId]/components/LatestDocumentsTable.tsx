@@ -57,7 +57,7 @@ interface LatestDocumentsTableProps {
   status: "loading" | "error" | "idle" | "no_group";
   currentUserId: Id<"users">;
   capstoneTitle?: string;
-  remark?: number;
+  grade?: number;
   adviser?: AdviserObj;
   onShowAdviserPopup: () => void;
   isSubmitting: boolean;
@@ -70,8 +70,8 @@ interface LatestDocumentsTableProps {
   };
 }
 
-// Remark mapping
-const REMARK_MAP: { [key: number]: string } = {
+// Grade mapping
+const GRADE_MAP: { [key: number]: string } = {
   0: "No Remark",
   1: "Approved",
   2: "Approved With Revisions",
@@ -125,7 +125,7 @@ export const LatestDocumentsTable = ({
   status,
   currentUserId,
   capstoneTitle,
-  remark,
+  grade,
   adviser,
   onShowAdviserPopup,
   isSubmitting,
@@ -2451,7 +2451,7 @@ export const LatestDocumentsTable = ({
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm font-normal text-gray-700 bg-transparent">
-                  Remark: {REMARK_MAP[remark ?? 0] || "No Remark"}
+                  Remark: {GRADE_MAP[grade ?? 0] || "No Remark"}
                 </span>
                 <button
                   className="text-gray-600 hover:text-gray-800 transition-colors p-2 border border-gray-200 rounded-full shadow-sm bg-white"
