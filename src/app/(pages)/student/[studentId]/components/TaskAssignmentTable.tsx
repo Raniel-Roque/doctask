@@ -85,15 +85,31 @@ interface TaskAssignmentTableProps {
 }
 
 // Status color mapping for task_status (member/manager communication)
-const STATUS_COLORS: { [key: number]: string } = {
+const TASK_STATUS_COLORS: { [key: number]: string } = {
   0: "bg-yellow-100 text-yellow-800", // incomplete
   1: "bg-green-100 text-green-800", // completed
 };
 
 // Status label mapping for task_status
-const STATUS_LABELS: { [key: number]: string } = {
+const TASK_STATUS_LABELS: { [key: number]: string } = {
   0: "Incomplete",
   1: "Completed",
+};
+
+// Status color mapping for document review status
+const DOCUMENT_STATUS_COLORS: { [key: number]: string } = {
+  0: "bg-gray-100 text-gray-800", // not_submitted
+  1: "bg-yellow-100 text-yellow-800", // in_review
+  2: "bg-green-100 text-green-800", // approved
+  3: "bg-red-100 text-red-800", // rejected
+};
+
+// Status label mapping for document review status
+const DOCUMENT_STATUS_LABELS: { [key: number]: string } = {
+  0: "Not Submitted",
+  1: "In Review",
+  2: "Approved",
+  3: "Rejected",
 };
 
 // Helper function to join array items with commas and 'and'
@@ -958,9 +974,9 @@ export const TaskAssignmentTable = ({
       // Show read-only status badge
       return (
         <span
-          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[currentStatus] || STATUS_COLORS[0]}`}
+          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${TASK_STATUS_COLORS[currentStatus] || TASK_STATUS_COLORS[0]}`}
         >
-          {STATUS_LABELS[currentStatus] || STATUS_LABELS[0]}
+          {TASK_STATUS_LABELS[currentStatus] || TASK_STATUS_LABELS[0]}
         </span>
       );
     }
@@ -974,7 +990,7 @@ export const TaskAssignmentTable = ({
             handleStatusChange(task._id, parseInt(e.target.value))
           }
           disabled={isLoading}
-          className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${STATUS_COLORS[currentStatus] || STATUS_COLORS[0]} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${TASK_STATUS_COLORS[currentStatus] || TASK_STATUS_COLORS[0]} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           onClick={(e) => e.stopPropagation()}
         >
           <option value={0} className="bg-yellow-100 text-yellow-800">
@@ -1333,18 +1349,18 @@ export const TaskAssignmentTable = ({
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <span
-                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[getDocumentStatus(chapter)] || STATUS_COLORS[0]}`}
+                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${DOCUMENT_STATUS_COLORS[getDocumentStatus(chapter)] || DOCUMENT_STATUS_COLORS[0]}`}
                                 >
-                                  {STATUS_LABELS[getDocumentStatus(chapter)] || STATUS_LABELS[0]}
+                                  {DOCUMENT_STATUS_LABELS[getDocumentStatus(chapter)] || DOCUMENT_STATUS_LABELS[0]}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <span
-                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[getChapterStatus(chapter, chapterTasks)] || STATUS_COLORS[0]}`}
+                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${TASK_STATUS_COLORS[getChapterStatus(chapter, chapterTasks)] || TASK_STATUS_COLORS[0]}`}
                                 >
-                                  {STATUS_LABELS[
+                                  {TASK_STATUS_LABELS[
                                     getChapterStatus(chapter, chapterTasks)
-                                  ] || STATUS_LABELS[0]}
+                                  ] || TASK_STATUS_LABELS[0]}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
@@ -1620,9 +1636,9 @@ export const TaskAssignmentTable = ({
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-center">
                                     <span
-                                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[getDocumentStatus(task.chapter)] || STATUS_COLORS[0]}`}
+                                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${DOCUMENT_STATUS_COLORS[getDocumentStatus(task.chapter)] || DOCUMENT_STATUS_COLORS[0]}`}
                                     >
-                                      {STATUS_LABELS[getDocumentStatus(task.chapter)] || STATUS_LABELS[0]}
+                                      {DOCUMENT_STATUS_LABELS[getDocumentStatus(task.chapter)] || DOCUMENT_STATUS_LABELS[0]}
                                     </span>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -1650,9 +1666,9 @@ export const TaskAssignmentTable = ({
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <span
-                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[getDocumentStatus(chapter)] || STATUS_COLORS[0]}`}
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${DOCUMENT_STATUS_COLORS[getDocumentStatus(chapter)] || DOCUMENT_STATUS_COLORS[0]}`}
                               >
-                                {STATUS_LABELS[getDocumentStatus(chapter)] || STATUS_LABELS[0]}
+                                {DOCUMENT_STATUS_LABELS[getDocumentStatus(chapter)] || DOCUMENT_STATUS_LABELS[0]}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
