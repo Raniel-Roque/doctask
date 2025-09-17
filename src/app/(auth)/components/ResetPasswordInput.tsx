@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
 import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 
 interface ResetPasswordInputProps {
   newPassword: string;
@@ -31,39 +30,12 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
   onSubmit,
   email,
 }) => {
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "error" | "success" | "warning" | "info";
-  } | null>(null);
-
   // Calculate password strength using NIST guidelines
   const passwordStrength = calculatePasswordStrength(newPassword);
   const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
   
   // Form is valid if password is acceptable and passwords match
   const isFormValid = passwordStrength.isAcceptable && passwordsMatch;
-
-  // Show helpful notifications based on password state
-  React.useEffect(() => {
-    if (newPassword.length > 0 && !passwordStrength.isAcceptable) {
-      setNotification({
-        message: passwordStrength.feedback,
-        type: "warning"
-      });
-    } else if (confirmPassword.length > 0 && !passwordsMatch) {
-      setNotification({
-        message: "Passwords do not match. Please ensure both passwords are identical.",
-        type: "error"
-      });
-    } else if (isFormValid) {
-      setNotification({
-        message: "Password meets requirements and matches confirmation.",
-        type: "success"
-      });
-    } else {
-      setNotification(null);
-    }
-  }, [newPassword, confirmPassword, passwordStrength, passwordsMatch, isFormValid]);
 
   return (
     <form className="mt-8 space-y-6" onSubmit={onSubmit}>
@@ -169,17 +141,6 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
           </div>
         )}
       </div>
-
-      {/* Notification Banner */}
-      {notification && (
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-          autoClose={notification.type === "success"}
-          duration={notification.type === "success" ? 3000 : 5000}
-        />
-      )}
     </form>
   );
 };
