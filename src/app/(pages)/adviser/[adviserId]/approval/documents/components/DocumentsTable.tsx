@@ -424,7 +424,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     <div>
       <div className="overflow-x-auto">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '800px' }}>
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-[#B54A4A] text-white">
               <tr>
                 <th
@@ -564,16 +564,16 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                       <td colSpan={5} className="px-4 pb-4 pt-0 bg-gray-50">
                         <div className="bg-white rounded-b-lg shadow-md border-x border-b border-gray-200 p-6">
                           <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '600px' }}>
+                            <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-100">
                                 <tr>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-0">
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Document
                                   </th>
                                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     <div className="flex items-center justify-center gap-2">
                                       <select
-                                        className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm min-w-0"
+                                        className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
                                         value={selectedStatus}
                                         onChange={(e) =>
                                           setSelectedStatus(e.target.value)
@@ -605,14 +605,12 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                       key={doc._id}
                                       className="hover:bg-gray-50"
                                     >
-                                      <td className="px-4 py-3">
-                                        <div className="text-sm font-medium text-gray-900 min-w-0">
-                                          <div className="truncate max-w-xs sm:max-w-sm md:max-w-md">
-                                            {doc.title}
-                                          </div>
+                                      <td className="px-4 py-3 whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900">
+                                          {doc.title}
                                         </div>
                                       </td>
-                                      <td className="px-4 py-3 text-center">
+                                      <td className="px-4 py-3 whitespace-nowrap text-center">
                                         {canChangeStatus(doc) ? (
                                           <div className="relative inline-block">
                                             <select
@@ -681,11 +679,11 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           </span>
                                         )}
                                       </td>
-                                      <td className="px-4 py-3 text-center" style={{ minWidth: '200px' }}>
-                                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                                        <div className="flex items-center justify-center gap-2">
                                           {/* View button - always visible for all documents */}
                                           <button
-                                            className="text-blue-600 hover:text-blue-800 transition-colors p-1 flex-shrink-0"
+                                            className="text-blue-600 hover:text-blue-800 transition-colors p-1"
                                             title="View Document"
                                             onClick={() =>
                                               handleViewDocument(doc._id)
@@ -699,7 +697,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                             <>
                                               <span className="mx-1 text-gray-300 select-none">|</span>
                                               <button
-                                                className="text-purple-600 hover:text-purple-800 transition-colors p-1 flex-shrink-0"
+                                                className="text-purple-600 hover:text-purple-800 transition-colors p-1"
                                                 title="Edit Document"
                                                 onClick={() =>
                                                   handleEditDocument(doc._id)
@@ -715,7 +713,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                             <>
                                               <span className="mx-1 text-gray-300 select-none">|</span>
                                               <button
-                                                className="text-green-600 hover:text-green-800 transition-colors p-1 flex-shrink-0"
+                                                className="text-green-600 hover:text-green-800 transition-colors p-1"
                                                 title="Download Document"
                                                 onClick={() =>
                                                   handleDownloadDocx(doc)
@@ -736,7 +734,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           {/* Notes button - always visible */}
                                           <span className="mx-1 text-gray-300 select-none">|</span>
                                           <button
-                                            className="text-yellow-500 hover:text-yellow-700 transition-colors p-1 flex-shrink-0"
+                                            className="text-yellow-500 hover:text-yellow-700 transition-colors p-1"
                                             title="Add/Edit Notes"
                                             onClick={() =>
                                               handleNotesClick(doc, group)
