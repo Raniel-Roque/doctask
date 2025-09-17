@@ -18,6 +18,7 @@ interface AdviserGroupsPageProps {
 const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const { adviserId } = use(params);
   const [searchTerm, setSearchTerm] = useState("");
+  const [memberCountFilter, setMemberCountFilter] = useState<"all" | "with_members" | "no_members">("all");
   const [sortField, setSortField] = useState<"name" | "capstoneTitle">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,10 +40,11 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const acceptGroup = useMutation(api.mutations.acceptGroupRequest);
   const rejectGroup = useMutation(api.mutations.rejectGroupRequest);
 
-  // Fetch groups with search, pagination, and sorting
+  // Fetch groups with search, filter, pagination, and sorting
   const result = useQuery(api.fetch.getPendingGroupIdsForAdviser, {
     adviserId: adviserId as Id<"users">,
     searchTerm,
+    memberCountFilter,
     pageSize,
     pageNumber: currentPage,
     sortField,
@@ -159,24 +161,6 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-4">
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-              <FaSearch />
-            </div>
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page when search changes
-              }}
-            />
-          </div>
-        </div>
 
         {/* Groups Table */}
         <GroupsTable
@@ -198,6 +182,16 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
           onPageSizeChange={handlePageSizeChange}
           status={status}
           hasResults={hasResults}
+          searchTerm={searchTerm}
+          onSearchChange={(term) => {
+            setSearchTerm(term);
+            setCurrentPage(1); // Reset to first page when searching
+          }}
+          memberCountFilter={memberCountFilter}
+          onMemberCountFilterChange={(filter) => {
+            setMemberCountFilter(filter);
+            setCurrentPage(1); // Reset to first page when filtering
+          }}
         />
 
         {/* Confirmation Dialog */}

@@ -286,6 +286,7 @@ export const getPendingGroupIdsForAdviser = query({
   args: {
     adviserId: v.id("users"),
     searchTerm: v.string(),
+    memberCountFilter: v.optional(v.union(v.literal("all"), v.literal("with_members"), v.literal("no_members"))),
     pageSize: v.optional(v.number()),
     pageNumber: v.optional(v.number()),
     sortField: v.optional(v.string()),
@@ -295,6 +296,7 @@ export const getPendingGroupIdsForAdviser = query({
     const {
       adviserId,
       searchTerm,
+      memberCountFilter = "all",
       pageSize = 5,
       pageNumber = 1,
       sortField,
@@ -373,6 +375,19 @@ export const getPendingGroupIdsForAdviser = query({
           (group, index, self) =>
             index === self.findIndex((g) => g._id === group._id),
         );
+      }
+
+      // Apply member count filter
+      if (memberCountFilter !== "all") {
+        filteredGroups = filteredGroups.filter((group) => {
+          const memberCount = (group.member_ids?.length || 0) + (group.project_manager_id ? 1 : 0);
+          if (memberCountFilter === "with_members") {
+            return memberCount > 0;
+          } else if (memberCountFilter === "no_members") {
+            return memberCount === 0;
+          }
+          return true;
+        });
       }
 
       // Apply sorting
