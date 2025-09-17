@@ -145,8 +145,8 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
 
   // Remove entity dropdown click outside handler
 
-  // Fetch logs with backend multi-select filtering for action
-  const logsData = useQuery(api.fetch.getLogsWithDetails, {
+  // Fetch logs with backend filtering for action only
+  const logsQuery = useQuery(api.fetch.getLogsWithDetails, {
     userRole: 1, // Adviser role
     userId: adviserId as Id<"users">,
     pageSize,
@@ -154,51 +154,48 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
     sortField,
     sortDirection,
-    // Note: searchTerm, startDate, and endDate are not supported by the backend query yet
-    // These would need to be added to the backend query to work properly
   });
 
 
+  const logs: Log[] = logsQuery?.logs || [];
+  const totalCount = logsQuery?.totalCount || 0;
+  const totalPages = logsQuery?.totalPages || 1;
 
-  const allLogs: Log[] =
-    logsData && "logs" in logsData
-      ? logsData.logs
-      : Array.isArray(logsData)
-        ? logsData
-        : [];
+  // Apply frontend filtering for search and date (action is handled by backend)
+  const filteredAndSortedLogs = logs
+    .filter((log) => {
+      // Date filter (inclusive)
+      if (startDate) {
+        const start = new Date(startDate).setHours(0, 0, 0, 0);
+        if (log._creationTime < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate).setHours(23, 59, 59, 999);
+        if (log._creationTime > end) return false;
+      }
+      // Search term filter
+      const term = searchTerm.trim().toLowerCase();
+      if (!term) return true;
+      // Log ID
+      if (log._id.toString().toLowerCase().includes(term)) return true;
+      // User ID (who performed the action)
+      if (log.user_id.toString().toLowerCase().includes(term)) return true;
+      // Affected entity ID
+      if (log.affected_entity_id?.toString().toLowerCase().includes(term))
+        return true;
+      // Action (exact or partial match)
+      if (log.action.toLowerCase().includes(term)) return true;
+      // Details
+      if (log.details.toLowerCase().includes(term)) return true;
+      // Affected entity names
+      if (log.affectedEntity?.first_name?.toLowerCase().includes(term)) return true;
+      if (log.affectedEntity?.last_name?.toLowerCase().includes(term)) return true;
+      if (log.affectedEntity?.email?.toLowerCase().includes(term)) return true;
+      return false;
+    });
 
-  // Apply client-side filtering for search term and date range
-  const filteredLogs: Log[] = allLogs.filter((log) => {
-    // Search term filter
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = 
-        log.action.toLowerCase().includes(searchLower) ||
-        log.details.toLowerCase().includes(searchLower) ||
-        (log.affectedEntity?.first_name?.toLowerCase().includes(searchLower)) ||
-        (log.affectedEntity?.last_name?.toLowerCase().includes(searchLower)) ||
-        (log.affectedEntity?.email?.toLowerCase().includes(searchLower));
-      
-      if (!matchesSearch) return false;
-    }
-
-    // Date range filter
-    if (startDate || endDate) {
-      const logDate = new Date(log._creationTime);
-      const logDateString = logDate.toISOString().split('T')[0];
-      
-      if (startDate && logDateString < startDate) return false;
-      if (endDate && logDateString > endDate) return false;
-    }
-
-    return true;
-  });
-
-  // Apply client-side pagination to filtered results
-  const totalFilteredCount = filteredLogs.length;
-  const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
-  const skip = (currentPage - 1) * pageSize;
-  const logs: Log[] = filteredLogs.slice(skip, skip + pageSize);
+  // Calculate correct pagination info for frontend-filtered results
+  const hasFrontendFilters = searchTerm.trim() || startDate || endDate;
 
   const getAffectedEntityName = (log: Log) => {
     if (log.affected_entity_type === "user") {
@@ -347,10 +344,10 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     localStorage.setItem("adviserLogsPageSize", size.toString());
   };
 
-  // Reset to first page when filters change
+  // Reset to first page when backend filters change (action filters)
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, startDate, endDate, appliedActionFilters]);
+  }, [appliedActionFilters]);
 
   function getLocalDateString() {
     const now = new Date();
@@ -523,7 +520,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
             </tr>
           </thead>
           <tbody>
-            {!logsData ? (
+            {!logsQuery ? (
               <tr>
                 <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                   Loading...
@@ -535,8 +532,16 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                   No logs available
                 </td>
               </tr>
+            ) : filteredAndSortedLogs.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+                  {searchTerm || startDate || endDate || appliedActionFilters.length > 0 
+                    ? "No entries found matching your filters" 
+                    : "No logs available"}
+                </td>
+              </tr>
             ) : (
-              logs.map((log: Log, index: number) => {
+              filteredAndSortedLogs.map((log: Log, index: number) => {
                 const affectedEntity = getAffectedEntityName(log);
                 return (
                   <tr
@@ -577,17 +582,22 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
         <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
           <div className="flex items-center gap-4">
             <p className="text-sm text-gray-700">
-              Showing{" "}
-              <span className="font-medium">
-                {totalFilteredCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
-              </span>
-              {" - "}
-              <span className="font-medium">
-                {Math.min(currentPage * pageSize, totalFilteredCount)}
-              </span>
-              {" of "}
-              <span className="font-medium">{totalFilteredCount}</span>
-              {" entries"}
+              {hasFrontendFilters ? (
+                <>
+                  Showing {filteredAndSortedLogs.length} of {totalCount} entries
+                  {filteredAndSortedLogs.length !== totalCount && (
+                    <span className="text-blue-600 ml-1">(filtered)</span>
+                  )}
+                </>
+              ) : (
+                <>
+                  Showing {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+                  {" - "}
+                  {Math.min(currentPage * pageSize, totalCount)}
+                  {" of "}
+                  {totalCount} entries
+                </>
+              )}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
             <div className="flex items-center gap-2">
@@ -606,32 +616,39 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`p-2 rounded-md ${
-                currentPage === 1
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              <FaChevronLeft />
-            </button>
-            <span className="text-sm text-gray-700">
-              Page {currentPage} of{" "}
-              {Math.max(totalFilteredPages, 1)}
-            </span>
-            <button
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalFilteredPages}
-              className={`p-2 rounded-md ${
-                currentPage === totalFilteredPages
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              <FaChevronRight />
-            </button>
+            {hasFrontendFilters ? (
+              <span className="text-sm text-gray-500">
+                All filtered results shown
+              </span>
+            ) : (
+              <>
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`p-2 rounded-md ${
+                    currentPage === 1
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <FaChevronLeft />
+                </button>
+                <span className="text-sm text-gray-700">
+                  Page {currentPage} of {Math.max(totalPages, 1)}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === Math.max(totalPages, 1)}
+                  className={`p-2 rounded-md ${
+                    currentPage === Math.max(totalPages, 1)
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <FaChevronRight />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
