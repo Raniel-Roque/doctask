@@ -776,6 +776,7 @@ export const UserTable = ({
                       >
                         <FaEdit />
                       </button>
+                      <span className="mx-1 text-gray-300 select-none">|</span>
                       <button
                         onClick={() => onResetPassword(user)}
                         className="p-2 text-yellow-600 hover:text-yellow-800"
@@ -783,6 +784,7 @@ export const UserTable = ({
                       >
                         <FaKey />
                       </button>
+                      <span className="mx-1 text-gray-300 select-none">|</span>
                       <button
                         onClick={() => onLockAccount(user)}
                         className="p-2 text-purple-600 hover:text-purple-800"
@@ -790,6 +792,7 @@ export const UserTable = ({
                       >
                         <FaLock />
                       </button>
+                      <span className="mx-1 text-gray-300 select-none">|</span>
                       <button
                         onClick={() => onDelete(user)}
                         className="p-2 text-red-600 hover:text-red-800"
