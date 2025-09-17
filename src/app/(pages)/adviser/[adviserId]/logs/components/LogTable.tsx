@@ -158,45 +158,43 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
 
 
   const logs: Log[] = logsQuery?.logs || [];
+  const totalCount = logsQuery?.totalCount || 0;
+  const totalPages = logsQuery?.totalPages || 1;
 
-  // Apply frontend filtering for search and date (action is handled by backend)
-  const filteredAndSortedLogs = logs
-    .filter((log) => {
-      // Date filter (inclusive)
-      if (startDate) {
-        const start = new Date(startDate).setHours(0, 0, 0, 0);
-        if (log._creationTime < start) return false;
-      }
-      if (endDate) {
-        const end = new Date(endDate).setHours(23, 59, 59, 999);
-        if (log._creationTime > end) return false;
-      }
-      // Search term filter
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      // Log ID
-      if (log._id.toString().toLowerCase().includes(term)) return true;
-      // User ID (who performed the action)
-      if (log.user_id.toString().toLowerCase().includes(term)) return true;
-      // Affected entity ID
-      if (log.affected_entity_id?.toString().toLowerCase().includes(term))
-    return true;
-      // Action (exact or partial match)
-      if (log.action.toLowerCase().includes(term)) return true;
-      // Details
-      if (log.details.toLowerCase().includes(term)) return true;
-      // Affected entity names
-      if (log.affectedEntity?.first_name?.toLowerCase().includes(term)) return true;
-      if (log.affectedEntity?.last_name?.toLowerCase().includes(term)) return true;
-      if (log.affectedEntity?.email?.toLowerCase().includes(term)) return true;
-      return false;
-    });
+  // Apply frontend filtering for search and date only (action is handled by backend)
+  const filteredLogs = logs.filter((log) => {
+    // Date filter (inclusive)
+    if (startDate) {
+      const start = new Date(startDate).setHours(0, 0, 0, 0);
+      if (log._creationTime < start) return false;
+    }
+    if (endDate) {
+      const end = new Date(endDate).setHours(23, 59, 59, 999);
+      if (log._creationTime > end) return false;
+    }
+    // Search term filter
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    // Log ID
+    if (log._id.toString().toLowerCase().includes(term)) return true;
+    // User ID (who performed the action)
+    if (log.user_id.toString().toLowerCase().includes(term)) return true;
+    // Affected entity ID
+    if (log.affected_entity_id?.toString().toLowerCase().includes(term))
+      return true;
+    // Action (exact or partial match)
+    if (log.action.toLowerCase().includes(term)) return true;
+    // Details
+    if (log.details.toLowerCase().includes(term)) return true;
+    // Affected entity names
+    if (log.affectedEntity?.first_name?.toLowerCase().includes(term)) return true;
+    if (log.affectedEntity?.last_name?.toLowerCase().includes(term)) return true;
+    if (log.affectedEntity?.email?.toLowerCase().includes(term)) return true;
+    return false;
+  });
 
-  // Apply client-side pagination to filtered results
-  const totalFilteredCount = filteredAndSortedLogs.length;
-  const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
-  const skip = (currentPage - 1) * pageSize;
-  const paginatedLogs = filteredAndSortedLogs.slice(skip, skip + pageSize);
+  // Use backend pagination like UserTable - no client-side pagination
+  const paginatedLogs = filteredLogs;
 
   const getAffectedEntityName = (log: Log) => {
     if (log.affected_entity_type === "user") {
@@ -585,14 +583,14 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
             <p className="text-sm text-gray-700">
               Showing{" "}
               <span className="font-medium">
-                {totalFilteredCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+                {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
               </span>
               {" - "}
               <span className="font-medium">
-                {Math.min(currentPage * pageSize, totalFilteredCount)}
+                {Math.min(currentPage * pageSize, totalCount)}
               </span>
               {" of "}
-              <span className="font-medium">{totalFilteredCount}</span>
+              <span className="font-medium">{totalCount}</span>
               {" entries"}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
@@ -624,13 +622,13 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
               <FaChevronLeft />
             </button>
             <span className="text-sm text-gray-700">
-              Page {currentPage} of {Math.max(totalFilteredPages, 1)}
+              Page {currentPage} of {Math.max(totalPages, 1)}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalFilteredPages}
+              disabled={currentPage === totalPages}
               className={`p-2 rounded-md ${
-                currentPage === totalFilteredPages
+                currentPage === totalPages
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-gray-700 hover:bg-gray-100"
               }`}

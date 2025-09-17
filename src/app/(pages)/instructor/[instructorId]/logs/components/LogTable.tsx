@@ -254,6 +254,8 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   });
 
   const logs: Log[] = logsQuery?.logs || [];
+  const totalCount = logsQuery?.totalCount || 0;
+  const totalPages = logsQuery?.totalPages || 1;
 
   const getUserName = (log: Log) => {
     if (log.user?.first_name && log.user?.last_name) {
@@ -501,63 +503,59 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     return now.toISOString().split("T")[0];
   }
 
-  // Apply frontend filtering for search and date (action and entity type are handled by backend)
-  const filteredAndSortedLogs = logs
-    .filter((log) => {
-      // Date filter (inclusive)
-      if (startDate) {
-        const start = new Date(startDate).setHours(0, 0, 0, 0);
-        if (log._creationTime < start) return false;
-      }
-      if (endDate) {
-        const end = new Date(endDate).setHours(23, 59, 59, 999);
-        if (log._creationTime > end) return false;
-      }
-      // Search term filter
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      // Log ID
-      if (log._id.toString().toLowerCase().includes(term)) return true;
-      // User ID (who performed the action)
-      if (log.user_id.toString().toLowerCase().includes(term)) return true;
-      // Affected entity ID
-      if (log.affected_entity_id?.toString().toLowerCase().includes(term))
-        return true;
-      // Action (exact or partial match)
-      if (normalize(log.action).includes(term)) return true;
-      // User name (who performed the action)
-      const userName = [
-        log.user?.first_name,
-        log.user?.middle_name,
-        log.user?.last_name,
+  // Apply frontend filtering for search and date only (action and entity type are handled by backend)
+  const filteredLogs = logs.filter((log) => {
+    // Date filter (inclusive)
+    if (startDate) {
+      const start = new Date(startDate).setHours(0, 0, 0, 0);
+      if (log._creationTime < start) return false;
+    }
+    if (endDate) {
+      const end = new Date(endDate).setHours(23, 59, 59, 999);
+      if (log._creationTime > end) return false;
+    }
+    // Search term filter
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    // Log ID
+    if (log._id.toString().toLowerCase().includes(term)) return true;
+    // User ID (who performed the action)
+    if (log.user_id.toString().toLowerCase().includes(term)) return true;
+    // Affected entity ID
+    if (log.affected_entity_id?.toString().toLowerCase().includes(term))
+      return true;
+    // Action (exact or partial match)
+    if (normalize(log.action).includes(term)) return true;
+    // User name (who performed the action)
+    const userName = [
+      log.user?.first_name,
+      log.user?.middle_name,
+      log.user?.last_name,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    if (userName.includes(term)) return true;
+    // Affected entity (user or group)
+    let affectedName = "";
+    if (log.affected_entity_type === "user") {
+      affectedName = [
+        log.affectedEntity?.first_name,
+        log.affectedEntity?.middle_name,
+        log.affectedEntity?.last_name,
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-      if (userName.includes(term)) return true;
-      // Affected entity (user or group)
-      let affectedName = "";
-      if (log.affected_entity_type === "user") {
-        affectedName = [
-          log.affectedEntity?.first_name,
-          log.affectedEntity?.middle_name,
-          log.affectedEntity?.last_name,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-      } else if (log.affected_entity_type === "group") {
-        affectedName = normalize(log.affectedEntity?.projectManager?.last_name);
-      }
-      if (affectedName.includes(term)) return true;
-      return false;
-    });
+    } else if (log.affected_entity_type === "group") {
+      affectedName = normalize(log.affectedEntity?.projectManager?.last_name);
+    }
+    if (affectedName.includes(term)) return true;
+    return false;
+  });
 
-  // Apply client-side pagination to filtered results
-  const totalFilteredCount = filteredAndSortedLogs.length;
-  const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
-  const skip = (currentPage - 1) * pageSize;
-  const paginatedLogs = filteredAndSortedLogs.slice(skip, skip + pageSize);
+  // Use backend pagination like UserTable - no client-side pagination
+  const paginatedLogs = filteredLogs;
 
   return (
     <div className="mt-4 w-full">
@@ -1022,14 +1020,14 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             <p className="text-sm text-gray-700">
               Showing{" "}
               <span className="font-medium">
-                {totalFilteredCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+                {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
               </span>
               {" - "}
               <span className="font-medium">
-                {Math.min(currentPage * pageSize, totalFilteredCount)}
+                {Math.min(currentPage * pageSize, totalCount)}
               </span>
               {" of "}
-              <span className="font-medium">{totalFilteredCount}</span>
+              <span className="font-medium">{totalCount}</span>
               {" entries"}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
@@ -1061,13 +1059,13 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <FaChevronLeft />
             </button>
             <span className="text-sm text-gray-700">
-              Page {currentPage} of {Math.max(totalFilteredPages, 1)}
+              Page {currentPage} of {Math.max(totalPages, 1)}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalFilteredPages}
+              disabled={currentPage === totalPages}
               className={`p-2 rounded-md ${
-                currentPage === totalFilteredPages
+                currentPage === totalPages
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-gray-700 hover:bg-gray-100"
               }`}
