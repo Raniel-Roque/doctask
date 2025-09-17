@@ -459,7 +459,18 @@ export const TaskAssignmentTable = ({
   // Check if user can Edit Document status
   const canEditTaskStatus = (task: Task) => {
     if (mode === "manager") return true;
-    return task.assigned_student_ids.includes(currentUserId);
+    
+    // Check if user is assigned to the task
+    const isAssigned = task.assigned_student_ids.includes(currentUserId);
+    if (!isAssigned) return false;
+    
+    // Check if document is approved - if so, students cannot change status to incomplete
+    const documentStatus = getDocumentStatus(task.chapter);
+    if (documentStatus === 2) { // Document is approved
+      return false; // Students cannot edit task status when document is approved
+    }
+    
+    return true;
   };
 
   // Check if chapter has subparts

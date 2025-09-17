@@ -6,6 +6,7 @@ import {
   FaCheck,
   FaTimes,
   FaStickyNote,
+  FaChevronDown,
 } from "react-icons/fa";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useState } from "react";
@@ -143,6 +144,7 @@ export const LatestDocumentsTable = ({
   const cancelDocumentSubmission = useMutation(
     api.mutations.cancelDocumentSubmission,
   );
+  const updateTaskStatus = useMutation(api.mutations.updateTaskStatus);
 
   // Add state for status filter
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -194,6 +196,9 @@ export const LatestDocumentsTable = ({
 
   // Add loading state for DOCX download
   const [downloadingDocx, setDownloadingDocx] = useState<string | null>(null);
+  
+  // Add loading state for task status updates
+  const [updatingTaskStatus, setUpdatingTaskStatus] = useState<string | null>(null);
 
   // Add state for bulk download popup
   const [showBulkDownloadPopup, setShowBulkDownloadPopup] = useState(false);
@@ -242,6 +247,18 @@ export const LatestDocumentsTable = ({
     return relatedTasks.every((task) => task.task_status === 1) ? 1 : 0;
   };
 
+  // Status color mapping for task_status (member/manager communication)
+  const TASK_STATUS_COLORS: { [key: number]: string } = {
+    0: "bg-yellow-100 text-yellow-800", // incomplete
+    1: "bg-green-100 text-green-800", // completed
+  };
+
+  // Status label mapping for task_status
+  const TASK_STATUS_LABELS: { [key: number]: string } = {
+    0: "Incomplete",
+    1: "Completed",
+  };
+
   // Check if document can be submitted (all tasks completed and not already submitted)
   const canSubmitDocument = (doc: Document) => {
     const taskStatus = getTaskStatus(doc);
@@ -276,6 +293,111 @@ export const LatestDocumentsTable = ({
     return (
       isAssigned && (doc.status === 0 || doc.status === 3)
     ); // Can edit not submitted or rejected documents
+  };
+
+  // Check if user can edit task status for a document
+  const canEditTaskStatus = (doc: Document) => {
+    if (!group) return false;
+    
+    // Project managers can always edit task status
+    if (group.project_manager_id === currentUserId) return true;
+    
+    // Check if user is assigned to any task for this document
+    const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
+    const isAssignedToAnyTask = relatedTasks.some((task) => 
+      task.assigned_student_ids.includes(currentUserId)
+    );
+    
+    if (!isAssignedToAnyTask) return false;
+    
+    // Check if document is approved - if so, students cannot change status to incomplete
+    if (doc.status === 2) { // Document is approved
+      return false; // Students cannot edit task status when document is approved
+    }
+    
+    return true;
+  };
+
+  // Handle task status change
+  const handleTaskStatusChange = async (doc: Document, newStatus: number) => {
+    try {
+      setUpdatingTaskStatus(doc._id);
+
+      // Find the first task for this document that the user is assigned to
+      const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
+      const userTask = relatedTasks.find((task) => 
+        task.assigned_student_ids.includes(currentUserId)
+      );
+
+      if (!userTask) {
+        throw new Error("No assigned task found for this document");
+      }
+
+      // Call the Convex mutation
+      await updateTaskStatus({
+        taskId: userTask._id,
+        newStatus,
+        userId: currentUserId,
+      });
+
+      setNotification({
+        message: "Task status updated successfully!",
+        type: "success",
+      });
+    } catch (error) {
+      setNotification({
+        message: error instanceof Error ? error.message : "Failed to update task status.",
+        type: "error",
+      });
+    } finally {
+      setUpdatingTaskStatus(null);
+    }
+  };
+
+  // Render status dropdown for task status
+  const renderTaskStatusDropdown = (doc: Document) => {
+    const canEdit = canEditTaskStatus(doc);
+    const currentStatus = getTaskStatus(doc);
+    const isLoading = updatingTaskStatus === doc._id;
+
+    if (!canEdit) {
+      // Show read-only status badge
+      return (
+        <span
+          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${TASK_STATUS_COLORS[currentStatus] || TASK_STATUS_COLORS[0]}`}
+        >
+          {TASK_STATUS_LABELS[currentStatus] || TASK_STATUS_LABELS[0]}
+        </span>
+      );
+    }
+
+    // Show editable dropdown with chevron
+    return (
+      <div className="relative inline-block">
+        <select
+          value={currentStatus}
+          onChange={(e) =>
+            handleTaskStatusChange(doc, parseInt(e.target.value))
+          }
+          disabled={isLoading}
+          className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${TASK_STATUS_COLORS[currentStatus] || TASK_STATUS_COLORS[0]} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <option value={0} className="bg-yellow-100 text-yellow-800">
+            Incomplete
+          </option>
+          <option value={1} className="bg-green-100 text-green-800">
+            Completed
+          </option>
+        </select>
+        <FaChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs pointer-events-none" />
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
+            <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // Handle submit document for review
@@ -2823,11 +2945,7 @@ export const LatestDocumentsTable = ({
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTaskStatus(doc) === 1 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
-                      >
-                        {getTaskStatus(doc) === 1 ? "Complete" : "Incomplete"}
-                      </span>
+                      {renderTaskStatusDropdown(doc)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                       {formatLastModified(doc.last_modified)}
