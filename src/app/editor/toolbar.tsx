@@ -1019,7 +1019,7 @@ const ToolbarButton = ({
 };
 
 interface ToolbarProps {
-  toolbarMode?: "default" | "adviserViewOnly";
+  toolbarMode?: "default" | "adviserViewOnly" | "adviserEdit";
 }
 
 export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
@@ -1090,6 +1090,8 @@ export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
       </div>
     );
   }
+
+  // For "adviserEdit" mode, show the full toolbar (same as default)
 
   const sections: {
     label: string;

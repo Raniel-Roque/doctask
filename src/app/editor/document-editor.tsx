@@ -23,7 +23,7 @@ interface DocumentEditorProps {
   groupId?: string;
   chapter?: string;
   saveToDatabase?: () => Promise<void>;
-  toolbarMode?: "default" | "adviserViewOnly";
+  toolbarMode?: "default" | "adviserViewOnly" | "adviserEdit";
   backUrl?: string;
   documentId?: Id<"documents">;
 }
@@ -76,7 +76,7 @@ export const DocumentEditor = ({
           groupId={groupId}
           chapter={chapter}
         />
-        {(isEditable || toolbarMode === "adviserViewOnly") && (
+        {(isEditable || toolbarMode === "adviserViewOnly" || toolbarMode === "adviserEdit") && (
           <Toolbar toolbarMode={toolbarMode} />
         )}
         {/* View-only banner directly under navbar and toolbar */}

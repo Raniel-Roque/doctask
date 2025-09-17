@@ -24,7 +24,7 @@ interface RoomProps {
   saveToDatabase?: () => Promise<void>;
   liveDocumentId?: string;
   documentId?: Id<"documents">; // Add document ID for tracking edits
-  toolbarMode?: "default" | "adviserViewOnly";
+  toolbarMode?: "default" | "adviserViewOnly" | "adviserEdit";
   backUrl?: string;
 }
 

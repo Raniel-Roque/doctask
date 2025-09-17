@@ -118,14 +118,14 @@ const AdviserViewDocsPage = ({ params }: AdviserViewDocsPageProps) => {
 
   return (
     <Room
-      isEditable={false}
+      isEditable={true}
       userType="adviser"
       title={document.title}
       capstoneTitle={group.capstone_title}
       groupId={group._id.toString()}
       chapter={document.chapter}
       liveDocumentId={liveDocumentResult?.documentId?.toString()}
-      toolbarMode="adviserViewOnly"
+      toolbarMode="adviserEdit"
       backUrl={backUrl}
     />
   );

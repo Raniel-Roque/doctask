@@ -389,15 +389,15 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>Modified: {formatDate(doc.lastModified)}</span>
                     <div className="flex items-center gap-2">
+                      <button
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        onClick={() => handleViewDocument(doc._id)}
+                        title="View/Edit Document"
+                      >
+                        <FaEye className="w-3 h-3" />
+                      </button>
                       {doc.status !== 0 && (
                         <>
-                          <button
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                            onClick={() => handleViewDocument(doc._id)}
-                            title="View Document"
-                          >
-                            <FaEye className="w-3 h-3" />
-                          </button>
                           <button
                             className="text-green-600 hover:text-green-800 transition-colors"
                             title="Download Document"
