@@ -240,6 +240,7 @@ export const LatestDocumentsTable = ({
 
   // Helper to get task status for a document
   const getTaskStatus = (doc: Document) => {
+    // Special chapters are always considered completed and cannot be changed
     if (["title_page", "appendix_a", "appendix_d"].includes(doc.chapter))
       return 1;
     const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
@@ -299,7 +300,17 @@ export const LatestDocumentsTable = ({
   const canEditTaskStatus = (doc: Document) => {
     if (!group) return false;
     
-    // Project managers can always edit task status
+    // Exclude special chapters that should always be completed and read-only
+    if (["title_page", "appendix_a", "appendix_d"].includes(doc.chapter)) {
+      return false;
+    }
+    
+    // Check if document is approved - if so, no one can edit task status
+    if (doc.status === 2) { // Document is approved
+      return false; // No one can edit task status when document is approved
+    }
+    
+    // Project managers can always edit task status (except for excluded chapters and approved docs)
     if (group.project_manager_id === currentUserId) return true;
     
     // Check if user is assigned to any task for this document
@@ -310,11 +321,6 @@ export const LatestDocumentsTable = ({
     
     if (!isAssignedToAnyTask) return false;
     
-    // Check if document is approved - if so, students cannot change status to incomplete
-    if (doc.status === 2) { // Document is approved
-      return false; // Students cannot edit task status when document is approved
-    }
-    
     return true;
   };
 
@@ -323,11 +329,23 @@ export const LatestDocumentsTable = ({
     try {
       setUpdatingTaskStatus(doc._id);
 
-      // Find the first task for this document that the user is assigned to
+      // Find tasks for this document
       const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
-      const userTask = relatedTasks.find((task) => 
-        task.assigned_student_ids.includes(currentUserId)
-      );
+      
+      if (relatedTasks.length === 0) {
+        throw new Error("No tasks found for this document");
+      }
+
+      // For project managers, use the first task (they can edit any task)
+      // For members, find a task they are assigned to
+      let userTask;
+      if (group?.project_manager_id === currentUserId) {
+        userTask = relatedTasks[0]; // Project manager can edit any task
+      } else {
+        userTask = relatedTasks.find((task) => 
+          task.assigned_student_ids.includes(currentUserId)
+        );
+      }
 
       if (!userTask) {
         throw new Error("No assigned task found for this document");

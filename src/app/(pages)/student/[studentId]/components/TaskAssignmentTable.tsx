@@ -458,17 +458,22 @@ export const TaskAssignmentTable = ({
 
   // Check if user can Edit Document status
   const canEditTaskStatus = (task: Task) => {
+    // Exclude special chapters that should always be completed and read-only
+    if (["title_page", "appendix_a", "appendix_d"].includes(task.chapter)) {
+      return false;
+    }
+    
+    // Check if document is approved - if so, no one can edit task status
+    const documentStatus = getDocumentStatus(task.chapter);
+    if (documentStatus === 2) { // Document is approved
+      return false; // No one can edit task status when document is approved
+    }
+    
     if (mode === "manager") return true;
     
     // Check if user is assigned to the task
     const isAssigned = task.assigned_student_ids.includes(currentUserId);
     if (!isAssigned) return false;
-    
-    // Check if document is approved - if so, students cannot change status to incomplete
-    const documentStatus = getDocumentStatus(task.chapter);
-    if (documentStatus === 2) { // Document is approved
-      return false; // Students cannot edit task status when document is approved
-    }
     
     return true;
   };
