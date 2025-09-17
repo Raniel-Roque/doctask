@@ -6,6 +6,7 @@ import {
   FaChevronRight,
   FaSearch,
   FaEye,
+  FaEdit,
   FaCheck,
   FaClock,
   FaTimes,
@@ -266,6 +267,16 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
 
     // Navigate to the document view page with the current page as the "from" parameter
     router.push(
+      `/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}&viewOnly=true`,
+    );
+  };
+
+  const handleEditDocument = (documentId: string) => {
+    // Get current URL to preserve state
+    const currentUrl = window.location.pathname + window.location.search;
+
+    // Navigate to the document edit page with the current page as the "from" parameter
+    router.push(
       `/adviser/${currentUserId}/approval/documents/${documentId}?from=${encodeURIComponent(currentUrl)}`,
     );
   };
@@ -389,13 +400,30 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>Modified: {formatDate(doc.lastModified)}</span>
                     <div className="flex items-center gap-2">
+                      {/* View button - always visible for all documents */}
                       <button
                         className="text-blue-600 hover:text-blue-800 transition-colors"
                         onClick={() => handleViewDocument(doc._id)}
-                        title="View/Edit Document"
+                        title="View Document"
                       >
                         <FaEye className="w-3 h-3" />
                       </button>
+                      
+                      {/* Edit button - only for submitted, approved, or rejected documents */}
+                      {doc.status !== 0 && (
+                        <>
+                          <button
+                            className="text-purple-600 hover:text-purple-800 transition-colors"
+                            onClick={() => handleEditDocument(doc._id)}
+                            title="Edit Document"
+                          >
+                            <FaEdit className="w-3 h-3" />
+                          </button>
+                          <span className="mx-1 text-gray-300 select-none">|</span>
+                        </>
+                      )}
+                      
+                      {/* Download button - only for submitted, approved, or rejected documents */}
                       {doc.status !== 0 && (
                         <>
                           <button
@@ -410,11 +438,11 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                               <FaDownload className="w-3 h-3" />
                             )}
                           </button>
-                          <span className="mx-2 text-gray-300 select-none">
-                            |
-                          </span>
+                          <span className="mx-1 text-gray-300 select-none">|</span>
                         </>
                       )}
+                      
+                      {/* Notes button - always visible */}
                       <button
                         className="text-yellow-500 hover:text-yellow-700 transition-colors"
                         onClick={() => handleNotesClick(doc, activeGroup)}
