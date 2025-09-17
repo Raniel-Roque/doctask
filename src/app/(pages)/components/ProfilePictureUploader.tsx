@@ -35,14 +35,24 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
     const allowedExtensions = [".jpg", ".jpeg", ".png"];
 
-    // Check both MIME type and file extension
+    // Check MIME type or file extension (either one being valid is sufficient)
     const hasValidType = allowedTypes.includes(file.type);
     const hasValidExtension = allowedExtensions.some((ext) =>
       file.name.toLowerCase().endsWith(ext),
     );
 
+    // Debug logging
+    console.log("File validation:", {
+      fileName: file.name,
+      fileType: file.type,
+      hasValidType,
+      hasValidExtension,
+      allowedTypes,
+      allowedExtensions
+    });
+
     if (!hasValidType && !hasValidExtension) {
-      onError("Please select a JPG or PNG image file");
+      onError(`Please select a JPG or PNG image file. Detected: ${file.type || 'unknown type'}`);
       return;
     }
 

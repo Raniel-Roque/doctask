@@ -189,16 +189,51 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
         : undefined,
     sortField,
     sortDirection,
+    // Note: searchTerm, startDate, and endDate are not supported by the backend query yet
+    // These would need to be added to the backend query to work properly
   });
 
 
 
-  const logs: Log[] =
+  const allLogs: Log[] =
     logsData && "logs" in logsData
       ? logsData.logs
       : Array.isArray(logsData)
         ? logsData
         : [];
+
+  // Apply client-side filtering for search term and date range
+  const filteredLogs: Log[] = allLogs.filter((log) => {
+    // Search term filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = 
+        log.action.toLowerCase().includes(searchLower) ||
+        log.details.toLowerCase().includes(searchLower) ||
+        (log.affectedEntity?.first_name?.toLowerCase().includes(searchLower)) ||
+        (log.affectedEntity?.last_name?.toLowerCase().includes(searchLower)) ||
+        (log.affectedEntity?.email?.toLowerCase().includes(searchLower));
+      
+      if (!matchesSearch) return false;
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      const logDate = new Date(log._creationTime);
+      const logDateString = logDate.toISOString().split('T')[0];
+      
+      if (startDate && logDateString < startDate) return false;
+      if (endDate && logDateString > endDate) return false;
+    }
+
+    return true;
+  });
+
+  // Apply client-side pagination to filtered results
+  const totalFilteredCount = filteredLogs.length;
+  const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
+  const skip = (currentPage - 1) * pageSize;
+  const logs: Log[] = filteredLogs.slice(skip, skip + pageSize);
 
   const getAffectedEntityName = (log: Log) => {
     if (log.affected_entity_type === "user") {
@@ -346,6 +381,11 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     setCurrentPage(1); // Reset to first page when changing page size
     localStorage.setItem("adviserLogsPageSize", size.toString());
   };
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, startDate, endDate, appliedActionFilters, entityTypeFilter]);
 
   function getLocalDateString() {
     const now = new Date();
@@ -644,14 +684,14 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
             <p className="text-sm text-gray-700">
               Showing{" "}
               <span className="font-medium">
-                {logs.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+                {totalFilteredCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
               </span>
               {" - "}
               <span className="font-medium">
-                {Math.min(currentPage * pageSize, logs.length)}
+                {Math.min(currentPage * pageSize, totalFilteredCount)}
               </span>
               {" of "}
-              <span className="font-medium">{logs.length}</span>
+              <span className="font-medium">{totalFilteredCount}</span>
               {" entries"}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
@@ -684,13 +724,13 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
             </button>
             <span className="text-sm text-gray-700">
               Page {currentPage} of{" "}
-              {Math.max(Math.ceil(logs.length / pageSize), 1)}
+              {Math.max(totalFilteredPages, 1)}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === Math.ceil(logs.length / pageSize)}
+              disabled={currentPage === totalFilteredPages}
               className={`p-2 rounded-md ${
-                currentPage === Math.ceil(logs.length / pageSize)
+                currentPage === totalFilteredPages
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-gray-700 hover:bg-gray-100"
               }`}

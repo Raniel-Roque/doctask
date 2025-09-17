@@ -181,9 +181,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Reset to 5 entries when changing pages
-    setPageSize(5);
-    localStorage.setItem("advisersPageSize", "5");
   };
 
   const handlePageSizeChange = (size: number) => {
