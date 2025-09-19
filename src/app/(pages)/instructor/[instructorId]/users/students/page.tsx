@@ -401,6 +401,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       logUserAction();
 
       setDeleteUser(null);
+      setNotification({
+        type: "success",
+        message: "Student deleted successfully",
+      });
     } catch (error) {
       setNotification({
         type: "error",

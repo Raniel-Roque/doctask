@@ -91,6 +91,13 @@ export default function EditGroupForm({
     focusFirstInput: false,
   });
 
+  // Clear validation errors when form is opened
+  React.useEffect(() => {
+    if (isOpen) {
+      setValidationErrors({});
+    }
+  }, [isOpen]);
+
   // Update form data when group changes
   useEffect(() => {
     if (group) {
@@ -361,7 +368,10 @@ export default function EditGroupForm({
               Edit Group
             </h2>
             <button
-              onClick={handleClose}
+              onClick={() => {
+                setValidationErrors({});
+                handleClose({} as React.MouseEvent);
+              }}
               className="text-gray-500 hover:text-gray-700 transition-colors"
               disabled={isSubmitting}
             >

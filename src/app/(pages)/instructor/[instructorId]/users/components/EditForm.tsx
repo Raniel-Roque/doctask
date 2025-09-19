@@ -73,6 +73,15 @@ export default function EditForm({
     onClose: () => onClose(),
   });
 
+  // Clear validation errors when form is opened
+  React.useEffect(() => {
+    if (user) {
+      setValidationErrors({});
+      setErrorMessage(null);
+      setSuccessMessage(null);
+    }
+  }, [user]);
+
   const roles = [
     { value: 0, label: "Project Member" },
     { value: 1, label: "Project Manager" },
@@ -195,6 +204,10 @@ export default function EditForm({
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Clear validation errors when closing
+    setValidationErrors({});
+    setErrorMessage(null);
+    setSuccessMessage(null);
     // Just call onClose and let the parent handle the confirmation
     onClose();
   };
@@ -244,7 +257,12 @@ export default function EditForm({
               Edit User
             </h2>
             <button
-              onClick={onClose}
+              onClick={() => {
+                setValidationErrors({});
+                setErrorMessage(null);
+                setSuccessMessage(null);
+                onClose();
+              }}
               className="text-gray-500 hover:text-gray-700 transition-colors"
               disabled={isSubmitting}
             >

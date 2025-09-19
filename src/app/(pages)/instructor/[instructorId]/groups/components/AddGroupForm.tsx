@@ -103,6 +103,13 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     focusFirstInput: false,
   });
 
+  // Clear validation errors when form is opened
+  React.useEffect(() => {
+    if (isOpen) {
+      setValidationErrors({});
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -419,7 +426,10 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
               Add New Group
             </h2>
             <button
-              onClick={handleClose}
+              onClick={() => {
+                setValidationErrors({});
+                handleClose({} as React.MouseEvent);
+              }}
               className="text-gray-500 hover:text-gray-700 transition-colors"
               disabled={isSubmitting}
             >

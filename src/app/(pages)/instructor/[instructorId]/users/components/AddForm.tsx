@@ -71,6 +71,15 @@ export const AddForm = ({
     onClose: () => onClose(),
   });
 
+  // Clear validation errors when form is opened
+  React.useEffect(() => {
+    if (isOpen) {
+      setValidationErrors({});
+      setErrorMessage(null);
+      setSuccessMessage(null);
+    }
+  }, [isOpen]);
+
   const roles = [
     { value: 0, label: "Project Member" },
     { value: 1, label: "Project Manager" },
@@ -181,11 +190,19 @@ export const AddForm = ({
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Clear validation errors when closing
+    setValidationErrors({});
+    setErrorMessage(null);
+    setSuccessMessage(null);
     // Just call onClose and let the parent handle the confirmation
     onClose();
   };
 
   const closeForm = () => {
+    // Clear validation errors when closing
+    setValidationErrors({});
+    setErrorMessage(null);
+    setSuccessMessage(null);
     onClose();
   };
 
