@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { formatDateTime } from "@/lib/date-utils";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -149,8 +149,8 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
   const logsQuery = useQuery(api.fetch.getLogsWithDetails, {
     userRole: 1, // Adviser role
     userId: adviserId as Id<"users">,
-    pageSize,
-    pageNumber: currentPage,
+    pageSize: 10000, // Get all logs for frontend filtering
+    pageNumber: 1,
     action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
     sortField,
     sortDirection,
@@ -158,23 +158,23 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
 
 
   const logs: Log[] = logsQuery?.logs || [];
-  const totalCount = logsQuery?.totalCount || 0;
-  const totalPages = logsQuery?.totalPages || 1;
 
-  // Apply frontend filtering for search and date only (action is handled by backend)
+  // Apply frontend filtering for search and date
   const filteredLogs = logs.filter((log) => {
-    // Date filter (inclusive)
+    // Date filter (inclusive) - fix the logic
     if (startDate) {
-      const start = new Date(startDate).setHours(0, 0, 0, 0);
+      const start = new Date(startDate + 'T00:00:00.000Z').getTime();
       if (log._creationTime < start) return false;
     }
     if (endDate) {
-      const end = new Date(endDate).setHours(23, 59, 59, 999);
+      const end = new Date(endDate + 'T23:59:59.999Z').getTime();
       if (log._creationTime > end) return false;
     }
+    
     // Search term filter
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
+    
     // Log ID
     if (log._id.toString().toLowerCase().includes(term)) return true;
     // User ID (who performed the action)
@@ -193,8 +193,12 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
     return false;
   });
 
-  // Use backend pagination like UserTable - no client-side pagination
-  const paginatedLogs = filteredLogs;
+  // Apply client-side pagination
+  const totalFilteredCount = filteredLogs.length;
+  const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
 
   const getAffectedEntityName = (log: Log) => {
     if (log.affected_entity_type === "user") {
@@ -548,10 +552,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
                     className={`${index % 2 === 0 ? "bg-white" : "bg-gray-200"}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-left min-w-[12rem]">
-                      {format(
-                        new Date(log._creationTime),
-                        "MMM dd, yyyy hh:mm a",
-                      )}
+                      {formatDateTime(log._creationTime)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center min-w-[6rem]">
                       <span
@@ -583,14 +584,14 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
             <p className="text-sm text-gray-700">
               Showing{" "}
               <span className="font-medium">
-                {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+                {totalFilteredCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
               </span>
               {" - "}
               <span className="font-medium">
-                {Math.min(currentPage * pageSize, totalCount)}
+                {Math.min(currentPage * pageSize, totalFilteredCount)}
               </span>
               {" of "}
-              <span className="font-medium">{totalCount}</span>
+              <span className="font-medium">{totalFilteredCount}</span>
               {" entries"}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
@@ -622,13 +623,13 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
               <FaChevronLeft />
             </button>
             <span className="text-sm text-gray-700">
-              Page {currentPage} of {Math.max(totalPages, 1)}
+              Page {currentPage} of {Math.max(totalFilteredPages, 1)}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalFilteredPages}
               className={`p-2 rounded-md ${
-                currentPage === totalPages
+                currentPage === totalFilteredPages
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-gray-700 hover:bg-gray-100"
               }`}

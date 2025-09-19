@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { formatDateTime } from "@/lib/date-utils";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -228,21 +228,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   // Fetch logs with backend filtering for action and entity type only
   const logsQuery = useQuery(api.fetch.getLogsWithDetails, {
     userRole: userRole,
-    pageSize,
-    pageNumber: currentPage,
-    action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
-    entityType:
-      appliedEntityTypeFilters.length > 0
-        ? appliedEntityTypeFilters.map((e) => e.toLowerCase())
-        : undefined,
-    sortField,
-    sortDirection,
-  });
-
-  // Fetch all filtered logs for download (without pagination)
-  const allFilteredLogsQuery = useQuery(api.fetch.getLogsWithDetails, {
-    userRole: userRole,
-    pageSize: 10000, // Large number to get all logs
+    pageSize: 10000, // Get all logs for frontend filtering
     pageNumber: 1,
     action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
     entityType:
@@ -253,9 +239,10 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     sortDirection,
   });
 
+  // Use the same query for download
+  const allFilteredLogsQuery = logsQuery;
+
   const logs: Log[] = logsQuery?.logs || [];
-  const totalCount = logsQuery?.totalCount || 0;
-  const totalPages = logsQuery?.totalPages || 1;
 
   const getUserName = (log: Log) => {
     if (log.user?.first_name && log.user?.last_name) {
@@ -427,57 +414,8 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   };
 
   const handleDownloadReport = () => {
-    // Apply the same frontend filtering to all logs for download
-    const allLogs = allFilteredLogsQuery?.logs || [];
-    const filteredLogs = allLogs.filter((log) => {
-      // Date filter (inclusive)
-      if (startDate) {
-        const start = new Date(startDate).setHours(0, 0, 0, 0);
-        if (log._creationTime < start) return false;
-      }
-      if (endDate) {
-        const end = new Date(endDate).setHours(23, 59, 59, 999);
-        if (log._creationTime > end) return false;
-      }
-      // Search term filter
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      // Log ID
-      if (log._id.toString().toLowerCase().includes(term)) return true;
-      // User ID (who performed the action)
-      if (log.user_id.toString().toLowerCase().includes(term)) return true;
-      // Affected entity ID
-      if (log.affected_entity_id?.toString().toLowerCase().includes(term))
-        return true;
-      // Action (exact or partial match)
-      if (normalize(log.action).includes(term)) return true;
-      // User name (who performed the action)
-      const userName = [
-        log.user?.first_name,
-        log.user?.middle_name,
-        log.user?.last_name,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      if (userName.includes(term)) return true;
-      // Affected entity (user or group)
-      let affectedName = "";
-      if (log.affected_entity_type === "user") {
-        affectedName = [
-          log.affectedEntity?.first_name,
-          log.affectedEntity?.middle_name,
-          log.affectedEntity?.last_name,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-      } else if (log.affected_entity_type === "group") {
-        affectedName = normalize(log.affectedEntity?.projectManager?.last_name);
-      }
-      if (affectedName.includes(term)) return true;
-      return false;
-    });
+    // Backend already handles all filtering, so we use the logs directly
+    const filteredLogs = allFilteredLogsQuery?.logs || [];
 
     const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
     
@@ -503,20 +441,22 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     return now.toISOString().split("T")[0];
   }
 
-  // Apply frontend filtering for search and date only (action and entity type are handled by backend)
+  // Apply frontend filtering for search and date
   const filteredLogs = logs.filter((log) => {
-    // Date filter (inclusive)
+    // Date filter (inclusive) - fix the logic
     if (startDate) {
-      const start = new Date(startDate).setHours(0, 0, 0, 0);
+      const start = new Date(startDate + 'T00:00:00.000Z').getTime();
       if (log._creationTime < start) return false;
     }
     if (endDate) {
-      const end = new Date(endDate).setHours(23, 59, 59, 999);
+      const end = new Date(endDate + 'T23:59:59.999Z').getTime();
       if (log._creationTime > end) return false;
     }
+    
     // Search term filter
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
+    
     // Log ID
     if (log._id.toString().toLowerCase().includes(term)) return true;
     // User ID (who performed the action)
@@ -526,6 +466,8 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       return true;
     // Action (exact or partial match)
     if (normalize(log.action).includes(term)) return true;
+    // Details
+    if (normalize(log.details).includes(term)) return true;
     // User name (who performed the action)
     const userName = [
       log.user?.first_name,
@@ -554,8 +496,12 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     return false;
   });
 
-  // Use backend pagination like UserTable - no client-side pagination
-  const paginatedLogs = filteredLogs;
+  // Apply client-side pagination
+  const totalFilteredCount = filteredLogs.length;
+  const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
 
   return (
     <div className="mt-4 w-full">
@@ -974,10 +920,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                     className={`${index % 2 === 0 ? "bg-white" : "bg-gray-200"}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-left min-w-[12rem]">
-                      {format(
-                        new Date(log._creationTime),
-                        "MMM dd, yyyy hh:mm a",
-                      )}
+                      {formatDateTime(log._creationTime)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-left min-w-[10rem]">
                       <CollapsibleText
@@ -1020,14 +963,14 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             <p className="text-sm text-gray-700">
               Showing{" "}
               <span className="font-medium">
-                {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+                {totalFilteredCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}
               </span>
               {" - "}
               <span className="font-medium">
-                {Math.min(currentPage * pageSize, totalCount)}
+                {Math.min(currentPage * pageSize, totalFilteredCount)}
               </span>
               {" of "}
-              <span className="font-medium">{totalCount}</span>
+              <span className="font-medium">{totalFilteredCount}</span>
               {" entries"}
             </p>
             <div className="h-6 w-px bg-gray-300"></div>
@@ -1059,13 +1002,13 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <FaChevronLeft />
             </button>
             <span className="text-sm text-gray-700">
-              Page {currentPage} of {Math.max(totalPages, 1)}
+              Page {currentPage} of {Math.max(totalFilteredPages, 1)}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalFilteredPages}
               className={`p-2 rounded-md ${
-                currentPage === totalPages
+                currentPage === totalFilteredPages
                   ? "text-gray-400 cursor-not-allowed"
                   : "text-gray-700 hover:bg-gray-100"
               }`}
