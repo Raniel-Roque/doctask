@@ -16,6 +16,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import NotesPopupViewOnly from "./NotesPopupViewOnly";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { apiRequest } from "@/lib/utils";
+import { formatDateTime } from "@/lib/date-utils";
 
 interface ClerkUserResponse {
   user: {
@@ -2438,20 +2439,7 @@ export const LatestDocumentsTable = ({
   // Format last modified time
   const formatLastModified = (timestamp?: number) => {
     if (!timestamp) return "Never";
-    const date = new Date(timestamp);
-    return (
-      date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }) +
-      " " +
-      date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      })
-    );
+    return formatDateTime(timestamp);
   };
 
   // --- Progress Bar Logic ---

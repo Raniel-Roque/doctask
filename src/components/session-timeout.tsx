@@ -12,12 +12,22 @@ export function SessionTimeout() {
   const router = useRouter();
   const pathname = usePathname();
   const [lastActivity, setLastActivity] = useState(() => {
-    // Initialize from localStorage or current time
-    const stored = localStorage.getItem(LAST_ACTIVITY_KEY);
-    return stored ? parseInt(stored) : Date.now();
+    // Initialize with a default value to avoid hydration mismatch
+    return 0;
   });
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    
+    // Initialize from localStorage after mount
+    const stored = localStorage.getItem(LAST_ACTIVITY_KEY);
+    if (stored) {
+      setLastActivity(parseInt(stored));
+    } else {
+      setLastActivity(Date.now());
+    }
+
     // Clear timestamp if we're on the login page
     if (pathname === "/login") {
       localStorage.removeItem(LAST_ACTIVITY_KEY);
@@ -133,5 +143,8 @@ export function SessionTimeout() {
     };
   }, [lastActivity, signOut, router, pathname]);
 
+  // Don't render anything until mounted to avoid hydration mismatch
+  if (!mounted) return null;
+  
   return null; // This component doesn't render anything
 }

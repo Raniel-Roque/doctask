@@ -17,6 +17,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { formatDateTime } from "@/lib/date-utils";
 
 import { UnsavedChangesConfirmation } from "@/app/(pages)/components/UnsavedChangesConfirmation";
 import DeleteNoteConfirmation from "./DeleteNoteConfirmation";
@@ -305,13 +306,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatDateTime(timestamp);
   };
 
   if (!isOpen) return null;

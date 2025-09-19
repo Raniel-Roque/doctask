@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { Table, TH, TR, TD } from "@ag-media/react-pdf-table";
 import { Group, User } from "./types";
+import { getCurrentDateString } from "@/lib/date-utils";
 
 const styles = StyleSheet.create({
   page: {
@@ -87,7 +88,7 @@ const GroupPDFReport: React.FC<GroupPDFReportProps> = ({
   title,
   filters,
 }) => {
-  const currentDate = new Date().toLocaleDateString();
+  const currentDate = getCurrentDateString();
 
   return (
     <Document>

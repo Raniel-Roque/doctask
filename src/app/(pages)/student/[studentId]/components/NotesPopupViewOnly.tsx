@@ -12,6 +12,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
+import { formatDateTime } from "@/lib/date-utils";
 
 interface NotesPopupViewOnlyProps {
   isOpen: boolean;
@@ -140,13 +141,7 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatDateTime(timestamp);
   };
 
   if (!isOpen) return null;

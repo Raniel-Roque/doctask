@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import NotesPopup from "./NotesPopup";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { formatDateOnly } from "@/lib/date-utils";
 
 interface DocumentsTableTabsProps {
   groups: Group[];
@@ -97,11 +98,7 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
 
   const formatDate = (timestamp?: number) => {
     if (!timestamp) return "Never";
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    return formatDateOnly(timestamp);
   };
 
   // Helper function to generate consistent filename format

@@ -12,12 +12,10 @@ const HEALTH_ENDPOINT = "/api/health";
 
 export function NetworkStatusBanner() {
   const [state, setState] = useState<NetworkState>(() => ({
-    status:
-      typeof navigator !== "undefined" && navigator.onLine
-        ? "online"
-        : "offline",
+    status: "online", // Default to online to avoid hydration mismatch
     unstable: false,
   }));
+  const [mounted, setMounted] = useState(false);
   const [details, setDetails] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
 
@@ -70,6 +68,16 @@ export function NetworkStatusBanner() {
   );
 
   useEffect(() => {
+    setMounted(true);
+    
+    // Set initial state based on actual navigator status after mount
+    if (typeof navigator !== "undefined") {
+      setState({
+        status: navigator.onLine ? "online" : "offline",
+        unstable: false,
+      });
+    }
+
     const handleOnline = () => {
       setState({ status: "online", unstable: false });
       setDetails(null);
@@ -94,7 +102,8 @@ export function NetworkStatusBanner() {
     };
   }, [startHealthChecks]);
 
-  if (!isOffline && !isUnstable) return null;
+  // Don't render until mounted to avoid hydration mismatch
+  if (!mounted || (!isOffline && !isUnstable)) return null;
 
   const message = isOffline
     ? "You are offline."

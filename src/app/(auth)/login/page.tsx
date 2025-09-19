@@ -63,39 +63,38 @@ const LoginPage = () => {
   }, []);
 
   useEffect(() => {
-    // Check for success parameters in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const successPassword = urlParams.get("successpassword");
-    const successVerify = urlParams.get("successverify");
-    const successRestore = urlParams.get("successrestore");
+    // Check for success parameters in URL after mount
+    if (mounted) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const successPassword = urlParams.get("successpassword");
+      const successVerify = urlParams.get("successverify");
+      const successRestore = urlParams.get("successrestore");
 
-    if (successPassword === "true") {
-      setNotification({
-        message:
-          "Password reset successful! Please log in with your new password.",
-        type: "success",
-      });
-    } else if (successVerify === "true") {
-      setNotification({
-        message:
-          "Email verified successfully! Please log in with your password.",
-        type: "success",
-      });
-    } else if (successRestore === "true") {
-      setNotification({
-        message:
-          "Database has been restored successfully! Please check your email for the new password.",
-        type: "success",
-      });
+      if (successPassword === "true") {
+        setNotification({
+          message:
+            "Password reset successful! Please log in with your new password.",
+          type: "success",
+        });
+      } else if (successVerify === "true") {
+        setNotification({
+          message:
+            "Email verified successfully! Please log in with your password.",
+          type: "success",
+        });
+      } else if (successRestore === "true") {
+        setNotification({
+          message:
+            "Database has been restored successfully! Please check your email for the new password.",
+          type: "success",
+        });
+      }
     }
-  }, [router]);
+  }, [router, mounted]);
 
   useEffect(() => {
-    // Check for restore banner flag in localStorage
-    if (
-      typeof window !== "undefined" &&
-      localStorage.getItem("showRestoreBanner") === "true"
-    ) {
+    // Check for restore banner flag in localStorage after mount
+    if (mounted && localStorage.getItem("showRestoreBanner") === "true") {
       setNotification({
         message:
           "Database has been restored successfully! Please check your email for the new password.",
@@ -103,20 +102,22 @@ const LoginPage = () => {
       });
       localStorage.removeItem("showRestoreBanner");
     }
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
-    setIsClient(true);
+    if (mounted) {
+      setIsClient(true);
 
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth < 1024);
+      };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
+      checkMobile();
+      window.addEventListener("resize", checkMobile);
 
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+      return () => window.removeEventListener("resize", checkMobile);
+    }
+  }, [mounted]);
 
   useEffect(() => {
     setShowPassword(false);
