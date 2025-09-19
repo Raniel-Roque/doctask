@@ -4,6 +4,7 @@ import { Session } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 interface ClerkError {
   errors?: Array<{
@@ -14,8 +15,10 @@ interface ClerkError {
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(request: Request) {
+  let action: string = "";
   try {
-    const { userId, action, instructorId } = await request.json();
+    const { userId, action: requestAction, instructorId } = await request.json();
+    action = requestAction;
 
     if (!userId || !action || !instructorId) {
       return NextResponse.json(
@@ -90,9 +93,10 @@ export async function POST(request: Request) {
     const clerkError = error as ClerkError;
     return NextResponse.json(
       {
-        error:
-          clerkError.errors?.[0]?.message ||
-          "An error occurred while processing your request",
+        error: getErrorMessage(
+          clerkError.errors?.[0]?.message || error,
+          ErrorContexts.lockAccount(action as 'lock' | 'unlock')
+        ),
       },
       { status: 500 },
     );

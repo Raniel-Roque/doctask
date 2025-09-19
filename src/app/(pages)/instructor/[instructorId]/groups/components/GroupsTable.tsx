@@ -97,6 +97,7 @@ interface GroupsTableProps {
     React.SetStateAction<"asc" | "desc" | "none">
   >;
   onCapstoneSortApply: (direction: "asc" | "desc" | "none") => void;
+  isModalOpen?: boolean; // New prop to indicate if any modal is open
 }
 
 const GroupsTable: React.FC<GroupsTableProps> = ({
@@ -123,6 +124,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   setCapstoneFilter,
   capstoneSortDirection,
   onCapstoneSortApply,
+  isModalOpen = false,
 }) => {
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -322,8 +324,14 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
         </div>
 
         <button
-          className="px-4 py-2 bg-[#B54A4A] text-white rounded-lg hover:bg-[#9a3d3d] flex items-center gap-2"
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 ${
+            isModalOpen
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-[#B54A4A] text-white hover:bg-[#9a3d3d]"
+          }`}
           onClick={onAdd}
+          disabled={isModalOpen}
+          title={isModalOpen ? "Please close all forms before adding a group" : "Add Group"}
         >
           <FaPlus /> Add Group
         </button>

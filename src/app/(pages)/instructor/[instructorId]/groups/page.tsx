@@ -386,6 +386,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           capstoneSortDirection={capstoneSortDirection}
           setCapstoneSortDirection={setCapstoneSortDirection}
           onCapstoneSortApply={handleCapstoneSortApply}
+          isModalOpen={isAddingGroup || !!isEditingGroup}
         />
 
         {/* Add Group Form */}

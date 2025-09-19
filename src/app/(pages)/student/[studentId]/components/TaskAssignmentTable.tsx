@@ -25,6 +25,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import NotesPopupViewOnly from "./NotesPopupViewOnly";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 interface ProfileImagesResponse {
   success: boolean;
@@ -635,10 +636,7 @@ export const TaskAssignmentTable = ({
       });
     } catch (error) {
       setNotification({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to submit document for review.",
+        message: getErrorMessage(error, ErrorContexts.editUser('document')),
         type: "error",
       });
     } finally {
@@ -670,10 +668,7 @@ export const TaskAssignmentTable = ({
       });
     } catch (error) {
       setNotification({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to cancel document submission.",
+        message: getErrorMessage(error, ErrorContexts.editUser('document')),
         type: "error",
       });
     } finally {
