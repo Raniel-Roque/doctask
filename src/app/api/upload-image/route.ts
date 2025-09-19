@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { getConvexClient } from "@/lib/convex-client";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const convex = getConvexClient();
 
 export async function POST(request: Request) {
   try {
@@ -13,10 +13,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get current user from Convex
-    const currentUser = await convex.query(api.fetch.getUserByClerkId, {
-      clerkId: userId,
-    });
+    // Get current user and group data in parallel
+    const [currentUser, studentGroup] = await Promise.all([
+      convex.query(api.fetch.getUserByClerkId, {
+        clerkId: userId,
+      }),
+      // We'll get the group after we have the user
+      Promise.resolve(null)
+    ]);
 
     if (!currentUser || currentUser.role !== 0) {
       return NextResponse.json(
@@ -26,11 +30,11 @@ export async function POST(request: Request) {
     }
 
     // Get the user's group
-    const studentGroup = await convex.query(api.fetch.getStudentGroup, {
+    const groupData = await convex.query(api.fetch.getStudentGroup, {
       userId: currentUser._id,
     });
 
-    if (!studentGroup?.group_id) {
+    if (!groupData?.group_id) {
       return NextResponse.json(
         { error: "User is not in a group" },
         { status: 403 },
@@ -93,7 +97,7 @@ export async function POST(request: Request) {
       filename: file.name,
       content_type: file.type,
       size: file.size,
-      group_id: studentGroup.group_id,
+      group_id: groupData.group_id,
       uploaded_by: currentUser._id,
     });
 

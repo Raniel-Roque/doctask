@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import { getConvexClient } from "@/lib/convex-client";
 
 export async function POST(request: Request) {
   try {
@@ -10,8 +10,8 @@ export async function POST(request: Request) {
       return new NextResponse("Missing instructorId", { status: 400 });
     }
 
-    // Initialize Convex client
-    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    // Use shared Convex client
+    const convex = getConvexClient();
 
     // Verify instructor permissions
     const instructor = await convex.query(api.fetch.getUserById, {

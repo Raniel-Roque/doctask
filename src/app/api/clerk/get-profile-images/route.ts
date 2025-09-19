@@ -41,15 +41,25 @@ export async function POST(request: Request) {
     const validUsers = convexUsers.filter((user) => user !== null);
     const clerkIds = validUsers.map((user) => user!.clerk_id);
 
-    // Fetch profile images from Clerk
+    // Fetch profile images from Clerk in parallel
     const profileImages: Record<string, string> = {};
 
-    for (const clerkId of clerkIds) {
-      const user = await client.users.getUser(clerkId);
-      if (user && user.imageUrl) {
-        profileImages[clerkId] = user.imageUrl;
+    const userPromises = clerkIds.map(async (clerkId) => {
+      try {
+        const user = await client.users.getUser(clerkId);
+        return { clerkId, imageUrl: user?.imageUrl };
+      } catch {
+        return { clerkId, imageUrl: null };
       }
-    }
+    });
+
+    const userResults = await Promise.all(userPromises);
+    
+    userResults.forEach(({ clerkId, imageUrl }) => {
+      if (imageUrl) {
+        profileImages[clerkId] = imageUrl;
+      }
+    });
 
     return NextResponse.json({
       success: true,

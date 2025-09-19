@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { generatePassword } from "@/utils/passwordGeneration";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import { getConvexClient } from "@/lib/convex-client";
 
 type UpdateUserArgs = {
   userId: Id<"users">;
@@ -17,7 +17,7 @@ type UpdateUserArgs = {
   subrole?: number;
 };
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const convex = getConvexClient();
 
 interface ClerkError {
   errors?: Array<{

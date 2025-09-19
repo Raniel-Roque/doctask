@@ -92,55 +92,49 @@ export async function POST(request: NextRequest) {
         break;
 
       case "delete_images_from_storage":
-        // Delete all images from storage only (not database)
+        // Delete all images from storage only (not database) in parallel
         const images = await convex.query(api.fetch.getAllImages);
-        for (const image of images) {
-          try {
-            await convex.mutation(api.restore.deleteImageFromStorage, {
+        await Promise.all(
+          images.map(image =>
+            convex.mutation(api.restore.deleteImageFromStorage, {
               file_id: image.file_id,
-            });
-          } catch {}
-        }
+            }).catch(() => {})
+          )
+        );
         break;
 
       case "delete_all_data":
-        // Delete all data from Convex first (in the same order as restore)
-        await convex.mutation(api.restore.deleteAllStudents);
-        await convex.mutation(api.restore.deleteAllAdvisers);
-        await convex.mutation(api.restore.deleteAllGroups);
-        await convex.mutation(api.restore.deleteAllDocuments);
+        // Use the optimized deleteAllData mutation for better performance
+        await convex.mutation(api.restore.deleteAllData, {
+          currentUserId: convexUser._id,
+          includeImages: true,
+          includeLogs: true
+        });
 
-        // Delete all Liveblocks rooms
+        // Delete all Liveblocks rooms in parallel
         try {
           const liveblocks = new Liveblocks({
             secret: process.env.LIVEBLOCKS_SECRET_KEY!,
           });
 
-          // Get all rooms and delete them
+          // Get all rooms and delete them in parallel
           const rooms = await liveblocks.getRooms();
-          for (const room of rooms.data) {
-            await liveblocks.deleteRoom(room.id);
-          }
+          await Promise.all(
+            rooms.data.map(room => liveblocks.deleteRoom(room.id))
+          );
         } catch {}
 
-        await convex.mutation(api.restore.deleteAllTaskAssignments);
-        await convex.mutation(api.restore.deleteAllDocumentStatus);
-        await convex.mutation(api.restore.deleteAllNotes);
-        await convex.mutation(api.restore.deleteAllLogs);
-        await convex.mutation(api.restore.deleteAllImages);
-        await convex.mutation(api.restore.deleteAllUsers, {
-          currentUserId: convexUser._id,
-        });
-
-        // Then delete all users from Clerk except the current instructor
+        // Then delete all users from Clerk except the current instructor in parallel
         const { data: allUsers } = await client.users.getUserList();
-        for (const clerkUser of allUsers) {
-          if (clerkUser.id !== convexUser.clerk_id) {
-            try {
-              await client.users.deleteUser(clerkUser.id);
-            } catch {}
-          }
-        }
+        const usersToDelete = allUsers.filter(
+          clerkUser => clerkUser.id !== convexUser.clerk_id
+        );
+        
+        await Promise.all(
+          usersToDelete.map(clerkUser =>
+            client.users.deleteUser(clerkUser.id).catch(() => {})
+          )
+        );
         break;
 
       default:

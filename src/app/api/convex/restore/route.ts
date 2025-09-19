@@ -196,143 +196,146 @@ export async function POST(request: Request) {
 
     const backupData = backup as BackupData;
 
-    // Delete from Convex first
-    // Delete students
-    await convex.mutation(api.restore.deleteAllStudents);
+    // Delete from Convex first - parallelize all delete operations
+    await Promise.all([
+      convex.mutation(api.restore.deleteAllStudents),
+      convex.mutation(api.restore.deleteAllAdvisers),
+      convex.mutation(api.restore.deleteAllGroups),
+      convex.mutation(api.restore.deleteAllDocuments),
+      convex.mutation(api.restore.deleteAllTaskAssignments),
+      convex.mutation(api.restore.deleteAllDocumentStatus),
+      convex.mutation(api.restore.deleteAllNotes),
+      convex.mutation(api.restore.deleteAllLogs),
+      convex.mutation(api.restore.deleteAllImages),
+      convex.mutation(api.restore.deleteAllUsers, {
+        currentUserId: instructor._id,
+      })
+    ]);
 
-    // Delete advisers
-    await convex.mutation(api.restore.deleteAllAdvisers);
-
-    // Delete groups
-    await convex.mutation(api.restore.deleteAllGroups);
-
-    // Delete documents
-    await convex.mutation(api.restore.deleteAllDocuments);
-
-    // Delete all Liveblocks rooms
+    // Delete all Liveblocks rooms in parallel
     try {
       const liveblocks = new Liveblocks({
         secret: process.env.LIVEBLOCKS_SECRET_KEY!,
       });
 
-      // Get all rooms and delete them
+      // Get all rooms and delete them in parallel
       const rooms = await liveblocks.getRooms();
-      for (const room of rooms.data) {
-        await liveblocks.deleteRoom(room.id);
-      }
+      await Promise.all(
+        rooms.data.map(room => liveblocks.deleteRoom(room.id))
+      );
     } catch {}
-
-    // Delete task assignments
-    await convex.mutation(api.restore.deleteAllTaskAssignments);
-
-    // Delete document status
-    await convex.mutation(api.restore.deleteAllDocumentStatus);
-
-    // Delete notes
-    await convex.mutation(api.restore.deleteAllNotes);
-
-    // Delete logs
-    await convex.mutation(api.restore.deleteAllLogs);
-
-    // Delete images (database + storage files)
-    await convex.mutation(api.restore.deleteAllImages);
-
-    // Delete users (except current user)
-    await convex.mutation(api.restore.deleteAllUsers, {
-      currentUserId: instructor._id,
-    });
 
     // Get all users from Clerk
     const { data: existingClerkUsers } = await clerk.users.getUserList();
 
-    // Delete all users except the instructor
-    for (const clerkUser of existingClerkUsers) {
-      if (clerkUser.id !== instructor.clerk_id) {
-        // Don't delete the instructor
-        // Delete from Clerk
-        await clerk.users.deleteUser(clerkUser.id);
+    // Delete all users except the instructor - parallelize operations
+    const usersToDelete = existingClerkUsers.filter(
+      clerkUser => clerkUser.id !== instructor.clerk_id
+    );
 
-        // Delete from Convex if exists
-        const convexUser = await convex.query(api.fetch.getUserByClerkId, {
+    // Batch fetch all Convex users for users to delete
+    const convexUsersToDelete = await Promise.all(
+      usersToDelete.map(clerkUser =>
+        convex.query(api.fetch.getUserByClerkId, {
           clerkId: clerkUser.id,
-        });
-        if (convexUser) {
-          await convex.mutation(api.mutations.deleteUser, {
-            userId: convexUser._id,
+        }).then(user => ({ clerkUser, convexUser: user }))
+      )
+    );
+
+    // Parallel delete from Clerk and Convex
+    await Promise.all([
+      // Delete from Clerk
+      ...usersToDelete.map(clerkUser => clerk.users.deleteUser(clerkUser.id)),
+      // Delete from Convex if exists
+      ...convexUsersToDelete
+        .filter(({ convexUser }) => convexUser)
+        .map(({ clerkUser, convexUser }) =>
+          convex.mutation(api.mutations.deleteUser, {
+            userId: convexUser!._id,
             instructorId: instructor._id,
             clerkId: clerkUser.id,
-          });
-        }
-      }
-    }
+          })
+        )
+    ]);
 
     const usersToCreate = backupData.tables.users.filter(
       (user: BackupUser) => user.role !== 2 && !user.isDeleted,
     );
+
+    // Create users in parallel batches to avoid overwhelming Clerk API
+    const batchSize = 5; // Process 5 users at a time
     const clerkResults = [];
 
-    for (const user of usersToCreate) {
-      const password = generatePassword(
-        user.first_name,
-        user.last_name,
-        Date.now(),
+    for (let i = 0; i < usersToCreate.length; i += batchSize) {
+      const batch = usersToCreate.slice(i, i + batchSize);
+      
+      const batchResults = await Promise.all(
+        batch.map(async (user) => {
+          const password = generatePassword(
+            user.first_name,
+            user.last_name,
+            Date.now(),
+          );
+
+          // Create user in Clerk with just email and password
+          const newUser = await clerk.users.createUser({
+            emailAddress: [user.email],
+            password,
+          });
+
+          // Set email as unverified
+          const emailAddress = newUser.emailAddresses[0];
+          await clerk.emailAddresses.updateEmailAddress(emailAddress.id, {
+            primary: true,
+            verified: false,
+          });
+
+          // Send welcome email (don't await to avoid blocking)
+          resend.emails.send({
+            from: resendConfig.from.default,
+            to: user.email,
+            subject: "Welcome to DocTask",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #333;">Welcome to DocTask!</h2>
+                
+                <p>Dear ${user.first_name} ${user.last_name},</p>
+                
+                <p>Your account has been created. Here are your login credentials:</p>
+                
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                  <p style="margin: 0;"><strong>Email:</strong> ${user.email}</p>
+                  <p style="margin: 10px 0 0 0;"><strong>Password:</strong> ${password}</p>
+                </div>
+                
+                <p><strong>Important Next Steps:</strong></p>
+                <ol>
+                  <li>Log in to your account using the credentials above</li>
+                  <li>Change your password immediately for security purposes</li>
+                  <li>Verify your email address</li>
+                </ol>
+                
+                <p style="margin-top: 30px; color: #666;">
+                  Best regards,<br>
+                  The DocTask Team
+                </p>
+                <p style="margin-top: 10px; color: #999; font-size: 12px;">
+                  Please do not reply to this email.
+                </p>
+              </div>
+            `,
+          }).catch(() => {}); // Ignore email errors
+
+          return {
+            oldId: user.clerk_id,
+            newId: newUser.id,
+            email: user.email,
+            password,
+          };
+        })
       );
 
-      // Create user in Clerk with just email and password
-      const newUser = await clerk.users.createUser({
-        emailAddress: [user.email],
-        password,
-      });
-
-      // Set email as unverified
-      const emailAddress = newUser.emailAddresses[0];
-      await clerk.emailAddresses.updateEmailAddress(emailAddress.id, {
-        primary: true,
-        verified: false,
-      });
-
-      // Send welcome email
-      await resend.emails.send({
-        from: resendConfig.from.default,
-        to: user.email,
-        subject: "Welcome to DocTask",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Welcome to DocTask!</h2>
-            
-            <p>Dear ${user.first_name} ${user.last_name},</p>
-            
-            <p>Your account has been created. Here are your login credentials:</p>
-            
-            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <p style="margin: 0;"><strong>Email:</strong> ${user.email}</p>
-              <p style="margin: 10px 0 0 0;"><strong>Password:</strong> ${password}</p>
-            </div>
-            
-            <p><strong>Important Next Steps:</strong></p>
-            <ol>
-              <li>Log in to your account using the credentials above</li>
-              <li>Change your password immediately for security purposes</li>
-              <li>Verify your email address</li>
-            </ol>
-            
-            <p style="margin-top: 30px; color: #666;">
-              Best regards,<br>
-              The DocTask Team
-            </p>
-            <p style="margin-top: 10px; color: #999; font-size: 12px;">
-              Please do not reply to this email.
-            </p>
-          </div>
-        `,
-      });
-
-      clerkResults.push({
-        oldId: user.clerk_id,
-        newId: newUser.id,
-        email: user.email,
-        password,
-      });
+      clerkResults.push(...batchResults);
     }
 
     const idMap = new Map(clerkResults.map((r) => [r.oldId, r.newId]));
