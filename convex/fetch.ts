@@ -525,58 +525,58 @@ export const searchUsers = query({
         
         const [firstNameResults, lastNameResults, emailResults] = await Promise.all([
           ctx.db
-            .query("users")
-            .withSearchIndex("search_by_first_name", (q) => {
-              let searchQuery = q.search("first_name", searchTerm);
-              if (emailVerified !== undefined) {
-                searchQuery = searchQuery.eq("email_verified", emailVerified);
-              }
-              if (subrole !== undefined) {
-                searchQuery = searchQuery.eq("subrole", subrole);
-              }
-              return searchQuery.eq("role", role);
-            })
-            .collect()
+          .query("users")
+          .withSearchIndex("search_by_first_name", (q) => {
+            let searchQuery = q.search("first_name", searchTerm);
+            if (emailVerified !== undefined) {
+              searchQuery = searchQuery.eq("email_verified", emailVerified);
+            }
+            if (subrole !== undefined) {
+              searchQuery = searchQuery.eq("subrole", subrole);
+            }
+            return searchQuery.eq("role", role);
+          })
+          .collect()
             .then((results) => results.filter((u) => !u.isDeleted)),
-          
+
           ctx.db
-            .query("users")
-            .withSearchIndex("search_by_last_name", (q) => {
-              let searchQuery = q.search("last_name", searchTerm);
-              if (emailVerified !== undefined) {
-                searchQuery = searchQuery.eq("email_verified", emailVerified);
-              }
-              if (subrole !== undefined) {
-                searchQuery = searchQuery.eq("subrole", subrole);
-              }
-              return searchQuery.eq("role", role);
-            })
-            .collect()
+          .query("users")
+          .withSearchIndex("search_by_last_name", (q) => {
+            let searchQuery = q.search("last_name", searchTerm);
+            if (emailVerified !== undefined) {
+              searchQuery = searchQuery.eq("email_verified", emailVerified);
+            }
+            if (subrole !== undefined) {
+              searchQuery = searchQuery.eq("subrole", subrole);
+            }
+            return searchQuery.eq("role", role);
+          })
+          .collect()
             .then((results) => results.filter((u) => !u.isDeleted)),
-          
+
           // Only search by email if it looks like an email
           searchTermLower.includes('@') ? ctx.db
-            .query("users")
-            .filter((q) => {
-              const roleFilter = q.eq(q.field("role"), role);
+          .query("users")
+          .filter((q) => {
+            const roleFilter = q.eq(q.field("role"), role);
               const emailFilter = q.eq(q.field("email"), searchTermLower);
-              const emailVerifiedFilter =
-                emailVerified !== undefined
-                  ? q.eq(q.field("email_verified"), emailVerified)
-                  : null;
-              const subroleFilter =
-                subrole !== undefined ? q.eq(q.field("subrole"), subrole) : null;
+            const emailVerifiedFilter =
+              emailVerified !== undefined
+                ? q.eq(q.field("email_verified"), emailVerified)
+                : null;
+            const subroleFilter =
+              subrole !== undefined ? q.eq(q.field("subrole"), subrole) : null;
 
-              let finalFilter = q.and(roleFilter, emailFilter);
-              if (emailVerifiedFilter) {
-                finalFilter = q.and(finalFilter, emailVerifiedFilter);
-              }
-              if (subroleFilter) {
-                finalFilter = q.and(finalFilter, subroleFilter);
-              }
-              return finalFilter;
-            })
-            .collect()
+            let finalFilter = q.and(roleFilter, emailFilter);
+            if (emailVerifiedFilter) {
+              finalFilter = q.and(finalFilter, emailVerifiedFilter);
+            }
+            if (subroleFilter) {
+              finalFilter = q.and(finalFilter, subroleFilter);
+            }
+            return finalFilter;
+          })
+          .collect()
             .then((results) => results.filter((u) => !u.isDeleted)) : []
         ]);
 
@@ -931,14 +931,14 @@ export const getDocumentsWithStatus = query({
       // Fetch documents and statuses in parallel
       const [allDocs, allStatuses] = await Promise.all([
         ctx.db
-          .query("documents")
-          .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
-          .collect()
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
+        .collect()
           .then((results) => results.filter((d) => !d.isDeleted)),
         ctx.db
-          .query("documentStatus")
-          .withIndex("by_group_document", (q) => q.eq("group_id", groupId))
-          .collect()
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) => q.eq("group_id", groupId))
+        .collect()
           .then((results) => results.filter((s) => !s.isDeleted))
       ]);
 
@@ -1020,9 +1020,9 @@ export const getTaskAssignments = query({
       // Fetch task assignments and users in parallel
       const [taskAssignments, users] = await Promise.all([
         ctx.db
-          .query("taskAssignments")
-          .withIndex("by_group", (q) => q.eq("group_id", groupId))
-          .collect()
+        .query("taskAssignments")
+        .withIndex("by_group", (q) => q.eq("group_id", groupId))
+        .collect()
           .then((results) => results.filter((t) => !t.isDeleted)),
         ctx.db.query("users").collect()
       ]);
@@ -2137,48 +2137,48 @@ export const getLogsWithDetails = query({
     const logsWithDetails = paginatedLogs.map((log) => {
       const user = userMap.get(log.user_id);
       
-      let affectedEntity = null;
-      if (log.affected_entity_type === "user") {
+        let affectedEntity = null;
+        if (log.affected_entity_type === "user") {
         affectedEntity = userEntityMap.get(log.affected_entity_id as Id<"users">);
-      } else if (log.affected_entity_type === "group") {
+        } else if (log.affected_entity_type === "group") {
         const group = groupMap.get(log.affected_entity_id as Id<"groupsTable">);
-        if (group) {
+          if (group) {
           const projectManager = projectManagerMap.get(group.project_manager_id);
-          affectedEntity = {
-            projectManager: projectManager
-              ? {
-                  last_name: projectManager.last_name,
-                }
-              : undefined,
-          };
+            affectedEntity = {
+              projectManager: projectManager
+                ? {
+                    last_name: projectManager.last_name,
+                  }
+                : undefined,
+            };
+          }
         }
-      }
 
-      return {
-        ...log,
+        return {
+          ...log,
         user: user && "first_name" in user
-          ? {
-              first_name: user.first_name,
-              middle_name: user.middle_name,
-              last_name: user.last_name,
-              email: user.email,
-            }
-          : null,
-        affectedEntity: affectedEntity
-          ? "role" in affectedEntity && "first_name" in affectedEntity
-            ? {
-                first_name: affectedEntity.first_name,
-                middle_name: affectedEntity.middle_name,
-                last_name: affectedEntity.last_name,
-                email: affectedEntity.email,
-              }
-            : "projectManager" in affectedEntity
               ? {
-                  projectManager: affectedEntity.projectManager,
+                  first_name: user.first_name,
+                  middle_name: user.middle_name,
+                  last_name: user.last_name,
+                  email: user.email,
                 }
-              : null
-          : null,
-      };
+              : null,
+          affectedEntity: affectedEntity
+            ? "role" in affectedEntity && "first_name" in affectedEntity
+              ? {
+                  first_name: affectedEntity.first_name,
+                  middle_name: affectedEntity.middle_name,
+                  last_name: affectedEntity.last_name,
+                  email: affectedEntity.email,
+                }
+              : "projectManager" in affectedEntity
+                ? {
+                    projectManager: affectedEntity.projectManager,
+                  }
+                : null
+            : null,
+        };
     });
 
     return {

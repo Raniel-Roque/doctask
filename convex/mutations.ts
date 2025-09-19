@@ -820,8 +820,8 @@ export const updateGroup = mutation({
       const studentEntries = await Promise.all(
         removedMembers.map(memberId =>
           ctx.db
-            .query("studentsTable")
-            .withIndex("by_user", (q) => q.eq("user_id", memberId))
+        .query("studentsTable")
+        .withIndex("by_user", (q) => q.eq("user_id", memberId))
             .first()
         )
       );
@@ -858,8 +858,8 @@ export const updateGroup = mutation({
       const existingEntries = await Promise.all(
         newMemberIds.map(memberId =>
           ctx.db
-            .query("studentsTable")
-            .withIndex("by_user", (q) => q.eq("user_id", memberId))
+          .query("studentsTable")
+          .withIndex("by_user", (q) => q.eq("user_id", memberId))
             .first()
         )
       );
@@ -878,23 +878,23 @@ export const updateGroup = mutation({
         } else {
           insertPromises.push(
             ctx.db.insert("studentsTable", {
-              user_id: memberId,
-              group_id: args.groupId,
-              isDeleted: false,
-              gender: undefined,
-              dateOfBirth: undefined,
-              placeOfBirth: undefined,
-              nationality: undefined,
-              civilStatus: undefined,
-              religion: undefined,
-              homeAddress: undefined,
-              contact: undefined,
-              tertiaryDegree: undefined,
-              tertiarySchool: undefined,
-              secondarySchool: undefined,
-              secondaryAddress: undefined,
-              primarySchool: undefined,
-              primaryAddress: undefined,
+            user_id: memberId,
+            group_id: args.groupId,
+            isDeleted: false,
+            gender: undefined,
+            dateOfBirth: undefined,
+            placeOfBirth: undefined,
+            nationality: undefined,
+            civilStatus: undefined,
+            religion: undefined,
+            homeAddress: undefined,
+            contact: undefined,
+            tertiaryDegree: undefined,
+            tertiarySchool: undefined,
+            secondarySchool: undefined,
+            secondaryAddress: undefined,
+            primarySchool: undefined,
+            primaryAddress: undefined,
             })
           );
         }
@@ -1215,8 +1215,8 @@ export const deleteUser = mutation({
           const memberEntries = await Promise.all(
             group.member_ids.map(memberId =>
               ctx.db
-                .query("studentsTable")
-                .withIndex("by_user", (q) => q.eq("user_id", memberId))
+            .query("studentsTable")
+            .withIndex("by_user", (q) => q.eq("user_id", memberId))
                 .first()
             )
           );
@@ -1262,20 +1262,20 @@ export const deleteUser = mutation({
         // Batch soft delete all associated data for this group
         const [docs, taskAssignments, documentStatuses, images] = await Promise.all([
           ctx.db
-            .query("documents")
-            .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
+          .query("documents")
+          .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
             .collect(),
           ctx.db
-            .query("taskAssignments")
-            .withIndex("by_group", (q) => q.eq("group_id", group._id))
+          .query("taskAssignments")
+          .withIndex("by_group", (q) => q.eq("group_id", group._id))
             .collect(),
           ctx.db
-            .query("documentStatus")
-            .withIndex("by_group", (q) => q.eq("group_id", group._id))
+          .query("documentStatus")
+          .withIndex("by_group", (q) => q.eq("group_id", group._id))
             .collect(),
           ctx.db
-            .query("images")
-            .withIndex("by_group", (q) => q.eq("group_id", group._id))
+          .query("images")
+          .withIndex("by_group", (q) => q.eq("group_id", group._id))
             .collect()
         ]);
 
@@ -1363,8 +1363,8 @@ export const deleteGroup = mutation({
     const studentEntries = await Promise.all(
       allMembers.map(memberId =>
         ctx.db
-          .query("studentsTable")
-          .withIndex("by_user", (q) => q.eq("user_id", memberId))
+        .query("studentsTable")
+        .withIndex("by_user", (q) => q.eq("user_id", memberId))
           .first()
       )
     );
@@ -1410,20 +1410,20 @@ export const deleteGroup = mutation({
     // Batch soft delete all associated data
     const [docs, taskAssignments, documentStatuses, images] = await Promise.all([
       ctx.db
-        .query("documents")
-        .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
+      .query("documents")
+      .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
         .collect(),
       ctx.db
-        .query("taskAssignments")
-        .withIndex("by_group", (q) => q.eq("group_id", group._id))
+      .query("taskAssignments")
+      .withIndex("by_group", (q) => q.eq("group_id", group._id))
         .collect(),
       ctx.db
-        .query("documentStatus")
-        .withIndex("by_group", (q) => q.eq("group_id", group._id))
+      .query("documentStatus")
+      .withIndex("by_group", (q) => q.eq("group_id", group._id))
         .collect(),
       ctx.db
-        .query("images")
-        .withIndex("by_group", (q) => q.eq("group_id", group._id))
+      .query("images")
+      .withIndex("by_group", (q) => q.eq("group_id", group._id))
         .collect()
     ]);
 
@@ -2765,20 +2765,20 @@ export const restoreUser = mutation({
       const allDataPromises = groupIds.map(async (groupId) => {
         const [docs, images, tasks, statuses] = await Promise.all([
           ctx.db
-            .query("documents")
-            .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
             .collect(),
           ctx.db
-            .query("images")
-            .withIndex("by_group", (q) => q.eq("group_id", groupId))
+        .query("images")
+        .withIndex("by_group", (q) => q.eq("group_id", groupId))
             .collect(),
           ctx.db
-            .query("taskAssignments")
-            .withIndex("by_group", (q) => q.eq("group_id", groupId))
+        .query("taskAssignments")
+        .withIndex("by_group", (q) => q.eq("group_id", groupId))
             .collect(),
           ctx.db
-            .query("documentStatus")
-            .withIndex("by_group", (q) => q.eq("group_id", groupId))
+        .query("documentStatus")
+        .withIndex("by_group", (q) => q.eq("group_id", groupId))
             .collect()
         ]);
         return { docs, images, tasks, statuses };
