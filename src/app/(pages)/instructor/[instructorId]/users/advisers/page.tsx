@@ -3,7 +3,7 @@
 import { Navbar } from "../../components/navbar";
 import { api } from "../../../../../../../convex/_generated/api";
 import { useState, useEffect, use, useMemo } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { UserTable } from "../components/UserTable";
 import { AddForm } from "../components/AddForm";
@@ -25,6 +25,7 @@ import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChange
 import { sanitizeInput } from "../../../../components/SanitizeInput";
 import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
 import { apiRequest } from "@/lib/utils";
+import { useMutationWithRetry } from "@/lib/convex-retry";
 import * as XLSX from "exceljs";
 
 // =========================================
@@ -32,6 +33,22 @@ import * as XLSX from "exceljs";
 // =========================================
 interface UsersPageProps {
   params: Promise<{ instructorId: string }>;
+}
+
+interface CreateUserResponse {
+  user: {
+    email: string;
+    first_name: string;
+    last_name: string;
+    password: string;
+  };
+}
+
+interface ResetPasswordResponse {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
 }
 
 // =========================================
@@ -96,12 +113,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // Removed networkError state - using notification banner instead
 
   // =========================================
-  // Mutations
+  // Enhanced Convex mutations with retry logic
   // =========================================
-  // No direct Convex mutations for create/update/delete user. Use API routes only.
-  const resetPassword = useMutation(api.mutations.resetPassword);
-  const logLockAccount = useMutation(api.mutations.logLockAccountMutation);
-  const resetAdviserCode = useMutation(api.mutations.resetAdviserCode);
+  const resetPassword = useMutationWithRetry(api.mutations.resetPassword);
+  const logLockAccount = useMutationWithRetry(api.mutations.logLockAccountMutation);
+  const resetAdviserCode = useMutationWithRetry(api.mutations.resetAdviserCode);
 
   // =========================================
   // Queries
@@ -264,8 +280,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
     try {
       logUserAction();
 
-      // Call distributed-safe API route for deletion
-      const response = await fetch("/api/clerk/delete-user", {
+      // Call distributed-safe API route for deletion with enhanced retry logic
+      await apiRequest("/api/clerk/delete-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -275,11 +291,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
           instructorId: instructorId,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete user from Clerk");
-      }
 
       logUserAction();
 
@@ -341,8 +352,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setIsSubmitting(true);
 
     try {
-      // Call distributed-safe API route for creation
-      const response = await fetch("/api/clerk/create-user", {
+      // Call distributed-safe API route for creation with enhanced retry logic
+      const data = await apiRequest<CreateUserResponse>("/api/clerk/create-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -382,15 +393,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create user in Clerk");
-      }
-
-      const data = await response.json();
-
-      // Send welcome email via Resend
-      await fetch("/api/resend/welcome-email", {
+      // Send welcome email via Resend with retry logic
+      await apiRequest("/api/resend/welcome-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -448,11 +452,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
     try {
       logUserAction();
 
-      // Step 1: Call Clerk API to reset password
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const response = await fetch("/api/clerk/reset-password", {
+      // Step 1: Call Clerk API to reset password with enhanced retry logic
+      const data = await apiRequest<ResetPasswordResponse>("/api/clerk/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -461,25 +462,16 @@ const UsersPage = ({ params }: UsersPageProps) => {
           clerkId: resetPasswordUser.clerk_id,
           instructorId: instructorId,
         }),
-        signal: controller.signal,
       });
 
-      clearTimeout(timeoutId);
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to reset password");
-      }
-
-      // Step 2: Call Convex mutation to log the action
-      await resetPassword({
+      // Step 2: Call Convex mutation to log the action with retry logic
+      await resetPassword.mutate({
         userId: resetPasswordUser._id,
         instructorId: instructorId as Id<"users">,
       });
 
-      // Step 3: Send reset password email
-      await fetch("/api/resend/reset-password-email", {
+      // Step 3: Send reset password email with retry logic
+      await apiRequest("/api/resend/reset-password-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -531,7 +523,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/clerk/lock-account", {
+      // Call lock account API with enhanced retry logic
+      await apiRequest("/api/clerk/lock-account", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -543,16 +536,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error || "An error occurred while processing your request",
-        );
-      }
-
       // Log the action
-      await logLockAccount({
+      await logLockAccount.mutate({
         instructorId: instructor._id,
         affectedEntityId: selectedUser._id,
         action,
@@ -591,7 +576,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setIsSubmitting(true);
 
     try {
-      const result = await resetAdviserCode({
+      const result = await resetAdviserCode.mutate({
         adviserId: user._id,
         instructorId: instructor._id,
       });
@@ -838,8 +823,8 @@ const UsersPage = ({ params }: UsersPageProps) => {
         setUploadProgress(Math.round(((i + 1) / validUsers.length) * 100));
 
         try {
-          // Call distributed-safe API route for creation
-          const response = await fetch("/api/clerk/create-user", {
+          // Call distributed-safe API route for creation with enhanced retry logic
+          const data = await apiRequest<CreateUserResponse>("/api/clerk/create-user", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -879,16 +864,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
             }),
           });
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to create user");
-          }
-
-          const data = await response.json();
-
-          // Send welcome email via Resend
+          // Send welcome email via Resend with retry logic
           try {
-            await fetch("/api/resend/welcome-email", {
+            await apiRequest("/api/resend/welcome-email", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

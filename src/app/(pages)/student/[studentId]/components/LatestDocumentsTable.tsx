@@ -15,6 +15,13 @@ import { useMutation, useConvex } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import NotesPopupViewOnly from "./NotesPopupViewOnly";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { apiRequest } from "@/lib/utils";
+
+interface ClerkUserResponse {
+  user: {
+    imageUrl?: string;
+  };
+}
 
 interface Document {
   _id: Id<"documents">;
@@ -1171,13 +1178,11 @@ export const LatestDocumentsTable = ({
           let clerkUser = null;
           if (user?.clerk_id) {
             try {
-              const clerkResponse = await fetch(
+              // Get Clerk user profile with enhanced retry logic
+              const clerkData = await apiRequest<ClerkUserResponse>(
                 `/api/clerk/get-user-profile?clerkId=${user.clerk_id}`,
               );
-              if (clerkResponse.ok) {
-                const clerkData = await clerkResponse.json();
-                clerkUser = clerkData.user;
-              }
+              clerkUser = clerkData.user;
             } catch {}
           }
 
@@ -2167,13 +2172,11 @@ export const LatestDocumentsTable = ({
         let clerkUser = null;
         if (user?.clerk_id) {
           try {
-            const clerkResponse = await fetch(
+            // Get Clerk user profile with enhanced retry logic
+            const clerkData = await apiRequest<ClerkUserResponse>(
               `/api/clerk/get-user-profile?clerkId=${user.clerk_id}`,
             );
-            if (clerkResponse.ok) {
-              const clerkData = await clerkResponse.json();
-              clerkUser = clerkData.user;
-            }
+            clerkUser = clerkData.user;
           } catch {}
         }
 

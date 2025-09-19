@@ -27,43 +27,190 @@ import { useUser, useClerk } from "@clerk/clerk-react";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { FaSignOutAlt, FaExclamationTriangle } from "react-icons/fa";
 import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
+import { apiRequest } from "@/lib/utils";
 
 interface BackupAndRestorePageProps {
   params: Promise<{ instructorId: string }>;
+}
+
+interface RestoreResult {
+  backupData: {
+    tables: {
+      logs: Array<{
+        _id: string;
+        _creationTime: number;
+        instructor_id: string;
+        action: string;
+        affected_entity_id: string;
+        affected_user_info: {
+          first_name: string;
+          middle_name?: string;
+          last_name: string;
+          email: string;
+        };
+        instructor_info: {
+          first_name: string;
+          middle_name?: string;
+          last_name: string;
+          email: string;
+        };
+        timestamp: number;
+      }>;
+      users: Array<{
+        _id: string;
+        _creationTime: number;
+        clerk_id: string;
+        email: string;
+        first_name: string;
+        middle_name?: string;
+        last_name: string;
+        role: number;
+        subrole: string;
+        instructor_id: string;
+        email_verified: boolean;
+        terms_agreed: boolean;
+        privacy_agreed: boolean;
+        adviser_code?: string;
+        locked: boolean;
+      }>;
+      groupsTable: Array<{
+        _id: string;
+        _creationTime: number;
+        group_name: string;
+        capstone_title: string;
+        adviser_id?: string;
+        requested_adviser?: string;
+        instructor_id: string;
+        status: string;
+      }>;
+      studentGroups: Array<{
+        _id: string;
+        _creationTime: number;
+        user_id: string;
+        group_id: string;
+        role: string;
+      }>;
+      documents: Array<{
+        _id: string;
+        _creationTime: number;
+        group_id: string;
+        title: string;
+        content: string;
+        status: string;
+        submitted_by: string;
+        submitted_at: number;
+        reviewed_by?: string;
+        reviewed_at?: number;
+        feedback?: string;
+        version: number;
+      }>;
+      taskAssignments: Array<{
+        _id: string;
+        _creationTime: number;
+        group_id: string;
+        task_name: string;
+        description: string;
+        assigned_to: string;
+        due_date: number;
+        status: string;
+        created_by: string;
+        created_at: number;
+        completed_at?: number;
+        notes?: string;
+      }>;
+    };
+  };
+  idMappings: Record<string, string>;
 }
 
 interface RestoreData {
   backupData: {
     tables: {
       logs: Array<{
-        user_id: string;
-        user_role: number;
-        affected_entity_type: string;
-        affected_entity_id: string;
+        _id: string;
+        _creationTime: number;
+        instructor_id: string;
         action: string;
-        details: string;
+        affected_entity_id: string;
+        affected_user_info: {
+          first_name: string;
+          middle_name?: string;
+          last_name: string;
+          email: string;
+        };
+        instructor_info: {
+          first_name: string;
+          middle_name?: string;
+          last_name: string;
+          email: string;
+        };
+        timestamp: number;
       }>;
       users: Array<{
         _id: string;
+        _creationTime: number;
         clerk_id: string;
         email: string;
         first_name: string;
-        last_name: string;
         middle_name?: string;
+        last_name: string;
         role: number;
-        subrole?: number;
-        isDeleted?: boolean;
-        terms_agreed?: boolean;
-        privacy_agreed?: boolean;
-        terms_agreed_at?: number;
-        privacy_agreed_at?: number;
+        subrole: string;
+        instructor_id: string;
+        email_verified: boolean;
+        terms_agreed: boolean;
+        privacy_agreed: boolean;
+        adviser_code?: string;
+        locked: boolean;
+      }>;
+      groupsTable: Array<{
+        _id: string;
+        _creationTime: number;
+        group_name: string;
+        capstone_title: string;
+        adviser_id?: string;
+        requested_adviser?: string;
+        instructor_id: string;
+        status: string;
+      }>;
+      studentGroups: Array<{
+        _id: string;
+        _creationTime: number;
+        user_id: string;
+        group_id: string;
+        role: string;
+      }>;
+      documents: Array<{
+        _id: string;
+        _creationTime: number;
+        group_id: string;
+        title: string;
+        content: string;
+        status: string;
+        submitted_by: string;
+        submitted_at: number;
+        reviewed_by?: string;
+        reviewed_at?: number;
+        feedback?: string;
+        version: number;
+      }>;
+      taskAssignments: Array<{
+        _id: string;
+        _creationTime: number;
+        group_id: string;
+        task_name: string;
+        description: string;
+        assigned_to: string;
+        due_date: number;
+        status: string;
+        created_by: string;
+        created_at: number;
+        completed_at?: number;
+        notes?: string;
       }>;
     };
   };
-  idMappings: {
-    oldUserIdToNewUserId: Record<string, string>;
-    oldGroupIdToNewGroupId: Record<string, string>;
-  };
+  idMappings: Record<string, string>;
 }
 
 const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
@@ -99,7 +246,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       escapeSpecialChars: true,
     });
 
-    const response = await fetch("/api/clerk/verify-password", {
+    // Verify password with enhanced retry logic
+    await apiRequest("/api/clerk/verify-password", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -110,12 +258,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       }),
       signal, // Add the AbortSignal to the fetch request
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to verify password");
-    }
 
     // Execute the pending action
     if (pendingAction === "download") {
@@ -138,23 +280,14 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
     try {
       setIsDownloading(true);
 
-      // Call API route for backup
-      const response = await fetch("/api/convex/backup", {
+      // Call API route for backup with enhanced retry logic
+      const backup = await apiRequest("/api/convex/backup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ instructorId }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Failed to download database backup",
-        );
-      }
-
-      const backup = await response.json();
 
       const key = await generateEncryptionKey();
       const keyString = await exportKey(key);
@@ -232,7 +365,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         unknown
       >;
 
-      const response = await fetch("/api/convex/restore", {
+      // Restore database backup with enhanced retry logic
+      const restoreResult = await apiRequest<RestoreResult>("/api/convex/restore", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -242,13 +376,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           instructorId: instructorId,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to restore database backup");
-      }
-
-      const restoreResult = await response.json();
 
       // Store the backup data and mappings for instructor restoration
       setRestoreData({
@@ -274,8 +401,8 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const handleLogoutConfirmation = async () => {
     setIsLoggingOut(true);
     try {
-      // Call the restore-instructor API with the stored data
-      const response = await fetch("/api/convex/restore-instructor", {
+      // Call the restore-instructor API with the stored data and enhanced retry logic
+      await apiRequest("/api/convex/restore-instructor", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -286,10 +413,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
           idMappings: restoreData?.idMappings,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to restore instructor");
-      }
 
       // Show success notification before logout
       setNotification({

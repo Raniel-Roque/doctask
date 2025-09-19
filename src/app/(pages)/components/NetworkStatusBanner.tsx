@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { apiRequest } from "@/lib/utils";
 
 type NetworkState =
   | { status: "online"; unstable: boolean }
@@ -30,15 +31,11 @@ export function NetworkStatusBanner() {
       // Faster checks when offline; slower when online
       const tick = async () => {
         try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 5000);
-          const res = await fetch(HEALTH_ENDPOINT, {
+          // Check health endpoint with enhanced retry logic
+          await apiRequest(HEALTH_ENDPOINT, {
             method: "GET",
             cache: "no-store",
-            signal: controller.signal,
           });
-          clearTimeout(timeout);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
           // If we reach here, internet and backend are reachable
           setState({ status: "online", unstable: false });
           setDetails(null);

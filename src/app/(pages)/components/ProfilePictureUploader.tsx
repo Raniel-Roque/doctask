@@ -3,6 +3,7 @@ import { FaCamera } from "react-icons/fa";
 import Image from "next/image";
 import { Cropper, ReactCropperElement } from "react-cropper";
 import "cropperjs/dist/cropper.css";
+import { apiRequest } from "@/lib/utils";
 
 interface User {
   id: string;
@@ -88,7 +89,8 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
     setIsLoading(true);
     onUploading?.(true);
     try {
-      const response = await fetch("/api/clerk/change-profile", {
+      // Update profile picture with enhanced retry logic
+      await apiRequest("/api/clerk/change-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -96,10 +98,6 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
           imageData: imageData,
         }),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update profile picture");
-      }
       onSuccess("Profile picture updated successfully");
       setSelectedImage(null);
       setTimeout(() => {

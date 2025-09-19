@@ -3,7 +3,7 @@
 import { Navbar } from "../../components/navbar";
 import { api } from "../../../../../../../convex/_generated/api";
 import { useState, useEffect, use, useMemo } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { UserTable } from "../components/UserTable";
 import { AddForm } from "../components/AddForm";
@@ -24,6 +24,7 @@ import {
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { apiRequest } from "@/lib/utils";
+import { useMutationWithRetry } from "@/lib/convex-retry";
 import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
 import * as ExcelJS from "exceljs";
 
@@ -32,6 +33,22 @@ import * as ExcelJS from "exceljs";
 // =========================================
 interface UsersStudentsPageProps {
   params: Promise<{ instructorId: string }>;
+}
+
+interface CreateUserResponse {
+  user: {
+    email: string;
+    first_name: string;
+    last_name: string;
+    password: string;
+  };
+}
+
+interface ResetPasswordResponse {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
 }
 
 // =========================================
@@ -102,9 +119,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // =========================================
   // Mutations
   // =========================================
-  // No direct Convex mutations for create/update/delete user. Use API routes only.
-  const resetPassword = useMutation(api.mutations.resetPassword);
-  const logLockAccount = useMutation(api.mutations.logLockAccountMutation);
+  // Enhanced Convex mutations with retry logic
+  const resetPassword = useMutationWithRetry(api.mutations.resetPassword);
+  const logLockAccount = useMutationWithRetry(api.mutations.logLockAccountMutation);
 
   // =========================================
   // Queries
@@ -268,8 +285,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     try {
       logUserAction();
 
-      // Call lock account API with correct format
-      const response = await fetch("/api/clerk/lock-account", {
+      // Call lock account API with enhanced retry logic
+      await apiRequest("/api/clerk/lock-account", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -281,14 +298,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to lock account");
-      }
-
       // Log the action
       if (instructor) {
-        await logLockAccount({
+        await logLockAccount.mutate({
           instructorId: instructor._id,
           affectedEntityId: selectedUser._id,
           action,
@@ -332,7 +344,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     if (!editingUser) return;
     setIsSubmitting(true);
     try {
-      // Use apiRequest for robust error handling
+      // Use enhanced apiRequest with retry logic for robust error handling
       await apiRequest("/api/clerk/update-user", {
         method: "POST",
         headers: {
@@ -381,8 +393,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     try {
       logUserAction();
 
-      // Call distributed-safe API route for deletion
-      const response = await fetch("/api/clerk/delete-user", {
+      // Call distributed-safe API route for deletion with enhanced retry logic
+      await apiRequest("/api/clerk/delete-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -392,11 +404,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           instructorId: instructorId,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete user from Clerk");
-      }
 
       logUserAction();
 
@@ -446,8 +453,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setIsSubmitting(true);
 
     try {
-      // Call distributed-safe API route for creation
-      const response = await fetch("/api/clerk/create-user", {
+      // Call distributed-safe API route for creation with enhanced retry logic
+      const data = await apiRequest<CreateUserResponse>("/api/clerk/create-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -487,15 +494,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create user in Clerk");
-      }
-
-      const data = await response.json();
-
-      // Send welcome email via Resend
-      await fetch("/api/resend/welcome-email", {
+      // Send welcome email via Resend with retry logic
+      await apiRequest("/api/resend/welcome-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -553,11 +553,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     try {
       logUserAction();
 
-      // Step 1: Call Clerk API to reset password
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const response = await fetch("/api/clerk/reset-password", {
+      // Step 1: Call Clerk API to reset password with enhanced retry logic
+      const data = await apiRequest<ResetPasswordResponse>("/api/clerk/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -566,25 +563,16 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           clerkId: resetPasswordUser.clerk_id,
           instructorId: instructorId,
         }),
-        signal: controller.signal,
       });
 
-      clearTimeout(timeoutId);
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to reset password");
-      }
-
-      // Step 2: Call Convex mutation to log the action
-      await resetPassword({
+      // Step 2: Call Convex mutation to log the action with retry logic
+      await resetPassword.mutate({
         userId: resetPasswordUser._id,
         instructorId: instructorId as Id<"users">,
       });
 
-      // Step 3: Send reset password email
-      const emailRes = await fetch("/api/resend/reset-password-email", {
+      // Step 3: Send reset password email with retry logic
+      await apiRequest("/api/resend/reset-password-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -594,12 +582,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           password: data.password,
         }),
       });
-      const emailData = await emailRes.json();
-      if (!emailRes.ok) {
-        throw new Error(
-          emailData.error || "Failed to send reset password email",
-        );
-      }
       setNotification({
         message: "Password reset and email sent successfully.",
         type: "success",
@@ -890,8 +872,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         setUploadProgress(Math.round(((i + 1) / validUsers.length) * 100));
 
         try {
-          // Call distributed-safe API route for creation
-          const response = await fetch("/api/clerk/create-user", {
+          // Call distributed-safe API route for creation with enhanced retry logic
+          const data = await apiRequest<CreateUserResponse>("/api/clerk/create-user", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -931,16 +913,9 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             }),
           });
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to create user");
-          }
-
-          const data = await response.json();
-
-          // Send welcome email via Resend
+          // Send welcome email via Resend with retry logic
           try {
-            await fetch("/api/resend/welcome-email", {
+            await apiRequest("/api/resend/welcome-email", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

@@ -12,6 +12,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { FaExclamationTriangle, FaTrash } from "react-icons/fa";
 import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
+import { apiRequest } from "@/lib/utils";
 
 interface InstructorProfilePageProps {
   params: Promise<{ instructorId: string }>;
@@ -55,7 +56,8 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
       throw new Error("User not found");
     }
 
-    const response = await fetch("/api/clerk/verify-password", {
+    // Verify password with enhanced retry logic
+    await apiRequest("/api/clerk/verify-password", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -66,12 +68,6 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
       }),
       signal, // Add the AbortSignal to the fetch request
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to verify password");
-    }
 
     setIsVerified(true);
     setNotification({
@@ -101,7 +97,8 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     setNotification(null);
 
     try {
-      const response = await fetch("/api/clerk/destructive-action", {
+      // Wipe data with enhanced retry logic
+      await apiRequest("/api/clerk/destructive-action", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -111,12 +108,6 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
           action: "delete_all_data",
         }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to wipe data");
-      }
 
       setNotification({
         message: "All data has been successfully wiped",

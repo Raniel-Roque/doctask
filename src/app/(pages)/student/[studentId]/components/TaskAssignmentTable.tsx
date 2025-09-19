@@ -18,12 +18,18 @@ import {
 } from "react";
 import React from "react";
 import { useMutation } from "convex/react";
+import { apiRequest } from "@/lib/utils";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import NotesPopupViewOnly from "./NotesPopupViewOnly";
+
+interface ProfileImagesResponse {
+  success: boolean;
+  profileImages: Record<string, string>;
+}
 
 interface Task {
   _id: Id<"taskAssignments">;
@@ -271,17 +277,15 @@ export const TaskAssignmentTable = ({
       setProfileImagesLoading(true);
       try {
         const userIds = groupMembers.map((member) => member._id);
-        const response = await fetch("/api/clerk/get-profile-images", {
+        // Get profile images with enhanced retry logic
+        const data = await apiRequest<ProfileImagesResponse>("/api/clerk/get-profile-images", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userIds }),
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.profileImages) {
-            setProfileImages(data.profileImages);
-          }
+        if (data.success && data.profileImages) {
+          setProfileImages(data.profileImages);
         }
       } finally {
         setProfileImagesLoading(false);

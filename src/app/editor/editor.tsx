@@ -5,7 +5,15 @@ import "@liveblocks/react-tiptap/styles.css";
 import "./editor.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { useEffect, useState } from "react";
+import { apiRequest } from "@/lib/utils";
 import TaskItem from "@tiptap/extension-task-item";
+
+interface ImageUploadResponse {
+  success: boolean;
+  image?: {
+    url: string;
+  };
+}
 import TaskList from "@tiptap/extension-task-list";
 import Table from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
@@ -168,17 +176,11 @@ export const Editor = ({
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/upload-image", {
+      // Upload image with enhanced retry logic
+      const data = await apiRequest<ImageUploadResponse>("/api/upload-image", {
         method: "POST",
         body: formData,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to upload image");
-      }
-
-      const data = await response.json();
 
       if (data.success && data.image?.url) {
         showNotification("Image uploaded successfully!", "success");

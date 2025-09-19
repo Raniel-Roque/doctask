@@ -6,6 +6,7 @@ import { NotificationBanner } from "./NotificationBanner";
 import PasswordVerification from "./PasswordVerification";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
 import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
+import { apiRequest } from "@/lib/utils";
 
 interface ChangePasswordProps {
   isOpen: boolean;
@@ -49,7 +50,8 @@ export default function ChangePassword({
       throw new Error("User not loaded");
     }
 
-    const response = await fetch("/api/clerk/verify-password", {
+    // Verify password with enhanced retry logic
+    await apiRequest("/api/clerk/verify-password", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -60,12 +62,6 @@ export default function ChangePassword({
       }),
       signal, // Add the AbortSignal to the fetch request
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to verify password");
-    }
 
     setIsVerified(true);
     setSuccess("Password verified. Please enter your new password.");
@@ -95,8 +91,8 @@ export default function ChangePassword({
     setError(null);
 
     try {
-      // Update the password using our API endpoint
-      const updateResponse = await fetch("/api/clerk/user-reset-password", {
+      // Update the password using our API endpoint with enhanced retry logic
+      await apiRequest("/api/clerk/user-reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -106,31 +102,6 @@ export default function ChangePassword({
           newPassword: newPassword,
         }),
       });
-
-      const data = await updateResponse.json();
-
-      if (!updateResponse.ok) {
-        // Check for compromised/weak password error
-        if (
-          data.error?.toLowerCase().includes("compromised") ||
-          data.error?.toLowerCase().includes("data breach") ||
-          data.error?.toLowerCase().includes("found in breach") ||
-          data.error?.toLowerCase().includes("pwned") ||
-          data.error?.toLowerCase().includes("weak") ||
-          data.error?.toLowerCase().includes("common") ||
-          data.error?.includes("password_strength") ||
-          data.error?.includes("weak_password") ||
-          data.error?.includes("password is too weak") ||
-          data.error?.includes("password_validation") ||
-          data.error?.toLowerCase().includes("too common") ||
-          data.error?.toLowerCase().includes("password is too common")
-        ) {
-          throw new Error(
-            "Password is too weak. Please choose a stronger password.",
-          );
-        }
-        throw new Error(data.error || "Failed to update password");
-      }
 
       setSuccess("Password updated successfully");
       setTimeout(() => {

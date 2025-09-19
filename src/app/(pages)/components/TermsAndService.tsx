@@ -5,11 +5,19 @@ import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { NotificationBanner } from "./NotificationBanner";
 import { useModalFocus } from "@/hooks/use-modal-focus";
+import { apiRequest } from "@/lib/utils";
+import { Id } from "../../../../convex/_generated/dataModel";
 
 interface TermsAndServiceProps {
   isOpen: boolean;
   onAgree: () => void;
   onDisagree: () => void;
+}
+
+interface UserResponse {
+  user: {
+    _id: Id<"users">;
+  };
 }
 
 export const TermsAndService: React.FC<TermsAndServiceProps> = ({
@@ -41,11 +49,10 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
     setError(null);
 
     try {
-      // Get user from Convex by clerk_id
-      const response = await fetch(
+      // Get user from Convex by email with enhanced retry logic
+      const userData = await apiRequest<UserResponse>(
         `/api/convex/get-user-by-email?email=${encodeURIComponent(user.emailAddresses[0].emailAddress)}`,
       );
-      const userData = await response.json();
 
       if (!userData.user) {
         throw new Error("User not found in database");

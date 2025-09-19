@@ -1,6 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { apiRequest } from "@/lib/utils";
+
+interface ImageUploadResponse {
+  success: boolean;
+  image?: {
+    url: string;
+  };
+}
+
 import {
   AlignCenterIcon,
   AlignJustifyIcon,
@@ -328,17 +337,11 @@ const ImageButton = () => {
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("/api/upload-image", {
+        // Upload image with enhanced retry logic
+        const data = await apiRequest<ImageUploadResponse>("/api/upload-image", {
           method: "POST",
           body: formData,
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to upload image");
-        }
-
-        const data = await response.json();
 
         if (data.success && data.image?.url) {
           // Use the shared URL from Convex storage

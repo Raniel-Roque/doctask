@@ -14,12 +14,24 @@ import ResetPasswordInput from "../components/ResetPasswordInput";
 import ResendTimer from "../components/ResendTimer";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
+import { apiRequest } from "@/lib/utils";
 
 interface ClerkError {
   errors: Array<{
     message: string;
     code?: string;
   }>;
+}
+
+interface EmailCheckResponse {
+  exists: boolean;
+}
+
+interface UserResponse {
+  _id: string;
+  email_verified: boolean;
+  first_name: string;
+  last_name: string;
 }
 
 const LoginPage = () => {
@@ -195,32 +207,24 @@ const LoginPage = () => {
     try {
       setLoading(true);
 
-      // Check if email exists in our database
-      const response = await fetch("/api/convex/get-user-by-email", {
+      // Check if email exists in our database with enhanced retry logic
+      const data = await apiRequest<EmailCheckResponse>("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: emailToCheck, checkOnly: true }),
       });
-
-      const data = await response.json();
 
       if (!data.exists) {
         setNotification({ message: "Email not found", type: "error" });
         return;
       }
 
-      // Get full user info for verification status
-      const userRes = await fetch("/api/convex/get-user-by-email", {
+      // Get full user info for verification status with enhanced retry logic
+      const user = await apiRequest<UserResponse>("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: emailToCheck }),
       });
-
-      if (!userRes.ok) {
-        throw new Error("Failed to fetch user verification status");
-      }
-
-      const user = await userRes.json();
 
       if (user.email_verified) {
         // If email is verified, proceed to password step
@@ -306,32 +310,24 @@ const LoginPage = () => {
 
       setEmail(email);
 
-      // Check if email exists in our database
-      const response = await fetch("/api/convex/get-user-by-email", {
+      // Check if email exists in our database with enhanced retry logic
+      const data = await apiRequest<EmailCheckResponse>("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, checkOnly: true }),
       });
-
-      const data = await response.json();
 
       if (!data.exists) {
         setNotification({ message: "Email not found", type: "error" });
         return;
       }
 
-      // Get full user info for verification status
-      const userRes = await fetch("/api/convex/get-user-by-email", {
+      // Get full user info for verification status with enhanced retry logic
+      const user = await apiRequest<UserResponse>("/api/convex/get-user-by-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-
-      if (!userRes.ok) {
-        throw new Error("Failed to fetch user verification status");
-      }
-
-      const user = await userRes.json();
 
       if (user.email_verified) {
         // If email is verified, try to auto-login if password is present
@@ -472,28 +468,19 @@ const LoginPage = () => {
       if (result.status === "complete") {
         try {
           // Update Convex database to mark email as verified
-          const userRes = await fetch("/api/convex/get-user-by-email", {
+          // Get user data with enhanced retry logic
+          const user = await apiRequest<UserResponse>("/api/convex/get-user-by-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email }),
           });
 
-          if (!userRes.ok) {
-            throw new Error("Failed to fetch user for verification update");
-          }
-
-          const user = await userRes.json();
-
-          // Call the mark-email-verified API to update the user's email verification status
-          const verifyRes = await fetch("/api/convex/mark-email-verified", {
+          // Call the mark-email-verified API to update the user's email verification status with enhanced retry logic
+          await apiRequest("/api/convex/mark-email-verified", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId: user._id }),
           });
-
-          if (!verifyRes.ok) {
-            throw new Error("Failed to mark email as verified");
-          }
 
           // Clear resend timer to allow resending on subsequent attempts
           const timerKey = `resendTimer_${email}`;
@@ -1150,22 +1137,20 @@ const LoginPage = () => {
                     try {
                       const result = await signIn.resetPassword({ password });
                       if (result.status === "complete") {
-                        // Update Convex database to mark email as verified
-                        const userRes = await fetch(
-                          "/api/convex/get-user-by-email",
-                          {
+                        // Update Convex database to mark email as verified with enhanced retry logic
+                        try {
+                          const user = await apiRequest<UserResponse>("/api/convex/get-user-by-email", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ email }),
-                          },
-                        );
-                        if (userRes.ok) {
-                          const user = await userRes.json();
-                          await fetch("/api/convex/mark-email-verified", {
+                          });
+                          await apiRequest("/api/convex/mark-email-verified", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ userId: user._id }),
                           });
+                        } catch (error) {
+                          console.warn("Failed to update email verification status:", error);
                         }
 
                         // Clear forgot password timer on successful reset

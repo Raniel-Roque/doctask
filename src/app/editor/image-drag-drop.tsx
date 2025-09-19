@@ -4,6 +4,14 @@ import { useState } from "react";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { useEditorStore } from "@/store/use-editor-store";
+import { apiRequest } from "@/lib/utils";
+
+interface ImageUploadResponse {
+  success: boolean;
+  image?: {
+    url: string;
+  };
+}
 
 interface NotificationState {
   message: string | null;
@@ -84,17 +92,11 @@ export const ImageDragDropWrapper = ({
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/upload-image", {
+      // Upload image with enhanced retry logic
+      const data = await apiRequest<ImageUploadResponse>("/api/upload-image", {
         method: "POST",
         body: formData,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to upload image");
-      }
-
-      const data = await response.json();
 
       if (data.success && data.image?.url) {
         showNotification("Image uploaded successfully!", "success");

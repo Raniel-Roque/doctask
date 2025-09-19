@@ -2,9 +2,17 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { TermsAndService } from "./TermsAndService";
 import { useClerk } from "@clerk/clerk-react";
+import { apiRequest } from "@/lib/utils";
 
 interface TermsAgreementWrapperProps {
   children: React.ReactNode;
+}
+
+interface UserResponse {
+  user: {
+    terms_agreed: boolean;
+    privacy_agreed: boolean;
+  };
 }
 
 export const TermsAgreementWrapper: React.FC<TermsAgreementWrapperProps> = ({
@@ -23,11 +31,10 @@ export const TermsAgreementWrapper: React.FC<TermsAgreementWrapperProps> = ({
       }
 
       try {
-        // Get user from Convex by email
-        const response = await fetch(
+        // Get user from Convex by email with enhanced retry logic
+        const data = await apiRequest<UserResponse>(
           `/api/convex/get-user-by-email?email=${encodeURIComponent(user.emailAddresses[0].emailAddress)}`,
         );
-        const data = await response.json();
 
         if (data.user) {
           // Check if user has agreed to both terms and privacy policy
