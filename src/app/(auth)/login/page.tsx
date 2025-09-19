@@ -1,7 +1,7 @@
 "use client";
 
 import { useSignIn, useUser } from "@clerk/clerk-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -12,9 +12,10 @@ import PasswordInput from "../components/PasswordInput";
 import ResetCodeInput from "../components/ResetCodeInput";
 import ResetPasswordInput from "../components/ResetPasswordInput";
 import ResendTimer from "../components/ResendTimer";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
 import { apiRequest } from "@/lib/utils";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 interface ClerkError {
   errors: Array<{
@@ -39,6 +40,7 @@ const LoginPage = () => {
   const { signOut, isSignedIn } = useAuth();
   const { user } = useUser();
   const router = useRouter();
+  const { addBanner } = useBannerManager();
   const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -48,15 +50,21 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [step, setStep] = useState(1); // 1: Email, 2: Verification Code, 3: Password, 4: Reset Password
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "error" | "success" | "warning" | "info";
-  } | null>(null);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [forgotStep, setForgotStep] = useState(false); // false: login, true: forgot password
   const [forgotStepIndex, setForgotStepIndex] = useState(0); // 0: code, 1: reset password
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isClient, setIsClient] = useState(false);
+
+  // Helper function to show notifications using the new banner system
+  const showNotification = useCallback((message: string, type: "error" | "success" | "warning" | "info") => {
+    addBanner({
+      message,
+      type,
+      onClose: () => {}, // Banner will auto-close
+      autoClose: true,
+    });
+  }, [addBanner]);
 
   useEffect(() => {
     setMounted(true);
@@ -71,38 +79,34 @@ const LoginPage = () => {
       const successRestore = urlParams.get("successrestore");
 
       if (successPassword === "true") {
-        setNotification({
-          message:
-            "Password reset successful! Please log in with your new password.",
-          type: "success",
-        });
+        showNotification(
+          "Password reset successful! Please log in with your new password.",
+          "success"
+        );
       } else if (successVerify === "true") {
-        setNotification({
-          message:
-            "Email verified successfully! Please log in with your password.",
-          type: "success",
-        });
+        showNotification(
+          "Email verified successfully! Please log in with your password.",
+          "success"
+        );
       } else if (successRestore === "true") {
-        setNotification({
-          message:
-            "Database has been restored successfully! Please check your email for the new password.",
-          type: "success",
-        });
+        showNotification(
+          "Database has been restored successfully! Please check your email for the new password.",
+          "success"
+        );
       }
     }
-  }, [router, mounted]);
+  }, [router, mounted, showNotification]);
 
   useEffect(() => {
     // Check for restore banner flag in localStorage after mount
     if (mounted && localStorage.getItem("showRestoreBanner") === "true") {
-      setNotification({
-        message:
-          "Database has been restored successfully! Please check your email for the new password.",
-        type: "success",
-      });
+      showNotification(
+        "Database has been restored successfully! Please check your email for the new password.",
+        "success"
+      );
       localStorage.removeItem("showRestoreBanner");
     }
-  }, [mounted]);
+  }, [mounted, showNotification]);
 
   useEffect(() => {
     if (mounted) {
@@ -185,10 +189,7 @@ const LoginPage = () => {
 
     // Prevent submission if email is empty
     if (!email || email.trim() === "") {
-      setNotification({
-        message: "Please enter your email address",
-        type: "error",
-      });
+      showNotification("Please enter your email address", "error");
       return;
     }
 
@@ -198,10 +199,7 @@ const LoginPage = () => {
     // Custom email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailToCheck)) {
-      setNotification({
-        message: "Please enter a valid email address",
-        type: "error",
-      });
+      showNotification("Please enter a valid email address", "error");
       return;
     }
 
@@ -219,7 +217,7 @@ const LoginPage = () => {
       );
 
       if (!data.exists) {
-        setNotification({ message: "Email not found", type: "error" });
+        showNotification("Email not found", "error");
         return;
       }
 
@@ -236,7 +234,7 @@ const LoginPage = () => {
       if (user.email_verified) {
         // If email is verified, proceed to password step
         setStep(3);
-        setNotification({ message: "", type: "info" });
+        // Clear any existing notifications
         setCode("");
       } else {
         // If email is not verified, check if there's an active timer
@@ -269,31 +267,24 @@ const LoginPage = () => {
           if (result.status === "needs_first_factor") {
             updateCodeRateLimit(emailToCheck);
             setStep(2);
-            setNotification({
-              message:
-                "A new verification code has been sent to your email. Please check your inbox and spam folder.",
-              type: "success",
-            });
+showNotification(
+        "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+        "success"
+      );
             setCode("");
           } else {
-            setNotification({
-              message: "Failed to send verification code. Please try again.",
-              type: "error",
-            });
+showNotification("Failed to send verification code. Please try again.", "error");
           }
         } else {
           // Just proceed to verification step without sending code
           setStep(2);
-          setNotification({ message: "", type: "info" });
+          // Clear any existing notifications
           setCode("");
         }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "";
-      setNotification({
-        message: errorMessage || "An error occurred. Please try again.",
-        type: "error",
-      });
+      const errorMessage = getErrorMessage(err, ErrorContexts.fetchData('user'));
+      showNotification(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -305,10 +296,7 @@ const LoginPage = () => {
     // Custom email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setNotification({
-        message: "Please enter a valid email address",
-        type: "error",
-      });
+      showNotification("Please enter a valid email address", "error");
       return;
     }
 
@@ -328,7 +316,7 @@ const LoginPage = () => {
       );
 
       if (!data.exists) {
-        setNotification({ message: "Email not found", type: "error" });
+        showNotification("Email not found", "error");
         return;
       }
 
@@ -361,19 +349,15 @@ const LoginPage = () => {
               );
               return; // Success, user will be redirected
             } else {
-              setNotification({
-                message: "Incorrect password. Please try again.",
-                type: "error",
-              });
+showNotification("Incorrect password. Please try again.", "error");
             }
           } catch (err) {
             const clerkError = err as ClerkError;
-            setNotification({
-              message:
-                clerkError.errors?.[0]?.message ||
-                "An error occurred during sign in",
-              type: "error",
-            });
+            showNotification(
+              clerkError.errors?.[0]?.message ||
+              "An error occurred during sign in",
+              "error"
+            );
           } finally {
             setLoading(false);
           }
@@ -411,31 +395,24 @@ const LoginPage = () => {
 
           if (result.status === "needs_first_factor") {
             setStep(2);
-            setNotification({
-              message:
-                "A new verification code has been sent to your email. Please check your inbox and spam folder.",
-              type: "success",
-            });
+showNotification(
+        "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+        "success"
+      );
             setCode("");
           } else {
-            setNotification({
-              message: "Failed to send verification code. Please try again.",
-              type: "error",
-            });
+showNotification("Failed to send verification code. Please try again.", "error");
           }
         } else {
           // Just proceed to verification step without sending code
           setStep(2);
-          setNotification({ message: "", type: "info" });
+          // Clear any existing notifications
           setCode("");
         }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "";
-      setNotification({
-        message: errorMessage || "An error occurred. Please try again.",
-        type: "error",
-      });
+      const errorMessage = getErrorMessage(err, ErrorContexts.fetchData('user'));
+      showNotification(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -447,26 +424,17 @@ const LoginPage = () => {
 
     // Prevent submission if verification code is empty
     if (!code || code.trim() === "") {
-      setNotification({
-        message: "Please enter the verification code sent to your email",
-        type: "error",
-      });
+      showNotification("Please enter the verification code sent to your email", "error");
       return;
     }
 
     if (code.length !== 6) {
-      setNotification({
-        message: "Verification code must be exactly 6 digits",
-        type: "error",
-      });
+      showNotification("Verification code must be exactly 6 digits", "error");
       return;
     }
 
     if (!/^\d{6}$/.test(code)) {
-      setNotification({
-        message: "Verification code must contain only numbers",
-        type: "error",
-      });
+      showNotification("Verification code must contain only numbers", "error");
       return;
     }
 
@@ -513,39 +481,26 @@ const LoginPage = () => {
           await signOut();
           setStep(1);
           setCode("");
-          setNotification({
-            message:
-              "Email verified but failed to update database. Please try logging in again.",
-            type: "warning",
-          });
+showNotification(
+        "Email verified but failed to update database. Please try logging in again.",
+        "warning"
+      );
         }
       } else {
-        setNotification({
-          message:
-            "Invalid verification code. Please check your email and try again.",
-          type: "error",
-        });
+showNotification(
+        "Invalid verification code. Please check your email and try again.",
+        "error"
+      );
         setCode(""); // Clear the code input on error
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
       if (errorMessage.toLowerCase().includes("expired")) {
-        setNotification({
-          message: "Verification code has expired. Please request a new code.",
-          type: "error",
-        });
+        showNotification("Verification code has expired. Please request a new code.", "error");
       } else if (errorMessage.toLowerCase().includes("invalid")) {
-        setNotification({
-          message:
-            "Invalid verification code. Please check your email and try again.",
-          type: "error",
-        });
+        showNotification("Invalid verification code. Please check your email and try again.", "error");
       } else {
-        setNotification({
-          message:
-            "Verification failed. Please try again or request a new code.",
-          type: "error",
-        });
+        showNotification("Verification failed. Please try again or request a new code.", "error");
       }
       setCode(""); // Clear the code input on error
     } finally {
@@ -559,7 +514,7 @@ const LoginPage = () => {
 
     // Prevent submission if password is empty
     if (!password || password.trim() === "") {
-      setNotification({ message: "Please enter your password", type: "error" });
+      showNotification("Please enter your password", "error");
       return;
     }
 
@@ -575,10 +530,7 @@ const LoginPage = () => {
         await setActive({ session: result.createdSessionId });
         localStorage.setItem("lastActivityTimestamp", Date.now().toString());
       } else {
-        setNotification({
-          message: "Incorrect password. Please try again.",
-          type: "error",
-        });
+showNotification("Incorrect password. Please try again.", "error");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
@@ -591,30 +543,17 @@ const LoginPage = () => {
         errorMessage.toLowerCase().includes("data breach") ||
         errorMessage.toLowerCase().includes("password has been compromised")
       ) {
-        setNotification({
-          message:
-            "This password has been compromised in a data breach. Please use forgot password.",
-          type: "error",
-        });
+        showNotification("This password has been compromised in a data breach. Please use forgot password.", "error");
       } else if (errorMessage.includes("Your account is locked")) {
-        setNotification({
-          message: `Your account is locked. Please try again later or contact your capstone instructor.`,
-          type: "error",
-        });
+        showNotification("Your account is locked. Please try again later or contact your capstone instructor.", "error");
       } else if (
         errorMessage.toLowerCase().includes("password") ||
         errorMessage.toLowerCase().includes("invalid credentials") ||
         errorMessage.toLowerCase().includes("incorrect")
       ) {
-        setNotification({
-          message: "Incorrect password. Please try again.",
-          type: "error",
-        });
+        showNotification("Incorrect password. Please try again.", "error");
       } else {
-        setNotification({
-          message: "An error occurred during sign in",
-          type: "error",
-        });
+        showNotification("An error occurred during sign in", "error");
       }
     } finally {
       setLoading(false);
@@ -648,23 +587,16 @@ const LoginPage = () => {
         // Clear the shouldSendCode flag since we just sent a code
         localStorage.removeItem(`shouldSendCode_${email}`);
 
-        setNotification({
-          message:
-            "A new verification code has been sent to your email. Please check your inbox and spam folder.",
-          type: "success",
-        });
+showNotification(
+        "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+        "success"
+      );
       } else {
-        setNotification({
-          message: "Failed to send new code. Please try again.",
-          type: "error",
-        });
+showNotification("Failed to send new code. Please try again.", "error");
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "";
-      setNotification({
-        message: errorMessage || "An error occurred. Please try again.",
-        type: "error",
-      });
+      const errorMessage = getErrorMessage(err, ErrorContexts.fetchData('user'));
+      showNotification(errorMessage, "error");
     } finally {
       setSendingCode(false);
     }
@@ -706,23 +638,16 @@ const LoginPage = () => {
 
         updateCodeRateLimit(email);
 
-        setNotification({
-          message:
-            "A new password reset code has been sent to your email. Please check your inbox and spam folder.",
-          type: "success",
-        });
+showNotification(
+        "A new password reset code has been sent to your email. Please check your inbox and spam folder.",
+        "success"
+      );
       } else {
-        setNotification({
-          message: "Failed to send new code. Please try again.",
-          type: "error",
-        });
+showNotification("Failed to send new code. Please try again.", "error");
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "";
-      setNotification({
-        message: errorMessage || "An error occurred. Please try again.",
-        type: "error",
-      });
+      const errorMessage = getErrorMessage(err, ErrorContexts.fetchData('user'));
+      showNotification(errorMessage, "error");
     } finally {
       setSendingCode(false);
     }
@@ -732,7 +657,7 @@ const LoginPage = () => {
     setForgotStep(true);
     setStep(4);
     setForgotStepIndex(0);
-    setNotification({ message: "", type: "info" });
+    // Clear any existing notifications
     setCode("");
     setPassword("");
     setConfirmPassword("");
@@ -766,24 +691,24 @@ const LoginPage = () => {
       // If on reset password input, go back to password input (step 3)
       setForgotStep(false);
       setStep(3);
-      setNotification({ message: "", type: "info" });
+      // Clear any existing notifications
       setCode("");
       setPassword("");
       setConfirmPassword("");
     } else if (step === 2) {
       // If on verification code step, go back to email input (step 1)
       setStep(1);
-      setNotification({ message: "", type: "info" });
+      // Clear any existing notifications
       setCode("");
     } else if (step === 3 && !forgotStep) {
       // If on password step, go back to email input
       setStep(1);
-      setNotification({ message: "", type: "info" });
+      // Clear any existing notifications
       setPassword("");
     } else {
       setForgotStep(false);
       setStep(3);
-      setNotification({ message: "", type: "info" });
+      // Clear any existing notifications
       setCode("");
       setPassword("");
       setConfirmPassword("");
@@ -816,11 +741,6 @@ const LoginPage = () => {
 
       {/* Right Section */}
       <div className="w-full md:w-[35%] bg-[#B54A4A] flex flex-col items-center justify-center p-8 md:p-12 relative shadow-2xl">
-        <NotificationBanner
-          message={notification?.message || null}
-          type={notification?.type || "info"}
-          onClose={() => setNotification(null)}
-        />
         <div className="w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl space-y-8 z-10 relative pb-16">
           {/* Back Button for steps 2, 3, 4 */}
           {step > 1 && (
@@ -895,7 +815,7 @@ const LoginPage = () => {
                 onClick={() => {
                   setStep(1);
                   setCode("");
-                  setNotification(null);
+                  // Clear any existing notifications
                 }}
                 disabled={loading}
                 className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1031,28 +951,23 @@ const LoginPage = () => {
 
                       // Prevent submission if verification code is empty
                       if (!code || code.trim() === "") {
-                        setNotification({
-                          message:
-                            "Please enter the verification code sent to your email",
-                          type: "error",
-                        });
+                        showNotification(
+                          "Please enter the verification code sent to your email",
+                          "error"
+                        );
                         return;
                       }
 
                       if (code.length !== 6) {
-                        setNotification({
-                          message: "Verification code must be exactly 6 digits",
-                          type: "error",
-                        });
+                        showNotification("Verification code must be exactly 6 digits", "error");
                         return;
                       }
 
                       if (!/^\d{6}$/.test(code)) {
-                        setNotification({
-                          message:
-                            "Verification code must contain only numbers",
-                          type: "error",
-                        });
+                        showNotification(
+                          "Verification code must contain only numbers",
+                          "error"
+                        );
                         return;
                       }
 
@@ -1065,35 +980,31 @@ const LoginPage = () => {
                         if (result.status === "needs_new_password") {
                           setForgotStepIndex(1);
                         } else {
-                          setNotification({
-                            message:
-                              "Invalid verification code. Please check your email and try again.",
-                            type: "error",
-                          });
+showNotification(
+        "Invalid verification code. Please check your email and try again.",
+        "error"
+      );
                         }
                       } catch (err) {
                         const errorMessage =
                           err instanceof Error ? err.message : "";
                         if (errorMessage.toLowerCase().includes("expired")) {
-                          setNotification({
-                            message:
-                              "Verification code has expired. Please request a new code.",
-                            type: "error",
-                          });
+                          showNotification(
+                            "Verification code has expired. Please request a new code.",
+                            "error"
+                          );
                         } else if (
                           errorMessage.toLowerCase().includes("invalid")
                         ) {
-                          setNotification({
-                            message:
-                              "Invalid verification code. Please check your email and try again.",
-                            type: "error",
-                          });
+showNotification(
+        "Invalid verification code. Please check your email and try again.",
+        "error"
+      );
                         } else {
-                          setNotification({
-                            message:
-                              "Verification failed. Please try again or request a new code.",
-                            type: "error",
-                          });
+                          showNotification(
+                            "Verification failed. Please try again or request a new code.",
+                            "error"
+                          );
                         }
                       } finally {
                         setLoading(false);
@@ -1119,22 +1030,16 @@ const LoginPage = () => {
                     if (!isLoaded) return;
 
                     // Clear any existing notifications
-                    setNotification({ message: "", type: "info" });
+                    // Clear any existing notifications
 
                     // Prevent submission if passwords are empty
                     if (!password || password.trim() === "") {
-                      setNotification({
-                        message: "Please enter your new password",
-                        type: "error",
-                      });
+showNotification("Please enter your new password", "error");
                       return;
                     }
 
                     if (!confirmPassword || confirmPassword.trim() === "") {
-                      setNotification({
-                        message: "Please confirm your new password",
-                        type: "error",
-                      });
+showNotification("Please confirm your new password", "error");
                       return;
                     }
 
@@ -1181,11 +1086,10 @@ const LoginPage = () => {
                         localStorage.removeItem(timerKey);
 
                         // Set success notification before signing out
-                        setNotification({
-                          message:
-                            "Password reset successful! Please log in with your new password.",
-                          type: "success",
-                        });
+showNotification(
+        "Password reset successful! Please log in with your new password.",
+        "success"
+      );
 
                         // Clear all form data
                         setCode("");
@@ -1205,11 +1109,10 @@ const LoginPage = () => {
                           );
                         }, 2000); // Show success message for 2 seconds
                       } else {
-                        setNotification({
-                          message:
-                            "Failed to reset password. Please try again.",
-                          type: "error",
-                        });
+                        showNotification(
+                          "Failed to reset password. Please try again.",
+                          "error"
+                        );
                       }
                     } catch (err) {
                       const errorMessage =
@@ -1240,11 +1143,10 @@ const LoginPage = () => {
                           .toLowerCase()
                           .includes("password is too common")
                       ) {
-                        setNotification({
-                          message:
-                            "Password is too weak. Please choose a stronger password.",
-                          type: "error",
-                        });
+                        showNotification(
+                          "Password is too weak. Please choose a stronger password.",
+                          "error"
+                        );
                       }
                       // Check for password validation errors
                       else if (
@@ -1258,11 +1160,10 @@ const LoginPage = () => {
                           .toLowerCase()
                           .includes("password requirements")
                       ) {
-                        setNotification({
-                          message:
-                            "Password does not meet requirements. Please ensure it has at least 8 characters and is not too common.",
-                          type: "error",
-                        });
+                        showNotification(
+                          "Password does not meet requirements. Please ensure it has at least 8 characters and is not too common.",
+                          "error"
+                        );
                       }
                       // Check for rate limiting
                       else if (
@@ -1272,19 +1173,17 @@ const LoginPage = () => {
                           .includes("too many requests") ||
                         errorMessage.toLowerCase().includes("try again later")
                       ) {
-                        setNotification({
-                          message:
-                            "Too many password reset attempts. Please wait a moment before trying again.",
-                          type: "error",
-                        });
+                        showNotification(
+                          "Too many password reset attempts. Please wait a moment before trying again.",
+                          "error"
+                        );
                       }
                       // Generic error fallback
                       else {
-                        setNotification({
-                          message:
-                            "An error occurred while resetting your password. Please try again.",
-                          type: "error",
-                        });
+                        showNotification(
+                          "An error occurred while resetting your password. Please try again.",
+                          "error"
+                        );
                       }
                     } finally {
                       setLoading(false);
