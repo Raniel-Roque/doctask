@@ -13,14 +13,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get current user and group data in parallel
-    const [currentUser, studentGroup] = await Promise.all([
-      convex.query(api.fetch.getUserByClerkId, {
-        clerkId: userId,
-      }),
-      // We'll get the group after we have the user
-      Promise.resolve(null)
-    ]);
+    // Get current user from Convex
+    const currentUser = await convex.query(api.fetch.getUserByClerkId, {
+      clerkId: userId,
+    });
 
     if (!currentUser || currentUser.role !== 0) {
       return NextResponse.json(
