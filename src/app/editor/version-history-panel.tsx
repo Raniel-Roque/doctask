@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { useEditorStore } from "@/store/use-editor-store";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 
@@ -26,10 +27,6 @@ interface VersionHistoryPanelProps {
   saveToDatabase?: () => Promise<void>;
 }
 
-interface NotificationState {
-  message: string | null;
-  type: "error" | "success" | "warning" | "info";
-}
 
 export const VersionHistoryPanel = ({
   isOpen,
@@ -40,10 +37,7 @@ export const VersionHistoryPanel = ({
 }: VersionHistoryPanelProps) => {
   const { user } = useUser();
   const { editor } = useEditorStore();
-  const [notification, setNotification] = useState<NotificationState>({
-    message: null,
-    type: "info",
-  });
+  const { addBanner } = useBannerManager();
   const [isCreating, setIsCreating] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [show, setShow] = useState(false);
@@ -52,21 +46,20 @@ export const VersionHistoryPanel = ({
   const [revertConfirmId, setRevertConfirmId] = useState<string | null>(null);
   const [revertingId, setRevertingId] = useState<string | null>(null);
 
-  const showNotification = (
-    message: string,
-    type: NotificationState["type"],
-  ) => {
-    setNotification({ message, type });
-  };
-
-  const closeNotification = () => {
-    setNotification({ message: null, type: "info" });
+  // Helper function to show notifications using the new banner system
+  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+    addBanner({
+      message,
+      type,
+      onClose: () => {}, // Banner will auto-close
+      autoClose: true,
+    });
   };
 
   // Clear notification when panel closes
   useEffect(() => {
     if (!isOpen) {
-      closeNotification();
+      // No need to clear notifications as they auto-close
     }
   }, [isOpen]);
 
@@ -141,10 +134,8 @@ export const VersionHistoryPanel = ({
         showNotification(result.error || "Failed to create version", "error");
       }
     } catch (error) {
-      showNotification(
-        error instanceof Error ? error.message : "Failed to create version",
-        "error",
-      );
+      const errorMessage = getErrorMessage(error, ErrorContexts.editUser('document'));
+      showNotification(errorMessage, "error");
     } finally {
       setIsCreating(false);
     }
@@ -173,10 +164,8 @@ export const VersionHistoryPanel = ({
         showNotification(result.error || "Failed to revert version", "error");
       }
     } catch (error) {
-      showNotification(
-        error instanceof Error ? error.message : "Failed to revert version",
-        "error",
-      );
+      const errorMessage = getErrorMessage(error, ErrorContexts.editUser('document'));
+      showNotification(errorMessage, "error");
     } finally {
       setRevertingId(null);
     }
@@ -197,10 +186,8 @@ export const VersionHistoryPanel = ({
       // setLocalVersions((prev) => prev.filter((v) => v._id !== versionId)); // This line was removed
       setDeleteConfirmId(null);
     } catch (error) {
-      showNotification(
-        error instanceof Error ? error.message : "Failed to delete version",
-        "error",
-      );
+      const errorMessage = getErrorMessage(error, ErrorContexts.fetchData('document'));
+      showNotification(errorMessage, "error");
     } finally {
       setDeletingId(null);
     }
@@ -279,15 +266,6 @@ export const VersionHistoryPanel = ({
 
   return (
     <>
-      {/* Notification Banner - Outside panel, centered at top */}
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60] print:hidden">
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={closeNotification}
-        />
-      </div>
-
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/20 z-40 print:hidden"

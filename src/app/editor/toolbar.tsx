@@ -66,14 +66,11 @@ import { type Level } from "@tiptap/extension-heading";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useEditorStore } from "@/store/use-editor-store";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { Threads } from "./threads";
 
-interface NotificationState {
-  message: string | null;
-  type: "error" | "success" | "warning" | "info";
-}
 
 const FontFamilyButton = () => {
   // Display-only button showing Times New Roman (cannot be changed)
@@ -257,23 +254,19 @@ const UnlinkButton = () => {
 
 const ImageButton = () => {
   const { editor } = useEditorStore();
+  const { addBanner } = useBannerManager();
   const [imageUrl, setImageUrl] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [notification, setNotification] = useState<NotificationState>({
-    message: null,
-    type: "info",
-  });
 
-  const showNotification = (
-    message: string,
-    type: NotificationState["type"],
-  ) => {
-    setNotification({ message, type });
-  };
-
-  const closeNotification = () => {
-    setNotification({ message: null, type: "info" });
+  // Helper function to show notifications using the new banner system
+  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+    addBanner({
+      message,
+      type,
+      onClose: () => {}, // Banner will auto-close
+      autoClose: true,
+    });
   };
 
   const onChange = (src: string) => {
@@ -354,10 +347,8 @@ const ImageButton = () => {
           throw new Error("Invalid response from server");
         }
       } catch (error) {
-        showNotification(
-          error instanceof Error ? error.message : "Failed to upload image",
-          "error",
-        );
+        const errorMessage = getErrorMessage(error, ErrorContexts.uploadFile());
+        showNotification(errorMessage, "error");
       } finally {
         setIsUploading(false);
       }
@@ -377,11 +368,6 @@ const ImageButton = () => {
 
   return (
     <>
-      <NotificationBanner
-        message={notification.message}
-        type={notification.type}
-        onClose={closeNotification}
-      />
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenu>

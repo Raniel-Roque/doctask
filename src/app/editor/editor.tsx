@@ -34,8 +34,9 @@ import { useEditorStore } from "@/store/use-editor-store";
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
 import { useOthers, useSelf, useMyPresence } from "@liveblocks/react/suspense";
 import { Threads } from "./threads";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
@@ -84,10 +85,6 @@ interface EditorProps {
   documentId?: Id<"documents">; // Add document ID for tracking edits
 }
 
-interface NotificationState {
-  message: string | null;
-  type: "error" | "success" | "warning" | "info";
-}
 
 export const Editor = ({
   initialContent,
@@ -98,6 +95,7 @@ export const Editor = ({
 }: EditorProps) => {
   const { setEditor } = useEditorStore();
   const { user } = useUser();
+  const { addBanner } = useBannerManager();
   const trackEditMutation = useMutation(api.mutations.trackDocumentEdit);
   const [hasInitialized, setHasInitialized] = useState(false);
 
@@ -113,20 +111,15 @@ export const Editor = ({
   const self = useSelf();
   const others = useOthers();
   const [, setMyPresence] = useMyPresence();
-  const [notification, setNotification] = useState<NotificationState>({
-    message: null,
-    type: "info",
-  });
 
-  const showNotification = (
-    message: string,
-    type: NotificationState["type"],
-  ) => {
-    setNotification({ message, type });
-  };
-
-  const closeNotification = () => {
-    setNotification({ message: null, type: "info" });
+  // Helper function to show notifications using the new banner system
+  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+    addBanner({
+      message,
+      type,
+      onClose: () => {}, // Banner will auto-close
+      autoClose: true,
+    });
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -189,10 +182,8 @@ export const Editor = ({
         throw new Error("Invalid response from server");
       }
     } catch (error) {
-      showNotification(
-        error instanceof Error ? error.message : "Failed to upload image",
-        "error",
-      );
+      const errorMessage = getErrorMessage(error, ErrorContexts.uploadFile());
+      showNotification(errorMessage, "error");
       return null;
     }
   };
@@ -691,13 +682,6 @@ export const Editor = ({
         </div>
       )}
       <div className="editor-container size-full overflow-x-auto bg-gray-50 px-4 print:p-0 print:bg-white print:overflow-visible">
-        <div className="print:hidden">
-          <NotificationBanner
-            message={notification.message}
-            type={notification.type}
-            onClose={closeNotification}
-          />
-        </div>
         <div className="min-w-max flex justify-center w-[816px] py-4 print:py-0 mx-auto print:w-full print:min-w-0 print:flex-none print:block">
           <EditorContent editor={editor} />
           <div className="print:hidden">

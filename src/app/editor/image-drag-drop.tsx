@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { useEditorStore } from "@/store/use-editor-store";
 import { apiRequest } from "@/lib/utils";
 
@@ -13,10 +14,6 @@ interface ImageUploadResponse {
   };
 }
 
-interface NotificationState {
-  message: string | null;
-  type: "error" | "success" | "warning" | "info";
-}
 
 interface ImageDragDropWrapperProps {
   children: React.ReactNode;
@@ -28,21 +25,17 @@ export const ImageDragDropWrapper = ({
   isEditable = true,
 }: ImageDragDropWrapperProps) => {
   const { editor } = useEditorStore();
-  const [notification, setNotification] = useState<NotificationState>({
-    message: null,
-    type: "info",
-  });
+  const { addBanner } = useBannerManager();
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const showNotification = (
-    message: string,
-    type: NotificationState["type"],
-  ) => {
-    setNotification({ message, type });
-  };
-
-  const closeNotification = () => {
-    setNotification({ message: null, type: "info" });
+  // Helper function to show notifications using the new banner system
+  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+    addBanner({
+      message,
+      type,
+      onClose: () => {}, // Banner will auto-close
+      autoClose: true,
+    });
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -105,10 +98,8 @@ export const ImageDragDropWrapper = ({
         throw new Error("Invalid response from server");
       }
     } catch (error) {
-      showNotification(
-        error instanceof Error ? error.message : "Failed to upload image",
-        "error",
-      );
+      const errorMessage = getErrorMessage(error, ErrorContexts.uploadFile());
+      showNotification(errorMessage, "error");
       return null;
     }
   };
@@ -225,13 +216,6 @@ export const ImageDragDropWrapper = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="print:hidden">
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={closeNotification}
-        />
-      </div>
 
       {isDragOver && (
         <div className="fixed inset-0 bg-blue-500/20 border-4 border-dashed border-blue-500 z-50 flex items-center justify-center pointer-events-none print:hidden">

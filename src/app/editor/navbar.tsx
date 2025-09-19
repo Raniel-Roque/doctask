@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { BsFilePdf, BsFiletypeDocx } from "react-icons/bs";
 import { useEditorStore } from "@/store/use-editor-store";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { CloudSavingIndicator } from "./cloud-saving-indicator";
 import { Avatars } from "./avatars";
 import { LastEditedBy } from "./last-edited-by";
@@ -51,10 +51,6 @@ interface NavbarProps {
   chapter?: string;
 }
 
-interface NotificationState {
-  message: string | null;
-  type: "error" | "success" | "warning" | "info";
-}
 
 export const Navbar = ({
   title = "Untitled Document",
@@ -72,20 +68,16 @@ export const Navbar = ({
   const [selectedCols, setSelectedCols] = useState(1);
   const { editor } = useEditorStore();
   const router = useRouter();
-  const [notification, setNotification] = useState<NotificationState>({
-    message: null,
-    type: "info",
-  });
+  const { addBanner } = useBannerManager();
 
-  const showNotification = (
-    message: string,
-    type: NotificationState["type"],
-  ) => {
-    setNotification({ message, type });
-  };
-
-  const closeNotification = () => {
-    setNotification({ message: null, type: "info" });
+  // Helper function to show notifications using the new banner system
+  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+    addBanner({
+      message,
+      type,
+      onClose: () => {}, // Banner will auto-close
+      autoClose: true,
+    });
   };
 
   const createTable = (rows: number, cols: number) => {
@@ -479,14 +471,6 @@ export const Navbar = ({
 
   return (
     <>
-      <div className="print:hidden">
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={closeNotification}
-        />
-      </div>
-
       <nav className="flex items-center justify-between print:hidden">
         <div className="pl-4 py-1 flex gap-3 items-center">
           {/* Logo */}
