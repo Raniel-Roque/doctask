@@ -53,8 +53,12 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
     sortDirection,
   });
 
+  // Handle loading state first
+  const status: "idle" | "loading" | "error" =
+    result === undefined ? "loading" : (result.status as "idle" | "error");
+
   // Transform the result to match the Group type and apply frontend pagination
-  const allGroups = (result?.groups || []).map((group) => ({
+  const allGroups = result ? (result.groups || []).map((group) => ({
     _id: group._id.toString(),
     name: group.name,
     capstone_title: group.capstone_title,
@@ -72,7 +76,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
       last_name: member.last_name,
       middle_name: member.middle_name,
     })),
-  }));
+  })) : [];
 
   // Apply frontend pagination
   const totalFilteredCount = allGroups.length;
@@ -84,8 +88,6 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const totalCount = totalFilteredCount;
   const totalPages = totalFilteredPages;
   const hasResults = totalFilteredCount > 0;
-  const status: "idle" | "loading" | "error" =
-    result === undefined ? "loading" : (result.status as "idle" | "error");
 
   const handleSort = (field: typeof sortField) => {
     if (field === sortField) {
