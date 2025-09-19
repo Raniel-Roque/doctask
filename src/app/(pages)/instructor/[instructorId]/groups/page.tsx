@@ -353,8 +353,8 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
   // Helper function to get valid status
   const getStatus = () => {
-    if (!searchResult) return "loading";
-    if (searchResult.status === "error") return "error";
+    if (allGroupsQuery === undefined) return "loading";
+    if (searchResult?.status === "error") return "error";
     return "idle";
   };
 
