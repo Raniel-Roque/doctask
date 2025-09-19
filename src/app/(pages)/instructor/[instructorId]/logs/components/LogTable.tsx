@@ -379,6 +379,17 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     id?: string | null;
   }) => {
     if (!text) return <span>-</span>;
+    
+    // If maxLength is 0, show full text without truncation or button
+    if (maxLength === 0) {
+      return (
+        <span>
+          {text}
+          {id && <span className="text-gray-500 ml-1">(ID: {id})</span>}
+        </span>
+      );
+    }
+    
     if (text.length <= maxLength && !id) return <span>{text}</span>;
 
     const isExpanded = expandedColumns[column];
@@ -948,7 +959,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                     <td className="px-6 py-4 text-left cursor-pointer whitespace-pre-line w-full">
                       <CollapsibleText
                         text={log.details}
-                        maxLength={20}
+                        maxLength={userRole === 1 ? 0 : 20}
                         column="details"
                       />
                     </td>
