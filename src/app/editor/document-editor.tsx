@@ -76,7 +76,9 @@ export const DocumentEditor = ({
           groupId={groupId}
           chapter={chapter}
         />
-        {(isEditable || toolbarMode === "adviserViewOnly" || toolbarMode === "adviserEdit") && (
+        {(isEditable ||
+          toolbarMode === "adviserViewOnly" ||
+          toolbarMode === "adviserEdit") && (
           <Toolbar toolbarMode={toolbarMode} />
         )}
         {/* View-only banner directly under navbar and toolbar */}

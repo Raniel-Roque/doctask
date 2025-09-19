@@ -1,5 +1,9 @@
 import React from "react";
-import { PasswordStrength, getStrengthColor, getStrengthLabel } from "@/utils/passwordStrength";
+import {
+  PasswordStrength,
+  getStrengthColor,
+  getStrengthLabel,
+} from "@/utils/passwordStrength";
 
 interface PasswordStrengthMeterProps {
   strength: PasswordStrength;

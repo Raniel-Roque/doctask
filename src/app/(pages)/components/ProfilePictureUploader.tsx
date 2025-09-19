@@ -51,11 +51,13 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
       hasValidType,
       hasValidExtension,
       allowedTypes,
-      allowedExtensions
+      allowedExtensions,
     });
 
     if (!hasValidType && !hasValidExtension) {
-      onError(`Please select a JPG or PNG image file. Detected: ${file.type || 'unknown type'}`);
+      onError(
+        `Please select a JPG or PNG image file. Detected: ${file.type || "unknown type"}`,
+      );
       return;
     }
 

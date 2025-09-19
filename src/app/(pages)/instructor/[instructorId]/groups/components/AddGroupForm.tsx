@@ -12,7 +12,10 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
-import { validateInput, sanitizeInput } from "../../../../components/SanitizeInput";
+import {
+  validateInput,
+  sanitizeInput,
+} from "../../../../components/SanitizeInput";
 import { useModalFocus } from "@/hooks/use-modal-focus";
 
 // Shared error messages
@@ -368,7 +371,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
         escapeSpecialChars: true,
         maxLength: 255,
       });
-      
+
       const { isValid, message } = validateInput(
         sanitizedTitle,
         "capstoneTitle",

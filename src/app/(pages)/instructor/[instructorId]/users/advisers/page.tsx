@@ -116,7 +116,9 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // Enhanced Convex mutations with retry logic
   // =========================================
   const resetPassword = useMutationWithRetry(api.mutations.resetPassword);
-  const logLockAccount = useMutationWithRetry(api.mutations.logLockAccountMutation);
+  const logLockAccount = useMutationWithRetry(
+    api.mutations.logLockAccountMutation,
+  );
   const resetAdviserCode = useMutationWithRetry(api.mutations.resetAdviserCode);
 
   // =========================================
@@ -126,6 +128,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     id: instructorId as Id<"users">,
   });
 
+  // Fetch all users for frontend filtering and pagination
   const queryData = useQuery(api.fetch.searchUsers, {
     searchTerm,
     role: 1, // 1 for advisers
@@ -136,23 +139,36 @@ const UsersPage = ({ params }: UsersPageProps) => {
           ? false
           : undefined,
     subrole: undefined, // We don't use subrole for advisers
-    pageSize,
-    pageNumber: currentPage,
+    pageSize: 10000, // Get all users for frontend pagination
+    pageNumber: 1,
     sortField,
     sortDirection,
   });
 
-  const searchResult = useMemo(
-    () =>
-      queryData || {
-        users: [],
-        totalCount: 0,
-        totalPages: 0,
-        status: "idle",
-        hasResults: false,
-      },
-    [queryData],
-  );
+  const searchResult = useMemo(() => {
+    const data = queryData || {
+      users: [],
+      totalCount: 0,
+      totalPages: 0,
+      status: "idle",
+      hasResults: false,
+    };
+
+    // Apply frontend pagination
+    const totalFilteredCount = data.users.length;
+    const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedUsers = data.users.slice(startIndex, endIndex);
+
+    return {
+      ...data,
+      users: paginatedUsers,
+      totalCount: totalFilteredCount,
+      totalPages: totalFilteredPages,
+      hasResults: totalFilteredCount > 0,
+    };
+  }, [queryData, pageSize, currentPage]);
 
   // =========================================
   // Effects
@@ -353,45 +369,48 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
     try {
       // Call distributed-safe API route for creation with enhanced retry logic
-      const data = await apiRequest<CreateUserResponse>("/api/clerk/create-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: sanitizeInput(addFormData.email, {
-            maxLength: 100,
-            trim: true,
-            removeHtml: true,
+      const data = await apiRequest<CreateUserResponse>(
+        "/api/clerk/create-user",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: sanitizeInput(addFormData.email, {
+              maxLength: 100,
+              trim: true,
+              removeHtml: true,
+            }),
+            firstName: toSentenceCase(
+              sanitizeInput(addFormData.first_name, {
+                maxLength: 50,
+                trim: true,
+                removeHtml: true,
+              }),
+            ),
+            lastName: toSentenceCase(
+              sanitizeInput(addFormData.last_name, {
+                maxLength: 50,
+                trim: true,
+                removeHtml: true,
+              }),
+            ),
+            middleName: addFormData.middle_name
+              ? toSentenceCase(
+                  sanitizeInput(addFormData.middle_name, {
+                    maxLength: 50,
+                    trim: true,
+                    removeHtml: true,
+                  }),
+                )
+              : undefined,
+            role: 1, // 1 = adviser
+            subrole: addFormData.subrole,
+            instructorId: instructorId,
           }),
-          firstName: toSentenceCase(
-            sanitizeInput(addFormData.first_name, {
-              maxLength: 50,
-              trim: true,
-              removeHtml: true,
-            }),
-          ),
-          lastName: toSentenceCase(
-            sanitizeInput(addFormData.last_name, {
-              maxLength: 50,
-              trim: true,
-              removeHtml: true,
-            }),
-          ),
-          middleName: addFormData.middle_name
-            ? toSentenceCase(
-                sanitizeInput(addFormData.middle_name, {
-                  maxLength: 50,
-                  trim: true,
-                  removeHtml: true,
-                }),
-              )
-            : undefined,
-          role: 1, // 1 = adviser
-          subrole: addFormData.subrole,
-          instructorId: instructorId,
-        }),
-      });
+        },
+      );
 
       // Send welcome email via Resend with retry logic
       await apiRequest("/api/resend/welcome-email", {
@@ -453,16 +472,19 @@ const UsersPage = ({ params }: UsersPageProps) => {
       logUserAction();
 
       // Step 1: Call Clerk API to reset password with enhanced retry logic
-      const data = await apiRequest<ResetPasswordResponse>("/api/clerk/reset-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const data = await apiRequest<ResetPasswordResponse>(
+        "/api/clerk/reset-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            clerkId: resetPasswordUser.clerk_id,
+            instructorId: instructorId,
+          }),
         },
-        body: JSON.stringify({
-          clerkId: resetPasswordUser.clerk_id,
-          instructorId: instructorId,
-        }),
-      });
+      );
 
       // Step 2: Call Convex mutation to log the action with retry logic
       await resetPassword.mutate({
@@ -592,7 +614,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
     } catch (error) {
       setNotification({
         type: "error",
-        message: error instanceof Error ? error.message : "An error occurred while resetting the adviser code",
+        message:
+          error instanceof Error
+            ? error.message
+            : "An error occurred while resetting the adviser code",
       });
     } finally {
       setIsSubmitting(false);
@@ -824,45 +849,48 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
         try {
           // Call distributed-safe API route for creation with enhanced retry logic
-          const data = await apiRequest<CreateUserResponse>("/api/clerk/create-user", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: sanitizeInput(user.email, {
-                maxLength: 100,
-                trim: true,
-                removeHtml: true,
+          const data = await apiRequest<CreateUserResponse>(
+            "/api/clerk/create-user",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                email: sanitizeInput(user.email, {
+                  maxLength: 100,
+                  trim: true,
+                  removeHtml: true,
+                }),
+                firstName: toSentenceCase(
+                  sanitizeInput(user.first_name, {
+                    maxLength: 50,
+                    trim: true,
+                    removeHtml: true,
+                  }),
+                ),
+                lastName: toSentenceCase(
+                  sanitizeInput(user.last_name, {
+                    maxLength: 50,
+                    trim: true,
+                    removeHtml: true,
+                  }),
+                ),
+                middleName: user.middle_name
+                  ? toSentenceCase(
+                      sanitizeInput(user.middle_name, {
+                        maxLength: 50,
+                        trim: true,
+                        removeHtml: true,
+                      }),
+                    )
+                  : undefined,
+                role: 1, // 1 = adviser
+                subrole: user.subrole,
+                instructorId: instructorId,
               }),
-              firstName: toSentenceCase(
-                sanitizeInput(user.first_name, {
-                  maxLength: 50,
-                  trim: true,
-                  removeHtml: true,
-                }),
-              ),
-              lastName: toSentenceCase(
-                sanitizeInput(user.last_name, {
-                  maxLength: 50,
-                  trim: true,
-                  removeHtml: true,
-                }),
-              ),
-              middleName: user.middle_name
-                ? toSentenceCase(
-                    sanitizeInput(user.middle_name, {
-                      maxLength: 50,
-                      trim: true,
-                      removeHtml: true,
-                    }),
-                  )
-                : undefined,
-              role: 1, // 1 = adviser
-              subrole: user.subrole,
-              instructorId: instructorId,
-            }),
-          });
+            },
+          );
 
           // Send welcome email via Resend with retry logic
           try {

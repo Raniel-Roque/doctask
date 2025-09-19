@@ -32,7 +32,9 @@ interface GroupsTableProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
   memberCountFilter: "all" | "with_members" | "no_members";
-  onMemberCountFilterChange: (filter: "all" | "with_members" | "no_members") => void;
+  onMemberCountFilterChange: (
+    filter: "all" | "with_members" | "no_members",
+  ) => void;
 }
 
 const GroupsTable: React.FC<GroupsTableProps> = ({
@@ -141,7 +143,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           <select
             value={memberCountFilter}
             onChange={(e) => {
-              onMemberCountFilterChange(e.target.value as "all" | "with_members" | "no_members");
+              onMemberCountFilterChange(
+                e.target.value as "all" | "with_members" | "no_members",
+              );
               onPageChange(1); // Reset to first page when filtering
             }}
             className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"

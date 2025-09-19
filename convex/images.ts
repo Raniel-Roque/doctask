@@ -91,7 +91,7 @@ export const getGroupImages = query({
     // Parallel fetch: get group and user data simultaneously
     const [group, user] = await Promise.all([
       ctx.db.get(args.groupId),
-      ctx.db.get(args.userId)
+      ctx.db.get(args.userId),
     ]);
 
     if (!group || !user) {
@@ -132,7 +132,7 @@ export const deleteImage = mutation({
     // Parallel fetch: get image, user, and group data simultaneously
     const [image, user] = await Promise.all([
       ctx.db.get(args.imageId),
-      ctx.db.get(args.userId)
+      ctx.db.get(args.userId),
     ]);
 
     if (!image) {
@@ -182,9 +182,7 @@ export const deleteImages = mutation({
     }
 
     // Batch fetch all images
-    const images = await Promise.all(
-      args.imageIds.map(id => ctx.db.get(id))
-    );
+    const images = await Promise.all(args.imageIds.map((id) => ctx.db.get(id)));
 
     // Filter out null images and check access
     const validImages = [];
@@ -203,23 +201,25 @@ export const deleteImages = mutation({
 
     // Batch fetch all groups
     const groups = await Promise.all(
-      Array.from(groupIds).map(id => ctx.db.get(id as Id<"groupsTable">))
+      Array.from(groupIds).map((id) => ctx.db.get(id as Id<"groupsTable">)),
     );
 
     const groupMap = new Map();
-    groups.forEach(group => {
+    groups.forEach((group) => {
       if (group) {
         groupMap.set(group._id, group);
       }
     });
 
     // Check access for each image
-    const accessibleImages = validImages.filter(image => {
+    const accessibleImages = validImages.filter((image) => {
       const group = groupMap.get(image.group_id);
       if (!group) return false;
 
-      return group.project_manager_id === args.userId ||
-             group.member_ids.includes(args.userId);
+      return (
+        group.project_manager_id === args.userId ||
+        group.member_ids.includes(args.userId)
+      );
     });
 
     if (accessibleImages.length === 0) {
@@ -227,16 +227,16 @@ export const deleteImages = mutation({
     }
 
     // Batch soft delete all accessible images
-    const deletePromises = accessibleImages.map(image =>
-      ctx.db.patch(image._id, { isDeleted: true })
+    const deletePromises = accessibleImages.map((image) =>
+      ctx.db.patch(image._id, { isDeleted: true }),
     );
 
     await Promise.all(deletePromises);
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       deletedCount: accessibleImages.length,
-      totalRequested: args.imageIds.length
+      totalRequested: args.imageIds.length,
     };
   },
 });

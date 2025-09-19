@@ -18,7 +18,9 @@ interface AdviserGroupsPageProps {
 const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const { adviserId } = use(params);
   const [searchTerm, setSearchTerm] = useState("");
-  const [memberCountFilter, setMemberCountFilter] = useState<"all" | "with_members" | "no_members">("all");
+  const [memberCountFilter, setMemberCountFilter] = useState<
+    "all" | "with_members" | "no_members"
+  >("all");
   const [sortField, setSortField] = useState<"name" | "capstoneTitle">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,19 +42,19 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const acceptGroup = useMutation(api.mutations.acceptGroupRequest);
   const rejectGroup = useMutation(api.mutations.rejectGroupRequest);
 
-  // Fetch groups with search, filter, pagination, and sorting
+  // Fetch all groups for frontend filtering and pagination
   const result = useQuery(api.fetch.getPendingGroupIdsForAdviser, {
     adviserId: adviserId as Id<"users">,
     searchTerm,
     memberCountFilter,
-    pageSize,
-    pageNumber: currentPage,
+    pageSize: 10000, // Get all groups for frontend pagination
+    pageNumber: 1,
     sortField,
     sortDirection,
   });
 
-  // Transform the result to match the Group type
-  const transformedGroups: Group[] = (result?.groups || []).map((group) => ({
+  // Transform the result to match the Group type and apply frontend pagination
+  const allGroups = (result?.groups || []).map((group) => ({
     _id: group._id.toString(),
     name: group.name,
     capstone_title: group.capstone_title,
@@ -72,7 +74,16 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
     })),
   }));
 
-  const { totalCount = 0, totalPages = 0, hasResults = false } = result || {};
+  // Apply frontend pagination
+  const totalFilteredCount = allGroups.length;
+  const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const transformedGroups = allGroups.slice(startIndex, endIndex);
+
+  const totalCount = totalFilteredCount;
+  const totalPages = totalFilteredPages;
+  const hasResults = totalFilteredCount > 0;
   const status: "idle" | "loading" | "error" =
     result === undefined ? "loading" : (result.status as "idle" | "error");
 
@@ -160,7 +171,6 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
             Review and manage groups to be handled
           </p>
         </div>
-
 
         {/* Groups Table */}
         <GroupsTable

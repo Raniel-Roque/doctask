@@ -95,11 +95,13 @@ export async function POST(request: NextRequest) {
         // Delete all images from storage only (not database) in parallel
         const images = await convex.query(api.fetch.getAllImages);
         await Promise.all(
-          images.map(image =>
-            convex.mutation(api.restore.deleteImageFromStorage, {
-              file_id: image.file_id,
-            }).catch(() => {})
-          )
+          images.map((image) =>
+            convex
+              .mutation(api.restore.deleteImageFromStorage, {
+                file_id: image.file_id,
+              })
+              .catch(() => {}),
+          ),
         );
         break;
 
@@ -108,7 +110,7 @@ export async function POST(request: NextRequest) {
         await convex.mutation(api.restore.deleteAllData, {
           currentUserId: convexUser._id,
           includeImages: true,
-          includeLogs: true
+          includeLogs: true,
         });
 
         // Delete all Liveblocks rooms in parallel
@@ -120,20 +122,20 @@ export async function POST(request: NextRequest) {
           // Get all rooms and delete them in parallel
           const rooms = await liveblocks.getRooms();
           await Promise.all(
-            rooms.data.map(room => liveblocks.deleteRoom(room.id))
+            rooms.data.map((room) => liveblocks.deleteRoom(room.id)),
           );
         } catch {}
 
         // Then delete all users from Clerk except the current instructor in parallel
         const { data: allUsers } = await client.users.getUserList();
         const usersToDelete = allUsers.filter(
-          clerkUser => clerkUser.id !== convexUser.clerk_id
+          (clerkUser) => clerkUser.id !== convexUser.clerk_id,
         );
-        
+
         await Promise.all(
-          usersToDelete.map(clerkUser =>
-            client.users.deleteUser(clerkUser.id).catch(() => {})
-          )
+          usersToDelete.map((clerkUser) =>
+            client.users.deleteUser(clerkUser.id).catch(() => {}),
+          ),
         );
         break;
 

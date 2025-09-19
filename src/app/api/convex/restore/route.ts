@@ -209,7 +209,7 @@ export async function POST(request: Request) {
       convex.mutation(api.restore.deleteAllImages),
       convex.mutation(api.restore.deleteAllUsers, {
         currentUserId: instructor._id,
-      })
+      }),
     ]);
 
     // Delete all Liveblocks rooms in parallel
@@ -221,7 +221,7 @@ export async function POST(request: Request) {
       // Get all rooms and delete them in parallel
       const rooms = await liveblocks.getRooms();
       await Promise.all(
-        rooms.data.map(room => liveblocks.deleteRoom(room.id))
+        rooms.data.map((room) => liveblocks.deleteRoom(room.id)),
       );
     } catch {}
 
@@ -230,22 +230,24 @@ export async function POST(request: Request) {
 
     // Delete all users except the instructor - parallelize operations
     const usersToDelete = existingClerkUsers.filter(
-      clerkUser => clerkUser.id !== instructor.clerk_id
+      (clerkUser) => clerkUser.id !== instructor.clerk_id,
     );
 
     // Batch fetch all Convex users for users to delete
     const convexUsersToDelete = await Promise.all(
-      usersToDelete.map(clerkUser =>
-        convex.query(api.fetch.getUserByClerkId, {
-          clerkId: clerkUser.id,
-        }).then(user => ({ clerkUser, convexUser: user }))
-      )
+      usersToDelete.map((clerkUser) =>
+        convex
+          .query(api.fetch.getUserByClerkId, {
+            clerkId: clerkUser.id,
+          })
+          .then((user) => ({ clerkUser, convexUser: user })),
+      ),
     );
 
     // Parallel delete from Clerk and Convex
     await Promise.all([
       // Delete from Clerk
-      ...usersToDelete.map(clerkUser => clerk.users.deleteUser(clerkUser.id)),
+      ...usersToDelete.map((clerkUser) => clerk.users.deleteUser(clerkUser.id)),
       // Delete from Convex if exists
       ...convexUsersToDelete
         .filter(({ convexUser }) => convexUser)
@@ -254,8 +256,8 @@ export async function POST(request: Request) {
             userId: convexUser!._id,
             instructorId: instructor._id,
             clerkId: clerkUser.id,
-          })
-        )
+          }),
+        ),
     ]);
 
     const usersToCreate = backupData.tables.users.filter(
@@ -268,7 +270,7 @@ export async function POST(request: Request) {
 
     for (let i = 0; i < usersToCreate.length; i += batchSize) {
       const batch = usersToCreate.slice(i, i + batchSize);
-      
+
       const batchResults = await Promise.all(
         batch.map(async (user) => {
           const password = generatePassword(
@@ -291,11 +293,12 @@ export async function POST(request: Request) {
           });
 
           // Send welcome email (don't await to avoid blocking)
-          resend.emails.send({
-            from: resendConfig.from.default,
-            to: user.email,
-            subject: "Welcome to DocTask",
-            html: `
+          resend.emails
+            .send({
+              from: resendConfig.from.default,
+              to: user.email,
+              subject: "Welcome to DocTask",
+              html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #333;">Welcome to DocTask!</h2>
                 
@@ -324,7 +327,8 @@ export async function POST(request: Request) {
                 </p>
               </div>
             `,
-          }).catch(() => {}); // Ignore email errors
+            })
+            .catch(() => {}); // Ignore email errors
 
           return {
             oldId: user.clerk_id,
@@ -332,7 +336,7 @@ export async function POST(request: Request) {
             email: user.email,
             password,
           };
-        })
+        }),
       );
 
       clerkResults.push(...batchResults);

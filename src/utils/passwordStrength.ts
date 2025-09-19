@@ -7,7 +7,9 @@ export interface PasswordStrength {
   isAcceptable: boolean; // Based on NIST guidelines
 }
 
-export const calculatePasswordStrength = (password: string): PasswordStrength => {
+export const calculatePasswordStrength = (
+  password: string,
+): PasswordStrength => {
   if (!password) {
     return {
       score: 0,
@@ -50,8 +52,14 @@ export const calculatePasswordStrength = (password: string): PasswordStrength =>
   const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(password);
   const hasSpace = /\s/.test(password);
 
-  const varietyCount = [hasLowercase, hasUppercase, hasNumber, hasSpecialChar, hasSpace].filter(Boolean).length;
-  
+  const varietyCount = [
+    hasLowercase,
+    hasUppercase,
+    hasNumber,
+    hasSpecialChar,
+    hasSpace,
+  ].filter(Boolean).length;
+
   // Bonus for character variety (but not required)
   if (varietyCount >= 3) score += 1;
   if (varietyCount >= 4) score += 1;
@@ -89,7 +97,9 @@ export const calculatePasswordStrength = (password: string): PasswordStrength =>
       /letmein/i,
     ];
 
-    const hasCommonPattern = commonPatterns.some(pattern => pattern.test(password));
+    const hasCommonPattern = commonPatterns.some((pattern) =>
+      pattern.test(password),
+    );
     if (hasCommonPattern && score > 1) {
       score = Math.max(1, score - 1);
       feedback += " - Avoid common patterns";

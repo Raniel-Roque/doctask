@@ -395,7 +395,9 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                     </span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 gap-2">
-                    <span className="flex-shrink-0">Modified: {formatDate(doc.lastModified)}</span>
+                    <span className="flex-shrink-0">
+                      Modified: {formatDate(doc.lastModified)}
+                    </span>
                     <div className="flex items-center gap-2 flex-wrap">
                       {/* View button - always visible for all documents */}
                       <button
@@ -405,7 +407,7 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                       >
                         <FaEye className="w-3 h-3" />
                       </button>
-                      
+
                       {/* Edit button - only for submitted, approved, or rejected documents */}
                       {doc.status !== 0 && (
                         <>
@@ -416,10 +418,12 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                           >
                             <FaEdit className="w-3 h-3" />
                           </button>
-                          <span className="mx-1 text-gray-300 select-none">|</span>
+                          <span className="mx-1 text-gray-300 select-none">
+                            |
+                          </span>
                         </>
                       )}
-                      
+
                       {/* Download button - only for submitted, approved, or rejected documents */}
                       {doc.status !== 0 && (
                         <>
@@ -435,10 +439,12 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
                               <FaDownload className="w-3 h-3" />
                             )}
                           </button>
-                          <span className="mx-1 text-gray-300 select-none">|</span>
+                          <span className="mx-1 text-gray-300 select-none">
+                            |
+                          </span>
                         </>
                       )}
-                      
+
                       {/* Notes button - always visible */}
                       <button
                         className="text-yellow-500 hover:text-yellow-700 transition-colors"

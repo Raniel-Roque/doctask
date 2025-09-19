@@ -698,11 +698,13 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                           >
                                             <FaEye className="w-4 h-4" />
                                           </button>
-                                          
+
                                           {/* Edit button - only for submitted, approved, or rejected documents */}
                                           {doc.status !== 0 && (
                                             <>
-                                              <span className="mx-1 text-gray-300 select-none">|</span>
+                                              <span className="mx-1 text-gray-300 select-none">
+                                                |
+                                              </span>
                                               <button
                                                 className="text-purple-600 hover:text-purple-800 transition-colors p-1"
                                                 title="Edit Document"
@@ -714,11 +716,13 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                               </button>
                                             </>
                                           )}
-                                          
+
                                           {/* Download button - only for submitted, approved, or rejected documents */}
                                           {doc.status !== 0 && (
                                             <>
-                                              <span className="mx-1 text-gray-300 select-none">|</span>
+                                              <span className="mx-1 text-gray-300 select-none">
+                                                |
+                                              </span>
                                               <button
                                                 className="text-green-600 hover:text-green-800 transition-colors p-1"
                                                 title="Download Document"
@@ -737,9 +741,11 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                                               </button>
                                             </>
                                           )}
-                                          
+
                                           {/* Notes button - always visible */}
-                                          <span className="mx-1 text-gray-300 select-none">|</span>
+                                          <span className="mx-1 text-gray-300 select-none">
+                                            |
+                                          </span>
                                           <button
                                             className="text-yellow-500 hover:text-yellow-700 transition-colors p-1"
                                             title="Add/Edit Notes"

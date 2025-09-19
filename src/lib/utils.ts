@@ -37,14 +37,14 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
     "Failed to fetch",
     "Connection failed",
     "Timeout",
-    "AbortError"
-  ]
+    "AbortError",
+  ],
 };
 
 const DEFAULT_CIRCUIT_BREAKER_CONFIG: CircuitBreakerConfig = {
   failureThreshold: 5,
   recoveryTimeout: 60000, // 1 minute
-  monitoringPeriod: 300000 // 5 minutes
+  monitoringPeriod: 300000, // 5 minutes
 };
 
 // =========================================
@@ -53,16 +53,18 @@ const DEFAULT_CIRCUIT_BREAKER_CONFIG: CircuitBreakerConfig = {
 class CircuitBreaker {
   private failures: number = 0;
   private lastFailureTime: number = 0;
-  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+  private state: "CLOSED" | "OPEN" | "HALF_OPEN" = "CLOSED";
 
   constructor(private config: CircuitBreakerConfig) {}
 
   async execute<T>(operation: () => Promise<T>): Promise<T> {
-    if (this.state === 'OPEN') {
+    if (this.state === "OPEN") {
       if (Date.now() - this.lastFailureTime > this.config.recoveryTimeout) {
-        this.state = 'HALF_OPEN';
+        this.state = "HALF_OPEN";
       } else {
-        throw new Error('Circuit breaker is OPEN - service temporarily unavailable');
+        throw new Error(
+          "Circuit breaker is OPEN - service temporarily unavailable",
+        );
       }
     }
 
@@ -78,15 +80,15 @@ class CircuitBreaker {
 
   private onSuccess(): void {
     this.failures = 0;
-    this.state = 'CLOSED';
+    this.state = "CLOSED";
   }
 
   private onFailure(): void {
     this.failures++;
     this.lastFailureTime = Date.now();
-    
+
     if (this.failures >= this.config.failureThreshold) {
-      this.state = 'OPEN';
+      this.state = "OPEN";
     }
   }
 
@@ -106,7 +108,10 @@ const circuitBreakers = new Map<string, CircuitBreaker>();
 
 function getCircuitBreaker(service: string): CircuitBreaker {
   if (!circuitBreakers.has(service)) {
-    circuitBreakers.set(service, new CircuitBreaker(DEFAULT_CIRCUIT_BREAKER_CONFIG));
+    circuitBreakers.set(
+      service,
+      new CircuitBreaker(DEFAULT_CIRCUIT_BREAKER_CONFIG),
+    );
   }
   return circuitBreakers.get(service)!;
 }
@@ -117,11 +122,14 @@ function getCircuitBreaker(service: string): CircuitBreaker {
 export async function apiRequest<T = unknown>(
   input: RequestInfo,
   init?: RequestInit,
-  retryConfig?: Partial<RetryConfig>
+  retryConfig?: Partial<RetryConfig>,
 ): Promise<T> {
   const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
-  const service = typeof input === 'string' ? new URL(input, window.location.origin).pathname : 'unknown';
-  
+  const service =
+    typeof input === "string"
+      ? new URL(input, window.location.origin).pathname
+      : "unknown";
+
   return getCircuitBreaker(service).execute(async () => {
     return await executeWithRetry(input, init, config);
   });
@@ -130,7 +138,7 @@ export async function apiRequest<T = unknown>(
 async function executeWithRetry<T>(
   input: RequestInfo,
   init: RequestInit | undefined,
-  config: RetryConfig
+  config: RetryConfig,
 ): Promise<T> {
   let lastError: Error | null = null;
 
@@ -141,7 +149,7 @@ async function executeWithRetry<T>(
 
       const response = await fetch(input, {
         ...init,
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
@@ -161,9 +169,11 @@ async function executeWithRetry<T>(
         typeof (d as Record<string, unknown>).error === "string";
 
       if (!response.ok || (data && hasError(data))) {
-        const errorMessage = hasError(data) ? data.error : response.statusText || "API request failed";
+        const errorMessage = hasError(data)
+          ? data.error
+          : response.statusText || "API request failed";
         const error = new Error(errorMessage);
-        
+
         // Check if error is retryable
         if (isRetryableError(error, response.status, config)) {
           lastError = error;
@@ -176,10 +186,9 @@ async function executeWithRetry<T>(
       }
 
       return data as T;
-
     } catch (error) {
       lastError = error as Error;
-      
+
       // Check if error is retryable
       if (isRetryableError(error as Error, 0, config)) {
         if (attempt < config.maxRetries) {
@@ -187,15 +196,19 @@ async function executeWithRetry<T>(
           continue;
         }
       }
-      
+
       throw error;
     }
   }
 
-  throw lastError || new Error('Max retries exceeded');
+  throw lastError || new Error("Max retries exceeded");
 }
 
-function isRetryableError(error: Error, status: number, config: RetryConfig): boolean {
+function isRetryableError(
+  error: Error,
+  status: number,
+  config: RetryConfig,
+): boolean {
   // Check status codes
   if (status > 0 && config.retryableStatuses.includes(status)) {
     return true;
@@ -203,8 +216,8 @@ function isRetryableError(error: Error, status: number, config: RetryConfig): bo
 
   // Check error messages
   const errorMessage = error.message.toLowerCase();
-  return config.retryableErrors.some(retryableError => 
-    errorMessage.includes(retryableError.toLowerCase())
+  return config.retryableErrors.some((retryableError) =>
+    errorMessage.includes(retryableError.toLowerCase()),
   );
 }
 
@@ -216,7 +229,7 @@ function getRetryDelay(attempt: number, config: RetryConfig): number {
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // =========================================
@@ -228,11 +241,11 @@ function delay(ms: number): Promise<void> {
  */
 export async function apiRequestWithUploadTimeout<T = unknown>(
   input: RequestInfo,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<T> {
   return apiRequest(input, init, {
     timeout: 120000, // 2 minutes for uploads
-    maxRetries: 2 // Fewer retries for uploads
+    maxRetries: 2, // Fewer retries for uploads
   });
 }
 
@@ -241,11 +254,11 @@ export async function apiRequestWithUploadTimeout<T = unknown>(
  */
 export async function apiRequestQuick<T = unknown>(
   input: RequestInfo,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<T> {
   return apiRequest(input, init, {
     timeout: 5000, // 5 seconds
-    maxRetries: 1 // Single retry for quick operations
+    maxRetries: 1, // Single retry for quick operations
   });
 }
 
@@ -254,10 +267,10 @@ export async function apiRequestQuick<T = unknown>(
  */
 export async function apiRequestNoRetry<T = unknown>(
   input: RequestInfo,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<T> {
   return apiRequest(input, init, {
-    maxRetries: 0
+    maxRetries: 0,
   });
 }
 
@@ -268,12 +281,15 @@ export async function apiRequestNoRetry<T = unknown>(
 /**
  * Get the status of all circuit breakers
  */
-export function getCircuitBreakerStatus(): Record<string, { state: string; failures: number }> {
+export function getCircuitBreakerStatus(): Record<
+  string,
+  { state: string; failures: number }
+> {
   const status: Record<string, { state: string; failures: number }> = {};
   circuitBreakers.forEach((breaker, service) => {
     status[service] = {
       state: breaker.getState(),
-      failures: breaker.getFailures()
+      failures: breaker.getFailures(),
     };
   });
   return status;

@@ -223,24 +223,28 @@ export default function ChangePassword({
                 <h4 className="text-sm font-medium text-gray-700 mb-3">
                   Password Strength:
                 </h4>
-                <PasswordStrengthMeter 
-                  strength={calculatePasswordStrength(newPassword)} 
+                <PasswordStrengthMeter
+                  strength={calculatePasswordStrength(newPassword)}
                   showLabel={false}
                   showFeedback={true}
                 />
-                
+
                 {/* Password Match Indicator */}
                 {confirmPassword.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <div
                       className={`flex items-center text-xs ${
-                        newPassword === confirmPassword ? "text-green-600" : "text-red-600"
+                        newPassword === confirmPassword
+                          ? "text-green-600"
+                          : "text-red-600"
                       }`}
                     >
                       <span className="mr-2">
                         {newPassword === confirmPassword ? "✓" : "✗"}
                       </span>
-                      {newPassword === confirmPassword ? "Passwords match" : "Passwords do not match"}
+                      {newPassword === confirmPassword
+                        ? "Passwords match"
+                        : "Passwords do not match"}
                     </div>
                   </div>
                 )}
@@ -248,7 +252,11 @@ export default function ChangePassword({
 
               <button
                 type="submit"
-                disabled={isLoading || !calculatePasswordStrength(newPassword).isAcceptable || newPassword !== confirmPassword}
+                disabled={
+                  isLoading ||
+                  !calculatePasswordStrength(newPassword).isAcceptable ||
+                  newPassword !== confirmPassword
+                }
                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
               >
                 {isLoading ? "Updating..." : "Update Password"}

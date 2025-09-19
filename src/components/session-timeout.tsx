@@ -19,7 +19,7 @@ export function SessionTimeout() {
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Initialize from localStorage after mount
     const stored = localStorage.getItem(LAST_ACTIVITY_KEY);
     if (stored) {
@@ -145,6 +145,6 @@ export function SessionTimeout() {
 
   // Don't render anything until mounted to avoid hydration mismatch
   if (!mounted) return null;
-  
+
   return null; // This component doesn't render anything
 }

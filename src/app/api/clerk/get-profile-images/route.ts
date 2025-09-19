@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     });
 
     const userResults = await Promise.all(userPromises);
-    
+
     userResults.forEach(({ clerkId, imageUrl }) => {
       if (imageUrl) {
         profileImages[clerkId] = imageUrl;

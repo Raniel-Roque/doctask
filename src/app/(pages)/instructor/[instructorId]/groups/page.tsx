@@ -139,14 +139,44 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     appliedGradeFilters,
   ]);
 
-  // Fetch groups data with search and pagination
-  const searchResult = useQuery(api.fetch.searchGroups, queryParams);
+  // Fetch all groups for frontend filtering and pagination
+  const allGroupsQuery = useQuery(api.fetch.searchGroups, {
+    ...queryParams,
+    pageSize: 10000, // Get all groups for frontend pagination
+    pageNumber: 1,
+  });
 
   // Get users for forms
   const users = useQuery(api.fetch.getUsers) || [];
 
+  // Apply frontend pagination to groups
+  const searchResult = useMemo(() => {
+    const data = allGroupsQuery || {
+      groups: [],
+      totalCount: 0,
+      totalPages: 0,
+      status: "idle",
+      hasResults: false,
+    };
+
+    // Apply frontend pagination
+    const totalFilteredCount = data.groups.length;
+    const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedGroups = data.groups.slice(startIndex, endIndex);
+
+    return {
+      ...data,
+      groups: paginatedGroups,
+      totalCount: totalFilteredCount,
+      totalPages: totalFilteredPages,
+      hasResults: totalFilteredCount > 0,
+    };
+  }, [allGroupsQuery, pageSize, currentPage]);
+
   // Get all groups for proper filtering (not just current page)
-  const allGroups = useQuery(api.fetch.getAllGroupsForFiltering) || [];
+  const allGroups = allGroupsQuery?.groups || [];
 
   // Filter project managers (role 0, subrole 1, not already a project manager)
   const usedManagerIds = new Set(

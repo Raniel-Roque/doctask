@@ -185,7 +185,8 @@ export const TaskAssignmentTable = ({
 
   // Add state for status filter and expanded chapters
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [selectedDocumentStatus, setSelectedDocumentStatus] = useState<string>("all");
+  const [selectedDocumentStatus, setSelectedDocumentStatus] =
+    useState<string>("all");
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
     new Set(),
   );
@@ -278,11 +279,14 @@ export const TaskAssignmentTable = ({
       try {
         const userIds = groupMembers.map((member) => member._id);
         // Get profile images with enhanced retry logic
-        const data = await apiRequest<ProfileImagesResponse>("/api/clerk/get-profile-images", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userIds }),
-        });
+        const data = await apiRequest<ProfileImagesResponse>(
+          "/api/clerk/get-profile-images",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userIds }),
+          },
+        );
 
         if (data.success && data.profileImages) {
           setProfileImages(data.profileImages);
@@ -358,10 +362,11 @@ export const TaskAssignmentTable = ({
   const filteredTasks = tasks.filter((task) => {
     const statusMatch =
       selectedStatus === "all" || task.task_status === parseInt(selectedStatus);
-    
+
     const documentStatusMatch =
-      selectedDocumentStatus === "all" || getDocumentStatus(task.chapter) === parseInt(selectedDocumentStatus);
-    
+      selectedDocumentStatus === "all" ||
+      getDocumentStatus(task.chapter) === parseInt(selectedDocumentStatus);
+
     return statusMatch && documentStatusMatch;
   });
 
@@ -496,26 +501,29 @@ export const TaskAssignmentTable = ({
     if (["title_page", "appendix_a", "appendix_d"].includes(task.chapter)) {
       return false;
     }
-    
+
     // Check if document is approved - if so, no one can edit task status
     const documentStatus = getDocumentStatus(task.chapter);
-    if (documentStatus === 2) { // Document is approved
+    if (documentStatus === 2) {
+      // Document is approved
       return false; // No one can edit task status when document is approved
     }
-    
+
     // Check if document is submitted - if so, can only change from incomplete to complete, not vice versa
-    if (documentStatus === 1) { // Document is submitted
-      if (task.task_status === 1) { // Task is currently complete
+    if (documentStatus === 1) {
+      // Document is submitted
+      if (task.task_status === 1) {
+        // Task is currently complete
         return false; // Cannot change from complete to incomplete when document is submitted
       }
     }
-    
+
     if (mode === "manager") return true;
-    
+
     // Check if user is assigned to the task
     const isAssigned = task.assigned_student_ids.includes(currentUserId);
     if (!isAssigned) return false;
-    
+
     return true;
   };
 
@@ -566,7 +574,7 @@ export const TaskAssignmentTable = ({
     const documentStatus = getDocumentStatus(task.chapter);
     // Once approved by adviser, documents should be read-only
     if (documentStatus === 2) return false; // Approved documents cannot be edited
-    
+
     // Can edit if document is not submitted (0) or rejected (3)
     // AND user is assigned to the task (for members) or is manager
     const canEditStatus = documentStatus === 0 || documentStatus === 3;
@@ -1253,7 +1261,9 @@ export const TaskAssignmentTable = ({
                       <select
                         className="ml-2 px-2 py-1 text-xs border rounded bg-white text-gray-700 shadow-sm"
                         value={selectedDocumentStatus}
-                        onChange={(e) => setSelectedDocumentStatus(e.target.value)}
+                        onChange={(e) =>
+                          setSelectedDocumentStatus(e.target.value)
+                        }
                       >
                         {documentStatusOptions.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -1381,7 +1391,9 @@ export const TaskAssignmentTable = ({
                                 <span
                                   className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${DOCUMENT_STATUS_COLORS[getDocumentStatus(chapter)] || DOCUMENT_STATUS_COLORS[0]}`}
                                 >
-                                  {DOCUMENT_STATUS_LABELS[getDocumentStatus(chapter)] || DOCUMENT_STATUS_LABELS[0]}
+                                  {DOCUMENT_STATUS_LABELS[
+                                    getDocumentStatus(chapter)
+                                  ] || DOCUMENT_STATUS_LABELS[0]}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -1439,7 +1451,9 @@ export const TaskAssignmentTable = ({
                                   </button>
                                   {canEditDocument(chapterTasks[0]) && (
                                     <>
-                                      <span className="mx-1 text-gray-300 select-none">|</span>
+                                      <span className="mx-1 text-gray-300 select-none">
+                                        |
+                                      </span>
                                       <button
                                         className="text-purple-600 hover:text-purple-800 transition-colors"
                                         title="Edit Document"
@@ -1452,7 +1466,9 @@ export const TaskAssignmentTable = ({
                                       </button>
                                     </>
                                   )}
-                                  <span className="mx-1 text-gray-300 select-none">|</span>
+                                  <span className="mx-1 text-gray-300 select-none">
+                                    |
+                                  </span>
                                   <button
                                     className="text-green-600 hover:text-green-800 transition-colors"
                                     title="Download Document"
@@ -1668,7 +1684,9 @@ export const TaskAssignmentTable = ({
                                     <span
                                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${DOCUMENT_STATUS_COLORS[getDocumentStatus(task.chapter)] || DOCUMENT_STATUS_COLORS[0]}`}
                                     >
-                                      {DOCUMENT_STATUS_LABELS[getDocumentStatus(task.chapter)] || DOCUMENT_STATUS_LABELS[0]}
+                                      {DOCUMENT_STATUS_LABELS[
+                                        getDocumentStatus(task.chapter)
+                                      ] || DOCUMENT_STATUS_LABELS[0]}
                                     </span>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -1698,7 +1716,9 @@ export const TaskAssignmentTable = ({
                               <span
                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${DOCUMENT_STATUS_COLORS[getDocumentStatus(chapter)] || DOCUMENT_STATUS_COLORS[0]}`}
                               >
-                                {DOCUMENT_STATUS_LABELS[getDocumentStatus(chapter)] || DOCUMENT_STATUS_LABELS[0]}
+                                {DOCUMENT_STATUS_LABELS[
+                                  getDocumentStatus(chapter)
+                                ] || DOCUMENT_STATUS_LABELS[0]}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -1721,7 +1741,9 @@ export const TaskAssignmentTable = ({
                                 </button>
                                 {canEditDocument(chapterTasks[0]) && (
                                   <>
-                                    <span className="mx-1 text-gray-300 select-none">|</span>
+                                    <span className="mx-1 text-gray-300 select-none">
+                                      |
+                                    </span>
                                     <button
                                       className="text-purple-600 hover:text-purple-800 transition-colors"
                                       title="Edit Document"
@@ -1734,7 +1756,9 @@ export const TaskAssignmentTable = ({
                                     </button>
                                   </>
                                 )}
-                                <span className="mx-1 text-gray-300 select-none">|</span>
+                                <span className="mx-1 text-gray-300 select-none">
+                                  |
+                                </span>
                                 <button
                                   className="text-green-600 hover:text-green-800 transition-colors"
                                   title="Download Document"

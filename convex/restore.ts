@@ -10,11 +10,13 @@ export const deleteAllStudents = mutation({
   args: {},
   handler: async (ctx) => {
     const students = await ctx.db.query("studentsTable").collect();
-    
+
     // Batch delete all students
-    const deletePromises = students.map(student => ctx.db.delete(student._id));
+    const deletePromises = students.map((student) =>
+      ctx.db.delete(student._id),
+    );
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: students.length };
   },
 });
@@ -23,11 +25,13 @@ export const deleteAllAdvisers = mutation({
   args: {},
   handler: async (ctx) => {
     const advisers = await ctx.db.query("advisersTable").collect();
-    
+
     // Batch delete all advisers
-    const deletePromises = advisers.map(adviser => ctx.db.delete(adviser._id));
+    const deletePromises = advisers.map((adviser) =>
+      ctx.db.delete(adviser._id),
+    );
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: advisers.length };
   },
 });
@@ -36,11 +40,11 @@ export const deleteAllGroups = mutation({
   args: {},
   handler: async (ctx) => {
     const groups = await ctx.db.query("groupsTable").collect();
-    
+
     // Batch delete all groups
-    const deletePromises = groups.map(group => ctx.db.delete(group._id));
+    const deletePromises = groups.map((group) => ctx.db.delete(group._id));
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: groups.length };
   },
 });
@@ -49,12 +53,14 @@ export const deleteAllUsers = mutation({
   args: { currentUserId: v.string() },
   handler: async (ctx, args) => {
     const users = await ctx.db.query("users").collect();
-    
+
     // Filter out current user and batch delete
-    const usersToDelete = users.filter(user => user._id !== args.currentUserId);
-    const deletePromises = usersToDelete.map(user => ctx.db.delete(user._id));
+    const usersToDelete = users.filter(
+      (user) => user._id !== args.currentUserId,
+    );
+    const deletePromises = usersToDelete.map((user) => ctx.db.delete(user._id));
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: usersToDelete.length };
   },
 });
@@ -63,11 +69,11 @@ export const deleteAllDocuments = mutation({
   args: {},
   handler: async (ctx) => {
     const documents = await ctx.db.query("documents").collect();
-    
+
     // Batch delete all documents
-    const deletePromises = documents.map(doc => ctx.db.delete(doc._id));
+    const deletePromises = documents.map((doc) => ctx.db.delete(doc._id));
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: documents.length };
   },
 });
@@ -76,11 +82,13 @@ export const deleteAllTaskAssignments = mutation({
   args: {},
   handler: async (ctx) => {
     const assignments = await ctx.db.query("taskAssignments").collect();
-    
+
     // Batch delete all task assignments
-    const deletePromises = assignments.map(assignment => ctx.db.delete(assignment._id));
+    const deletePromises = assignments.map((assignment) =>
+      ctx.db.delete(assignment._id),
+    );
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: assignments.length };
   },
 });
@@ -89,11 +97,11 @@ export const deleteAllDocumentStatus = mutation({
   args: {},
   handler: async (ctx) => {
     const statuses = await ctx.db.query("documentStatus").collect();
-    
+
     // Batch delete all document statuses
-    const deletePromises = statuses.map(status => ctx.db.delete(status._id));
+    const deletePromises = statuses.map((status) => ctx.db.delete(status._id));
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: statuses.length };
   },
 });
@@ -102,7 +110,7 @@ export const deleteAllImages = mutation({
   args: {},
   handler: async (ctx) => {
     const images = await ctx.db.query("images").collect();
-    
+
     // Batch delete files from storage and database records
     const deletePromises = images.map(async (image) => {
       // Delete the file from storage first
@@ -114,9 +122,9 @@ export const deleteAllImages = mutation({
       // Delete the image record from database
       return ctx.db.delete(image._id);
     });
-    
+
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: images.length };
   },
 });
@@ -126,11 +134,11 @@ export const deleteAllNotes = mutation({
   args: {},
   handler: async (ctx) => {
     const notes = await ctx.db.query("notes").collect();
-    
+
     // Batch delete all notes
-    const deletePromises = notes.map(note => ctx.db.delete(note._id));
+    const deletePromises = notes.map((note) => ctx.db.delete(note._id));
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: notes.length };
   },
 });
@@ -139,11 +147,11 @@ export const deleteAllLogs = mutation({
   args: {},
   handler: async (ctx) => {
     const logs = await ctx.db.query("LogsTable").collect();
-    
+
     // Batch delete all logs
-    const deletePromises = logs.map(log => ctx.db.delete(log._id));
+    const deletePromises = logs.map((log) => ctx.db.delete(log._id));
     await Promise.all(deletePromises);
-    
+
     return { success: true, deletedCount: logs.length };
   },
 });
@@ -158,10 +166,10 @@ export const deleteInstructor = mutation({
 
 // Comprehensive bulk delete function
 export const deleteAllData = mutation({
-  args: { 
+  args: {
     currentUserId: v.string(),
     includeImages: v.optional(v.boolean()),
-    includeLogs: v.optional(v.boolean())
+    includeLogs: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const results = {
@@ -174,7 +182,7 @@ export const deleteAllData = mutation({
       documentStatus: 0,
       notes: 0,
       images: 0,
-      logs: 0
+      logs: 0,
     };
 
     try {
@@ -189,7 +197,7 @@ export const deleteAllData = mutation({
         documentStatus,
         notes,
         images,
-        logs
+        logs,
       ] = await Promise.all([
         ctx.db.query("users").collect(),
         ctx.db.query("studentsTable").collect(),
@@ -199,32 +207,38 @@ export const deleteAllData = mutation({
         ctx.db.query("taskAssignments").collect(),
         ctx.db.query("documentStatus").collect(),
         ctx.db.query("notes").collect(),
-        args.includeImages !== false ? ctx.db.query("images").collect() : Promise.resolve([]),
-        args.includeLogs !== false ? ctx.db.query("LogsTable").collect() : Promise.resolve([])
+        args.includeImages !== false
+          ? ctx.db.query("images").collect()
+          : Promise.resolve([]),
+        args.includeLogs !== false
+          ? ctx.db.query("LogsTable").collect()
+          : Promise.resolve([]),
       ]);
 
       // Filter out current user
-      const usersToDelete = users.filter(user => user._id !== args.currentUserId);
+      const usersToDelete = users.filter(
+        (user) => user._id !== args.currentUserId,
+      );
       results.users = usersToDelete.length;
 
       // Batch delete all data in parallel
       const deletePromises = [
         // Users
-        ...usersToDelete.map(user => ctx.db.delete(user._id)),
+        ...usersToDelete.map((user) => ctx.db.delete(user._id)),
         // Students
-        ...students.map(student => ctx.db.delete(student._id)),
+        ...students.map((student) => ctx.db.delete(student._id)),
         // Advisers
-        ...advisers.map(adviser => ctx.db.delete(adviser._id)),
+        ...advisers.map((adviser) => ctx.db.delete(adviser._id)),
         // Groups
-        ...groups.map(group => ctx.db.delete(group._id)),
+        ...groups.map((group) => ctx.db.delete(group._id)),
         // Documents
-        ...documents.map(doc => ctx.db.delete(doc._id)),
+        ...documents.map((doc) => ctx.db.delete(doc._id)),
         // Task Assignments
-        ...taskAssignments.map(task => ctx.db.delete(task._id)),
+        ...taskAssignments.map((task) => ctx.db.delete(task._id)),
         // Document Status
-        ...documentStatus.map(status => ctx.db.delete(status._id)),
+        ...documentStatus.map((status) => ctx.db.delete(status._id)),
         // Notes
-        ...notes.map(note => ctx.db.delete(note._id)),
+        ...notes.map((note) => ctx.db.delete(note._id)),
         // Images (with storage cleanup)
         ...images.map(async (image) => {
           try {
@@ -235,7 +249,7 @@ export const deleteAllData = mutation({
           return ctx.db.delete(image._id);
         }),
         // Logs
-        ...logs.map(log => ctx.db.delete(log._id))
+        ...logs.map((log) => ctx.db.delete(log._id)),
       ];
 
       // Update counts
@@ -252,16 +266,19 @@ export const deleteAllData = mutation({
       // Execute all deletions in parallel
       await Promise.all(deletePromises);
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         deletedCounts: results,
-        totalDeleted: Object.values(results).reduce((sum, count) => sum + count, 0)
+        totalDeleted: Object.values(results).reduce(
+          (sum, count) => sum + count,
+          0,
+        ),
       };
     } catch (error) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error instanceof Error ? error.message : "Unknown error",
-        partialResults: results
+        partialResults: results,
       };
     }
   },
@@ -613,24 +630,26 @@ export const restoreLog = mutation({
 // Batch restore functions for better performance
 export const restoreUsers = mutation({
   args: {
-    users: v.array(v.object({
-      clerk_id: v.string(),
-      first_name: v.string(),
-      last_name: v.string(),
-      email: v.string(),
-      role: v.number(),
-      middle_name: v.optional(v.string()),
-      subrole: v.optional(v.number()),
-      isDeleted: v.optional(v.boolean()),
-      email_verified: v.optional(v.boolean()),
-      terms_agreed: v.optional(v.boolean()),
-      privacy_agreed: v.optional(v.boolean()),
-      terms_agreed_at: v.optional(v.number()),
-      privacy_agreed_at: v.optional(v.number()),
-    }))
+    users: v.array(
+      v.object({
+        clerk_id: v.string(),
+        first_name: v.string(),
+        last_name: v.string(),
+        email: v.string(),
+        role: v.number(),
+        middle_name: v.optional(v.string()),
+        subrole: v.optional(v.number()),
+        isDeleted: v.optional(v.boolean()),
+        email_verified: v.optional(v.boolean()),
+        terms_agreed: v.optional(v.boolean()),
+        privacy_agreed: v.optional(v.boolean()),
+        terms_agreed_at: v.optional(v.number()),
+        privacy_agreed_at: v.optional(v.number()),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
-    const insertPromises = args.users.map(user => {
+    const insertPromises = args.users.map((user) => {
       const emailLower = user.email.toLowerCase();
       return ctx.db.insert("users", {
         clerk_id: user.clerk_id,
@@ -656,17 +675,19 @@ export const restoreUsers = mutation({
 
 export const restoreGroups = mutation({
   args: {
-    groups: v.array(v.object({
-      project_manager_id: v.id("users"),
-      member_ids: v.array(v.id("users")),
-      adviser_id: v.optional(v.id("users")),
-      requested_adviser: v.optional(v.id("users")),
-      capstone_title: v.optional(v.string()),
-      isDeleted: v.optional(v.boolean()),
-    }))
+    groups: v.array(
+      v.object({
+        project_manager_id: v.id("users"),
+        member_ids: v.array(v.id("users")),
+        adviser_id: v.optional(v.id("users")),
+        requested_adviser: v.optional(v.id("users")),
+        capstone_title: v.optional(v.string()),
+        isDeleted: v.optional(v.boolean()),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
-    const insertPromises = args.groups.map(group =>
+    const insertPromises = args.groups.map((group) =>
       ctx.db.insert("groupsTable", {
         project_manager_id: group.project_manager_id,
         member_ids: group.member_ids,
@@ -674,7 +695,7 @@ export const restoreGroups = mutation({
         requested_adviser: group.requested_adviser,
         capstone_title: group.capstone_title,
         isDeleted: group.isDeleted ?? false,
-      })
+      }),
     );
 
     const groupIds = await Promise.all(insertPromises);
@@ -684,23 +705,25 @@ export const restoreGroups = mutation({
 
 export const restoreDocuments = mutation({
   args: {
-    documents: v.array(v.object({
-      group_id: v.id("groupsTable"),
-      chapter: v.string(),
-      title: v.string(),
-      content: v.string(),
-      isDeleted: v.optional(v.boolean()),
-    }))
+    documents: v.array(
+      v.object({
+        group_id: v.id("groupsTable"),
+        chapter: v.string(),
+        title: v.string(),
+        content: v.string(),
+        isDeleted: v.optional(v.boolean()),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
-    const insertPromises = args.documents.map(doc =>
+    const insertPromises = args.documents.map((doc) =>
       ctx.db.insert("documents", {
         group_id: doc.group_id,
         chapter: doc.chapter,
         title: doc.title,
         content: doc.content,
         isDeleted: doc.isDeleted ?? false,
-      })
+      }),
     );
 
     const documentIds = await Promise.all(insertPromises);

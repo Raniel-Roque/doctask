@@ -32,8 +32,9 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
 }) => {
   // Calculate password strength using NIST guidelines
   const passwordStrength = calculatePasswordStrength(newPassword);
-  const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
-  
+  const passwordsMatch =
+    newPassword === confirmPassword && confirmPassword.length > 0;
+
   // Form is valid if password is acceptable and passwords match
   const isFormValid = passwordStrength.isAcceptable && passwordsMatch;
 
@@ -119,12 +120,12 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
         <h4 className="text-sm font-medium text-gray-700 mb-3">
           Password Strength:
         </h4>
-        <PasswordStrengthMeter 
-          strength={passwordStrength} 
+        <PasswordStrengthMeter
+          strength={passwordStrength}
           showLabel={false}
           showFeedback={true}
         />
-        
+
         {/* Password Match Indicator */}
         {confirmPassword.length > 0 && (
           <div className="mt-3 pt-3 border-t border-gray-200">
@@ -133,9 +134,7 @@ const ResetPasswordInput: React.FC<ResetPasswordInputProps> = ({
                 passwordsMatch ? "text-green-600" : "text-red-600"
               }`}
             >
-              <span className="mr-2">
-                {passwordsMatch ? "✓" : "✗"}
-              </span>
+              <span className="mr-2">{passwordsMatch ? "✓" : "✗"}</span>
               {passwordsMatch ? "Passwords match" : "Passwords do not match"}
             </div>
           </div>

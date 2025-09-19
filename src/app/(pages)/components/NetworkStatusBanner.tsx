@@ -69,7 +69,7 @@ export function NetworkStatusBanner() {
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Set initial state based on actual navigator status after mount
     if (typeof navigator !== "undefined") {
       setState({

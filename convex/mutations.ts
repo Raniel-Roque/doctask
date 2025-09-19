@@ -351,7 +351,7 @@ export const createGroup = mutation({
       ["appendix_h", "Appendix H"],
       ["appendix_i", "Appendix I"],
     ];
-    
+
     // Batch create all documents
     const documentPromises = partsAndTitles.map(([chapter, title]) =>
       ctx.db.insert("documents", {
@@ -360,7 +360,7 @@ export const createGroup = mutation({
         title,
         content: "",
         isDeleted: false,
-      })
+      }),
     );
     await Promise.all(documentPromises);
 
@@ -467,7 +467,7 @@ export const createGroup = mutation({
     ];
 
     // Batch create all task assignments
-    const taskPromises = taskAssignments.map(task =>
+    const taskPromises = taskAssignments.map((task) =>
       ctx.db.insert("taskAssignments", {
         group_id: groupId,
         chapter: task.chapter,
@@ -476,7 +476,7 @@ export const createGroup = mutation({
         task_status: 0, // 0 = incomplete
         assigned_student_ids: [],
         isDeleted: false,
-      })
+      }),
     );
     await Promise.all(taskPromises);
 
@@ -504,7 +504,7 @@ export const createGroup = mutation({
     ];
 
     // Batch create all document status entries
-    const statusPromises = documentParts.map(documentPart => {
+    const statusPromises = documentParts.map((documentPart) => {
       const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
         documentPart,
       );
@@ -818,18 +818,18 @@ export const updateGroup = mutation({
     // Batch remove old members from studentsTable if they're no longer in the group
     if (removedMembers.length > 0) {
       const studentEntries = await Promise.all(
-        removedMembers.map(memberId =>
+        removedMembers.map((memberId) =>
           ctx.db
-        .query("studentsTable")
-        .withIndex("by_user", (q) => q.eq("user_id", memberId))
-            .first()
-        )
+            .query("studentsTable")
+            .withIndex("by_user", (q) => q.eq("user_id", memberId))
+            .first(),
+        ),
       );
-      
+
       const updatePromises = studentEntries
-        .filter(entry => entry !== null)
-        .map(entry => ctx.db.patch(entry!._id, { group_id: null }));
-      
+        .filter((entry) => entry !== null)
+        .map((entry) => ctx.db.patch(entry!._id, { group_id: null }));
+
       await Promise.all(updatePromises);
     }
 
@@ -853,15 +853,15 @@ export const updateGroup = mutation({
     }
 
     // Batch add new members to studentsTable if they weren't in the group before
-    const newMemberIds = newMembers.filter(id => !oldMembers.includes(id));
+    const newMemberIds = newMembers.filter((id) => !oldMembers.includes(id));
     if (newMemberIds.length > 0) {
       const existingEntries = await Promise.all(
-        newMemberIds.map(memberId =>
+        newMemberIds.map((memberId) =>
           ctx.db
-          .query("studentsTable")
-          .withIndex("by_user", (q) => q.eq("user_id", memberId))
-            .first()
-        )
+            .query("studentsTable")
+            .withIndex("by_user", (q) => q.eq("user_id", memberId))
+            .first(),
+        ),
       );
 
       const updatePromises = [];
@@ -873,29 +873,29 @@ export const updateGroup = mutation({
 
         if (existingEntry) {
           updatePromises.push(
-            ctx.db.patch(existingEntry._id, { group_id: args.groupId })
+            ctx.db.patch(existingEntry._id, { group_id: args.groupId }),
           );
         } else {
           insertPromises.push(
             ctx.db.insert("studentsTable", {
-            user_id: memberId,
-            group_id: args.groupId,
-            isDeleted: false,
-            gender: undefined,
-            dateOfBirth: undefined,
-            placeOfBirth: undefined,
-            nationality: undefined,
-            civilStatus: undefined,
-            religion: undefined,
-            homeAddress: undefined,
-            contact: undefined,
-            tertiaryDegree: undefined,
-            tertiarySchool: undefined,
-            secondarySchool: undefined,
-            secondaryAddress: undefined,
-            primarySchool: undefined,
-            primaryAddress: undefined,
-            })
+              user_id: memberId,
+              group_id: args.groupId,
+              isDeleted: false,
+              gender: undefined,
+              dateOfBirth: undefined,
+              placeOfBirth: undefined,
+              nationality: undefined,
+              civilStatus: undefined,
+              religion: undefined,
+              homeAddress: undefined,
+              contact: undefined,
+              tertiaryDegree: undefined,
+              tertiarySchool: undefined,
+              secondarySchool: undefined,
+              secondaryAddress: undefined,
+              primarySchool: undefined,
+              primaryAddress: undefined,
+            }),
           );
         }
       }
@@ -1213,18 +1213,18 @@ export const deleteUser = mutation({
         // Batch update all members' studentsTable group_id to null
         if (group.member_ids.length > 0) {
           const memberEntries = await Promise.all(
-            group.member_ids.map(memberId =>
+            group.member_ids.map((memberId) =>
               ctx.db
-            .query("studentsTable")
-            .withIndex("by_user", (q) => q.eq("user_id", memberId))
-                .first()
-            )
+                .query("studentsTable")
+                .withIndex("by_user", (q) => q.eq("user_id", memberId))
+                .first(),
+            ),
           );
-          
+
           const updatePromises = memberEntries
-            .filter(entry => entry !== null)
-            .map(entry => ctx.db.patch(entry!._id, { group_id: null }));
-          
+            .filter((entry) => entry !== null)
+            .map((entry) => ctx.db.patch(entry!._id, { group_id: null }));
+
           await Promise.all(updatePromises);
         }
         // Remove group from adviser's group_ids
@@ -1260,31 +1260,38 @@ export const deleteUser = mutation({
           }
         }
         // Batch soft delete all associated data for this group
-        const [docs, taskAssignments, documentStatuses, images] = await Promise.all([
-          ctx.db
-          .query("documents")
-          .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
-            .collect(),
-          ctx.db
-          .query("taskAssignments")
-          .withIndex("by_group", (q) => q.eq("group_id", group._id))
-            .collect(),
-          ctx.db
-          .query("documentStatus")
-          .withIndex("by_group", (q) => q.eq("group_id", group._id))
-            .collect(),
-          ctx.db
-          .query("images")
-          .withIndex("by_group", (q) => q.eq("group_id", group._id))
-            .collect()
-        ]);
+        const [docs, taskAssignments, documentStatuses, images] =
+          await Promise.all([
+            ctx.db
+              .query("documents")
+              .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
+              .collect(),
+            ctx.db
+              .query("taskAssignments")
+              .withIndex("by_group", (q) => q.eq("group_id", group._id))
+              .collect(),
+            ctx.db
+              .query("documentStatus")
+              .withIndex("by_group", (q) => q.eq("group_id", group._id))
+              .collect(),
+            ctx.db
+              .query("images")
+              .withIndex("by_group", (q) => q.eq("group_id", group._id))
+              .collect(),
+          ]);
 
         // Batch update all records to soft delete
         const allDeletePromises = [
-          ...docs.map(doc => ctx.db.patch(doc._id, { isDeleted: true })),
-          ...taskAssignments.map(task => ctx.db.patch(task._id, { isDeleted: true })),
-          ...documentStatuses.map(status => ctx.db.patch(status._id, { isDeleted: true })),
-          ...images.map(image => ctx.db.patch(image._id, { isDeleted: true }))
+          ...docs.map((doc) => ctx.db.patch(doc._id, { isDeleted: true })),
+          ...taskAssignments.map((task) =>
+            ctx.db.patch(task._id, { isDeleted: true }),
+          ),
+          ...documentStatuses.map((status) =>
+            ctx.db.patch(status._id, { isDeleted: true }),
+          ),
+          ...images.map((image) =>
+            ctx.db.patch(image._id, { isDeleted: true }),
+          ),
         ];
 
         await Promise.all(allDeletePromises);
@@ -1361,18 +1368,18 @@ export const deleteGroup = mutation({
 
     // Batch set group_id to null for all members in studentsTable
     const studentEntries = await Promise.all(
-      allMembers.map(memberId =>
+      allMembers.map((memberId) =>
         ctx.db
-        .query("studentsTable")
-        .withIndex("by_user", (q) => q.eq("user_id", memberId))
-          .first()
-      )
+          .query("studentsTable")
+          .withIndex("by_user", (q) => q.eq("user_id", memberId))
+          .first(),
+      ),
     );
-    
+
     const updatePromises = studentEntries
-      .filter(entry => entry !== null)
-      .map(entry => ctx.db.patch(entry!._id, { group_id: null }));
-    
+      .filter((entry) => entry !== null)
+      .map((entry) => ctx.db.patch(entry!._id, { group_id: null }));
+
     await Promise.all(updatePromises);
 
     // Update adviser's group_ids if exists
@@ -1408,31 +1415,37 @@ export const deleteGroup = mutation({
     }
 
     // Batch soft delete all associated data
-    const [docs, taskAssignments, documentStatuses, images] = await Promise.all([
-      ctx.db
-      .query("documents")
-      .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
-        .collect(),
-      ctx.db
-      .query("taskAssignments")
-      .withIndex("by_group", (q) => q.eq("group_id", group._id))
-        .collect(),
-      ctx.db
-      .query("documentStatus")
-      .withIndex("by_group", (q) => q.eq("group_id", group._id))
-        .collect(),
-      ctx.db
-      .query("images")
-      .withIndex("by_group", (q) => q.eq("group_id", group._id))
-        .collect()
-    ]);
+    const [docs, taskAssignments, documentStatuses, images] = await Promise.all(
+      [
+        ctx.db
+          .query("documents")
+          .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
+          .collect(),
+        ctx.db
+          .query("taskAssignments")
+          .withIndex("by_group", (q) => q.eq("group_id", group._id))
+          .collect(),
+        ctx.db
+          .query("documentStatus")
+          .withIndex("by_group", (q) => q.eq("group_id", group._id))
+          .collect(),
+        ctx.db
+          .query("images")
+          .withIndex("by_group", (q) => q.eq("group_id", group._id))
+          .collect(),
+      ],
+    );
 
     // Batch update all records to soft delete
     const allDeletePromises = [
-      ...docs.map(doc => ctx.db.patch(doc._id, { isDeleted: true })),
-      ...taskAssignments.map(task => ctx.db.patch(task._id, { isDeleted: true })),
-      ...documentStatuses.map(status => ctx.db.patch(status._id, { isDeleted: true })),
-      ...images.map(image => ctx.db.patch(image._id, { isDeleted: true }))
+      ...docs.map((doc) => ctx.db.patch(doc._id, { isDeleted: true })),
+      ...taskAssignments.map((task) =>
+        ctx.db.patch(task._id, { isDeleted: true }),
+      ),
+      ...documentStatuses.map((status) =>
+        ctx.db.patch(status._id, { isDeleted: true }),
+      ),
+      ...images.map((image) => ctx.db.patch(image._id, { isDeleted: true })),
     ];
 
     await Promise.all(allDeletePromises);
@@ -1821,10 +1834,10 @@ export const resetAdviserCode = mutation({
       `Reset adviser code to: ${newCode}`,
     );
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       newCode,
-      message: `Adviser code successfully reset to: ${newCode}` 
+      message: `Adviser code successfully reset to: ${newCode}`,
     };
   },
 });
@@ -2207,49 +2220,6 @@ export const updateDocumentContent = mutation({
           last_modified: Date.now(),
           review_status: newStatus,
         });
-      }
-
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
-  },
-});
-
-export const updateDocumentRoomId = mutation({
-  args: {
-    documentId: v.id("documents"),
-    roomId: v.string(),
-    userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    try {
-      // Get the document
-      const document = await ctx.db.get(args.documentId);
-      if (!document) {
-        throw new Error("Document not found");
-      }
-
-      // Get the user
-      const user = await ctx.db.get(args.userId);
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      // Check if user has permission to edit this document
-      // Get the group to check membership
-      const group = await ctx.db.get(document.group_id);
-      if (!group) {
-        throw new Error("Group not found");
-      }
-
-      // Check if user is part of this group (project manager, member, or adviser)
-      const isProjectManager = group.project_manager_id === args.userId;
-      const isMember = group.member_ids.includes(args.userId);
-      const isAdviser = group.adviser_id === args.userId;
-
-      if (!isProjectManager && !isMember && !isAdviser) {
-        throw new Error("You don't have permission to edit this document");
       }
 
       return { success: true };
@@ -2668,23 +2638,6 @@ export const deleteNote = mutation({
   },
 });
 
-export const logRestore = mutation({
-  args: {
-    log: v.object({
-      user_id: v.id("users"),
-      user_role: v.number(),
-      affected_entity_type: v.string(),
-      affected_entity_id: v.union(v.id("users"), v.id("groupsTable")),
-      action: v.string(),
-      details: v.string(),
-    }),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.insert("LogsTable", args.log);
-    return { success: true };
-  },
-});
-
 export const restoreUser = mutation({
   args: {
     userId: v.id("users"),
@@ -2765,21 +2718,21 @@ export const restoreUser = mutation({
       const allDataPromises = groupIds.map(async (groupId) => {
         const [docs, images, tasks, statuses] = await Promise.all([
           ctx.db
-        .query("documents")
-        .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
+            .query("documents")
+            .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
             .collect(),
           ctx.db
-        .query("images")
-        .withIndex("by_group", (q) => q.eq("group_id", groupId))
+            .query("images")
+            .withIndex("by_group", (q) => q.eq("group_id", groupId))
             .collect(),
           ctx.db
-        .query("taskAssignments")
-        .withIndex("by_group", (q) => q.eq("group_id", groupId))
+            .query("taskAssignments")
+            .withIndex("by_group", (q) => q.eq("group_id", groupId))
             .collect(),
           ctx.db
-        .query("documentStatus")
-        .withIndex("by_group", (q) => q.eq("group_id", groupId))
-            .collect()
+            .query("documentStatus")
+            .withIndex("by_group", (q) => q.eq("group_id", groupId))
+            .collect(),
         ]);
         return { docs, images, tasks, statuses };
       });
@@ -2787,12 +2740,18 @@ export const restoreUser = mutation({
       const allData = await Promise.all(allDataPromises);
 
       // Batch restore all records
-      const allRestorePromises = allData.flatMap(({ docs, images, tasks, statuses }) => [
-        ...docs.map(doc => ctx.db.patch(doc._id, { isDeleted: false })),
-        ...images.map(image => ctx.db.patch(image._id, { isDeleted: false })),
-        ...tasks.map(task => ctx.db.patch(task._id, { isDeleted: false })),
-        ...statuses.map(status => ctx.db.patch(status._id, { isDeleted: false }))
-      ]);
+      const allRestorePromises = allData.flatMap(
+        ({ docs, images, tasks, statuses }) => [
+          ...docs.map((doc) => ctx.db.patch(doc._id, { isDeleted: false })),
+          ...images.map((image) =>
+            ctx.db.patch(image._id, { isDeleted: false }),
+          ),
+          ...tasks.map((task) => ctx.db.patch(task._id, { isDeleted: false })),
+          ...statuses.map((status) =>
+            ctx.db.patch(status._id, { isDeleted: false }),
+          ),
+        ],
+      );
 
       await Promise.all(allRestorePromises);
     }
@@ -2872,57 +2831,6 @@ export const updateDocumentLastModified = mutation({
     }
 
     return { success: true };
-  },
-});
-
-// =========================================
-// TASK RESET OPERATIONS
-// =========================================
-
-export const resetTaskStatusForChapter = mutation({
-  args: {
-    groupId: v.id("groupsTable"),
-    chapter: v.string(),
-    userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    try {
-      // Rate limiting for student actions
-      validateRateLimit(args.userId, "student:reset_task_status");
-
-      // Get the user making the change
-      const user = await ctx.db.get(args.userId);
-      if (!user) throw new Error("User not found");
-
-      // Check if the user is a project manager for this group
-      const group = await ctx.db.get(args.groupId);
-      if (!group) throw new Error("Group not found");
-
-      if (group.project_manager_id !== args.userId) {
-        throw new Error("Only project managers can reset task status");
-      }
-
-      // Get all tasks for this chapter
-      const tasks = await ctx.db
-        .query("taskAssignments")
-        .withIndex("by_group_chapter", (q) =>
-          q.eq("group_id", args.groupId).eq("chapter", args.chapter),
-        )
-        .collect();
-
-      // Reset all tasks for this chapter to incomplete
-      for (const task of tasks) {
-        if (!task.isDeleted) {
-          await ctx.db.patch(task._id, {
-            task_status: 0, // Set to incomplete
-          });
-        }
-      }
-
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
   },
 });
 

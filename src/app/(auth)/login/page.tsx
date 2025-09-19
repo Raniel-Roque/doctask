@@ -209,11 +209,14 @@ const LoginPage = () => {
       setLoading(true);
 
       // Check if email exists in our database with enhanced retry logic
-      const data = await apiRequest<EmailCheckResponse>("/api/convex/get-user-by-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailToCheck, checkOnly: true }),
-      });
+      const data = await apiRequest<EmailCheckResponse>(
+        "/api/convex/get-user-by-email",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailToCheck, checkOnly: true }),
+        },
+      );
 
       if (!data.exists) {
         setNotification({ message: "Email not found", type: "error" });
@@ -221,11 +224,14 @@ const LoginPage = () => {
       }
 
       // Get full user info for verification status with enhanced retry logic
-      const user = await apiRequest<UserResponse>("/api/convex/get-user-by-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailToCheck }),
-      });
+      const user = await apiRequest<UserResponse>(
+        "/api/convex/get-user-by-email",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailToCheck }),
+        },
+      );
 
       if (user.email_verified) {
         // If email is verified, proceed to password step
@@ -312,11 +318,14 @@ const LoginPage = () => {
       setEmail(email);
 
       // Check if email exists in our database with enhanced retry logic
-      const data = await apiRequest<EmailCheckResponse>("/api/convex/get-user-by-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, checkOnly: true }),
-      });
+      const data = await apiRequest<EmailCheckResponse>(
+        "/api/convex/get-user-by-email",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, checkOnly: true }),
+        },
+      );
 
       if (!data.exists) {
         setNotification({ message: "Email not found", type: "error" });
@@ -324,11 +333,14 @@ const LoginPage = () => {
       }
 
       // Get full user info for verification status with enhanced retry logic
-      const user = await apiRequest<UserResponse>("/api/convex/get-user-by-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      const user = await apiRequest<UserResponse>(
+        "/api/convex/get-user-by-email",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        },
+      );
 
       if (user.email_verified) {
         // If email is verified, try to auto-login if password is present
@@ -470,11 +482,14 @@ const LoginPage = () => {
         try {
           // Update Convex database to mark email as verified
           // Get user data with enhanced retry logic
-          const user = await apiRequest<UserResponse>("/api/convex/get-user-by-email", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
-          });
+          const user = await apiRequest<UserResponse>(
+            "/api/convex/get-user-by-email",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email }),
+            },
+          );
 
           // Call the mark-email-verified API to update the user's email verification status with enhanced retry logic
           await apiRequest("/api/convex/mark-email-verified", {
@@ -1129,7 +1144,8 @@ const LoginPage = () => {
                     }
 
                     // Check if password meets NIST standards
-                    const passwordStrength = calculatePasswordStrength(password);
+                    const passwordStrength =
+                      calculatePasswordStrength(password);
                     if (!passwordStrength.isAcceptable) {
                       return; // Don't submit, let visual requirements show the error
                     }
@@ -1140,18 +1156,24 @@ const LoginPage = () => {
                       if (result.status === "complete") {
                         // Update Convex database to mark email as verified with enhanced retry logic
                         try {
-                          const user = await apiRequest<UserResponse>("/api/convex/get-user-by-email", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ email }),
-                          });
+                          const user = await apiRequest<UserResponse>(
+                            "/api/convex/get-user-by-email",
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ email }),
+                            },
+                          );
                           await apiRequest("/api/convex/mark-email-verified", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ userId: user._id }),
                           });
                         } catch (error) {
-                          console.warn("Failed to update email verification status:", error);
+                          console.warn(
+                            "Failed to update email verification status:",
+                            error,
+                          );
                         }
 
                         // Clear forgot password timer on successful reset

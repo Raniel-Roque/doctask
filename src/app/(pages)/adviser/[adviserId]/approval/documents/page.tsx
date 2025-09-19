@@ -27,15 +27,35 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
   const [pageSize, setPageSize] = useState(5);
   const [initialGroupId, setInitialGroupId] = useState<string | null>(groupId);
 
-  // Use the backend query instead of mock data
+  // Fetch all documents for frontend filtering and pagination
   const result = useQuery(api.fetch.getAdviserDocuments, {
     adviserId: adviserId as Id<"users">,
     searchTerm,
-    pageSize,
-    pageNumber: currentPage,
+    pageSize: 10000, // Get all documents for frontend pagination
+    pageNumber: 1,
     sortField,
     sortDirection,
   });
+
+  // Apply frontend pagination to groups
+  const paginatedResult = result
+    ? (() => {
+        const allGroups = result.groups || [];
+        const totalFilteredCount = allGroups.length;
+        const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedGroups = allGroups.slice(startIndex, endIndex);
+
+        return {
+          ...result,
+          groups: paginatedGroups,
+          totalCount: totalFilteredCount,
+          totalPages: totalFilteredPages,
+          hasResults: totalFilteredCount > 0,
+        };
+      })()
+    : null;
 
   // Clear the initial group ID after first load to prevent re-expanding
   useEffect(() => {
@@ -156,20 +176,23 @@ const AdviserDocsPage = ({ params }: AdviserDocsPageProps) => {
 
         {/* Documents Table */}
         <DocumentsTable
-          groups={result.groups}
+          groups={paginatedResult?.groups || []}
           onSort={handleSort}
           getSortIcon={(field) => {
             if (field !== sortField) return <FaSort />;
             return sortDirection === "asc" ? <FaSortUp /> : <FaSortDown />;
           }}
           currentPage={currentPage}
-          totalPages={result.totalPages}
-          totalCount={result.totalCount}
+          totalPages={paginatedResult?.totalPages || 0}
+          totalCount={paginatedResult?.totalCount || 0}
           pageSize={pageSize}
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
-          status={result.status as "idle" | "loading" | "error"}
-          hasResults={result.hasResults}
+          status={
+            (paginatedResult?.status as "idle" | "loading" | "error") ||
+            "loading"
+          }
+          hasResults={paginatedResult?.hasResults || false}
           currentUserId={adviserId as Id<"users">}
           initialExpandedGroupId={initialGroupId}
         />

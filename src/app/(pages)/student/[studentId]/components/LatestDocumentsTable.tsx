@@ -204,9 +204,11 @@ export const LatestDocumentsTable = ({
 
   // Add loading state for DOCX download
   const [downloadingDocx, setDownloadingDocx] = useState<string | null>(null);
-  
+
   // Add loading state for task status updates
-  const [updatingTaskStatus, setUpdatingTaskStatus] = useState<string | null>(null);
+  const [updatingTaskStatus, setUpdatingTaskStatus] = useState<string | null>(
+    null,
+  );
 
   // Add state for bulk download popup
   const [showBulkDownloadPopup, setShowBulkDownloadPopup] = useState(false);
@@ -299,44 +301,45 @@ export const LatestDocumentsTable = ({
     const isAssigned = relatedTasks.some((task) =>
       task.assigned_student_ids.includes(currentUserId),
     );
-    return (
-      isAssigned && (doc.status === 0 || doc.status === 3)
-    ); // Can edit not submitted or rejected documents
+    return isAssigned && (doc.status === 0 || doc.status === 3); // Can edit not submitted or rejected documents
   };
 
   // Check if user can edit task status for a document
   const canEditTaskStatus = (doc: Document) => {
     if (!group) return false;
-    
+
     // Exclude special chapters that should always be completed and read-only
     if (["title_page", "appendix_a", "appendix_d"].includes(doc.chapter)) {
       return false;
     }
-    
+
     // Check if document is approved - if so, no one can edit task status
-    if (doc.status === 2) { // Document is approved
+    if (doc.status === 2) {
+      // Document is approved
       return false; // No one can edit task status when document is approved
     }
-    
+
     // Check if document is submitted - if so, can only change from incomplete to complete, not vice versa
-    if (doc.status === 1) { // Document is submitted
+    if (doc.status === 1) {
+      // Document is submitted
       const currentTaskStatus = getTaskStatus(doc);
-      if (currentTaskStatus === 1) { // Task is currently complete
+      if (currentTaskStatus === 1) {
+        // Task is currently complete
         return false; // Cannot change from complete to incomplete when document is submitted
       }
     }
-    
+
     // Project managers can always edit task status (except for excluded chapters, approved docs, and submitted complete tasks)
     if (group.project_manager_id === currentUserId) return true;
-    
+
     // Check if user is assigned to any task for this document
     const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
-    const isAssignedToAnyTask = relatedTasks.some((task) => 
-      task.assigned_student_ids.includes(currentUserId)
+    const isAssignedToAnyTask = relatedTasks.some((task) =>
+      task.assigned_student_ids.includes(currentUserId),
     );
-    
+
     if (!isAssignedToAnyTask) return false;
-    
+
     return true;
   };
 
@@ -347,7 +350,7 @@ export const LatestDocumentsTable = ({
 
       // Find tasks for this document
       const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
-      
+
       if (relatedTasks.length === 0) {
         throw new Error("No tasks found for this document");
       }
@@ -358,8 +361,8 @@ export const LatestDocumentsTable = ({
       if (group?.project_manager_id === currentUserId) {
         userTask = relatedTasks[0]; // Project manager can edit any task
       } else {
-        userTask = relatedTasks.find((task) => 
-          task.assigned_student_ids.includes(currentUserId)
+        userTask = relatedTasks.find((task) =>
+          task.assigned_student_ids.includes(currentUserId),
         );
       }
 
@@ -380,7 +383,10 @@ export const LatestDocumentsTable = ({
       });
     } catch (error) {
       setNotification({
-        message: error instanceof Error ? error.message : "Failed to update task status.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to update task status.",
         type: "error",
       });
     } finally {
@@ -533,8 +539,8 @@ export const LatestDocumentsTable = ({
     }
 
     // Filter to only approved documents (status === 2)
-    const approvedDocuments = documents.filter(doc => doc.status === 2);
-    
+    const approvedDocuments = documents.filter((doc) => doc.status === 2);
+
     if (approvedDocuments.length === 0) {
       setNotification({
         message: "No approved documents available for download.",
@@ -2992,7 +2998,9 @@ export const LatestDocumentsTable = ({
                             >
                               <FaEye className="w-4 h-4" />
                             </button>
-                            <span className="mx-1 text-gray-300 select-none">|</span>
+                            <span className="mx-1 text-gray-300 select-none">
+                              |
+                            </span>
                           </>
                         )}
                         {canEditDocument(doc) && (
@@ -3004,7 +3012,9 @@ export const LatestDocumentsTable = ({
                             >
                               <FaEdit className="w-4 h-4" />
                             </button>
-                            <span className="mx-1 text-gray-300 select-none">|</span>
+                            <span className="mx-1 text-gray-300 select-none">
+                              |
+                            </span>
                           </>
                         )}
                         <button
@@ -3178,8 +3188,8 @@ export const LatestDocumentsTable = ({
             </div>
 
             <p className="text-sm text-gray-600 mb-6">
-              Choose a format to download all approved documents. The zip file will
-              contain individual approved documents as separate files.
+              Choose a format to download all approved documents. The zip file
+              will contain individual approved documents as separate files.
             </p>
 
             <div className="space-y-3">
@@ -3211,7 +3221,9 @@ export const LatestDocumentsTable = ({
             </div>
 
             <div className="mt-4 text-xs text-gray-500">
-              <p>• Only approved documents will be included as separate files</p>
+              <p>
+                • Only approved documents will be included as separate files
+              </p>
               <p>• All files will be packaged in a zip archive</p>
             </div>
           </div>

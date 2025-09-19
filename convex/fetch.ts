@@ -286,7 +286,13 @@ export const getPendingGroupIdsForAdviser = query({
   args: {
     adviserId: v.id("users"),
     searchTerm: v.string(),
-    memberCountFilter: v.optional(v.union(v.literal("all"), v.literal("with_members"), v.literal("no_members"))),
+    memberCountFilter: v.optional(
+      v.union(
+        v.literal("all"),
+        v.literal("with_members"),
+        v.literal("no_members"),
+      ),
+    ),
     pageSize: v.optional(v.number()),
     pageNumber: v.optional(v.number()),
     sortField: v.optional(v.string()),
@@ -380,7 +386,9 @@ export const getPendingGroupIdsForAdviser = query({
       // Apply member count filter
       if (memberCountFilter !== "all") {
         filteredGroups = filteredGroups.filter((group) => {
-          const memberCount = (group.member_ids?.length || 0) + (group.project_manager_id ? 1 : 0);
+          const memberCount =
+            (group.member_ids?.length || 0) +
+            (group.project_manager_id ? 1 : 0);
           if (memberCountFilter === "with_members") {
             return memberCount > 0;
           } else if (memberCountFilter === "no_members") {
@@ -522,73 +530,80 @@ export const searchUsers = query({
       } else {
         // Optimize search by running searches in parallel and using Set for deduplication
         const searchTermLower = searchTerm.toLowerCase();
-        
-        const [firstNameResults, lastNameResults, emailResults] = await Promise.all([
-          ctx.db
-          .query("users")
-          .withSearchIndex("search_by_first_name", (q) => {
-            let searchQuery = q.search("first_name", searchTerm);
-            if (emailVerified !== undefined) {
-              searchQuery = searchQuery.eq("email_verified", emailVerified);
-            }
-            if (subrole !== undefined) {
-              searchQuery = searchQuery.eq("subrole", subrole);
-            }
-            return searchQuery.eq("role", role);
-          })
-          .collect()
-            .then((results) => results.filter((u) => !u.isDeleted)),
 
-          ctx.db
-          .query("users")
-          .withSearchIndex("search_by_last_name", (q) => {
-            let searchQuery = q.search("last_name", searchTerm);
-            if (emailVerified !== undefined) {
-              searchQuery = searchQuery.eq("email_verified", emailVerified);
-            }
-            if (subrole !== undefined) {
-              searchQuery = searchQuery.eq("subrole", subrole);
-            }
-            return searchQuery.eq("role", role);
-          })
-          .collect()
-            .then((results) => results.filter((u) => !u.isDeleted)),
+        const [firstNameResults, lastNameResults, emailResults] =
+          await Promise.all([
+            ctx.db
+              .query("users")
+              .withSearchIndex("search_by_first_name", (q) => {
+                let searchQuery = q.search("first_name", searchTerm);
+                if (emailVerified !== undefined) {
+                  searchQuery = searchQuery.eq("email_verified", emailVerified);
+                }
+                if (subrole !== undefined) {
+                  searchQuery = searchQuery.eq("subrole", subrole);
+                }
+                return searchQuery.eq("role", role);
+              })
+              .collect()
+              .then((results) => results.filter((u) => !u.isDeleted)),
 
-          // Only search by email if it looks like an email
-          searchTermLower.includes('@') ? ctx.db
-          .query("users")
-          .filter((q) => {
-            const roleFilter = q.eq(q.field("role"), role);
-              const emailFilter = q.eq(q.field("email"), searchTermLower);
-            const emailVerifiedFilter =
-              emailVerified !== undefined
-                ? q.eq(q.field("email_verified"), emailVerified)
-                : null;
-            const subroleFilter =
-              subrole !== undefined ? q.eq(q.field("subrole"), subrole) : null;
+            ctx.db
+              .query("users")
+              .withSearchIndex("search_by_last_name", (q) => {
+                let searchQuery = q.search("last_name", searchTerm);
+                if (emailVerified !== undefined) {
+                  searchQuery = searchQuery.eq("email_verified", emailVerified);
+                }
+                if (subrole !== undefined) {
+                  searchQuery = searchQuery.eq("subrole", subrole);
+                }
+                return searchQuery.eq("role", role);
+              })
+              .collect()
+              .then((results) => results.filter((u) => !u.isDeleted)),
 
-            let finalFilter = q.and(roleFilter, emailFilter);
-            if (emailVerifiedFilter) {
-              finalFilter = q.and(finalFilter, emailVerifiedFilter);
-            }
-            if (subroleFilter) {
-              finalFilter = q.and(finalFilter, subroleFilter);
-            }
-            return finalFilter;
-          })
-          .collect()
-            .then((results) => results.filter((u) => !u.isDeleted)) : []
-        ]);
+            // Only search by email if it looks like an email
+            searchTermLower.includes("@")
+              ? ctx.db
+                  .query("users")
+                  .filter((q) => {
+                    const roleFilter = q.eq(q.field("role"), role);
+                    const emailFilter = q.eq(q.field("email"), searchTermLower);
+                    const emailVerifiedFilter =
+                      emailVerified !== undefined
+                        ? q.eq(q.field("email_verified"), emailVerified)
+                        : null;
+                    const subroleFilter =
+                      subrole !== undefined
+                        ? q.eq(q.field("subrole"), subrole)
+                        : null;
+
+                    let finalFilter = q.and(roleFilter, emailFilter);
+                    if (emailVerifiedFilter) {
+                      finalFilter = q.and(finalFilter, emailVerifiedFilter);
+                    }
+                    if (subroleFilter) {
+                      finalFilter = q.and(finalFilter, subroleFilter);
+                    }
+                    return finalFilter;
+                  })
+                  .collect()
+                  .then((results) => results.filter((u) => !u.isDeleted))
+              : [],
+          ]);
 
         // Use Map for efficient deduplication
         const userMap = new Map<string, Doc<"users">>();
-        
-        [...firstNameResults, ...lastNameResults, ...emailResults].forEach(user => {
-          if (!user.isDeleted) {
-            userMap.set(user._id, user);
-          }
-        });
-        
+
+        [...firstNameResults, ...lastNameResults, ...emailResults].forEach(
+          (user) => {
+            if (!user.isDeleted) {
+              userMap.set(user._id, user);
+            }
+          },
+        );
+
         results = Array.from(userMap.values());
       }
 
@@ -667,7 +682,7 @@ export const searchGroups = query({
     try {
       // Get all users for name lookups - cache this for reuse
       const users = await ctx.db.query("users").collect();
-      const userMap = new Map(users.map(u => [u._id, u]));
+      const userMap = new Map(users.map((u) => [u._id, u]));
 
       // Start with base query
       let groups = await ctx.db
@@ -684,24 +699,36 @@ export const searchGroups = query({
 
         // Pre-compute searchable text for each group to avoid repeated calculations
         groups = groups.filter((group) => {
-          const projectManager = group.project_manager_id ? userMap.get(group.project_manager_id) : null;
-          const adviser = group.adviser_id ? userMap.get(group.adviser_id) : null;
-          
+          const projectManager = group.project_manager_id
+            ? userMap.get(group.project_manager_id)
+            : null;
+          const adviser = group.adviser_id
+            ? userMap.get(group.adviser_id)
+            : null;
+
           // Build searchable text once
           const searchableText = [
             projectManager ? `${projectManager.last_name} et al` : "",
             group.capstone_title || "",
-            projectManager ? `${projectManager.first_name} ${projectManager.last_name}` : "",
+            projectManager
+              ? `${projectManager.first_name} ${projectManager.last_name}`
+              : "",
             projectManager ? projectManager.email : "",
-            adviser ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}` : "",
+            adviser
+              ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`
+              : "",
             adviser ? adviser.email : "",
-            ...group.member_ids.map(id => {
+            ...group.member_ids.map((id) => {
               const member = userMap.get(id);
-              return member ? `${member.first_name} ${member.last_name} ${member.email}` : "";
-            })
-          ].join(" ").toLowerCase();
+              return member
+                ? `${member.first_name} ${member.last_name} ${member.email}`
+                : "";
+            }),
+          ]
+            .join(" ")
+            .toLowerCase();
 
-          return searchTerms.every(term => searchableText.includes(term));
+          return searchTerms.every((term) => searchableText.includes(term));
         });
       }
 
@@ -754,9 +781,9 @@ export const searchGroups = query({
       // Grade label to number mapping
       const GRADE_LABEL_TO_NUMBER: { [key: string]: number } = {
         "NO GRADE": 0,
-        "APPROVED": 1,
+        APPROVED: 1,
         "APPROVED WITH REVISIONS": 2,
-        "DISAPPROVED": 3,
+        DISAPPROVED: 3,
         "ACCEPTED WITH REVISIONS": 4,
         "REORAL DEFENSE": 5,
         "NOT ACCEPTED": 6,
@@ -931,15 +958,15 @@ export const getDocumentsWithStatus = query({
       // Fetch documents and statuses in parallel
       const [allDocs, allStatuses] = await Promise.all([
         ctx.db
-        .query("documents")
-        .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
-        .collect()
+          .query("documents")
+          .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
+          .collect()
           .then((results) => results.filter((d) => !d.isDeleted)),
         ctx.db
-        .query("documentStatus")
-        .withIndex("by_group_document", (q) => q.eq("group_id", groupId))
-        .collect()
-          .then((results) => results.filter((s) => !s.isDeleted))
+          .query("documentStatus")
+          .withIndex("by_group_document", (q) => q.eq("group_id", groupId))
+          .collect()
+          .then((results) => results.filter((s) => !s.isDeleted)),
       ]);
 
       // Create a map for quick status lookup
@@ -1020,11 +1047,11 @@ export const getTaskAssignments = query({
       // Fetch task assignments and users in parallel
       const [taskAssignments, users] = await Promise.all([
         ctx.db
-        .query("taskAssignments")
-        .withIndex("by_group", (q) => q.eq("group_id", groupId))
-        .collect()
+          .query("taskAssignments")
+          .withIndex("by_group", (q) => q.eq("group_id", groupId))
+          .collect()
           .then((results) => results.filter((t) => !t.isDeleted)),
-        ctx.db.query("users").collect()
+        ctx.db.query("users").collect(),
       ]);
 
       // Get group members (project manager + members)
@@ -1252,27 +1279,37 @@ export const getAdviserDocuments = query({
       const processedGroups: AdviserGroupWithDocuments[] = [];
 
       // Batch fetch all documents and statuses for all groups at once
-      const adviserGroupIds = filteredGroups.map(g => g._id);
+      const adviserGroupIds = filteredGroups.map((g) => g._id);
       const [allDocuments, allStatuses] = await Promise.all([
-        ctx.db.query("documents").collect().then(docs => 
-          docs.filter(d => !d.isDeleted && adviserGroupIds.includes(d.group_id))
-        ),
-        ctx.db.query("documentStatus").collect().then(statuses => 
-          statuses.filter(s => !s.isDeleted && adviserGroupIds.includes(s.group_id))
-        )
+        ctx.db
+          .query("documents")
+          .collect()
+          .then((docs) =>
+            docs.filter(
+              (d) => !d.isDeleted && adviserGroupIds.includes(d.group_id),
+            ),
+          ),
+        ctx.db
+          .query("documentStatus")
+          .collect()
+          .then((statuses) =>
+            statuses.filter(
+              (s) => !s.isDeleted && adviserGroupIds.includes(s.group_id),
+            ),
+          ),
       ]);
 
       // Create maps for efficient lookup
       const documentsByGroup = new Map<string, Doc<"documents">[]>();
       const statusesByGroup = new Map<string, Doc<"documentStatus">[]>();
-      
-      allDocuments.forEach(doc => {
+
+      allDocuments.forEach((doc) => {
         const groupDocs = documentsByGroup.get(doc.group_id) || [];
         groupDocs.push(doc);
         documentsByGroup.set(doc.group_id, groupDocs);
       });
-      
-      allStatuses.forEach(status => {
+
+      allStatuses.forEach((status) => {
         const groupStatuses = statusesByGroup.get(status.group_id) || [];
         groupStatuses.push(status);
         statusesByGroup.set(status.group_id, groupStatuses);
@@ -1454,22 +1491,26 @@ export const getHandledGroupsWithProgress = query({
     );
 
     // Batch fetch all related data more efficiently
-    const handledGroupIds = validGroups.map(g => g._id);
+    const handledGroupIds = validGroups.map((g) => g._id);
     const projectManagerIds = validGroups.map((g) => g.project_manager_id);
     const allMemberIds = validGroups.flatMap((g) => g.member_ids || []);
     const uniqueMemberIds = [...new Set(allMemberIds)]; // Remove duplicates
 
     // Fetch all data in parallel
-    const [allDocumentStatuses, projectManagers, groupMembers] = await Promise.all([
-      // Fetch all document statuses for all groups at once
-      ctx.db.query("documentStatus").collect().then(statuses => 
-        statuses.filter(s => handledGroupIds.includes(s.group_id))
-      ),
-      // Fetch all project managers
-      Promise.all(projectManagerIds.map((id) => ctx.db.get(id))),
-      // Fetch all group members
-      Promise.all(uniqueMemberIds.map((id) => ctx.db.get(id)))
-    ]);
+    const [allDocumentStatuses, projectManagers, groupMembers] =
+      await Promise.all([
+        // Fetch all document statuses for all groups at once
+        ctx.db
+          .query("documentStatus")
+          .collect()
+          .then((statuses) =>
+            statuses.filter((s) => handledGroupIds.includes(s.group_id)),
+          ),
+        // Fetch all project managers
+        Promise.all(projectManagerIds.map((id) => ctx.db.get(id))),
+        // Fetch all group members
+        Promise.all(uniqueMemberIds.map((id) => ctx.db.get(id))),
+      ]);
 
     const validProjectManagers = projectManagers.filter(
       (pm): pm is NonNullable<typeof pm> => pm !== null,
@@ -1480,7 +1521,7 @@ export const getHandledGroupsWithProgress = query({
 
     // Group document statuses by group_id for efficient lookup
     const statusesByGroup = new Map<string, Doc<"documentStatus">[]>();
-    allDocumentStatuses.forEach(status => {
+    allDocumentStatuses.forEach((status) => {
       const groupStatuses = statusesByGroup.get(status.group_id) || [];
       groupStatuses.push(status);
       statusesByGroup.set(status.group_id, groupStatuses);
@@ -1681,175 +1722,6 @@ export const getAllImages = query({
       return images.filter((image) => !image.isDeleted);
     } catch {
       return [];
-    }
-  },
-});
-
-export const getDocumentVersions = query({
-  args: {
-    groupId: v.id("groupsTable"),
-    chapter: v.string(),
-    userId: v.id("users"), // For permission checking
-  },
-  handler: async (ctx, args) => {
-    try {
-      // Check if user has permission (must be project manager)
-      const group = await ctx.db.get(args.groupId);
-      if (!group) {
-        return {
-          versions: [],
-          success: false,
-          error: "Group not found",
-        };
-      }
-
-      // Only project manager can view version history
-      if (group.project_manager_id !== args.userId) {
-        return {
-          versions: [],
-          success: false,
-          error: "Only the project manager can view version history",
-        };
-      }
-
-      // Get all versions of this document, ordered by creation time DESC (newest first)
-      const versions = await ctx.db
-        .query("documents")
-        .withIndex("by_group_chapter", (q) =>
-          q.eq("group_id", args.groupId).eq("chapter", args.chapter),
-        )
-        .order("desc") // Most recent first (LIFO stack)
-        .collect()
-        .then((results) => results.filter((d) => !d.isDeleted));
-
-      // The first document (oldest) is the live template with room ID
-      // The rest are version snapshots
-      const liveDocument = versions[versions.length - 1]; // Last in DESC order = oldest
-      const versionSnapshots = versions.slice(0, -1); // All except the oldest
-
-      return {
-        versions: versionSnapshots,
-        liveDocument,
-        success: true,
-      };
-    } catch (error) {
-      return {
-        versions: [],
-        liveDocument: null,
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to fetch versions",
-      };
-    }
-  },
-});
-
-export const getDocumentVersion = query({
-  args: {
-    documentId: v.id("documents"),
-    userId: v.id("users"), // For permission checking
-  },
-  handler: async (ctx, args) => {
-    try {
-      // Get the document version
-      const document = await ctx.db.get(args.documentId);
-      if (!document) {
-        return {
-          document: null,
-          success: false,
-          error: "Document version not found",
-        };
-      }
-
-      // Check if user has permission (must be project manager)
-      const group = await ctx.db.get(document.group_id);
-      if (!group) {
-        return {
-          document: null,
-          success: false,
-          error: "Group not found",
-        };
-      }
-
-      // Only project manager can view version details
-      if (group.project_manager_id !== args.userId) {
-        return {
-          document: null,
-          success: false,
-          error: "Only the project manager can view version details",
-        };
-      }
-
-      return {
-        document,
-        success: true,
-      };
-    } catch (error) {
-      return {
-        document: null,
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch document version",
-      };
-    }
-  },
-});
-
-export const getCurrentDocumentVersion = query({
-  args: {
-    groupId: v.id("groupsTable"),
-    chapter: v.string(),
-    userId: v.id("users"), // For permission checking
-  },
-  handler: async (ctx, args) => {
-    try {
-      // Check if user has access to this group
-      const group = await ctx.db.get(args.groupId);
-      if (!group) {
-        return {
-          document: null,
-          success: false,
-          error: "Group not found",
-        };
-      }
-
-      // Check if user is part of this group (project manager, member, or adviser)
-      const isProjectManager = group.project_manager_id === args.userId;
-      const isMember = group.member_ids.includes(args.userId);
-      const isAdviser = group.adviser_id === args.userId;
-
-      if (!isProjectManager && !isMember && !isAdviser) {
-        return {
-          document: null,
-          success: false,
-          error: "You don't have permission to access this document",
-        };
-      }
-
-      // Get the live document (oldest by creation time - the one with room ID)
-      const liveDocument = await ctx.db
-        .query("documents")
-        .withIndex("by_group_chapter", (q) =>
-          q.eq("group_id", args.groupId).eq("chapter", args.chapter),
-        )
-        .order("asc") // Oldest first (live document with room ID)
-        .first();
-
-      return {
-        document: liveDocument,
-        success: true,
-      };
-    } catch (error) {
-      return {
-        document: null,
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch live document",
-      };
     }
   },
 });
@@ -2105,80 +1977,101 @@ export const getLogsWithDetails = query({
     const paginatedLogs = logs.slice(skip, skip + pageSize);
 
     // Batch fetch all related entities to avoid N+1 queries
-    const userIds = [...new Set(paginatedLogs.map(log => log.user_id))];
-    const entityIds = [...new Set(paginatedLogs.map(log => log.affected_entity_id))];
-    
+    const userIds = [...new Set(paginatedLogs.map((log) => log.user_id))];
+    const entityIds = [
+      ...new Set(paginatedLogs.map((log) => log.affected_entity_id)),
+    ];
+
     // Separate user and group entity IDs
-    const userEntityIds = entityIds.filter(id => 
-      paginatedLogs.some(log => log.affected_entity_id === id && log.affected_entity_type === "user")
+    const userEntityIds = entityIds.filter((id) =>
+      paginatedLogs.some(
+        (log) =>
+          log.affected_entity_id === id && log.affected_entity_type === "user",
+      ),
     ) as Id<"users">[];
-    const groupEntityIds = entityIds.filter(id => 
-      paginatedLogs.some(log => log.affected_entity_id === id && log.affected_entity_type === "group")
+    const groupEntityIds = entityIds.filter((id) =>
+      paginatedLogs.some(
+        (log) =>
+          log.affected_entity_id === id && log.affected_entity_type === "group",
+      ),
     ) as Id<"groupsTable">[];
 
     // Fetch all related data in parallel
     const [users, userEntities, groups] = await Promise.all([
-      Promise.all(userIds.map(id => ctx.db.get(id))),
-      Promise.all(userEntityIds.map(id => ctx.db.get(id))),
-      Promise.all(groupEntityIds.map(id => ctx.db.get(id)))
+      Promise.all(userIds.map((id) => ctx.db.get(id))),
+      Promise.all(userEntityIds.map((id) => ctx.db.get(id))),
+      Promise.all(groupEntityIds.map((id) => ctx.db.get(id))),
     ]);
 
     // Create lookup maps
-    const userMap = new Map(users.filter(u => u).map(u => [u!._id, u!]));
-    const userEntityMap = new Map(userEntities.filter(u => u).map(u => [u!._id, u!]));
-    const groupMap = new Map(groups.filter(g => g).map(g => [g!._id, g!]));
+    const userMap = new Map(users.filter((u) => u).map((u) => [u!._id, u!]));
+    const userEntityMap = new Map(
+      userEntities.filter((u) => u).map((u) => [u!._id, u!]),
+    );
+    const groupMap = new Map(groups.filter((g) => g).map((g) => [g!._id, g!]));
 
     // Get project manager IDs for groups
-    const projectManagerIds = groups.filter(g => g).map(g => g!.project_manager_id);
-    const projectManagers = await Promise.all(projectManagerIds.map(id => ctx.db.get(id)));
-    const projectManagerMap = new Map(projectManagers.filter(pm => pm).map(pm => [pm!._id, pm!]));
+    const projectManagerIds = groups
+      .filter((g) => g)
+      .map((g) => g!.project_manager_id);
+    const projectManagers = await Promise.all(
+      projectManagerIds.map((id) => ctx.db.get(id)),
+    );
+    const projectManagerMap = new Map(
+      projectManagers.filter((pm) => pm).map((pm) => [pm!._id, pm!]),
+    );
 
     // Build logs with details using pre-fetched data
     const logsWithDetails = paginatedLogs.map((log) => {
       const user = userMap.get(log.user_id);
-      
-        let affectedEntity = null;
-        if (log.affected_entity_type === "user") {
-        affectedEntity = userEntityMap.get(log.affected_entity_id as Id<"users">);
-        } else if (log.affected_entity_type === "group") {
-        const group = groupMap.get(log.affected_entity_id as Id<"groupsTable">);
-          if (group) {
-          const projectManager = projectManagerMap.get(group.project_manager_id);
-            affectedEntity = {
-              projectManager: projectManager
-                ? {
-                    last_name: projectManager.last_name,
-                  }
-                : undefined,
-            };
-          }
-        }
 
-        return {
-          ...log,
-        user: user && "first_name" in user
+      let affectedEntity = null;
+      if (log.affected_entity_type === "user") {
+        affectedEntity = userEntityMap.get(
+          log.affected_entity_id as Id<"users">,
+        );
+      } else if (log.affected_entity_type === "group") {
+        const group = groupMap.get(log.affected_entity_id as Id<"groupsTable">);
+        if (group) {
+          const projectManager = projectManagerMap.get(
+            group.project_manager_id,
+          );
+          affectedEntity = {
+            projectManager: projectManager
               ? {
-                  first_name: user.first_name,
-                  middle_name: user.middle_name,
-                  last_name: user.last_name,
-                  email: user.email,
+                  last_name: projectManager.last_name,
                 }
-              : null,
-          affectedEntity: affectedEntity
-            ? "role" in affectedEntity && "first_name" in affectedEntity
-              ? {
-                  first_name: affectedEntity.first_name,
-                  middle_name: affectedEntity.middle_name,
-                  last_name: affectedEntity.last_name,
-                  email: affectedEntity.email,
-                }
-              : "projectManager" in affectedEntity
-                ? {
-                    projectManager: affectedEntity.projectManager,
-                  }
-                : null
+              : undefined,
+          };
+        }
+      }
+
+      return {
+        ...log,
+        user:
+          user && "first_name" in user
+            ? {
+                first_name: user.first_name,
+                middle_name: user.middle_name,
+                last_name: user.last_name,
+                email: user.email,
+              }
             : null,
-        };
+        affectedEntity: affectedEntity
+          ? "role" in affectedEntity && "first_name" in affectedEntity
+            ? {
+                first_name: affectedEntity.first_name,
+                middle_name: affectedEntity.middle_name,
+                last_name: affectedEntity.last_name,
+                email: affectedEntity.email,
+              }
+            : "projectManager" in affectedEntity
+              ? {
+                  projectManager: affectedEntity.projectManager,
+                }
+              : null
+          : null,
+      };
     });
 
     return {
@@ -2188,53 +2081,6 @@ export const getLogsWithDetails = query({
       pageSize,
       pageNumber,
     };
-  },
-});
-
-// =========================================
-// TERMS AGREEMENT QUERIES
-// =========================================
-
-export const getUserTermsAgreement = query({
-  args: {
-    userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    try {
-      const user = await ctx.db.get(args.userId);
-      if (!user) {
-        return {
-          hasAgreed: false,
-          termsAgreed: false,
-          privacyAgreed: false,
-          user: null,
-        };
-      }
-
-      const hasAgreed =
-        user.terms_agreed === true && user.privacy_agreed === true;
-
-      return {
-        hasAgreed,
-        termsAgreed: user.terms_agreed === true,
-        privacyAgreed: user.privacy_agreed === true,
-        user: {
-          _id: user._id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email: user.email,
-          role: user.role,
-          subrole: user.subrole,
-        },
-      };
-    } catch {
-      return {
-        hasAgreed: false,
-        termsAgreed: false,
-        privacyAgreed: false,
-        user: null,
-      };
-    }
   },
 });
 
@@ -2421,21 +2267,6 @@ export const getUsersByIds = query({
       );
 
       return users.filter((user) => user !== null);
-    } catch {
-      return [];
-    }
-  },
-});
-
-export const getAllGroupsForFiltering = query({
-  handler: async (ctx) => {
-    try {
-      const groups = await ctx.db
-        .query("groupsTable")
-        .collect()
-        .then((results) => results.filter((g) => !g.isDeleted));
-
-      return groups;
     } catch {
       return [];
     }

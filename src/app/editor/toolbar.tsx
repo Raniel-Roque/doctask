@@ -338,10 +338,13 @@ const ImageButton = () => {
         formData.append("file", file);
 
         // Upload image with enhanced retry logic
-        const data = await apiRequest<ImageUploadResponse>("/api/upload-image", {
-          method: "POST",
-          body: formData,
-        });
+        const data = await apiRequest<ImageUploadResponse>(
+          "/api/upload-image",
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
 
         if (data.success && data.image?.url) {
           // Use the shared URL from Convex storage

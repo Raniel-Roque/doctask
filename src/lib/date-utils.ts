@@ -3,16 +3,19 @@
  * by ensuring consistent formatting between server and client
  */
 
-export const formatDate = (timestamp: number, options?: {
-  year?: boolean;
-  month?: boolean;
-  day?: boolean;
-  hour?: boolean;
-  minute?: boolean;
-  hour12?: boolean;
-}) => {
+export const formatDate = (
+  timestamp: number,
+  options?: {
+    year?: boolean;
+    month?: boolean;
+    day?: boolean;
+    hour?: boolean;
+    minute?: boolean;
+    hour12?: boolean;
+  },
+) => {
   const date = new Date(timestamp);
-  
+
   // Use consistent formatting options to avoid locale differences
   const formatOptions: Intl.DateTimeFormatOptions = {
     year: options?.year !== false ? "numeric" : undefined,
@@ -24,7 +27,7 @@ export const formatDate = (timestamp: number, options?: {
   };
 
   // Remove undefined values
-  Object.keys(formatOptions).forEach(key => {
+  Object.keys(formatOptions).forEach((key) => {
     if (formatOptions[key as keyof Intl.DateTimeFormatOptions] === undefined) {
       delete formatOptions[key as keyof Intl.DateTimeFormatOptions];
     }

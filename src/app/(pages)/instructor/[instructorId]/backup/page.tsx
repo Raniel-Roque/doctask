@@ -366,16 +366,19 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       >;
 
       // Restore database backup with enhanced retry logic
-      const restoreResult = await apiRequest<RestoreResult>("/api/convex/restore", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const restoreResult = await apiRequest<RestoreResult>(
+        "/api/convex/restore",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            backup,
+            instructorId: instructorId,
+          }),
         },
-        body: JSON.stringify({
-          backup,
-          instructorId: instructorId,
-        }),
-      });
+      );
 
       // Store the backup data and mappings for instructor restoration
       setRestoreData({
