@@ -101,6 +101,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // No direct Convex mutations for create/update/delete user. Use API routes only.
   const resetPassword = useMutation(api.mutations.resetPassword);
   const logLockAccount = useMutation(api.mutations.logLockAccountMutation);
+  const resetAdviserCode = useMutation(api.mutations.resetAdviserCode);
 
   // =========================================
   // Queries
@@ -584,6 +585,35 @@ const UsersPage = ({ params }: UsersPageProps) => {
     }
   };
 
+  const handleResetCode = async (user: User) => {
+    if (!instructor) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await resetAdviserCode({
+        adviserId: user._id,
+        instructorId: instructor._id,
+      });
+
+      if (result.success) {
+        setNotification({
+          type: "success",
+          message: result.message || "Adviser code successfully reset",
+        });
+      } else {
+        throw new Error("Failed to reset adviser code");
+      }
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message: error instanceof Error ? error.message : "An error occurred while resetting the adviser code",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // =========================================
   // Excel Upload Functions
   // =========================================
@@ -960,6 +990,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onAdd={() => setIsAddingUser(true)}
           onResetPassword={setResetPasswordUser}
           onLockAccount={handleLockAccount}
+          onResetCode={handleResetCode}
           showCodeColumn={true}
           totalPages={searchResult.totalPages}
           totalCount={searchResult.totalCount}

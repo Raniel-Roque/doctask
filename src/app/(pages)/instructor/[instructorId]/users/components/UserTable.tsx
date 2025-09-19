@@ -11,6 +11,7 @@ import {
   FaSortDown,
   FaLock,
   FaFilter,
+  FaSync,
 } from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 import { useState, useRef, useEffect } from "react";
@@ -44,6 +45,7 @@ interface UserTableProps {
   onAdd: () => void;
   onResetPassword: (user: User) => void;
   onLockAccount: (user: User) => void;
+  onResetCode?: (user: User) => void;
   showRoleColumn?: boolean;
   showCodeColumn?: boolean;
   totalPages: number;
@@ -80,6 +82,7 @@ export const UserTable = ({
   onAdd,
   onResetPassword,
   onLockAccount,
+  onResetCode,
   showRoleColumn = false,
   showCodeColumn = false,
   totalPages,
@@ -792,6 +795,18 @@ export const UserTable = ({
                       >
                         <FaLock />
                       </button>
+                      {showCodeColumn && onResetCode && (
+                        <>
+                          <span className="mx-1 text-gray-300 select-none">|</span>
+                          <button
+                            onClick={() => onResetCode(user)}
+                            className="p-2 text-orange-600 hover:text-orange-800"
+                            title="Reset Adviser Code"
+                          >
+                            <FaSync />
+                          </button>
+                        </>
+                      )}
                       <span className="mx-1 text-gray-300 select-none">|</span>
                       <button
                         onClick={() => onDelete(user)}

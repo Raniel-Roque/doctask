@@ -1744,6 +1744,62 @@ export const cancelAdviserRequest = mutation({
   },
 });
 
+export const resetAdviserCode = mutation({
+  args: {
+    adviserId: v.id("users"),
+    instructorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Rate limiting for instructor actions
+    validateRateLimit(args.instructorId, "instructor:reset_adviser_code");
+
+    // Verify the instructor has permission (role 2 = instructor)
+    const instructor = await ctx.db.get(args.instructorId);
+    if (!instructor || instructor.role !== 2) {
+      throw new Error("Unauthorized: Only instructors can reset adviser codes");
+    }
+
+    // Verify the target user is an adviser
+    const adviser = await ctx.db.get(args.adviserId);
+    if (!adviser || adviser.role !== 1) {
+      throw new Error("User is not an adviser");
+    }
+
+    // Get the current adviser record
+    const adviserRecord = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+
+    if (!adviserRecord) {
+      throw new Error("Adviser record not found");
+    }
+
+    // Generate a new unique code
+    const newCode = await generateUniqueAdviserCode(ctx);
+
+    // Update the adviser record with the new code
+    await ctx.db.patch(adviserRecord._id, {
+      code: newCode,
+    });
+
+    // Log the action
+    await logUpdateUser(
+      ctx,
+      args.instructorId,
+      0, // instructor role
+      args.adviserId,
+      `Reset adviser code to: ${newCode}`,
+    );
+
+    return { 
+      success: true, 
+      newCode,
+      message: `Adviser code successfully reset to: ${newCode}` 
+    };
+  },
+});
+
 // =========================================
 // TASK ASSIGNMENT OPERATIONS
 // =========================================
