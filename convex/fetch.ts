@@ -492,8 +492,9 @@ export const searchUsers = query({
       } = args;
       const skip = (pageNumber - 1) * pageSize;
 
+      let results: Doc<"users">[] = [];
+
       // If search term is empty, use a regular query instead of search
-      let results;
       if (!searchTerm.trim()) {
         results = await ctx.db
           .query("users")
@@ -519,85 +520,84 @@ export const searchUsers = query({
           .collect()
           .then((results) => results.filter((u) => !u.isDeleted));
       } else {
-        // Search in first name, last name, and email
-        const firstNameResults = await ctx.db
-          .query("users")
-          .withSearchIndex("search_by_first_name", (q) => {
-            let searchQuery = q.search("first_name", searchTerm);
-            if (emailVerified !== undefined) {
-              searchQuery = searchQuery.eq("email_verified", emailVerified);
-            }
-            if (subrole !== undefined) {
-              searchQuery = searchQuery.eq("subrole", subrole);
-            }
-            return searchQuery.eq("role", role);
-          })
-          .collect()
-          .then((results) => results.filter((u) => !u.isDeleted));
+        // Optimize search by running searches in parallel and using Set for deduplication
+        const searchTermLower = searchTerm.toLowerCase();
+        
+        const [firstNameResults, lastNameResults, emailResults] = await Promise.all([
+          ctx.db
+            .query("users")
+            .withSearchIndex("search_by_first_name", (q) => {
+              let searchQuery = q.search("first_name", searchTerm);
+              if (emailVerified !== undefined) {
+                searchQuery = searchQuery.eq("email_verified", emailVerified);
+              }
+              if (subrole !== undefined) {
+                searchQuery = searchQuery.eq("subrole", subrole);
+              }
+              return searchQuery.eq("role", role);
+            })
+            .collect()
+            .then((results) => results.filter((u) => !u.isDeleted)),
+          
+          ctx.db
+            .query("users")
+            .withSearchIndex("search_by_last_name", (q) => {
+              let searchQuery = q.search("last_name", searchTerm);
+              if (emailVerified !== undefined) {
+                searchQuery = searchQuery.eq("email_verified", emailVerified);
+              }
+              if (subrole !== undefined) {
+                searchQuery = searchQuery.eq("subrole", subrole);
+              }
+              return searchQuery.eq("role", role);
+            })
+            .collect()
+            .then((results) => results.filter((u) => !u.isDeleted)),
+          
+          // Only search by email if it looks like an email
+          searchTermLower.includes('@') ? ctx.db
+            .query("users")
+            .filter((q) => {
+              const roleFilter = q.eq(q.field("role"), role);
+              const emailFilter = q.eq(q.field("email"), searchTermLower);
+              const emailVerifiedFilter =
+                emailVerified !== undefined
+                  ? q.eq(q.field("email_verified"), emailVerified)
+                  : null;
+              const subroleFilter =
+                subrole !== undefined ? q.eq(q.field("subrole"), subrole) : null;
 
-        const lastNameResults = await ctx.db
-          .query("users")
-          .withSearchIndex("search_by_last_name", (q) => {
-            let searchQuery = q.search("last_name", searchTerm);
-            if (emailVerified !== undefined) {
-              searchQuery = searchQuery.eq("email_verified", emailVerified);
-            }
-            if (subrole !== undefined) {
-              searchQuery = searchQuery.eq("subrole", subrole);
-            }
-            return searchQuery.eq("role", role);
-          })
-          .collect()
-          .then((results) => results.filter((u) => !u.isDeleted));
+              let finalFilter = q.and(roleFilter, emailFilter);
+              if (emailVerifiedFilter) {
+                finalFilter = q.and(finalFilter, emailVerifiedFilter);
+              }
+              if (subroleFilter) {
+                finalFilter = q.and(finalFilter, subroleFilter);
+              }
+              return finalFilter;
+            })
+            .collect()
+            .then((results) => results.filter((u) => !u.isDeleted)) : []
+        ]);
 
-        // Also search by email using a regular query since we don't have an email search index
-        const emailResults = await ctx.db
-          .query("users")
-          .filter((q) => {
-            const roleFilter = q.eq(q.field("role"), role);
-            const emailFilter = q.eq(
-              q.field("email"),
-              searchTerm.toLowerCase(),
-            );
-            const emailVerifiedFilter =
-              emailVerified !== undefined
-                ? q.eq(q.field("email_verified"), emailVerified)
-                : null;
-            const subroleFilter =
-              subrole !== undefined ? q.eq(q.field("subrole"), subrole) : null;
-
-            // Combine all filters
-            let finalFilter = q.and(roleFilter, emailFilter);
-            if (emailVerifiedFilter) {
-              finalFilter = q.and(finalFilter, emailVerifiedFilter);
-            }
-            if (subroleFilter) {
-              finalFilter = q.and(finalFilter, subroleFilter);
-            }
-            return finalFilter;
-          })
-          .collect()
-          .then((results) => results.filter((u) => !u.isDeleted));
-
-        // Combine and deduplicate results
-        results = [
-          ...firstNameResults,
-          ...lastNameResults,
-          ...emailResults,
-        ].filter(
-          (user, index, self) =>
-            index === self.findIndex((u) => u._id === user._id),
-        );
+        // Use Map for efficient deduplication
+        const userMap = new Map<string, Doc<"users">>();
+        
+        [...firstNameResults, ...lastNameResults, ...emailResults].forEach(user => {
+          if (!user.isDeleted) {
+            userMap.set(user._id, user);
+          }
+        });
+        
+        results = Array.from(userMap.values());
       }
 
-      // Filter out deleted users
-      results = results.filter((u) => !u.isDeleted);
-
-      // Get total count
+      // Get total count before sorting/pagination
       const totalCount = results.length;
 
-      // Apply sorting if specified
+      // Apply sorting if specified - optimize by using more efficient comparison
       if (sortField && sortDirection) {
+        const isAsc = sortDirection === "asc";
         results.sort((a, b) => {
           let comparison = 0;
           switch (sortField) {
@@ -614,21 +614,18 @@ export const searchUsers = query({
               comparison = a.email.localeCompare(b.email);
               break;
           }
-          return sortDirection === "asc" ? comparison : -comparison;
+          return isAsc ? comparison : -comparison;
         });
       }
 
       // Apply pagination
       const paginatedResults = results.slice(skip, skip + pageSize);
 
-      // Simplify status to just loading or idle
-      const status = "idle";
-
       return {
         users: paginatedResults,
         totalCount,
         totalPages: Math.ceil(totalCount / pageSize),
-        status,
+        status: "idle",
         hasResults: paginatedResults.length > 0,
       };
     } catch {
@@ -668,8 +665,9 @@ export const searchGroups = query({
     const skip = (pageNumber - 1) * pageSize;
 
     try {
-      // Get all users for name lookups
+      // Get all users for name lookups - cache this for reuse
       const users = await ctx.db.query("users").collect();
+      const userMap = new Map(users.map(u => [u._id, u]));
 
       // Start with base query
       let groups = await ctx.db
@@ -684,47 +682,26 @@ export const searchGroups = query({
           .split(" ")
           .filter((term) => term.length > 0);
 
+        // Pre-compute searchable text for each group to avoid repeated calculations
         groups = groups.filter((group) => {
-          const projectManager = group.project_manager_id
-            ? users.find((u) => u._id === group.project_manager_id)
-            : null;
-          const groupName = projectManager
-            ? `${projectManager.last_name} et al`.toLowerCase()
-            : "";
-          const capstoneTitle = (group.capstone_title || "").toLowerCase();
-          const adviser = group.adviser_id
-            ? users.find((u) => u._id === group.adviser_id)
-            : null;
-          const members = group.member_ids
-            .map((id) => users.find((u) => u._id === id))
-            .filter((u): u is NonNullable<typeof u> => u !== undefined);
+          const projectManager = group.project_manager_id ? userMap.get(group.project_manager_id) : null;
+          const adviser = group.adviser_id ? userMap.get(group.adviser_id) : null;
+          
+          // Build searchable text once
+          const searchableText = [
+            projectManager ? `${projectManager.last_name} et al` : "",
+            group.capstone_title || "",
+            projectManager ? `${projectManager.first_name} ${projectManager.last_name}` : "",
+            projectManager ? projectManager.email : "",
+            adviser ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}` : "",
+            adviser ? adviser.email : "",
+            ...group.member_ids.map(id => {
+              const member = userMap.get(id);
+              return member ? `${member.first_name} ${member.last_name} ${member.email}` : "";
+            })
+          ].join(" ").toLowerCase();
 
-          const projectManagerName = projectManager
-            ? `${projectManager.first_name} ${projectManager.last_name}`.toLowerCase()
-            : "";
-          const projectManagerEmail = projectManager
-            ? projectManager.email.toLowerCase()
-            : "";
-          const adviserName = adviser
-            ? `${adviser.first_name} ${adviser.middle_name ? adviser.middle_name + " " : ""}${adviser.last_name}`.toLowerCase()
-            : "";
-          const adviserEmail = adviser ? adviser.email.toLowerCase() : "";
-          const memberNames = members.map((m) =>
-            `${m.first_name} ${m.last_name}`.toLowerCase(),
-          );
-          const memberEmails = members.map((m) => m.email.toLowerCase());
-
-          return searchTerms.every(
-            (term) =>
-              groupName.includes(term) ||
-              capstoneTitle.includes(term) ||
-              projectManagerName.includes(term) ||
-              projectManagerEmail.includes(term) ||
-              adviserName.includes(term) ||
-              adviserEmail.includes(term) ||
-              memberNames.some((name) => name.includes(term)) ||
-              memberEmails.some((email) => email.includes(term)),
-          );
+          return searchTerms.every(term => searchableText.includes(term));
         });
       }
 
@@ -951,19 +928,19 @@ export const getDocumentsWithStatus = query({
 
       const allStudentIds = [group.project_manager_id, ...group.member_ids];
 
-      // 1. Fetch all documents for the group
-      const allDocs = await ctx.db
-        .query("documents")
-        .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
-        .collect()
-        .then((results) => results.filter((d) => !d.isDeleted));
-
-      // 2. Fetch all review statuses for the group
-      const allStatuses = await ctx.db
-        .query("documentStatus")
-        .withIndex("by_group_document", (q) => q.eq("group_id", groupId))
-        .collect()
-        .then((results) => results.filter((s) => !s.isDeleted));
+      // Fetch documents and statuses in parallel
+      const [allDocs, allStatuses] = await Promise.all([
+        ctx.db
+          .query("documents")
+          .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
+          .collect()
+          .then((results) => results.filter((d) => !d.isDeleted)),
+        ctx.db
+          .query("documentStatus")
+          .withIndex("by_group_document", (q) => q.eq("group_id", groupId))
+          .collect()
+          .then((results) => results.filter((s) => !s.isDeleted))
+      ]);
 
       // Create a map for quick status lookup
       const statusMap = new Map(allStatuses.map((s) => [s.document_part, s]));
@@ -1040,15 +1017,15 @@ export const getTaskAssignments = query({
         };
       }
 
-      // Get all task assignments for the group
-      const taskAssignments = await ctx.db
-        .query("taskAssignments")
-        .withIndex("by_group", (q) => q.eq("group_id", groupId))
-        .collect()
-        .then((results) => results.filter((t) => !t.isDeleted));
-
-      // Get all users for name lookups
-      const users = await ctx.db.query("users").collect();
+      // Fetch task assignments and users in parallel
+      const [taskAssignments, users] = await Promise.all([
+        ctx.db
+          .query("taskAssignments")
+          .withIndex("by_group", (q) => q.eq("group_id", groupId))
+          .collect()
+          .then((results) => results.filter((t) => !t.isDeleted)),
+        ctx.db.query("users").collect()
+      ]);
 
       // Get group members (project manager + members)
       const allMemberIds = [group.project_manager_id, ...group.member_ids];
@@ -1274,25 +1251,42 @@ export const getAdviserDocuments = query({
       // Process groups to include documents and user information
       const processedGroups: AdviserGroupWithDocuments[] = [];
 
-      for (const group of filteredGroups) {
-        // Get all documents for this group
-        const allDocs = await ctx.db
-          .query("documents")
-          .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
-          .collect()
-          .then((results) => results.filter((d) => !d.isDeleted));
+      // Batch fetch all documents and statuses for all groups at once
+      const adviserGroupIds = filteredGroups.map(g => g._id);
+      const [allDocuments, allStatuses] = await Promise.all([
+        ctx.db.query("documents").collect().then(docs => 
+          docs.filter(d => !d.isDeleted && adviserGroupIds.includes(d.group_id))
+        ),
+        ctx.db.query("documentStatus").collect().then(statuses => 
+          statuses.filter(s => !s.isDeleted && adviserGroupIds.includes(s.group_id))
+        )
+      ]);
 
-        // Get all review statuses for this group
-        const allStatuses = await ctx.db
-          .query("documentStatus")
-          .withIndex("by_group_document", (q) => q.eq("group_id", group._id))
-          .collect()
-          .then((results) => results.filter((s) => !s.isDeleted));
+      // Create maps for efficient lookup
+      const documentsByGroup = new Map<string, Doc<"documents">[]>();
+      const statusesByGroup = new Map<string, Doc<"documentStatus">[]>();
+      
+      allDocuments.forEach(doc => {
+        const groupDocs = documentsByGroup.get(doc.group_id) || [];
+        groupDocs.push(doc);
+        documentsByGroup.set(doc.group_id, groupDocs);
+      });
+      
+      allStatuses.forEach(status => {
+        const groupStatuses = statusesByGroup.get(status.group_id) || [];
+        groupStatuses.push(status);
+        statusesByGroup.set(status.group_id, groupStatuses);
+      });
+
+      for (const group of filteredGroups) {
+        // Get documents and statuses for this group from pre-fetched data
+        const allDocs = documentsByGroup.get(group._id) || [];
+        const allStatuses = statusesByGroup.get(group._id) || [];
 
         // Create a map for quick status lookup
         const statusMap = new Map(allStatuses.map((s) => [s.document_part, s]));
 
-        // Get the oldest version of each document part
+        // Get the oldest version of each document part - optimize with single pass
         const oldestDocsMap = new Map<string, Doc<"documents">>();
         for (const doc of allDocs) {
           const existing = oldestDocsMap.get(doc.chapter);
@@ -1459,38 +1453,42 @@ export const getHandledGroupsWithProgress = query({
       (group): group is NonNullable<typeof group> => group !== null,
     );
 
-    // Fetch all document statuses for these groups
-    const allDocumentStatuses = await Promise.all(
-      validGroups.map((group) =>
-        ctx.db
-          .query("documentStatus")
-          .withIndex("by_group", (q) => q.eq("group_id", group._id))
-          .collect(),
-      ),
-    );
-
-    // Fetch all project managers for these groups
+    // Batch fetch all related data more efficiently
+    const handledGroupIds = validGroups.map(g => g._id);
     const projectManagerIds = validGroups.map((g) => g.project_manager_id);
-    const projectManagers = await Promise.all(
-      projectManagerIds.map((id) => ctx.db.get(id)),
-    );
-    const validProjectManagers = projectManagers.filter(
-      (pm): pm is NonNullable<typeof pm> => pm !== null,
-    );
-
-    // Fetch all group members for these groups
     const allMemberIds = validGroups.flatMap((g) => g.member_ids || []);
     const uniqueMemberIds = [...new Set(allMemberIds)]; // Remove duplicates
-    const groupMembers = await Promise.all(
-      uniqueMemberIds.map((id) => ctx.db.get(id)),
+
+    // Fetch all data in parallel
+    const [allDocumentStatuses, projectManagers, groupMembers] = await Promise.all([
+      // Fetch all document statuses for all groups at once
+      ctx.db.query("documentStatus").collect().then(statuses => 
+        statuses.filter(s => handledGroupIds.includes(s.group_id))
+      ),
+      // Fetch all project managers
+      Promise.all(projectManagerIds.map((id) => ctx.db.get(id))),
+      // Fetch all group members
+      Promise.all(uniqueMemberIds.map((id) => ctx.db.get(id)))
+    ]);
+
+    const validProjectManagers = projectManagers.filter(
+      (pm): pm is NonNullable<typeof pm> => pm !== null,
     );
     const validGroupMembers = groupMembers.filter(
       (member): member is NonNullable<typeof member> => member !== null,
     );
 
-    const groupsWithProgress = validGroups.map((group, index) => ({
+    // Group document statuses by group_id for efficient lookup
+    const statusesByGroup = new Map<string, Doc<"documentStatus">[]>();
+    allDocumentStatuses.forEach(status => {
+      const groupStatuses = statusesByGroup.get(status.group_id) || [];
+      groupStatuses.push(status);
+      statusesByGroup.set(status.group_id, groupStatuses);
+    });
+
+    const groupsWithProgress = validGroups.map((group) => ({
       ...group,
-      documentStatuses: allDocumentStatuses[index] || [],
+      documentStatuses: statusesByGroup.get(group._id) || [],
     }));
 
     // Apply search filter if provided
@@ -2106,63 +2104,82 @@ export const getLogsWithDetails = query({
     const totalPages = Math.ceil(totalCount / pageSize);
     const paginatedLogs = logs.slice(skip, skip + pageSize);
 
-    // Fetch details for each log entry
-    const logsWithDetails = await Promise.all(
-      paginatedLogs.map(async (log) => {
-        // Fetch the user who performed the action
-        const user = await ctx.db.get(log.user_id);
+    // Batch fetch all related entities to avoid N+1 queries
+    const userIds = [...new Set(paginatedLogs.map(log => log.user_id))];
+    const entityIds = [...new Set(paginatedLogs.map(log => log.affected_entity_id))];
+    
+    // Separate user and group entity IDs
+    const userEntityIds = entityIds.filter(id => 
+      paginatedLogs.some(log => log.affected_entity_id === id && log.affected_entity_type === "user")
+    ) as Id<"users">[];
+    const groupEntityIds = entityIds.filter(id => 
+      paginatedLogs.some(log => log.affected_entity_id === id && log.affected_entity_type === "group")
+    ) as Id<"groupsTable">[];
 
-        // Fetch the affected entity
-        let affectedEntity = null;
-        if (log.affected_entity_type === "user") {
-          affectedEntity = await ctx.db.get(
-            log.affected_entity_id as Id<"users">,
-          );
-        } else if (log.affected_entity_type === "group") {
-          const group = await ctx.db.get(
-            log.affected_entity_id as Id<"groupsTable">,
-          );
-          if (group) {
-            // Fetch the project manager to construct the group name
-            const projectManager = await ctx.db.get(group.project_manager_id);
-            affectedEntity = {
-              projectManager: projectManager
-                ? {
-                    last_name: projectManager.last_name,
-                  }
-                : undefined,
-            };
-          }
+    // Fetch all related data in parallel
+    const [users, userEntities, groups] = await Promise.all([
+      Promise.all(userIds.map(id => ctx.db.get(id))),
+      Promise.all(userEntityIds.map(id => ctx.db.get(id))),
+      Promise.all(groupEntityIds.map(id => ctx.db.get(id)))
+    ]);
+
+    // Create lookup maps
+    const userMap = new Map(users.filter(u => u).map(u => [u!._id, u!]));
+    const userEntityMap = new Map(userEntities.filter(u => u).map(u => [u!._id, u!]));
+    const groupMap = new Map(groups.filter(g => g).map(g => [g!._id, g!]));
+
+    // Get project manager IDs for groups
+    const projectManagerIds = groups.filter(g => g).map(g => g!.project_manager_id);
+    const projectManagers = await Promise.all(projectManagerIds.map(id => ctx.db.get(id)));
+    const projectManagerMap = new Map(projectManagers.filter(pm => pm).map(pm => [pm!._id, pm!]));
+
+    // Build logs with details using pre-fetched data
+    const logsWithDetails = paginatedLogs.map((log) => {
+      const user = userMap.get(log.user_id);
+      
+      let affectedEntity = null;
+      if (log.affected_entity_type === "user") {
+        affectedEntity = userEntityMap.get(log.affected_entity_id as Id<"users">);
+      } else if (log.affected_entity_type === "group") {
+        const group = groupMap.get(log.affected_entity_id as Id<"groupsTable">);
+        if (group) {
+          const projectManager = projectManagerMap.get(group.project_manager_id);
+          affectedEntity = {
+            projectManager: projectManager
+              ? {
+                  last_name: projectManager.last_name,
+                }
+              : undefined,
+          };
         }
+      }
 
-        return {
-          ...log,
-          user:
-            user && "first_name" in user
+      return {
+        ...log,
+        user: user && "first_name" in user
+          ? {
+              first_name: user.first_name,
+              middle_name: user.middle_name,
+              last_name: user.last_name,
+              email: user.email,
+            }
+          : null,
+        affectedEntity: affectedEntity
+          ? "role" in affectedEntity && "first_name" in affectedEntity
+            ? {
+                first_name: affectedEntity.first_name,
+                middle_name: affectedEntity.middle_name,
+                last_name: affectedEntity.last_name,
+                email: affectedEntity.email,
+              }
+            : "projectManager" in affectedEntity
               ? {
-                  first_name: user.first_name,
-                  middle_name: user.middle_name,
-                  last_name: user.last_name,
-                  email: user.email,
+                  projectManager: affectedEntity.projectManager,
                 }
-              : null,
-          affectedEntity: affectedEntity
-            ? "role" in affectedEntity && "first_name" in affectedEntity
-              ? {
-                  first_name: affectedEntity.first_name,
-                  middle_name: affectedEntity.middle_name,
-                  last_name: affectedEntity.last_name,
-                  email: affectedEntity.email,
-                }
-              : "projectManager" in affectedEntity
-                ? {
-                    projectManager: affectedEntity.projectManager,
-                  }
-                : null
-            : null,
-        };
-      }),
-    );
+              : null
+          : null,
+      };
+    });
 
     return {
       logs: logsWithDetails,
