@@ -146,13 +146,18 @@ const UsersPage = ({ params }: UsersPageProps) => {
   });
 
   const searchResult = useMemo(() => {
-    const data = queryData || {
-      users: [],
-      totalCount: 0,
-      totalPages: 0,
-      status: "idle",
-      hasResults: false,
-    };
+    // If query is still loading, return loading state
+    if (queryData === undefined) {
+      return {
+        users: [],
+        totalCount: 0,
+        totalPages: 0,
+        status: "loading",
+        hasResults: false,
+      };
+    }
+
+    const data = queryData;
 
     // Apply frontend pagination
     const totalFilteredCount = data.users.length;

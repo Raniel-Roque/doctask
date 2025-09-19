@@ -151,13 +151,18 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
   // Apply frontend pagination to groups
   const searchResult = useMemo(() => {
-    const data = allGroupsQuery || {
-      groups: [],
-      totalCount: 0,
-      totalPages: 0,
-      status: "idle",
-      hasResults: false,
-    };
+    // If query is still loading, return loading state
+    if (allGroupsQuery === undefined) {
+      return {
+        groups: [],
+        totalCount: 0,
+        totalPages: 0,
+        status: "loading",
+        hasResults: false,
+      };
+    }
+
+    const data = allGroupsQuery;
 
     // Apply frontend pagination
     const totalFilteredCount = data.groups.length;
