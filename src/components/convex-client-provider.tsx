@@ -10,6 +10,8 @@ import { api } from "../../convex/_generated/api";
 import { SessionTimeout } from "./session-timeout";
 import { TermsAgreementWrapper } from "@/app/(pages)/components/TermsAgreementWrapper";
 import { NetworkStatusBanner } from "@/app/(pages)/components/NetworkStatusBanner";
+import { BannerProvider } from "@/app/(pages)/components/BannerManager";
+import { BannerContainer } from "@/app/(pages)/components/BannerContainer";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -259,34 +261,37 @@ function AuthCheck({ children }: { children: ReactNode }) {
 
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-      <NetworkStatusBanner />
-      <Authenticated>
-        <SessionTimeout />
-        <RedirectHandler />
-        <AuthStatusGate>{children}</AuthStatusGate>
-      </Authenticated>
+      <BannerProvider>
+        <NetworkStatusBanner />
+        <BannerContainer />
+        <Authenticated>
+          <SessionTimeout />
+          <RedirectHandler />
+          <AuthStatusGate>{children}</AuthStatusGate>
+        </Authenticated>
 
-      <Unauthenticated>
-        <UnauthRedirect />
-        {isPublicPage && children}
-      </Unauthenticated>
+        <Unauthenticated>
+          <UnauthRedirect />
+          {isPublicPage && children}
+        </Unauthenticated>
 
-      <AuthLoading>
-        {isPublicPage ? (
-          children
-        ) : (
-          <div className="flex flex-col items-center justify-center min-h-screen bg-white text-center px-6">
-            <div className="text-lg font-semibold">
-              Loading authentication...
-            </div>
-            {authSlow && (
-              <div className="mt-2 text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-                Taking longer than usual. Please check your internet connection.
+        <AuthLoading>
+          {isPublicPage ? (
+            children
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-white text-center px-6">
+              <div className="text-lg font-semibold">
+                Loading authentication...
               </div>
-            )}
-          </div>
-        )}
-      </AuthLoading>
+              {authSlow && (
+                <div className="mt-2 text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                  Taking longer than usual. Please check your internet connection.
+                </div>
+              )}
+            </div>
+          )}
+        </AuthLoading>
+      </BannerProvider>
     </ConvexProviderWithClerk>
   );
 }

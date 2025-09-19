@@ -7,6 +7,7 @@ interface NotificationBannerProps {
   onClose: () => void;
   autoClose?: boolean;
   duration?: number;
+  topOffset?: number; // Allow custom top offset for stacking
 }
 
 export const NotificationBanner: React.FC<NotificationBannerProps> = ({
@@ -19,6 +20,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
     : type === "success"
       ? 5000 // 5 seconds for success
       : 6000, // 6 seconds for warning and info
+  topOffset = 20, // Default top offset
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -70,9 +72,10 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
 
   return (
     <div
-      className={`${bgColor} border rounded-lg p-4 shadow-lg flex items-center gap-3 transition-all duration-300 ease-in-out min-w-[220px] max-w-max
+      className={`fixed left-1/2 transform -translate-x-1/2 ${bgColor} border rounded-lg p-4 shadow-lg flex items-center gap-3 z-[99999] print:hidden transition-all duration-300 ease-in-out min-w-[220px] max-w-max
         ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}
       `}
+      style={{ top: `${topOffset}px` }}
     >
       <div className={iconColor}>
         <Icon size={20} />

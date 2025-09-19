@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 
 interface Banner {
   id: string;
@@ -9,7 +9,6 @@ interface Banner {
   onClose: () => void;
   autoClose?: boolean;
   duration?: number;
-  priority?: number; // Higher number = higher priority (shows on top)
 }
 
 interface BannerContextType {
@@ -21,10 +20,10 @@ interface BannerContextType {
 
 const BannerContext = createContext<BannerContextType | undefined>(undefined);
 
-export const useBanner = () => {
+export const useBannerManager = () => {
   const context = useContext(BannerContext);
   if (!context) {
-    throw new Error("useBanner must be used within a BannerProvider");
+    throw new Error("useBannerManager must be used within a BannerProvider");
   }
   return context;
 };
@@ -38,21 +37,14 @@ export const BannerProvider: React.FC<BannerProviderProps> = ({ children }) => {
 
   const addBanner = useCallback((banner: Omit<Banner, "id">) => {
     const id = Math.random().toString(36).substr(2, 9);
-    const newBanner: Banner = {
-      ...banner,
-      id,
-      priority: banner.priority || 0,
-    };
-
+    const newBanner = { ...banner, id };
+    
     setBanners(prev => {
-      // If it's a high priority banner (like network status), replace existing ones of same type
-      if ((newBanner.priority || 0) > 0) {
-        return prev.filter(b => (b.priority || 0) !== (newBanner.priority || 0)).concat(newBanner);
-      }
-      // Otherwise, just add it
-      return [...prev, newBanner];
+      // Remove any existing banner of the same type to prevent duplicates
+      const filtered = prev.filter(b => b.type !== banner.type);
+      return [...filtered, newBanner];
     });
-
+    
     return id;
   }, []);
 
