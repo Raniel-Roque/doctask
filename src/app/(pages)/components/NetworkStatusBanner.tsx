@@ -4,6 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useBanner } from "@/app/(pages)/components/BannerContext";
 import { apiRequest } from "@/lib/utils";
 
+// Custom hook to safely use banner context
+function useBannerSafe() {
+  try {
+    return useBanner();
+  } catch {
+    return null;
+  }
+}
+
 type NetworkState =
   | { status: "online"; unstable: boolean }
   | { status: "offline"; unstable: false };
@@ -11,7 +20,6 @@ type NetworkState =
 const HEALTH_ENDPOINT = "/api/health";
 
 export function NetworkStatusBanner() {
-  const { addBanner, removeBanner } = useBanner();
   const [state, setState] = useState<NetworkState>(() => ({
     status: "online", // Default to online to avoid hydration mismatch
     unstable: false,
@@ -20,6 +28,11 @@ export function NetworkStatusBanner() {
   const [details, setDetails] = useState<string | null>(null);
   const [bannerId, setBannerId] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
+
+  // Use banner context safely
+  const bannerContext = useBannerSafe();
+  const addBanner = bannerContext?.addBanner;
+  const removeBanner = bannerContext?.removeBanner;
 
   const isOffline = state.status === "offline";
   const isUnstable = state.status === "online" && state.unstable;
@@ -84,7 +97,7 @@ export function NetworkStatusBanner() {
       setState({ status: "online", unstable: false });
       setDetails(null);
       // Remove existing banner when connection is restored
-      if (bannerId) {
+      if (bannerId && removeBanner) {
         removeBanner(bannerId);
         setBannerId(null);
       }
@@ -111,7 +124,7 @@ export function NetworkStatusBanner() {
 
   // Manage banner display based on network state
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !addBanner || !removeBanner) return;
 
     const shouldShowBanner = isOffline || isUnstable;
     const message = isOffline
