@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { BannerProvider } from "@/app/(pages)/components/BannerContext";
+import { BannerContainer } from "@/app/(pages)/components/BannerContainer";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import Script from "next/script";
@@ -42,7 +44,12 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <NuqsAdapter>
-          <ConvexClientProvider>{children}</ConvexClientProvider>
+          <ConvexClientProvider>
+            <BannerProvider>
+              {children}
+              <BannerContainer />
+            </BannerProvider>
+          </ConvexClientProvider>
         </NuqsAdapter>
         <SpeedInsights />
       </body>

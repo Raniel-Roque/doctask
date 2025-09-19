@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBanner } from "@/app/(pages)/components/BannerContext";
 import { apiRequest } from "@/lib/utils";
 
 type NetworkState =
@@ -11,12 +11,14 @@ type NetworkState =
 const HEALTH_ENDPOINT = "/api/health";
 
 export function NetworkStatusBanner() {
+  const { addBanner, removeBanner } = useBanner();
   const [state, setState] = useState<NetworkState>(() => ({
     status: "online", // Default to online to avoid hydration mismatch
     unstable: false,
   }));
   const [mounted, setMounted] = useState(false);
   const [details, setDetails] = useState<string | null>(null);
+  const [bannerId, setBannerId] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
 
   const isOffline = state.status === "offline";
@@ -81,6 +83,11 @@ export function NetworkStatusBanner() {
     const handleOnline = () => {
       setState({ status: "online", unstable: false });
       setDetails(null);
+      // Remove existing banner when connection is restored
+      if (bannerId) {
+        removeBanner(bannerId);
+        setBannerId(null);
+      }
     };
     const handleOffline = () => {
       setState({ status: "offline", unstable: false });
@@ -100,25 +107,56 @@ export function NetworkStatusBanner() {
         intervalRef.current = null;
       }
     };
-  }, [startHealthChecks]);
+  }, [startHealthChecks, bannerId, removeBanner]);
 
-  // Don't render until mounted to avoid hydration mismatch
-  if (!mounted || (!isOffline && !isUnstable)) return null;
+  // Manage banner display based on network state
+  useEffect(() => {
+    if (!mounted) return;
 
-  const message = isOffline
-    ? "You are offline."
-    : details || "Connection is unstable. Trying to reconnect...";
+    const shouldShowBanner = isOffline || isUnstable;
+    const message = isOffline
+      ? "You are offline."
+      : details || "Connection is unstable. Trying to reconnect...";
+    const type = isOffline ? "error" : ("warning" as const);
 
-  const type = isOffline ? "error" : ("warning" as const);
+    if (shouldShowBanner && !bannerId) {
+      // Add new banner
+      const id = addBanner({
+        message,
+        type,
+        priority: 10, // High priority for network status
+        autoClose: false,
+        onClose: () => {
+          if (bannerId) {
+            removeBanner(bannerId);
+            setBannerId(null);
+          }
+        },
+      });
+      setBannerId(id);
+    } else if (!shouldShowBanner && bannerId) {
+      // Remove banner when network is stable
+      removeBanner(bannerId);
+      setBannerId(null);
+    } else if (shouldShowBanner && bannerId) {
+      // Update existing banner message if needed
+      removeBanner(bannerId);
+      const id = addBanner({
+        message,
+        type,
+        priority: 10,
+        autoClose: false,
+        onClose: () => {
+          if (bannerId) {
+            removeBanner(bannerId);
+            setBannerId(null);
+          }
+        },
+      });
+      setBannerId(id);
+    }
+  }, [mounted, isOffline, isUnstable, details, bannerId, addBanner, removeBanner]);
 
-  return (
-    <NotificationBanner
-      message={message}
-      type={type}
-      onClose={() => {
-        /* persist banner until state changes */
-      }}
-      autoClose={false}
-    />
-  );
+  // Don't render anything - the banner is managed by the context
+  return null;
 }
