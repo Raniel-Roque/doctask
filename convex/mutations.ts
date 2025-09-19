@@ -329,7 +329,7 @@ export const createGroup = mutation({
       }
     }
 
-    // Create documents for all parts
+    // Create documents for all parts in parallel
     const partsAndTitles = [
       ["title_page", "Title Page"],
       ["acknowledgment", "Acknowledgement"],
@@ -351,15 +351,18 @@ export const createGroup = mutation({
       ["appendix_h", "Appendix H"],
       ["appendix_i", "Appendix I"],
     ];
-    for (const [chapter, title] of partsAndTitles) {
-      await ctx.db.insert("documents", {
+    
+    // Batch create all documents
+    const documentPromises = partsAndTitles.map(([chapter, title]) =>
+      ctx.db.insert("documents", {
         group_id: groupId,
         chapter,
         title,
         content: "",
         isDeleted: false,
-      });
-    }
+      })
+    );
+    await Promise.all(documentPromises);
 
     // Create task assignments for all documents and subparts
     const taskAssignments: Array<{
@@ -463,8 +466,9 @@ export const createGroup = mutation({
       },
     ];
 
-    for (const task of taskAssignments) {
-      await ctx.db.insert("taskAssignments", {
+    // Batch create all task assignments
+    const taskPromises = taskAssignments.map(task =>
+      ctx.db.insert("taskAssignments", {
         group_id: groupId,
         chapter: task.chapter,
         section: task.section,
@@ -472,8 +476,9 @@ export const createGroup = mutation({
         task_status: 0, // 0 = incomplete
         assigned_student_ids: [],
         isDeleted: false,
-      });
-    }
+      })
+    );
+    await Promise.all(taskPromises);
 
     // Create document status entries for all documents
     const documentParts = [
@@ -498,12 +503,13 @@ export const createGroup = mutation({
       "appendix_i",
     ];
 
-    for (const documentPart of documentParts) {
+    // Batch create all document status entries
+    const statusPromises = documentParts.map(documentPart => {
       const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
         documentPart,
       );
 
-      await ctx.db.insert("documentStatus", {
+      return ctx.db.insert("documentStatus", {
         group_id: groupId,
         document_part: documentPart,
         review_status: isPreApproved ? 2 : 0, // 2 = approved, 0 = not_submitted
@@ -511,7 +517,8 @@ export const createGroup = mutation({
         last_modified: undefined,
         isDeleted: false,
       });
-    }
+    });
+    await Promise.all(statusPromises);
 
     // Update adviser's group_ids if exists
     if (args.adviser_id) {
@@ -808,15 +815,22 @@ export const updateGroup = mutation({
     const newMembers = [args.project_manager_id, ...args.member_ids];
     const removedMembers = oldMembers.filter((id) => !newMembers.includes(id));
 
-    // Remove old members from studentsTable if they're no longer in the group
-    for (const memberId of removedMembers) {
-      const studentEntry = await ctx.db
-        .query("studentsTable")
-        .withIndex("by_user", (q) => q.eq("user_id", memberId))
-        .first();
-      if (studentEntry) {
-        await ctx.db.patch(studentEntry._id, { group_id: null });
-      }
+    // Batch remove old members from studentsTable if they're no longer in the group
+    if (removedMembers.length > 0) {
+      const studentEntries = await Promise.all(
+        removedMembers.map(memberId =>
+          ctx.db
+            .query("studentsTable")
+            .withIndex("by_user", (q) => q.eq("user_id", memberId))
+            .first()
+        )
+      );
+      
+      const updatePromises = studentEntries
+        .filter(entry => entry !== null)
+        .map(entry => ctx.db.patch(entry!._id, { group_id: null }));
+      
+      await Promise.all(updatePromises);
     }
 
     // Also remove them from any task assignments in this group
@@ -838,40 +852,55 @@ export const updateGroup = mutation({
       }
     }
 
-    // Add new members to studentsTable if they weren't in the group before
-    for (const memberId of newMembers) {
-      if (!oldMembers.includes(memberId)) {
-        const existingEntry = await ctx.db
-          .query("studentsTable")
-          .withIndex("by_user", (q) => q.eq("user_id", memberId))
-          .first();
+    // Batch add new members to studentsTable if they weren't in the group before
+    const newMemberIds = newMembers.filter(id => !oldMembers.includes(id));
+    if (newMemberIds.length > 0) {
+      const existingEntries = await Promise.all(
+        newMemberIds.map(memberId =>
+          ctx.db
+            .query("studentsTable")
+            .withIndex("by_user", (q) => q.eq("user_id", memberId))
+            .first()
+        )
+      );
+
+      const updatePromises = [];
+      const insertPromises = [];
+
+      for (let i = 0; i < newMemberIds.length; i++) {
+        const memberId = newMemberIds[i];
+        const existingEntry = existingEntries[i];
 
         if (existingEntry) {
-          await ctx.db.patch(existingEntry._id, {
-            group_id: args.groupId,
-          });
+          updatePromises.push(
+            ctx.db.patch(existingEntry._id, { group_id: args.groupId })
+          );
         } else {
-          await ctx.db.insert("studentsTable", {
-            user_id: memberId,
-            group_id: args.groupId,
-            isDeleted: false,
-            gender: undefined,
-            dateOfBirth: undefined,
-            placeOfBirth: undefined,
-            nationality: undefined,
-            civilStatus: undefined,
-            religion: undefined,
-            homeAddress: undefined,
-            contact: undefined,
-            tertiaryDegree: undefined,
-            tertiarySchool: undefined,
-            secondarySchool: undefined,
-            secondaryAddress: undefined,
-            primarySchool: undefined,
-            primaryAddress: undefined,
-          });
+          insertPromises.push(
+            ctx.db.insert("studentsTable", {
+              user_id: memberId,
+              group_id: args.groupId,
+              isDeleted: false,
+              gender: undefined,
+              dateOfBirth: undefined,
+              placeOfBirth: undefined,
+              nationality: undefined,
+              civilStatus: undefined,
+              religion: undefined,
+              homeAddress: undefined,
+              contact: undefined,
+              tertiaryDegree: undefined,
+              tertiarySchool: undefined,
+              secondarySchool: undefined,
+              secondaryAddress: undefined,
+              primarySchool: undefined,
+              primaryAddress: undefined,
+            })
+          );
         }
       }
+
+      await Promise.all([...updatePromises, ...insertPromises]);
     }
 
     // Handle adviser changes
@@ -1181,15 +1210,22 @@ export const deleteUser = mutation({
         )
         .collect();
       for (const group of managedGroups) {
-        // For each member, set their studentsTable group_id to null
-        for (const memberId of group.member_ids) {
-          const memberEntry = await ctx.db
-            .query("studentsTable")
-            .withIndex("by_user", (q) => q.eq("user_id", memberId))
-            .first();
-          if (memberEntry) {
-            await ctx.db.patch(memberEntry._id, { group_id: null });
-          }
+        // Batch update all members' studentsTable group_id to null
+        if (group.member_ids.length > 0) {
+          const memberEntries = await Promise.all(
+            group.member_ids.map(memberId =>
+              ctx.db
+                .query("studentsTable")
+                .withIndex("by_user", (q) => q.eq("user_id", memberId))
+                .first()
+            )
+          );
+          
+          const updatePromises = memberEntries
+            .filter(entry => entry !== null)
+            .map(entry => ctx.db.patch(entry!._id, { group_id: null }));
+          
+          await Promise.all(updatePromises);
         }
         // Remove group from adviser's group_ids
         if (group.adviser_id) {
@@ -1223,41 +1259,35 @@ export const deleteUser = mutation({
             });
           }
         }
-        // Soft delete all documents associated with this group
-        const docs = await ctx.db
-          .query("documents")
-          .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
-          .collect();
-        for (const doc of docs) {
-          await ctx.db.patch(doc._id, { isDeleted: true });
-        }
+        // Batch soft delete all associated data for this group
+        const [docs, taskAssignments, documentStatuses, images] = await Promise.all([
+          ctx.db
+            .query("documents")
+            .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
+            .collect(),
+          ctx.db
+            .query("taskAssignments")
+            .withIndex("by_group", (q) => q.eq("group_id", group._id))
+            .collect(),
+          ctx.db
+            .query("documentStatus")
+            .withIndex("by_group", (q) => q.eq("group_id", group._id))
+            .collect(),
+          ctx.db
+            .query("images")
+            .withIndex("by_group", (q) => q.eq("group_id", group._id))
+            .collect()
+        ]);
 
-        // Soft delete all task assignments associated with this group
-        const taskAssignments = await ctx.db
-          .query("taskAssignments")
-          .withIndex("by_group", (q) => q.eq("group_id", group._id))
-          .collect();
-        for (const task of taskAssignments) {
-          await ctx.db.patch(task._id, { isDeleted: true });
-        }
+        // Batch update all records to soft delete
+        const allDeletePromises = [
+          ...docs.map(doc => ctx.db.patch(doc._id, { isDeleted: true })),
+          ...taskAssignments.map(task => ctx.db.patch(task._id, { isDeleted: true })),
+          ...documentStatuses.map(status => ctx.db.patch(status._id, { isDeleted: true })),
+          ...images.map(image => ctx.db.patch(image._id, { isDeleted: true }))
+        ];
 
-        // Soft delete all document status entries associated with this group
-        const documentStatuses = await ctx.db
-          .query("documentStatus")
-          .withIndex("by_group", (q) => q.eq("group_id", group._id))
-          .collect();
-        for (const status of documentStatuses) {
-          await ctx.db.patch(status._id, { isDeleted: true });
-        }
-
-        // Soft delete all images associated with this group
-        const images = await ctx.db
-          .query("images")
-          .withIndex("by_group", (q) => q.eq("group_id", group._id))
-          .collect();
-        for (const image of images) {
-          await ctx.db.patch(image._id, { isDeleted: true });
-        }
+        await Promise.all(allDeletePromises);
 
         // Soft delete the group
         await ctx.db.patch(group._id, { isDeleted: true });
@@ -1329,16 +1359,21 @@ export const deleteGroup = mutation({
     // Get all members including project manager
     const allMembers = [group.project_manager_id, ...group.member_ids];
 
-    // Set group_id to null for all members in studentsTable
-    for (const memberId of allMembers) {
-      const studentEntry = await ctx.db
-        .query("studentsTable")
-        .withIndex("by_user", (q) => q.eq("user_id", memberId))
-        .first();
-      if (studentEntry) {
-        await ctx.db.patch(studentEntry._id, { group_id: null });
-      }
-    }
+    // Batch set group_id to null for all members in studentsTable
+    const studentEntries = await Promise.all(
+      allMembers.map(memberId =>
+        ctx.db
+          .query("studentsTable")
+          .withIndex("by_user", (q) => q.eq("user_id", memberId))
+          .first()
+      )
+    );
+    
+    const updatePromises = studentEntries
+      .filter(entry => entry !== null)
+      .map(entry => ctx.db.patch(entry!._id, { group_id: null }));
+    
+    await Promise.all(updatePromises);
 
     // Update adviser's group_ids if exists
     if (group.adviser_id) {
@@ -1372,41 +1407,35 @@ export const deleteGroup = mutation({
       }
     }
 
-    // Soft delete all associated documents
-    const docs = await ctx.db
-      .query("documents")
-      .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
-      .collect();
-    for (const doc of docs) {
-      await ctx.db.patch(doc._id, { isDeleted: true });
-    }
+    // Batch soft delete all associated data
+    const [docs, taskAssignments, documentStatuses, images] = await Promise.all([
+      ctx.db
+        .query("documents")
+        .withIndex("by_group_chapter", (q) => q.eq("group_id", args.groupId))
+        .collect(),
+      ctx.db
+        .query("taskAssignments")
+        .withIndex("by_group", (q) => q.eq("group_id", group._id))
+        .collect(),
+      ctx.db
+        .query("documentStatus")
+        .withIndex("by_group", (q) => q.eq("group_id", group._id))
+        .collect(),
+      ctx.db
+        .query("images")
+        .withIndex("by_group", (q) => q.eq("group_id", group._id))
+        .collect()
+    ]);
 
-    // Soft delete all task assignments associated with this group
-    const taskAssignments = await ctx.db
-      .query("taskAssignments")
-      .withIndex("by_group", (q) => q.eq("group_id", group._id))
-      .collect();
-    for (const task of taskAssignments) {
-      await ctx.db.patch(task._id, { isDeleted: true });
-    }
+    // Batch update all records to soft delete
+    const allDeletePromises = [
+      ...docs.map(doc => ctx.db.patch(doc._id, { isDeleted: true })),
+      ...taskAssignments.map(task => ctx.db.patch(task._id, { isDeleted: true })),
+      ...documentStatuses.map(status => ctx.db.patch(status._id, { isDeleted: true })),
+      ...images.map(image => ctx.db.patch(image._id, { isDeleted: true }))
+    ];
 
-    // Soft delete all document status entries associated with this group
-    const documentStatuses = await ctx.db
-      .query("documentStatus")
-      .withIndex("by_group", (q) => q.eq("group_id", group._id))
-      .collect();
-    for (const status of documentStatuses) {
-      await ctx.db.patch(status._id, { isDeleted: true });
-    }
-
-    // Soft delete all images associated with this group
-    const images = await ctx.db
-      .query("images")
-      .withIndex("by_group", (q) => q.eq("group_id", group._id))
-      .collect();
-    for (const image of images) {
-      await ctx.db.patch(image._id, { isDeleted: true });
-    }
+    await Promise.all(allDeletePromises);
 
     // Soft delete the group
     await ctx.db.patch(args.groupId, { isDeleted: true });
@@ -2713,7 +2742,7 @@ export const restoreUser = mutation({
       }
     }
 
-    // Restore all documents, images, task assignments, and document statuses associated with the user's groups
+    // Batch restore all documents, images, task assignments, and document statuses associated with the user's groups
     const groupIds = [];
     if (user.role === 0 && user.subrole === 1) {
       const managedGroups = await ctx.db
@@ -2730,39 +2759,42 @@ export const restoreUser = mutation({
         .collect();
       groupIds.push(...advisedGroups.map((g) => g._id));
     }
-    for (const groupId of groupIds) {
-      // Documents
-      const docs = await ctx.db
-        .query("documents")
-        .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
-        .collect();
-      for (const doc of docs) {
-        await ctx.db.patch(doc._id, { isDeleted: false });
-      }
-      // Images
-      const images = await ctx.db
-        .query("images")
-        .withIndex("by_group", (q) => q.eq("group_id", groupId))
-        .collect();
-      for (const image of images) {
-        await ctx.db.patch(image._id, { isDeleted: false });
-      }
-      // Task assignments
-      const tasks = await ctx.db
-        .query("taskAssignments")
-        .withIndex("by_group", (q) => q.eq("group_id", groupId))
-        .collect();
-      for (const task of tasks) {
-        await ctx.db.patch(task._id, { isDeleted: false });
-      }
-      // Document statuses
-      const statuses = await ctx.db
-        .query("documentStatus")
-        .withIndex("by_group", (q) => q.eq("group_id", groupId))
-        .collect();
-      for (const status of statuses) {
-        await ctx.db.patch(status._id, { isDeleted: false });
-      }
+
+    if (groupIds.length > 0) {
+      // Batch fetch all associated data for all groups
+      const allDataPromises = groupIds.map(async (groupId) => {
+        const [docs, images, tasks, statuses] = await Promise.all([
+          ctx.db
+            .query("documents")
+            .withIndex("by_group_chapter", (q) => q.eq("group_id", groupId))
+            .collect(),
+          ctx.db
+            .query("images")
+            .withIndex("by_group", (q) => q.eq("group_id", groupId))
+            .collect(),
+          ctx.db
+            .query("taskAssignments")
+            .withIndex("by_group", (q) => q.eq("group_id", groupId))
+            .collect(),
+          ctx.db
+            .query("documentStatus")
+            .withIndex("by_group", (q) => q.eq("group_id", groupId))
+            .collect()
+        ]);
+        return { docs, images, tasks, statuses };
+      });
+
+      const allData = await Promise.all(allDataPromises);
+
+      // Batch restore all records
+      const allRestorePromises = allData.flatMap(({ docs, images, tasks, statuses }) => [
+        ...docs.map(doc => ctx.db.patch(doc._id, { isDeleted: false })),
+        ...images.map(image => ctx.db.patch(image._id, { isDeleted: false })),
+        ...tasks.map(task => ctx.db.patch(task._id, { isDeleted: false })),
+        ...statuses.map(status => ctx.db.patch(status._id, { isDeleted: false }))
+      ]);
+
+      await Promise.all(allRestorePromises);
     }
 
     return { success: true };
