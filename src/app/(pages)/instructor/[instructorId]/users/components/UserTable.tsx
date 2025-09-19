@@ -59,6 +59,7 @@ interface UserTableProps {
   onExcelUpload?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   isUploading?: boolean;
   uploadProgress?: number;
+  isModalOpen?: boolean; // New prop to indicate if any modal is open
 }
 
 // =========================================
@@ -96,6 +97,7 @@ export const UserTable = ({
   onExcelUpload,
   isUploading = false,
   uploadProgress = 0,
+  isModalOpen = false,
 }: UserTableProps) => {
   const [expandedCode, setExpandedCode] = useState<{ [key: string]: boolean }>(
     {},
@@ -295,9 +297,9 @@ export const UserTable = ({
           {onExcelUpload && (
             <label
               htmlFor="excel-upload"
-              title="Upload Excel (.xlsx)"
+              title={isModalOpen ? "Please close all forms before uploading" : "Upload Excel (.xlsx)"}
               className={`relative inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white transition-all duration-200 select-none ${
-                isUploading
+                isUploading || isModalOpen
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-green-600 hover:bg-green-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 active:bg-green-800"
               }`}
@@ -306,7 +308,7 @@ export const UserTable = ({
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={onExcelUpload}
-                disabled={isUploading}
+                disabled={isUploading || isModalOpen}
                 className="absolute inset-0 w-full h-full opacity-0 disabled:cursor-not-allowed z-10"
                 id="excel-upload"
                 style={{ width: "100%", height: "100%" }}

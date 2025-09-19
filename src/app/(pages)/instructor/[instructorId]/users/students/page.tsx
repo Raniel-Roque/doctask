@@ -1061,6 +1061,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           onExcelUpload={handleExcelUpload}
           isUploading={isUploading}
           uploadProgress={uploadProgress}
+          isModalOpen={isAddingUser || !!editingUser || !!deleteUser || !!resetPasswordUser || isResettingPassword || showUnsavedConfirm}
         />
 
         {/* Add Form */}

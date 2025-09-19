@@ -10,6 +10,7 @@ import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import GroupActionConfirmation from "./components/GroupActionConfirmation";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 interface AdviserGroupsPageProps {
   params: Promise<{ adviserId: string }>;
@@ -150,7 +151,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
       setIsConfirmOpen(false);
     } catch (error) {
       setNotification({
-        message: `Failed to ${actionType} group: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message: getErrorMessage(error, ErrorContexts[actionType === "accept" ? "editGroup" : "deleteGroup"]()),
         type: "error",
       });
     } finally {

@@ -10,6 +10,7 @@ import AddGroupForm from "./components/AddGroupForm";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import GroupsTable, { GRADE_FILTERS } from "./components/GroupsTable";
 import EditGroupForm from "./components/EditGroupForm";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 // Filter constants
 const CAPSTONE_FILTERS = {
@@ -59,53 +60,11 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Utility function to handle common error patterns
-  const handleError = (error: unknown, operation: string) => {
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        setNotification({
-          type: "error",
-          message: "Request timed out. Please try again.",
-        });
-      } else if (error.message.includes("Network error")) {
-        setNotification({
-          type: "error",
-          message: "Network error - please check your internet connection",
-        });
-      } else if (error.message.includes("already exists")) {
-        setNotification({
-          type: "error",
-          message: `A group with these members already exists`,
-        });
-      } else if (error.message.includes("not found")) {
-        setNotification({
-          type: "error",
-          message:
-            operation === "delete"
-              ? "Group could not be found"
-              : "One or more selected users could not be found",
-        });
-      } else if (error.message.includes("permission denied")) {
-        setNotification({
-          type: "error",
-          message: `You don't have permission to ${operation} this group`,
-        });
-      } else if (error.message.includes("ArgumentValidationError")) {
-        setNotification({
-          type: "error",
-          message: "Please check your input and try again",
-        });
-      } else {
-        setNotification({
-          type: "error",
-          message: `Failed to ${operation} group. Please try again.`,
-        });
-      }
-    } else {
-      setNotification({
-        type: "error",
-        message: "An unexpected error occurred. Please try again.",
-      });
-    }
+  const handleError = (error: unknown, operation: "add" | "edit" | "delete") => {
+    setNotification({
+      type: "error",
+      message: getErrorMessage(error, ErrorContexts[operation === "add" ? "addGroup" : operation === "edit" ? "editGroup" : "deleteGroup"]()),
+    });
   };
 
   const queryParams = useMemo(() => {
@@ -283,7 +242,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         message: "Group added successfully!",
       });
     } catch (error) {
-      handleError(error, "create");
+      handleError(error, "add");
     } finally {
       setIsSubmitting(false);
     }
@@ -317,7 +276,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         message: "Group updated successfully!",
       });
     } catch (error) {
-      handleError(error, "update");
+      handleError(error, "edit");
     } finally {
       setIsSubmitting(false);
     }

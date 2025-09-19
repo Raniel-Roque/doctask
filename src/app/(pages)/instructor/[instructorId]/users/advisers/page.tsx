@@ -26,6 +26,7 @@ import { sanitizeInput } from "../../../../components/SanitizeInput";
 import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
 import { apiRequest } from "@/lib/utils";
 import { useMutationWithRetry } from "@/lib/convex-retry";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import * as XLSX from "exceljs";
 
 // =========================================
@@ -278,8 +279,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     } catch (error) {
       setNotification({
         type: "error",
-        message:
-          error instanceof Error ? error.message : "Failed to update user",
+        message: getErrorMessage(error, ErrorContexts.editUser('adviser')),
       });
       // Do NOT close the modal
     } finally {
@@ -324,10 +324,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       logUserAction();
       setNotification({
         type: "error",
-        message:
-          error instanceof Error
-            ? error.message || "Failed to delete adviser. Please try again."
-            : "An unexpected error occurred. Please try again.",
+        message: getErrorMessage(error, ErrorContexts.deleteUser('adviser')),
       });
     } finally {
       setIsDeleting(false);
@@ -458,10 +455,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     } catch (error) {
       setNotification({
         type: "error",
-        message:
-          error instanceof Error
-            ? error.message || "Failed to create adviser. Please try again."
-            : "An unexpected error occurred. Please try again.",
+        message: getErrorMessage(error, ErrorContexts.addUser('adviser')),
       });
     } finally {
       setIsSubmitting(false);
@@ -515,26 +509,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
         message: "Password reset successfully",
       });
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          setNotification({
-            type: "error",
-            message: "Request timed out. Please try again.",
-          });
-        } else if (error.message.includes("Network error")) {
-          setNotification({
-            type: "error",
-            message: "Network error - please check your internet connection",
-          });
-        } else {
-          setNotification({ type: "error", message: error.message });
-        }
-      } else {
-        setNotification({
-          type: "error",
-          message: "An unexpected error occurred. Please try again.",
-        });
-      }
+      setNotification({
+        type: "error",
+        message: getErrorMessage(error, ErrorContexts.resetPassword()),
+      });
     } finally {
       setIsResettingPassword(false);
     }
@@ -590,7 +568,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     } catch (error) {
       setNotification({
         type: "error",
-        message: error instanceof Error ? error.message : "An error occurred",
+        message: getErrorMessage(error, ErrorContexts.lockAccount(action)),
       });
     } finally {
       setIsSubmitting(false);
@@ -619,10 +597,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     } catch (error) {
       setNotification({
         type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "An error occurred while resetting the adviser code",
+        message: getErrorMessage(error, ErrorContexts.resetCode('adviser')),
       });
     } finally {
       setIsSubmitting(false);
@@ -957,10 +932,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
     } catch (error) {
       setNotification({
         type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to process Excel file",
+        message: getErrorMessage(error, ErrorContexts.uploadFile()),
       });
     } finally {
       setIsUploading(false);
@@ -1014,6 +986,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onExcelUpload={handleExcelUpload}
           isUploading={isUploading}
           uploadProgress={uploadProgress}
+          isModalOpen={isAddingUser || !!editingUser || !!deleteUser || !!resetPasswordUser || isResettingPassword || showUnsavedConfirm}
         />
 
         {/* Add Form */}

@@ -20,6 +20,7 @@ import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import NotesPopup from "./NotesPopup";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import { formatDateOnly } from "@/lib/date-utils";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 interface DocumentsTableTabsProps {
   groups: Group[];
@@ -225,9 +226,9 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
         message: "Document downloaded successfully!",
         type: "success",
       });
-    } catch {
+    } catch (error) {
       setNotification({
-        message: "Failed to download document. Please try again.",
+        message: getErrorMessage(error, ErrorContexts.uploadFile()),
         type: "error",
       });
     } finally {

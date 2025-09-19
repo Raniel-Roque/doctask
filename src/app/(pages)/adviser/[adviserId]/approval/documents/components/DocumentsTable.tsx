@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import NotesPopup from "./NotesPopup";
 import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
 import GroupMembersModal from "./GroupMembersModal";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 interface DocumentsTableProps {
   groups: Group[];
@@ -226,10 +227,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
       });
     } catch (error) {
       setNotification({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to update document status.",
+        message: getErrorMessage(error, ErrorContexts.editUser('document')),
         type: "error",
       });
     } finally {
@@ -410,9 +408,9 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
         message: "Document downloaded successfully!",
         type: "success",
       });
-    } catch {
+    } catch (error) {
       setNotification({
-        message: "Failed to download document. Please try again.",
+        message: getErrorMessage(error, ErrorContexts.uploadFile()),
         type: "error",
       });
     } finally {
