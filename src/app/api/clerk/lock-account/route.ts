@@ -17,7 +17,11 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 export async function POST(request: Request) {
   let action: string = "";
   try {
-    const { userId, action: requestAction, instructorId } = await request.json();
+    const {
+      userId,
+      action: requestAction,
+      instructorId,
+    } = await request.json();
     action = requestAction;
 
     if (!userId || !action || !instructorId) {
@@ -95,7 +99,7 @@ export async function POST(request: Request) {
       {
         error: getErrorMessage(
           clerkError.errors?.[0]?.message || error,
-          ErrorContexts.lockAccount(action as 'lock' | 'unlock')
+          ErrorContexts.lockAccount(action as "lock" | "unlock"),
         ),
       },
       { status: 500 },

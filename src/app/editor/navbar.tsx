@@ -51,7 +51,6 @@ interface NavbarProps {
   chapter?: string;
 }
 
-
 export const Navbar = ({
   title = "Untitled Document",
   viewOnly = false,
@@ -71,7 +70,10 @@ export const Navbar = ({
   const { addBanner } = useBannerManager();
 
   // Helper function to show notifications using the new banner system
-  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "error" | "success" | "warning" | "info",
+  ) => {
     addBanner({
       message,
       type,

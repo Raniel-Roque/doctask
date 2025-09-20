@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 import { useUser } from "@clerk/clerk-react";
 
-import { NotificationBanner } from "./NotificationBanner";
+import { useBannerManager } from "./BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import PasswordVerification from "./PasswordVerification";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
 import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
@@ -18,6 +19,7 @@ export default function ChangePassword({
   onClose,
 }: ChangePasswordProps) {
   const { user, isLoaded } = useUser();
+  const { addBanner } = useBannerManager();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +28,30 @@ export default function ChangePassword({
   const [isVerified, setIsVerified] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Handle error messages
+  useEffect(() => {
+    if (error) {
+      addBanner({
+        message: error,
+        type: "error",
+        onClose: () => setError(null),
+        autoClose: true,
+      });
+    }
+  }, [error, addBanner]);
+
+  // Handle success messages
+  useEffect(() => {
+    if (success) {
+      addBanner({
+        message: success,
+        type: "success",
+        onClose: () => setSuccess(null),
+        autoClose: true,
+      });
+    }
+  }, [success, addBanner]);
 
   const resetForm = () => {
     setNewPassword("");
@@ -108,9 +134,8 @@ export default function ChangePassword({
         handleClose();
       }, 2000);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update password",
-      );
+      const errorMessage = getErrorMessage(err, ErrorContexts.resetPassword());
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -263,21 +288,6 @@ export default function ChangePassword({
               </button>
             </form>
           )}
-
-          <NotificationBanner
-            message={error}
-            type="error"
-            onClose={() => setError(null)}
-            autoClose={false}
-          />
-
-          <NotificationBanner
-            message={success}
-            type="success"
-            onClose={() => setSuccess(null)}
-            autoClose={true}
-            duration={2000}
-          />
         </div>
       </div>
     </>

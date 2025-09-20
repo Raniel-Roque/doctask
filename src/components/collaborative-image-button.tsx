@@ -23,7 +23,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ImageIcon, UploadIcon, SearchIcon } from "lucide-react";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 interface NotificationState {
   message: string | null;
@@ -32,23 +33,21 @@ interface NotificationState {
 
 export const CollaborativeImageButton = () => {
   const { editor } = useEditorStore();
+  const { addBanner } = useBannerManager();
   const [imageUrl, setImageUrl] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [notification, setNotification] = useState<NotificationState>({
-    message: null,
-    type: "info",
-  });
 
   const showNotification = (
     message: string,
     type: NotificationState["type"],
   ) => {
-    setNotification({ message, type });
-  };
-
-  const closeNotification = () => {
-    setNotification({ message: null, type: "info" });
+    addBanner({
+      message,
+      type,
+      onClose: () => {},
+      autoClose: type === "error" ? false : true,
+    });
   };
 
   const onChange = (src: string) => {
@@ -92,10 +91,8 @@ export const CollaborativeImageButton = () => {
         }
       } catch (error) {
         // Show error to user
-        showNotification(
-          error instanceof Error ? error.message : "Failed to upload image",
-          "error",
-        );
+        const errorMessage = getErrorMessage(error, ErrorContexts.uploadFile());
+        showNotification(errorMessage, "error");
       } finally {
         setIsUploading(false);
       }
@@ -115,14 +112,6 @@ export const CollaborativeImageButton = () => {
 
   return (
     <>
-      <div className="print:hidden">
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={closeNotification}
-        />
-      </div>
-
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenu>

@@ -57,14 +57,17 @@ const LoginPage = () => {
   const [isClient, setIsClient] = useState(false);
 
   // Helper function to show notifications using the new banner system
-  const showNotification = useCallback((message: string, type: "error" | "success" | "warning" | "info") => {
-    addBanner({
-      message,
-      type,
-      onClose: () => {}, // Banner will auto-close
-      autoClose: true,
-    });
-  }, [addBanner]);
+  const showNotification = useCallback(
+    (message: string, type: "error" | "success" | "warning" | "info") => {
+      addBanner({
+        message,
+        type,
+        onClose: () => {}, // Banner will auto-close
+        autoClose: true,
+      });
+    },
+    [addBanner],
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -81,17 +84,17 @@ const LoginPage = () => {
       if (successPassword === "true") {
         showNotification(
           "Password reset successful! Please log in with your new password.",
-          "success"
+          "success",
         );
       } else if (successVerify === "true") {
         showNotification(
           "Email verified successfully! Please log in with your password.",
-          "success"
+          "success",
         );
       } else if (successRestore === "true") {
         showNotification(
           "Database has been restored successfully! Please check your email for the new password.",
-          "success"
+          "success",
         );
       }
     }
@@ -102,7 +105,7 @@ const LoginPage = () => {
     if (mounted && localStorage.getItem("showRestoreBanner") === "true") {
       showNotification(
         "Database has been restored successfully! Please check your email for the new password.",
-        "success"
+        "success",
       );
       localStorage.removeItem("showRestoreBanner");
     }
@@ -267,13 +270,16 @@ const LoginPage = () => {
           if (result.status === "needs_first_factor") {
             updateCodeRateLimit(emailToCheck);
             setStep(2);
-showNotification(
-        "A new verification code has been sent to your email. Please check your inbox and spam folder.",
-        "success"
-      );
+            showNotification(
+              "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+              "success",
+            );
             setCode("");
           } else {
-showNotification("Failed to send verification code. Please try again.", "error");
+            showNotification(
+              "Failed to send verification code. Please try again.",
+              "error",
+            );
           }
         } else {
           // Just proceed to verification step without sending code
@@ -283,7 +289,10 @@ showNotification("Failed to send verification code. Please try again.", "error")
         }
       }
     } catch (err) {
-      const errorMessage = getErrorMessage(err, ErrorContexts.fetchData('user'));
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.fetchData("user"),
+      );
       showNotification(errorMessage, "error");
     } finally {
       setLoading(false);
@@ -349,14 +358,17 @@ showNotification("Failed to send verification code. Please try again.", "error")
               );
               return; // Success, user will be redirected
             } else {
-showNotification("Incorrect password. Please try again.", "error");
+              showNotification(
+                "Incorrect password. Please try again.",
+                "error",
+              );
             }
           } catch (err) {
             const clerkError = err as ClerkError;
             showNotification(
               clerkError.errors?.[0]?.message ||
-              "An error occurred during sign in",
-              "error"
+                "An error occurred during sign in",
+              "error",
             );
           } finally {
             setLoading(false);
@@ -395,13 +407,16 @@ showNotification("Incorrect password. Please try again.", "error");
 
           if (result.status === "needs_first_factor") {
             setStep(2);
-showNotification(
-        "A new verification code has been sent to your email. Please check your inbox and spam folder.",
-        "success"
-      );
+            showNotification(
+              "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+              "success",
+            );
             setCode("");
           } else {
-showNotification("Failed to send verification code. Please try again.", "error");
+            showNotification(
+              "Failed to send verification code. Please try again.",
+              "error",
+            );
           }
         } else {
           // Just proceed to verification step without sending code
@@ -411,7 +426,10 @@ showNotification("Failed to send verification code. Please try again.", "error")
         }
       }
     } catch (err) {
-      const errorMessage = getErrorMessage(err, ErrorContexts.fetchData('user'));
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.fetchData("user"),
+      );
       showNotification(errorMessage, "error");
     } finally {
       setLoading(false);
@@ -424,7 +442,10 @@ showNotification("Failed to send verification code. Please try again.", "error")
 
     // Prevent submission if verification code is empty
     if (!code || code.trim() === "") {
-      showNotification("Please enter the verification code sent to your email", "error");
+      showNotification(
+        "Please enter the verification code sent to your email",
+        "error",
+      );
       return;
     }
 
@@ -481,26 +502,35 @@ showNotification("Failed to send verification code. Please try again.", "error")
           await signOut();
           setStep(1);
           setCode("");
-showNotification(
-        "Email verified but failed to update database. Please try logging in again.",
-        "warning"
-      );
+          showNotification(
+            "Email verified but failed to update database. Please try logging in again.",
+            "warning",
+          );
         }
       } else {
-showNotification(
-        "Invalid verification code. Please check your email and try again.",
-        "error"
-      );
+        showNotification(
+          "Invalid verification code. Please check your email and try again.",
+          "error",
+        );
         setCode(""); // Clear the code input on error
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
       if (errorMessage.toLowerCase().includes("expired")) {
-        showNotification("Verification code has expired. Please request a new code.", "error");
+        showNotification(
+          "Verification code has expired. Please request a new code.",
+          "error",
+        );
       } else if (errorMessage.toLowerCase().includes("invalid")) {
-        showNotification("Invalid verification code. Please check your email and try again.", "error");
+        showNotification(
+          "Invalid verification code. Please check your email and try again.",
+          "error",
+        );
       } else {
-        showNotification("Verification failed. Please try again or request a new code.", "error");
+        showNotification(
+          "Verification failed. Please try again or request a new code.",
+          "error",
+        );
       }
       setCode(""); // Clear the code input on error
     } finally {
@@ -530,7 +560,7 @@ showNotification(
         await setActive({ session: result.createdSessionId });
         localStorage.setItem("lastActivityTimestamp", Date.now().toString());
       } else {
-showNotification("Incorrect password. Please try again.", "error");
+        showNotification("Incorrect password. Please try again.", "error");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
@@ -543,9 +573,15 @@ showNotification("Incorrect password. Please try again.", "error");
         errorMessage.toLowerCase().includes("data breach") ||
         errorMessage.toLowerCase().includes("password has been compromised")
       ) {
-        showNotification("This password has been compromised in a data breach. Please use forgot password.", "error");
+        showNotification(
+          "This password has been compromised in a data breach. Please use forgot password.",
+          "error",
+        );
       } else if (errorMessage.includes("Your account is locked")) {
-        showNotification("Your account is locked. Please try again later or contact your capstone instructor.", "error");
+        showNotification(
+          "Your account is locked. Please try again later or contact your capstone instructor.",
+          "error",
+        );
       } else if (
         errorMessage.toLowerCase().includes("password") ||
         errorMessage.toLowerCase().includes("invalid credentials") ||
@@ -587,15 +623,18 @@ showNotification("Incorrect password. Please try again.", "error");
         // Clear the shouldSendCode flag since we just sent a code
         localStorage.removeItem(`shouldSendCode_${email}`);
 
-showNotification(
-        "A new verification code has been sent to your email. Please check your inbox and spam folder.",
-        "success"
-      );
+        showNotification(
+          "A new verification code has been sent to your email. Please check your inbox and spam folder.",
+          "success",
+        );
       } else {
-showNotification("Failed to send new code. Please try again.", "error");
+        showNotification("Failed to send new code. Please try again.", "error");
       }
     } catch (err) {
-      const errorMessage = getErrorMessage(err, ErrorContexts.fetchData('user'));
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.fetchData("user"),
+      );
       showNotification(errorMessage, "error");
     } finally {
       setSendingCode(false);
@@ -638,15 +677,18 @@ showNotification("Failed to send new code. Please try again.", "error");
 
         updateCodeRateLimit(email);
 
-showNotification(
-        "A new password reset code has been sent to your email. Please check your inbox and spam folder.",
-        "success"
-      );
+        showNotification(
+          "A new password reset code has been sent to your email. Please check your inbox and spam folder.",
+          "success",
+        );
       } else {
-showNotification("Failed to send new code. Please try again.", "error");
+        showNotification("Failed to send new code. Please try again.", "error");
       }
     } catch (err) {
-      const errorMessage = getErrorMessage(err, ErrorContexts.fetchData('user'));
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.fetchData("user"),
+      );
       showNotification(errorMessage, "error");
     } finally {
       setSendingCode(false);
@@ -953,20 +995,23 @@ showNotification("Failed to send new code. Please try again.", "error");
                       if (!code || code.trim() === "") {
                         showNotification(
                           "Please enter the verification code sent to your email",
-                          "error"
+                          "error",
                         );
                         return;
                       }
 
                       if (code.length !== 6) {
-                        showNotification("Verification code must be exactly 6 digits", "error");
+                        showNotification(
+                          "Verification code must be exactly 6 digits",
+                          "error",
+                        );
                         return;
                       }
 
                       if (!/^\d{6}$/.test(code)) {
                         showNotification(
                           "Verification code must contain only numbers",
-                          "error"
+                          "error",
                         );
                         return;
                       }
@@ -980,10 +1025,10 @@ showNotification("Failed to send new code. Please try again.", "error");
                         if (result.status === "needs_new_password") {
                           setForgotStepIndex(1);
                         } else {
-showNotification(
-        "Invalid verification code. Please check your email and try again.",
-        "error"
-      );
+                          showNotification(
+                            "Invalid verification code. Please check your email and try again.",
+                            "error",
+                          );
                         }
                       } catch (err) {
                         const errorMessage =
@@ -991,19 +1036,19 @@ showNotification(
                         if (errorMessage.toLowerCase().includes("expired")) {
                           showNotification(
                             "Verification code has expired. Please request a new code.",
-                            "error"
+                            "error",
                           );
                         } else if (
                           errorMessage.toLowerCase().includes("invalid")
                         ) {
-showNotification(
-        "Invalid verification code. Please check your email and try again.",
-        "error"
-      );
+                          showNotification(
+                            "Invalid verification code. Please check your email and try again.",
+                            "error",
+                          );
                         } else {
                           showNotification(
                             "Verification failed. Please try again or request a new code.",
-                            "error"
+                            "error",
                           );
                         }
                       } finally {
@@ -1034,12 +1079,18 @@ showNotification(
 
                     // Prevent submission if passwords are empty
                     if (!password || password.trim() === "") {
-showNotification("Please enter your new password", "error");
+                      showNotification(
+                        "Please enter your new password",
+                        "error",
+                      );
                       return;
                     }
 
                     if (!confirmPassword || confirmPassword.trim() === "") {
-showNotification("Please confirm your new password", "error");
+                      showNotification(
+                        "Please confirm your new password",
+                        "error",
+                      );
                       return;
                     }
 
@@ -1086,10 +1137,10 @@ showNotification("Please confirm your new password", "error");
                         localStorage.removeItem(timerKey);
 
                         // Set success notification before signing out
-showNotification(
-        "Password reset successful! Please log in with your new password.",
-        "success"
-      );
+                        showNotification(
+                          "Password reset successful! Please log in with your new password.",
+                          "success",
+                        );
 
                         // Clear all form data
                         setCode("");
@@ -1111,7 +1162,7 @@ showNotification(
                       } else {
                         showNotification(
                           "Failed to reset password. Please try again.",
-                          "error"
+                          "error",
                         );
                       }
                     } catch (err) {
@@ -1145,7 +1196,7 @@ showNotification(
                       ) {
                         showNotification(
                           "Password is too weak. Please choose a stronger password.",
-                          "error"
+                          "error",
                         );
                       }
                       // Check for password validation errors
@@ -1162,7 +1213,7 @@ showNotification(
                       ) {
                         showNotification(
                           "Password does not meet requirements. Please ensure it has at least 8 characters and is not too common.",
-                          "error"
+                          "error",
                         );
                       }
                       // Check for rate limiting
@@ -1175,14 +1226,14 @@ showNotification(
                       ) {
                         showNotification(
                           "Too many password reset attempts. Please wait a moment before trying again.",
-                          "error"
+                          "error",
                         );
                       }
                       // Generic error fallback
                       else {
                         showNotification(
                           "An error occurred while resetting your password. Please try again.",
-                          "error"
+                          "error",
                         );
                       }
                     } finally {

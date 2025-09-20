@@ -285,7 +285,8 @@ function AuthCheck({ children }: { children: ReactNode }) {
               </div>
               {authSlow && (
                 <div className="mt-2 text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-                  Taking longer than usual. Please check your internet connection.
+                  Taking longer than usual. Please check your internet
+                  connection.
                 </div>
               )}
             </div>

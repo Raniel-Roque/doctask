@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from "react";
+import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import {
   FaPlus,
   FaTimes,
@@ -13,7 +13,8 @@ import {
 } from "react-icons/fa";
 import { AddFormData } from "./types";
 import { validateUserForm } from "../../utils/validation";
-import { NotificationBanner } from "../../../../components/NotificationBanner";
+import { useBannerManager } from "../../../../components/BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { useModalFocus } from "@/hooks/use-modal-focus";
 
@@ -46,6 +47,24 @@ export const AddForm = ({
   className = "",
   isStudent = false,
 }: AddFormProps) => {
+  const { addBanner } = useBannerManager();
+
+  // Handle network errors
+  useEffect(() => {
+    if (networkError) {
+      const errorMessage = getErrorMessage(
+        new Error(networkError),
+        ErrorContexts.addUser(isStudent ? "student" : "adviser"),
+      );
+      addBanner({
+        message: errorMessage,
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+    }
+  }, [networkError, addBanner, isStudent]);
+
   // =========================================
   // State
   // =========================================
@@ -59,6 +78,30 @@ export const AddForm = ({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Handle error messages
+  useEffect(() => {
+    if (errorMessage) {
+      addBanner({
+        message: errorMessage,
+        type: "error",
+        onClose: () => setErrorMessage(null),
+        autoClose: true,
+      });
+    }
+  }, [errorMessage, addBanner]);
+
+  // Handle success messages
+  useEffect(() => {
+    if (successMessage) {
+      addBanner({
+        message: successMessage,
+        type: "success",
+        onClose: () => setSuccessMessage(null),
+        autoClose: true,
+      });
+    }
+  }, [successMessage, addBanner]);
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] =
     useState(false);
 
@@ -465,17 +508,6 @@ export const AddForm = ({
         </div>
       </div>
 
-      {/* Notifications */}
-      <NotificationBanner
-        message={errorMessage}
-        onClose={() => setErrorMessage(null)}
-        type="error"
-      />
-      <NotificationBanner
-        message={successMessage}
-        onClose={() => setSuccessMessage(null)}
-        type="success"
-      />
       <UnsavedChangesConfirmation
         isOpen={showUnsavedChangesDialog}
         onContinue={() => {

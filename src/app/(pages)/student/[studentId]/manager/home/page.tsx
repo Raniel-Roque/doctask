@@ -6,7 +6,8 @@ import { api } from "../../../../../../../convex/_generated/api";
 import { useQuery, useMutation, useConvex } from "convex/react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { AdviserCodePopup } from "./components/AdviserCodePopup";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import React from "react";
 import { CancelAdviserRequestPopup } from "./components/CancelAdviserRequestPopup";
 import { LatestDocumentsTable } from "../../components/LatestDocumentsTable";
@@ -23,13 +24,10 @@ interface StudentGroup {
 
 const ManagerHomePage = ({ params }: ManagerHomeProps) => {
   const { studentId } = use(params);
+  const { addBanner } = useBannerManager();
 
   // UI State
   const [showAdviserPopup, setShowAdviserPopup] = useState(false);
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "success" | "error";
-  }>({ message: "", type: "success" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [popupError, setPopupError] = useState<string | null>(null);
   const [pendingAdviserCode, setPendingAdviserCode] = useState<string | null>(
@@ -120,14 +118,19 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
       });
       setPendingAdviserCode(code);
       setShowAdviserPopup(false);
-      setNotification({
+      addBanner({
         message: `Request sent to ${result.user.first_name} ${result.user.last_name}.`,
         type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
       if (adviserCodeInputRef.current) adviserCodeInputRef.current(); // clear input
     } catch (err: unknown) {
-      const error = err as Error;
-      setPopupError(error.message || "Failed to request adviser.");
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.editUser("group"),
+      );
+      setPopupError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -190,15 +193,22 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
         groupId: studentGroup.group_id,
       });
       setPendingAdviserCode(null);
-      setNotification({
+      addBanner({
         message: "Adviser request cancelled.",
         type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
     } catch (err: unknown) {
-      const error = err as Error;
-      setNotification({
-        message: error.message || "Failed to cancel request.",
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.editUser("group"),
+      );
+      addBanner({
+        message: errorMessage,
         type: "error",
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsSubmitting(false);
@@ -227,14 +237,6 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
           error={popupError}
           clearInputRef={adviserCodeInputRef}
         />
-        {/* Notification banner */}
-        {notification.message && (
-          <NotificationBanner
-            message={notification.message}
-            type={notification.type}
-            onClose={() => setNotification({ message: "", type: "success" })}
-          />
-        )}
         {/* Latest Documents Table */}
         <div className="container mx-auto px-4 pb-8">
           <LatestDocumentsTable

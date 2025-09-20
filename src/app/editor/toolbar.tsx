@@ -71,7 +71,6 @@ import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { Threads } from "./threads";
 
-
 const FontFamilyButton = () => {
   // Display-only button showing Times New Roman (cannot be changed)
   return (
@@ -260,7 +259,10 @@ const ImageButton = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   // Helper function to show notifications using the new banner system
-  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "error" | "success" | "warning" | "info",
+  ) => {
     addBanner({
       message,
       type,

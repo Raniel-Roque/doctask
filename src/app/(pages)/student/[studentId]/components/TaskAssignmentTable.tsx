@@ -23,7 +23,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import NotesPopupViewOnly from "./NotesPopupViewOnly";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
@@ -159,6 +159,7 @@ export const TaskAssignmentTable = ({
   onStatusChange,
 }: TaskAssignmentTableProps) => {
   const router = useRouter();
+  const { addBanner } = useBannerManager();
   // Add Convex mutations
   const updateTaskStatus = useMutation(api.mutations.updateTaskStatus);
   const updateTaskAssignment = useMutation(api.mutations.updateTaskAssignment);
@@ -234,6 +235,18 @@ export const TaskAssignmentTable = ({
     message: string;
     type: "success" | "error" | "info" | "warning";
   } | null>(null);
+
+  // Handle notifications
+  useEffect(() => {
+    if (notification) {
+      addBanner({
+        message: notification.message,
+        type: notification.type,
+        onClose: () => setNotification(null),
+        autoClose: notification.type === "error" ? false : true,
+      });
+    }
+  }, [notification, addBanner]);
 
   // Add state for notes popup
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
@@ -636,7 +649,7 @@ export const TaskAssignmentTable = ({
       });
     } catch (error) {
       setNotification({
-        message: getErrorMessage(error, ErrorContexts.editUser('document')),
+        message: getErrorMessage(error, ErrorContexts.editUser("document")),
         type: "error",
       });
     } finally {
@@ -668,7 +681,7 @@ export const TaskAssignmentTable = ({
       });
     } catch (error) {
       setNotification({
-        message: getErrorMessage(error, ErrorContexts.editUser('document')),
+        message: getErrorMessage(error, ErrorContexts.editUser("document")),
         type: "error",
       });
     } finally {
@@ -1949,11 +1962,6 @@ export const TaskAssignmentTable = ({
           </div>
         </div>
       </div>
-      <NotificationBanner
-        message={notification?.message || ""}
-        type={notification?.type || "info"}
-        onClose={() => setNotification(null)}
-      />
       {notesPopupOpen && notesPopupDoc && (
         <NotesPopupViewOnly
           isOpen={notesPopupOpen}

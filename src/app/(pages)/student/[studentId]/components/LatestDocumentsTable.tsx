@@ -9,12 +9,13 @@ import {
   FaChevronDown,
 } from "react-icons/fa";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useConvex } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import NotesPopupViewOnly from "./NotesPopupViewOnly";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { apiRequest } from "@/lib/utils";
 import { formatDateTime } from "@/lib/date-utils";
 
@@ -144,6 +145,7 @@ export const LatestDocumentsTable = ({
 }: LatestDocumentsTableProps) => {
   const router = useRouter();
   const convex = useConvex();
+  const { addBanner } = useBannerManager();
 
   // Add Convex mutations
   const submitDocumentForReview = useMutation(
@@ -193,6 +195,18 @@ export const LatestDocumentsTable = ({
     message: string;
     type: "success" | "error" | "info" | "warning";
   } | null>(null);
+
+  // Handle notifications
+  useEffect(() => {
+    if (notification) {
+      addBanner({
+        message: notification.message,
+        type: notification.type,
+        onClose: () => setNotification(null),
+        autoClose: notification.type === "error" ? false : true,
+      });
+    }
+  }, [notification, addBanner]);
 
   // Add loading states for submit/cancel
   const [submittingDocument, setSubmittingDocument] = useState<string | null>(
@@ -382,11 +396,12 @@ export const LatestDocumentsTable = ({
         type: "success",
       });
     } catch (error) {
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.editUser("document"),
+      );
       setNotification({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to update task status.",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -465,11 +480,12 @@ export const LatestDocumentsTable = ({
         type: "success",
       });
     } catch (error) {
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.editUser("document"),
+      );
       setNotification({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to submit document for review.",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -493,11 +509,12 @@ export const LatestDocumentsTable = ({
         type: "success",
       });
     } catch (error) {
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.editUser("document"),
+      );
       setNotification({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to cancel document submission.",
+        message: errorMessage,
         type: "error",
       });
     } finally {
@@ -3159,14 +3176,6 @@ export const LatestDocumentsTable = ({
           groupId={notesPopupDoc.group_id}
           documentPart={notesPopupDoc.chapter}
           documentTitle={notesPopupDoc.title}
-        />
-      )}
-
-      {notification && (
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
         />
       )}
 

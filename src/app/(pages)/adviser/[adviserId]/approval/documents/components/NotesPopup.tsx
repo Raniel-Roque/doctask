@@ -16,7 +16,8 @@ import {
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { formatDateTime } from "@/lib/date-utils";
 
 import { UnsavedChangesConfirmation } from "@/app/(pages)/components/UnsavedChangesConfirmation";
@@ -47,16 +48,13 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
   documentTitle,
   currentUserId,
 }) => {
+  const { addBanner } = useBannerManager();
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showAddPopup, setShowAddPopup] = useState(false);
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "error" | "success" | "warning" | "info";
-  } | null>(null);
   const [showUnsavedConfirmation, setShowUnsavedConfirmation] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -169,11 +167,12 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
     message: string,
     type: "error" | "success" | "warning" | "info",
   ) => {
-    setNotification({ message, type });
-  };
-
-  const clearNotification = () => {
-    setNotification(null);
+    addBanner({
+      message,
+      type,
+      onClose: () => {},
+      autoClose: type === "error" ? false : true,
+    });
   };
 
   const handleUnsavedChanges = (action: () => void) => {
@@ -233,8 +232,12 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
       // Reset to first page when adding a new note
       setCurrentPage(1);
       showNotification("Note added successfully", "success");
-    } catch {
-      showNotification("Failed to add note. Please try again.", "error");
+    } catch (err) {
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.editUser("document"),
+      );
+      showNotification(errorMessage, "error");
     } finally {
       setIsAddingNote(false);
     }
@@ -257,8 +260,12 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
       setEditingNoteId(null);
       setEditingContent("");
       showNotification("Note updated successfully", "success");
-    } catch {
-      showNotification("Failed to update note. Please try again.", "error");
+    } catch (err) {
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.editUser("document"),
+      );
+      showNotification(errorMessage, "error");
     }
   };
 
@@ -273,8 +280,12 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
         setCurrentPage(currentPage - 1);
       }
       showNotification("Note deleted successfully", "success");
-    } catch {
-      showNotification("Failed to delete note. Please try again.", "error");
+    } catch (err) {
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.editUser("document"),
+      );
+      showNotification(errorMessage, "error");
     } finally {
       setPendingDeleteNoteId(null);
     }
@@ -637,17 +648,6 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Notification Banner */}
-      {notification && (
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={clearNotification}
-          autoClose={true}
-          duration={4000}
-        />
       )}
 
       {/* Unsaved Changes Confirmation */}

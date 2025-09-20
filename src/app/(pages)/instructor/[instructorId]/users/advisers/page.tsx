@@ -10,7 +10,7 @@ import { AddForm } from "../components/AddForm";
 import EditForm from "../components/EditForm";
 import { DeleteConfirmation } from "../components/DeleteConfirmation";
 import { ValidationError } from "../components/ValidationError";
-import { NotificationBanner } from "../../../../components/NotificationBanner";
+import { useBannerManager } from "../../../../components/BannerManager";
 import {
   User,
   EditFormData,
@@ -18,7 +18,6 @@ import {
   TABLE_CONSTANTS,
   SortField,
   SortDirection,
-  Notification as NotificationType,
 } from "../components/types";
 import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
@@ -60,6 +59,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // State
   // =========================================
   const { instructorId } = use(params);
+  const { addBanner } = useBannerManager();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     (typeof TABLE_CONSTANTS.STATUS_FILTERS)[keyof typeof TABLE_CONSTANTS.STATUS_FILTERS]
@@ -82,9 +82,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [notification, setNotification] = useState<NotificationType | null>(
-    null,
-  );
 
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -179,15 +176,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   // Effects
   // =========================================
-  // Auto-hide notification after 5 seconds
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
 
   // Add useEffect for page leave warning
   useEffect(() => {
@@ -271,15 +259,23 @@ const UsersPage = ({ params }: UsersPageProps) => {
           instructorId: instructorId,
         }),
       });
-      setNotification({
-        type: "success",
+      addBanner({
         message: "User updated successfully",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
       setEditingUser(null);
     } catch (error) {
-      setNotification({
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.editUser("adviser"),
+      );
+      addBanner({
+        message: errorMessage,
         type: "error",
-        message: getErrorMessage(error, ErrorContexts.editUser('adviser')),
+        onClose: () => {},
+        autoClose: true,
       });
       // Do NOT close the modal
     } finally {
@@ -289,9 +285,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
   const handleDeleteSubmit = async () => {
     if (!deleteUser || !deleteUser.clerk_id) {
-      setNotification({
-        type: "error",
+      addBanner({
         message: "Cannot delete user: Missing Clerk ID",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
       });
       return;
     }
@@ -316,15 +314,23 @@ const UsersPage = ({ params }: UsersPageProps) => {
       logUserAction();
 
       setDeleteUser(null);
-      setNotification({
-        type: "success",
+      addBanner({
         message: "Adviser deleted successfully",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
     } catch (error) {
       logUserAction();
-      setNotification({
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.deleteUser("adviser"),
+      );
+      addBanner({
+        message: errorMessage,
         type: "error",
-        message: getErrorMessage(error, ErrorContexts.deleteUser('adviser')),
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsDeleting(false);
@@ -440,9 +446,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
         }),
       });
 
-      setNotification({
-        type: "success",
+      addBanner({
         message: "Adviser added successfully",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
       setIsAddingUser(false);
       setAddFormData({
@@ -453,9 +461,15 @@ const UsersPage = ({ params }: UsersPageProps) => {
         subrole: 0,
       });
     } catch (error) {
-      setNotification({
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.addUser("adviser"),
+      );
+      addBanner({
+        message: errorMessage,
         type: "error",
-        message: getErrorMessage(error, ErrorContexts.addUser('adviser')),
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsSubmitting(false);
@@ -504,14 +518,22 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
 
       setResetPasswordUser(null);
-      setNotification({
-        type: "success",
+      addBanner({
         message: "Password reset successfully",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
     } catch (error) {
-      setNotification({
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.resetPassword(),
+      );
+      addBanner({
+        message: errorMessage,
         type: "error",
-        message: getErrorMessage(error, ErrorContexts.resetPassword()),
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsResettingPassword(false);
@@ -560,15 +582,23 @@ const UsersPage = ({ params }: UsersPageProps) => {
         },
       });
 
-      setNotification({
-        type: "success",
+      addBanner({
         message: `Account ${action}ed successfully`,
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
       setSelectedUser(null);
     } catch (error) {
-      setNotification({
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.lockAccount(action),
+      );
+      addBanner({
+        message: errorMessage,
         type: "error",
-        message: getErrorMessage(error, ErrorContexts.lockAccount(action)),
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsSubmitting(false);
@@ -587,17 +617,25 @@ const UsersPage = ({ params }: UsersPageProps) => {
       });
 
       if (result.success) {
-        setNotification({
-          type: "success",
+        addBanner({
           message: result.message || "Adviser code successfully reset",
+          type: "success",
+          onClose: () => {},
+          autoClose: true,
         });
       } else {
         throw new Error("Failed to reset adviser code");
       }
     } catch (error) {
-      setNotification({
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.resetCode("adviser"),
+      );
+      addBanner({
+        message: errorMessage,
         type: "error",
-        message: getErrorMessage(error, ErrorContexts.resetCode('adviser')),
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsSubmitting(false);
@@ -766,18 +804,22 @@ const UsersPage = ({ params }: UsersPageProps) => {
     ];
 
     if (!validTypes.includes(file.type)) {
-      setNotification({
-        type: "error",
+      addBanner({
         message: "Please upload a valid Excel file (.xlsx or .xls)",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
       });
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setNotification({
-        type: "error",
+      addBanner({
         message: "File size must be less than 5MB",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
       });
       return;
     }
@@ -790,10 +832,12 @@ const UsersPage = ({ params }: UsersPageProps) => {
       const users = await parseExcelFile(file);
 
       if (users.length === 0) {
-        setNotification({
-          type: "error",
+        addBanner({
           message:
             "Invalid Excel format. Required: First Name, Last Name, Email. Optional: Middle Name",
+          type: "error",
+          onClose: () => {},
+          autoClose: true,
         });
         return;
       }
@@ -803,17 +847,21 @@ const UsersPage = ({ params }: UsersPageProps) => {
         validateBulkUsers(users);
 
       if (validationErrors.length > 0) {
-        setNotification({
-          type: "error",
+        addBanner({
           message: `Validation errors found:\n${validationErrors.slice(0, 5).join("\n")}${validationErrors.length > 5 ? `\n... and ${validationErrors.length - 5} more errors` : ""}`,
+          type: "error",
+          onClose: () => {},
+          autoClose: true,
         });
         return;
       }
 
       if (validUsers.length === 0) {
-        setNotification({
-          type: "error",
+        addBanner({
           message: "No valid users to import after validation",
+          type: "error",
+          onClose: () => {},
+          autoClose: true,
         });
         return;
       }
@@ -914,25 +962,34 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
       // Show results
       if (successCount > 0 && errorCount === 0) {
-        setNotification({
-          type: "success",
+        addBanner({
           message: `Successfully imported ${successCount} adviser${successCount > 1 ? "s" : ""}`,
+          type: "success",
+          onClose: () => {},
+          autoClose: true,
         });
       } else if (successCount > 0 && errorCount > 0) {
-        setNotification({
-          type: "warning",
+        addBanner({
           message: `Imported ${successCount} adviser${successCount > 1 ? "s" : ""} successfully. ${errorCount} failed:\n${creationErrors.slice(0, 3).join("\n")}${creationErrors.length > 3 ? `\n... and ${creationErrors.length - 3} more errors` : ""}`,
+          type: "warning",
+          onClose: () => {},
+          autoClose: true,
         });
       } else {
-        setNotification({
-          type: "error",
+        addBanner({
           message: `Failed to import any advisers:\n${creationErrors.slice(0, 5).join("\n")}${creationErrors.length > 5 ? `\n... and ${creationErrors.length - 5} more errors` : ""}`,
+          type: "error",
+          onClose: () => {},
+          autoClose: true,
         });
       }
     } catch (error) {
-      setNotification({
+      const errorMessage = getErrorMessage(error, ErrorContexts.uploadFile());
+      addBanner({
+        message: errorMessage,
         type: "error",
-        message: getErrorMessage(error, ErrorContexts.uploadFile()),
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsUploading(false);
@@ -986,7 +1043,14 @@ const UsersPage = ({ params }: UsersPageProps) => {
           onExcelUpload={handleExcelUpload}
           isUploading={isUploading}
           uploadProgress={uploadProgress}
-          isModalOpen={isAddingUser || !!editingUser || !!deleteUser || !!resetPasswordUser || isResettingPassword || showUnsavedConfirm}
+          isModalOpen={
+            isAddingUser ||
+            !!editingUser ||
+            !!deleteUser ||
+            !!resetPasswordUser ||
+            isResettingPassword ||
+            showUnsavedConfirm
+          }
         />
 
         {/* Add Form */}
@@ -1106,15 +1170,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
         <ValidationError
           error={validationError}
           onClose={() => setValidationError(null)}
-        />
-
-        {/* Notification */}
-        <NotificationBanner
-          message={notification?.message || ""}
-          type={notification?.type || "success"}
-          onClose={() => {
-            setNotification(null);
-          }}
         />
 
         {/* Unsaved Changes Confirmation */}

@@ -1,13 +1,13 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { useState, use, useEffect, useMemo } from "react";
+import { useState, use, useMemo } from "react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { User, Group } from "./components/types";
 import AddGroupForm from "./components/AddGroupForm";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import GroupsTable, { GRADE_FILTERS } from "./components/GroupsTable";
 import EditGroupForm from "./components/EditGroupForm";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
@@ -25,16 +25,13 @@ interface GroupsPageProps {
 
 const GroupsPage = ({ params }: GroupsPageProps) => {
   const { instructorId } = use(params);
+  const { addBanner } = useBannerManager();
 
   // State management
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [isEditingGroup, setIsEditingGroup] = useState<Group | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Removed networkError state - using notification banner instead
-  const [notification, setNotification] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
     if (typeof window !== "undefined") {
@@ -60,10 +57,25 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Utility function to handle common error patterns
-  const handleError = (error: unknown, operation: "add" | "edit" | "delete") => {
-    setNotification({
+  const handleError = (
+    error: unknown,
+    operation: "add" | "edit" | "delete",
+  ) => {
+    const errorMessage = getErrorMessage(
+      error,
+      ErrorContexts[
+        operation === "add"
+          ? "addGroup"
+          : operation === "edit"
+            ? "editGroup"
+            : "deleteGroup"
+      ](),
+    );
+    addBanner({
+      message: errorMessage,
       type: "error",
-      message: getErrorMessage(error, ErrorContexts[operation === "add" ? "addGroup" : operation === "edit" ? "editGroup" : "deleteGroup"]()),
+      onClose: () => {},
+      autoClose: true,
     });
   };
 
@@ -237,9 +249,11 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         instructorId: instructorId as Id<"users">,
       });
       setIsAddingGroup(false);
-      setNotification({
-        type: "success",
+      addBanner({
         message: "Group added successfully!",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
     } catch (error) {
       handleError(error, "add");
@@ -271,9 +285,11 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         instructorId: instructorId as Id<"users">,
       });
       setIsEditingGroup(null);
-      setNotification({
-        type: "success",
+      addBanner({
         message: "Group updated successfully!",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
     } catch (error) {
       handleError(error, "edit");
@@ -290,9 +306,11 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
         groupId: group._id,
         instructorId: instructorId as Id<"users">,
       });
-      setNotification({
-        type: "success",
+      addBanner({
         message: "Group deleted successfully!",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
     } catch (error) {
       handleError(error, "delete");
@@ -301,14 +319,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
       setIsDeleting(false);
     }
   };
-
-  // Auto-hide notification after 4 seconds
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
 
   // Helper function to get valid status
   const getStatus = () => {
@@ -348,13 +358,6 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
             View, create, update, and delete groups.
           </p>
         </div>
-
-        {/* Notification Banner */}
-        <NotificationBanner
-          message={notification?.message || ""}
-          type={notification?.type || "success"}
-          onClose={() => setNotification(null)}
-        />
 
         {/* Groups Table */}
         <GroupsTable

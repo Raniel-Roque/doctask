@@ -1,11 +1,12 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { use } from "react";
+import { use, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useState } from "react";
 import "cropperjs/dist/cropper.css";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -21,11 +22,8 @@ interface InstructorProfilePageProps {
 const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   const { instructorId } = use(params);
   const { user } = useUser();
+  const { addBanner } = useBannerManager();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "error" | "success" | "warning" | "info";
-  } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showWipeModal, setShowWipeModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,10 +35,33 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     id: instructorId as Id<"users">,
   });
 
+  // Handle success messages
+  useEffect(() => {
+    if (successMessage) {
+      addBanner({
+        message: successMessage,
+        type: "success",
+        onClose: () => setSuccessMessage(null),
+        autoClose: true,
+      });
+    }
+  }, [successMessage, addBanner]);
+
+  // Handle uploading notifications
+  useEffect(() => {
+    if (isUploading) {
+      addBanner({
+        message: "Uploading profile picture...",
+        type: "info",
+        onClose: () => {},
+        autoClose: false,
+      });
+    }
+  }, [isUploading, addBanner]);
+
   const resetForm = () => {
     setIsVerified(false);
     setConfirmName("");
-    setNotification(null);
   };
 
   const handleClose = () => {
@@ -70,9 +91,11 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     });
 
     setIsVerified(true);
-    setNotification({
+    addBanner({
       message: "Password verified. Please confirm the action.",
       type: "success",
+      onClose: () => {},
+      autoClose: true,
     });
   };
 
@@ -85,16 +108,17 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     const enteredName = confirmName.toLowerCase().trim();
 
     if (enteredName !== expectedName) {
-      setNotification({
+      addBanner({
         message:
           "Name does not match. Please enter your full name exactly as shown.",
         type: "error",
+        onClose: () => {},
+        autoClose: true,
       });
       return;
     }
 
     setIsLoading(true);
-    setNotification(null);
 
     try {
       // Wipe data with enhanced retry logic
@@ -109,18 +133,26 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         }),
       });
 
-      setNotification({
+      addBanner({
         message: "All data has been successfully wiped",
         type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
 
       setTimeout(() => {
         handleClose();
       }, 2000);
     } catch (err) {
-      setNotification({
-        message: err instanceof Error ? err.message : "Failed to wipe data",
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.deleteUser("student"),
+      );
+      addBanner({
+        message: errorMessage,
         type: "error",
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsLoading(false);
@@ -144,7 +176,14 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             user={user}
             userData={userData}
             onSuccess={setSuccessMessage}
-            onError={(msg) => setNotification({ message: msg, type: "error" })}
+            onError={(msg) =>
+              addBanner({
+                message: msg,
+                type: "error",
+                onClose: () => {},
+                autoClose: true,
+              })
+            }
             onUploading={setIsUploading}
           />
 
@@ -237,45 +276,9 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
                 </button>
               </div>
             </div>
-
-            {notification && (
-              <NotificationBanner
-                message={notification.message}
-                type={notification.type}
-                onClose={() => setNotification(null)}
-                autoClose={notification.type === "error" ? false : true}
-              />
-            )}
           </div>
         </div>
       )}
-
-      {/* Success Messages */}
-      {successMessage && (
-        <NotificationBanner
-          message={successMessage}
-          type="success"
-          onClose={() => setSuccessMessage(null)}
-        />
-      )}
-
-      {/* Error Messages */}
-      {notification && (
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-          autoClose={notification.type === "error" ? false : true}
-        />
-      )}
-
-      {/* Uploading Notification */}
-      <NotificationBanner
-        message={isUploading ? "Uploading profile picture..." : null}
-        type="info"
-        onClose={() => {}} // Don't allow closing during upload
-        autoClose={false}
-      />
     </div>
   );
 };

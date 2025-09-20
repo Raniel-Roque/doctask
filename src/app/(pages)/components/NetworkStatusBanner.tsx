@@ -140,7 +140,15 @@ export function NetworkStatusBanner() {
       removeBanner(bannerId);
       setBannerId(null);
     }
-  }, [mounted, isOffline, isUnstable, details, bannerId, addBanner, removeBanner]);
+  }, [
+    mounted,
+    isOffline,
+    isUnstable,
+    details,
+    bannerId,
+    addBanner,
+    removeBanner,
+  ]);
 
   // Don't render anything - the banner is managed by BannerContainer
   return null;

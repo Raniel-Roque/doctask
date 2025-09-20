@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaCheck, FaSpinner } from "react-icons/fa";
 import { useUser } from "@clerk/clerk-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { NotificationBanner } from "./NotificationBanner";
+import { useBannerManager } from "./BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { useModalFocus } from "@/hooks/use-modal-focus";
 import { apiRequest } from "@/lib/utils";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -26,6 +27,7 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
   onDisagree,
 }) => {
   const { user } = useUser();
+  const { addBanner } = useBannerManager();
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +36,18 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
   const [showTermsOfService, setShowTermsOfService] = useState(false);
 
   const updateTermsAgreement = useMutation(api.mutations.updateTermsAgreement);
+
+  // Handle error messages
+  useEffect(() => {
+    if (error) {
+      addBanner({
+        message: error,
+        type: "error",
+        onClose: () => setError(null),
+        autoClose: true,
+      });
+    }
+  }, [error, addBanner]);
 
   // Use modal focus management hook
   const modalRef = useModalFocus({
@@ -66,9 +80,11 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
 
       onAgree();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update agreement",
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.editUser("student"),
       );
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -329,13 +345,6 @@ export const TermsAndService: React.FC<TermsAndServiceProps> = ({
             </div>
           </div>
         )}
-
-        <NotificationBanner
-          message={error}
-          type="error"
-          onClose={() => setError(null)}
-          autoClose={false}
-        />
       </div>
     </div>
   );

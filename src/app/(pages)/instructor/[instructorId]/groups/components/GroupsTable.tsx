@@ -331,7 +331,11 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           }`}
           onClick={onAdd}
           disabled={isModalOpen}
-          title={isModalOpen ? "Please close all forms before adding a group" : "Add Group"}
+          title={
+            isModalOpen
+              ? "Please close all forms before adding a group"
+              : "Add Group"
+          }
         >
           <FaPlus /> Add Group
         </button>

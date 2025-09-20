@@ -85,7 +85,6 @@ interface EditorProps {
   documentId?: Id<"documents">; // Add document ID for tracking edits
 }
 
-
 export const Editor = ({
   initialContent,
   isEditable = true,
@@ -113,7 +112,10 @@ export const Editor = ({
   const [, setMyPresence] = useMyPresence();
 
   // Helper function to show notifications using the new banner system
-  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "error" | "success" | "warning" | "info",
+  ) => {
     addBanner({
       message,
       type,

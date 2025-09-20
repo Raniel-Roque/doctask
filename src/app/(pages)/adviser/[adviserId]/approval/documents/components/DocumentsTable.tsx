@@ -17,7 +17,7 @@ import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import NotesPopup from "./NotesPopup";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import GroupMembersModal from "./GroupMembersModal";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
@@ -57,6 +57,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   initialExpandedGroupId,
 }) => {
   const router = useRouter();
+  const { addBanner } = useBannerManager();
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
     initialExpandedGroupId || null,
   );
@@ -85,6 +86,18 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     message: string;
     type: "success" | "error" | "info" | "warning";
   } | null>(null);
+
+  // Handle notifications
+  useEffect(() => {
+    if (notification) {
+      addBanner({
+        message: notification.message,
+        type: notification.type,
+        onClose: () => setNotification(null),
+        autoClose: notification.type === "error" ? false : true,
+      });
+    }
+  }, [notification, addBanner]);
 
   // Add Convex mutation
   const updateDocumentStatus = useMutation(api.mutations.updateDocumentStatus);
@@ -227,7 +240,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
       });
     } catch (error) {
       setNotification({
-        message: getErrorMessage(error, ErrorContexts.editUser('document')),
+        message: getErrorMessage(error, ErrorContexts.editUser("document")),
         type: "error",
       });
     } finally {
@@ -852,14 +865,6 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
           documentPart={selectedDocument.documentPart}
           documentTitle={selectedDocument.documentTitle}
           currentUserId={currentUserId}
-        />
-      )}
-
-      {notification && (
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
         />
       )}
 

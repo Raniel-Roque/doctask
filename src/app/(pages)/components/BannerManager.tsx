@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+} from "react";
 
 interface Banner {
   id: string;
@@ -38,18 +44,18 @@ export const BannerProvider: React.FC<BannerProviderProps> = ({ children }) => {
   const addBanner = useCallback((banner: Omit<Banner, "id">) => {
     const id = Math.random().toString(36).substr(2, 9);
     const newBanner = { ...banner, id };
-    
-    setBanners(prev => {
+
+    setBanners((prev) => {
       // Remove any existing banner of the same type to prevent duplicates
-      const filtered = prev.filter(b => b.type !== banner.type);
+      const filtered = prev.filter((b) => b.type !== banner.type);
       return [...filtered, newBanner];
     });
-    
+
     return id;
   }, []);
 
   const removeBanner = useCallback((id: string) => {
-    setBanners(prev => prev.filter(banner => banner.id !== id));
+    setBanners((prev) => prev.filter((banner) => banner.id !== id));
   }, []);
 
   const clearAllBanners = useCallback(() => {
@@ -57,7 +63,9 @@ export const BannerProvider: React.FC<BannerProviderProps> = ({ children }) => {
   }, []);
 
   return (
-    <BannerContext.Provider value={{ banners, addBanner, removeBanner, clearAllBanners }}>
+    <BannerContext.Provider
+      value={{ banners, addBanner, removeBanner, clearAllBanners }}
+    >
       {children}
     </BannerContext.Provider>
   );

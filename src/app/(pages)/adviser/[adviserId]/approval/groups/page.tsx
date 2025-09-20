@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
 import { Navbar } from "../../components/navbar";
 import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import GroupsTable from "./components/GroupsTable";
@@ -8,7 +8,7 @@ import { Group } from "./components/types";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import GroupActionConfirmation from "./components/GroupActionConfirmation";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
@@ -18,6 +18,7 @@ interface AdviserGroupsPageProps {
 
 const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const { adviserId } = use(params);
+  const { addBanner } = useBannerManager();
   const [searchTerm, setSearchTerm] = useState("");
   const [memberCountFilter, setMemberCountFilter] = useState<
     "all" | "with_members" | "no_members"
@@ -40,6 +41,18 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
     type: "error" | "success" | "warning" | "info";
   } | null>(null);
 
+  // Handle notifications
+  useEffect(() => {
+    if (notification) {
+      addBanner({
+        message: notification.message || "",
+        type: notification.type,
+        onClose: () => setNotification(null),
+        autoClose: notification.type === "error" ? false : true,
+      });
+    }
+  }, [notification, addBanner]);
+
   const acceptGroup = useMutation(api.mutations.acceptGroupRequest);
   const rejectGroup = useMutation(api.mutations.rejectGroupRequest);
 
@@ -59,25 +72,27 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
     result === undefined ? "loading" : (result.status as "idle" | "error");
 
   // Transform the result to match the Group type and apply frontend pagination
-  const allGroups = result ? (result.groups || []).map((group) => ({
-    _id: group._id.toString(),
-    name: group.name,
-    capstone_title: group.capstone_title,
-    projectManager: group.projectManager
-      ? {
-          _id: group.projectManager._id.toString(),
-          first_name: group.projectManager.first_name,
-          last_name: group.projectManager.last_name,
-          middle_name: group.projectManager.middle_name,
-        }
-      : undefined,
-    members: group.members?.map((member) => ({
-      _id: member._id.toString(),
-      first_name: member.first_name,
-      last_name: member.last_name,
-      middle_name: member.middle_name,
-    })),
-  })) : [];
+  const allGroups = result
+    ? (result.groups || []).map((group) => ({
+        _id: group._id.toString(),
+        name: group.name,
+        capstone_title: group.capstone_title,
+        projectManager: group.projectManager
+          ? {
+              _id: group.projectManager._id.toString(),
+              first_name: group.projectManager.first_name,
+              last_name: group.projectManager.last_name,
+              middle_name: group.projectManager.middle_name,
+            }
+          : undefined,
+        members: group.members?.map((member) => ({
+          _id: member._id.toString(),
+          first_name: member.first_name,
+          last_name: member.last_name,
+          middle_name: member.middle_name,
+        })),
+      }))
+    : [];
 
   // Apply frontend pagination
   const totalFilteredCount = allGroups.length;
@@ -151,7 +166,12 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
       setIsConfirmOpen(false);
     } catch (error) {
       setNotification({
-        message: getErrorMessage(error, ErrorContexts[actionType === "accept" ? "editGroup" : "deleteGroup"]()),
+        message: getErrorMessage(
+          error,
+          ErrorContexts[
+            actionType === "accept" ? "editGroup" : "deleteGroup"
+          ](),
+        ),
         type: "error",
       });
     } finally {
@@ -215,15 +235,6 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
           onConfirm={handleConfirmAction}
           isSubmitting={isSubmitting}
           action={actionType}
-        />
-
-        {/* Notifications */}
-        <NotificationBanner
-          message={notification?.message || ""}
-          type={notification?.type || "success"}
-          onClose={() => {
-            setNotification(null);
-          }}
         />
       </div>
     </div>

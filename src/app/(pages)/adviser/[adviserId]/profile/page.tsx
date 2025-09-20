@@ -1,11 +1,11 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { use } from "react";
+import { use, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useState } from "react";
 import "cropperjs/dist/cropper.css";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -18,17 +18,38 @@ interface AdviserProfilePageProps {
 const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
   const { adviserId } = use(params);
   const { user } = useUser();
+  const { addBanner } = useBannerManager();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "error" | "success" | "warning" | "info";
-  } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // Fetch user data from Convex
   const userData = useQuery(api.fetch.getUserById, {
     id: adviserId as Id<"users">,
   });
+
+  // Handle success messages
+  useEffect(() => {
+    if (successMessage) {
+      addBanner({
+        message: successMessage,
+        type: "success",
+        onClose: () => setSuccessMessage(null),
+        autoClose: true,
+      });
+    }
+  }, [successMessage, addBanner]);
+
+  // Handle uploading notifications
+  useEffect(() => {
+    if (isUploading) {
+      addBanner({
+        message: "Uploading profile picture...",
+        type: "info",
+        onClose: () => {},
+        autoClose: false,
+      });
+    }
+  }, [isUploading, addBanner]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -47,34 +68,18 @@ const AdviserProfilePage = ({ params }: AdviserProfilePageProps) => {
             user={user}
             userData={userData}
             onSuccess={setSuccessMessage}
-            onError={(msg) => setNotification({ message: msg, type: "error" })}
+            onError={(msg) =>
+              addBanner({
+                message: msg,
+                type: "error",
+                onClose: () => {},
+                autoClose: true,
+              })
+            }
             onUploading={setIsUploading}
           />
         </div>
       </div>
-      {/* Success/Error Messages */}
-      {notification && (
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-        />
-      )}
-      {successMessage && (
-        <NotificationBanner
-          message={successMessage}
-          type="success"
-          onClose={() => setSuccessMessage(null)}
-        />
-      )}
-
-      {/* Uploading Notification */}
-      <NotificationBanner
-        message={isUploading ? "Uploading profile picture..." : null}
-        type="info"
-        onClose={() => {}} // Don't allow closing during upload
-        autoClose={false}
-      />
     </div>
   );
 };

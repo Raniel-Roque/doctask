@@ -297,7 +297,11 @@ export const UserTable = ({
           {onExcelUpload && (
             <label
               htmlFor="excel-upload"
-              title={isModalOpen ? "Please close all forms before uploading" : "Upload Excel (.xlsx)"}
+              title={
+                isModalOpen
+                  ? "Please close all forms before uploading"
+                  : "Upload Excel (.xlsx)"
+              }
               className={`relative inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white transition-all duration-200 select-none ${
                 isUploading || isModalOpen
                   ? "bg-gray-400 cursor-not-allowed"

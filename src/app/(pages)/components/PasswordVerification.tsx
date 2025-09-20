@@ -1,7 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 
-import { NotificationBanner } from "./NotificationBanner";
+import { useBannerManager } from "./BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { useModalFocus } from "@/hooks/use-modal-focus";
 
 interface PasswordVerificationProps {
@@ -25,11 +26,24 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
   loading = false,
   userEmail,
 }) => {
+  const { addBanner } = useBannerManager();
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Handle error messages
+  useEffect(() => {
+    if (error) {
+      addBanner({
+        message: error,
+        type: "error",
+        onClose: () => setError(null),
+        autoClose: true,
+      });
+    }
+  }, [error, addBanner]);
 
   // Use modal focus management hook
   const modalRef = useModalFocus({
@@ -58,9 +72,11 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
     } catch (err) {
       // Only set error if the request wasn't aborted
       if (err instanceof Error && err.name !== "AbortError") {
-        setError(
-          err instanceof Error ? err.message : "Failed to verify password",
+        const errorMessage = getErrorMessage(
+          err,
+          ErrorContexts.resetPassword(),
         );
+        setError(errorMessage);
       }
     } finally {
       setIsVerifying(false);
@@ -177,20 +193,6 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
           {/* Render notification banner outside the modal container to avoid z-index issues */}
         </div>
       </div>
-
-      {/* Notification banner rendered outside modal container */}
-      {error && (
-        <div className="fixed inset-0 pointer-events-none z-[99999]">
-          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 pointer-events-auto">
-            <NotificationBanner
-              message={error}
-              type="error"
-              onClose={() => setError(null)}
-              autoClose={false}
-            />
-          </div>
-        </div>
-      )}
     </>
   );
 };

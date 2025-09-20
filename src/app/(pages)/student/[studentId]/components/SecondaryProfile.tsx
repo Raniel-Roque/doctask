@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { FaSave, FaSpinner } from "react-icons/fa";
-import { NotificationBanner } from "../../../components/NotificationBanner";
+import { useBannerManager } from "../../../components/BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 
@@ -33,6 +34,7 @@ interface SecondaryProfileProps {
 export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
   userData,
 }) => {
+  const { addBanner } = useBannerManager();
   // Helper: Enum mappings
   const genderOptions = [
     { value: 0, label: "Male" },
@@ -52,6 +54,18 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
     type: "error" | "success";
   }>({ message: "", type: "success" });
   const [showNotification, setShowNotification] = React.useState(false);
+
+  // Handle notifications
+  useEffect(() => {
+    if (showNotification && notification.message) {
+      addBanner({
+        message: notification.message,
+        type: notification.type,
+        onClose: () => setShowNotification(false),
+        autoClose: notification.type === "success",
+      });
+    }
+  }, [showNotification, notification, addBanner]);
 
   // Loading state for each section
   const [loadingSecondary, setLoadingSecondary] = React.useState(false);
@@ -451,15 +465,23 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           type: "success",
         });
       } else {
+        const errorMessage = getErrorMessage(
+          new Error(res.message || "Failed to save profile."),
+          ErrorContexts.editUser("student"),
+        );
         setNotification({
-          message: res.message || "Failed to save profile.",
+          message: errorMessage,
           type: "error",
         });
       }
       setShowNotification(true);
-    } catch {
+    } catch (error) {
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.editUser("student"),
+      );
       setNotification({
-        message: "An error occurred while saving.",
+        message: errorMessage,
         type: "error",
       });
       setShowNotification(true);
@@ -821,13 +843,6 @@ export const SecondaryProfile: React.FC<SecondaryProfileProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Notification Banner */}
-      <NotificationBanner
-        message={showNotification ? notification.message : null}
-        type={notification.type}
-        onClose={() => setShowNotification(false)}
-      />
     </>
   );
 };

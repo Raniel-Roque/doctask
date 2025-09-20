@@ -14,7 +14,6 @@ interface ImageUploadResponse {
   };
 }
 
-
 interface ImageDragDropWrapperProps {
   children: React.ReactNode;
   isEditable?: boolean;
@@ -29,7 +28,10 @@ export const ImageDragDropWrapper = ({
   const [isDragOver, setIsDragOver] = useState(false);
 
   // Helper function to show notifications using the new banner system
-  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "error" | "success" | "warning" | "info",
+  ) => {
     addBanner({
       message,
       type,
@@ -216,7 +218,6 @@ export const ImageDragDropWrapper = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-
       {isDragOver && (
         <div className="fixed inset-0 bg-blue-500/20 border-4 border-dashed border-blue-500 z-50 flex items-center justify-center pointer-events-none print:hidden">
           <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md">

@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { NotificationBanner } from "../../../components/NotificationBanner";
+import { useBannerManager } from "../../../components/BannerManager";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import {
   generateEncryptionKey,
   exportKey,
@@ -216,16 +217,13 @@ interface RestoreData {
 const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   const { instructorId } = use(params);
   const { user } = useUser();
+  const { addBanner } = useBannerManager();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [showRestoreWarning, setShowRestoreWarning] = useState(false);
   const [showPasswordVerify, setShowPasswordVerify] = useState(false);
   const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "error" | "success" | "warning" | "info";
-  } | null>(null);
   const [pendingAction, setPendingAction] = useState<
     "download" | "restore" | null
   >(null);
@@ -307,18 +305,20 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       window.URL.revokeObjectURL(zipUrl);
       document.body.removeChild(zipLink);
 
-      setNotification({
-        type: "success",
+      addBanner({
         message:
           "Database backup has been successfully downloaded as a ZIP file. Keep it safe!",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
     } catch (error: unknown) {
-      setNotification({
+      const errorMessage = getErrorMessage(error, ErrorContexts.uploadFile());
+      addBanner({
+        message: errorMessage,
         type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to download database backup",
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsDownloading(false);
@@ -338,9 +338,11 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
 
   const confirmRestore = async () => {
     if (!selectedZipFile) {
-      setNotification({
-        type: "error",
+      addBanner({
         message: "Please select a backup ZIP file",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
       });
       return;
     }
@@ -389,12 +391,12 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       setShowRestoreConfirm(false);
       setShowRestoreSuccess(true);
     } catch (error: unknown) {
-      setNotification({
+      const errorMessage = getErrorMessage(error, ErrorContexts.uploadFile());
+      addBanner({
+        message: errorMessage,
         type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to restore database backup",
+        onClose: () => {},
+        autoClose: true,
       });
     } finally {
       setIsRestoring(false);
@@ -418,9 +420,11 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
       });
 
       // Show success notification before logout
-      setNotification({
-        type: "success",
+      addBanner({
         message: "Restore completed successfully! Redirecting to login...",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
       });
 
       // Add a small delay to ensure the notification is shown
@@ -444,9 +448,11 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
         router.replace("/login");
       }
     } catch {
-      setNotification({
-        type: "error",
+      addBanner({
         message: "Failed to complete restore process. Please try again.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
       });
       setIsLoggingOut(false);
       setShowRestoreSuccess(false); // Ensure success dialog is closed
@@ -456,11 +462,6 @@ const BackupAndRestorePage = ({ params }: BackupAndRestorePageProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar instructorId={instructorId} />
-      <NotificationBanner
-        message={notification?.message || null}
-        type={notification?.type || "error"}
-        onClose={() => setNotification(null)}
-      />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Backup & Restore</h1>

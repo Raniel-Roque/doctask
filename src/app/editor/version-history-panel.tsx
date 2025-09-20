@@ -27,7 +27,6 @@ interface VersionHistoryPanelProps {
   saveToDatabase?: () => Promise<void>;
 }
 
-
 export const VersionHistoryPanel = ({
   isOpen,
   onClose,
@@ -47,7 +46,10 @@ export const VersionHistoryPanel = ({
   const [revertingId, setRevertingId] = useState<string | null>(null);
 
   // Helper function to show notifications using the new banner system
-  const showNotification = (message: string, type: "error" | "success" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "error" | "success" | "warning" | "info",
+  ) => {
     addBanner({
       message,
       type,
@@ -134,7 +136,10 @@ export const VersionHistoryPanel = ({
         showNotification(result.error || "Failed to create version", "error");
       }
     } catch (error) {
-      const errorMessage = getErrorMessage(error, ErrorContexts.editUser('document'));
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.editUser("document"),
+      );
       showNotification(errorMessage, "error");
     } finally {
       setIsCreating(false);
@@ -164,7 +169,10 @@ export const VersionHistoryPanel = ({
         showNotification(result.error || "Failed to revert version", "error");
       }
     } catch (error) {
-      const errorMessage = getErrorMessage(error, ErrorContexts.editUser('document'));
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.editUser("document"),
+      );
       showNotification(errorMessage, "error");
     } finally {
       setRevertingId(null);
@@ -186,7 +194,10 @@ export const VersionHistoryPanel = ({
       // setLocalVersions((prev) => prev.filter((v) => v._id !== versionId)); // This line was removed
       setDeleteConfirmId(null);
     } catch (error) {
-      const errorMessage = getErrorMessage(error, ErrorContexts.fetchData('document'));
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.fetchData("document"),
+      );
       showNotification(errorMessage, "error");
     } finally {
       setDeletingId(null);

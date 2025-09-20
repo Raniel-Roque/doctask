@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -18,7 +18,7 @@ import { User, Group, Document } from "./types";
 import { useRouter } from "next/navigation";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
 import NotesPopup from "./NotesPopup";
-import { NotificationBanner } from "@/app/(pages)/components/NotificationBanner";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { formatDateOnly } from "@/lib/date-utils";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
@@ -44,6 +44,7 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
   currentUserId,
 }) => {
   const router = useRouter();
+  const { addBanner } = useBannerManager();
   const [activeTab, setActiveTab] = useState<string | null>(
     groups[0]?._id || null,
   );
@@ -60,6 +61,18 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
     message: string;
     type: "success" | "error" | "info" | "warning";
   } | null>(null);
+
+  // Handle notifications
+  useEffect(() => {
+    if (notification) {
+      addBanner({
+        message: notification.message,
+        type: notification.type,
+        onClose: () => setNotification(null),
+        autoClose: notification.type === "error" ? false : true,
+      });
+    }
+  }, [notification, addBanner]);
 
   // Add loading state for DOCX download
   const [downloadingDocx, setDownloadingDocx] = useState<string | null>(null);
@@ -545,14 +558,6 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
           documentPart={selectedDocument.documentPart}
           documentTitle={selectedDocument.documentTitle}
           currentUserId={currentUserId}
-        />
-      )}
-
-      {notification && (
-        <NotificationBanner
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
         />
       )}
     </div>
