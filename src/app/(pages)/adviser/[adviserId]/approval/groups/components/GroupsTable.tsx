@@ -159,7 +159,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
 
       <div className="overflow-x-auto">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="w-full min-w-[800px] divide-y divide-gray-200">
             <thead className="bg-[#B54A4A] text-white">
               <tr>
                 <th

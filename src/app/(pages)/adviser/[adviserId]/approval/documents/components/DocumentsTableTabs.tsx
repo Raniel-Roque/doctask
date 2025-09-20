@@ -334,7 +334,7 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
 
       {/* Active Group Info */}
       {activeGroup && (
-        <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-semibold text-gray-900 truncate">
@@ -376,7 +376,7 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
 
           {/* Documents Grid */}
           {filteredDocuments.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-x-auto">
               {filteredDocuments.map((doc) => (
                 <div
                   key={doc._id}

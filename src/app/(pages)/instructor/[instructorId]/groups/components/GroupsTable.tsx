@@ -386,8 +386,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
       </div>
 
       {/* Table content */}
-      <div className="relative">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="relative overflow-x-auto">
+        <table className="w-full min-w-[900px] divide-y divide-gray-200">
           <thead className="bg-[#B54A4A] text-white">
             <tr>
               <th

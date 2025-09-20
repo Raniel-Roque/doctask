@@ -612,7 +612,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
         )}
       </div>
       <div className="relative w-full overflow-x-auto">
-        <table className="w-full bg-white border border-gray-200">
+        <table className="w-full min-w-[1200px] bg-white border border-gray-200">
           <thead>
             <tr className="bg-[#B54A4A]">
               <th

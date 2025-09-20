@@ -435,7 +435,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     <div>
       <div className="overflow-x-auto">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="w-full min-w-[1000px] divide-y divide-gray-200">
             <thead className="bg-[#B54A4A] text-white">
               <tr>
                 <th

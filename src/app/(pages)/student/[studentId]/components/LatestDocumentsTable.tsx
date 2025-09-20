@@ -2861,8 +2861,8 @@ export const LatestDocumentsTable = ({
 
       <div className="bg-white rounded-xl shadow-lg border border-gray-100">
         <div className="p-6">
-          <div className="overflow-x-auto min-w-full">
-            <table className="w-full divide-y divide-gray-200">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px] divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th

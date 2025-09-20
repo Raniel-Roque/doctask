@@ -531,8 +531,8 @@ export const UserTable = ({
       )}
 
       {/* Table */}
-      <div className="relative">
-        <table className="min-w-full bg-white border border-gray-200">
+      <div className="relative overflow-x-auto">
+        <table className="w-full min-w-[800px] bg-white border border-gray-200">
           <thead>
             <tr className="bg-[#B54A4A]">
               <th

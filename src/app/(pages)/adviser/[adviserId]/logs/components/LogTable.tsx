@@ -434,7 +434,7 @@ export const LogTable = ({ adviserId }: LogTableProps) => {
         </div>
       </div>
       <div className="relative w-full overflow-x-auto">
-        <table className="w-full bg-white border border-gray-200">
+        <table className="w-full min-w-[1000px] bg-white border border-gray-200">
           <thead>
             <tr className="bg-[#B54A4A]">
               <th
