@@ -195,6 +195,8 @@ function isUserFriendlyMessage(message: string): boolean {
   const userFriendlyPatterns = [
     /^[A-Z][a-z].*\.$/, // Starts with capital letter and ends with period
     /already exists/i,
+    /already locked/i,
+    /not currently locked/i,
     /not found/i,
     /invalid/i,
     /required/i,
