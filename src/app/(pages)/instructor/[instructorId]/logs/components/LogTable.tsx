@@ -588,22 +588,30 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
         return [date, user, log.action, affectedEntity, details];
       });
       
+      // Build headers based on user role
+      const headers = userRole === 0 
+        ? ['Date & Time', 'Instructor', 'Action', 'Entity', 'Details']
+        : ['Date & Time', 'Adviser', 'Action', 'Entity', 'Details'];
+      
+      // Build column styles based on user role
+      const columnStyles = {
+        0: { cellWidth: 35 }, // Date & Time
+        1: { cellWidth: 30 }, // Instructor/Adviser
+        2: { cellWidth: 25 }, // Action
+        3: { cellWidth: 35 }, // Entity
+        4: { cellWidth: 50 }  // Details
+      };
+      
       // Add table
       autoTable(doc, {
-        head: [['Date & Time', 'User', 'Action', 'Affected Entity', 'Details']],
+        head: [headers],
         body: tableData,
         startY: yPos,
         styles: { fontSize: 8 },
         headStyles: { fillColor: [181, 74, 74] },
         margin: { left: 14, right: 14 },
         tableWidth: 'auto',
-        columnStyles: {
-          0: { cellWidth: 35 },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 25 },
-          3: { cellWidth: 35 },
-          4: { cellWidth: 50 }
-        }
+        columnStyles
       });
       
       // Save the PDF

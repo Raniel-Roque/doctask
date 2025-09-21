@@ -248,19 +248,50 @@ export const UserTable = ({
       
       // Prepare table data
       const tableData = dataToUse.map(user => {
-        const name = `${user.first_name} ${user.middle_name || ''} ${user.last_name}`.trim();
+        const firstName = user.first_name || '';
+        const middleName = user.middle_name || '-';
+        const lastName = user.last_name || '';
         const email = user.email || 'N/A';
-        const status = 'Active'; // Default to active since status property may not exist
-        const role = showRoleColumn ? 
-          (user.subrole === 1 ? 'Manager' : 'Member') : 
-          'Adviser';
-        const createdAt = new Date(user._creationTime).toLocaleDateString();
+        const status = user.email_verified ? 'Verified' : 'Unverified';
         
-        return [name, email, status, role, createdAt];
+        // Get adviser code if showCodeColumn is true
+        const code = showCodeColumn ? (adviserCodes[user._id]?.code || 'Loading...') : '';
+        
+        // Get role if showRoleColumn is true
+        const role = showRoleColumn ? 
+          (user.subrole === 1 ? 'Project Manager' : 'Project Member') : 
+          '';
+        
+        // Build row based on which columns are shown
+        const row = [firstName, middleName, lastName, email, status];
+        if (showCodeColumn) row.push(code);
+        if (showRoleColumn) row.push(role);
+        
+        return row;
       });
       
-      // Add table
-      const headers = ['Name', 'Email', 'Status', 'Role', 'Created'];
+      // Build headers based on which columns are shown
+      const headers = ['First Name', 'Middle Name', 'Last Name', 'Email', 'Status'];
+      if (showCodeColumn) headers.push('Code');
+      if (showRoleColumn) headers.push('Role');
+      
+      // Build column styles based on which columns are shown
+      const columnStyles: Record<number, { cellWidth: number }> = {
+        0: { cellWidth: 30 }, // First Name
+        1: { cellWidth: 25 }, // Middle Name
+        2: { cellWidth: 30 }, // Last Name
+        3: { cellWidth: 50 }, // Email
+        4: { cellWidth: 20 }  // Status
+      };
+      
+      let colIndex = 5;
+      if (showCodeColumn) {
+        columnStyles[colIndex] = { cellWidth: 35 }; // Code
+        colIndex++;
+      }
+      if (showRoleColumn) {
+        columnStyles[colIndex] = { cellWidth: 30 }; // Role
+      }
       
       autoTable(doc, {
         head: [headers],
@@ -270,13 +301,7 @@ export const UserTable = ({
         headStyles: { fillColor: [181, 74, 74] },
         margin: { left: 14, right: 14 },
         tableWidth: 'auto',
-        columnStyles: {
-          0: { cellWidth: 40 },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 20 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 25 }
-        }
+        columnStyles
       });
       
       // Save the PDF
