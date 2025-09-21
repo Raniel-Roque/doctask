@@ -263,17 +263,25 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
       const tableData = groups.map(group => {
         const name = group.name || 'N/A';
         const capstoneTitle = group.capstone_title || 'No title';
+        
+        // Project Manager
         const projectManager = group.projectManager ? 
-          `${group.projectManager.first_name} ${group.projectManager.last_name}` : 'N/A';
-        const memberCount = group.members?.length || 0;
+          `${group.projectManager.first_name} ${group.projectManager.last_name}` : 'No manager';
+        
+        // Members list
+        const members = group.members?.map(member => 
+          `${member.first_name} ${member.last_name}`
+        ).join('\n') || 'No members';
+        
+        const memberCount = (group.members?.length || 0) + (group.projectManager ? 1 : 0);
         const createdAt = new Date(group._creationTime).toLocaleDateString();
         
-        return [name, capstoneTitle, projectManager, memberCount.toString(), createdAt];
+        return [name, capstoneTitle, projectManager, members, memberCount.toString(), createdAt];
       });
       
       // Add table
       autoTable(doc, {
-        head: [['Group Name', 'Capstone Title', 'Project Manager', 'Members', 'Created']],
+        head: [['Group Name', 'Capstone Title', 'Project Manager', 'Members', 'Group Members', 'Created']],
         body: tableData,
         startY: yPos,
         styles: { fontSize: 8 },
@@ -281,11 +289,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
         margin: { left: 14, right: 14 },
         tableWidth: 'auto',
         columnStyles: {
-          0: { cellWidth: 35 },
-          1: { cellWidth: 60 },
-          2: { cellWidth: 35 },
-          3: { cellWidth: 20 },
-          4: { cellWidth: 25 }
+          0: { cellWidth: 25 }, // Group Name
+          1: { cellWidth: 40 }, // Capstone Title
+          2: { cellWidth: 30 }, // Project Manager
+          3: { cellWidth: 30 }, // Members
+          4: { cellWidth: 20 }, // Group Members count
+          5: { cellWidth: 20 }  // Created
         }
       });
       
@@ -573,6 +582,18 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 scope="col"
                 className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
               >
+                Project Manager
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+              >
+                Members
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+              >
                 Group Members
               </th>
               <th
@@ -705,6 +726,27 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     text={group.capstone_title}
                     groupId={group._id}
                   />
+                </td>
+                <td className="px-6 py-4 text-left text-sm text-gray-900">
+                  {group.projectManager ? (
+                    <div className="font-medium">
+                      {group.projectManager.first_name} {group.projectManager.last_name}
+                    </div>
+                  ) : (
+                    <div className="text-gray-500">No manager</div>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-left text-sm text-gray-900">
+                  <div className="space-y-1">
+                    {group.members?.map((member, index) => (
+                      <div key={index}>
+                        {member.first_name} {member.last_name}
+                      </div>
+                    ))}
+                    {(!group.members || group.members.length === 0) && (
+                      <div className="text-gray-500">No members</div>
+                    )}
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-center">
                   <button
