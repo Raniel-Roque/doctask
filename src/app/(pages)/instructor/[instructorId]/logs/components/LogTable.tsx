@@ -12,7 +12,8 @@ import { useState, useRef, useEffect } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
-import { downloadLogTextReport } from "./LogTextReport";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import LogPDFReport from "./LogPDFReport";
 
 // =========================================
 // Types
@@ -424,21 +425,21 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     localStorage.setItem("logsPageSize", size.toString());
   };
 
-  const handleDownloadReport = () => {
-    // Backend already handles all filtering, so we use the logs directly
-    const filteredLogs = allFilteredLogsQuery?.logs || [];
+  // Prepare data for PDF export
+  const exportLogs = allFilteredLogsQuery?.logs || [];
+  const exportReady = Array.isArray(allFilteredLogsQuery?.logs);
+  const exportIdsChecksum = exportLogs.length
+    ? `${exportLogs[0]._id}-${exportLogs[exportLogs.length - 1]._id}-${exportLogs.length}`
+    : `empty-${logs.length}`;
 
-    const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
-    
-    const filters = {
-      searchTerm: searchTerm || undefined,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
-      entityTypeFilters: appliedEntityTypeFilters.length > 0 ? appliedEntityTypeFilters : undefined,
-    };
-
-    downloadLogTextReport(filteredLogs, title, userRole, filters);
+  const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
+  
+  const filters = {
+    searchTerm: searchTerm || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
+    entityTypeFilters: appliedEntityTypeFilters.length > 0 ? appliedEntityTypeFilters : undefined,
   };
 
   // Helper: normalize string for search
@@ -588,27 +589,72 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             />
           </div>
         </div>
-        {logs.length > 0 && (
-          <button
-            onClick={handleDownloadReport}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
-            title="Download Log Report"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        {logs.length > 0 && exportReady && (
+          <PDFDownloadLink
+            key={`pdf-logs-${logs.length}-${userRole}-${searchTerm}-${startDate}-${endDate}-${appliedActionFilters.join(",")}-${appliedEntityTypeFilters.join(",")}-${exportIdsChecksum}`}
+            document={
+              <LogPDFReport
+                logs={exportLogs}
+                title={title}
+                userRole={userRole}
+                filters={filters}
               />
-            </svg>
-            Download Report
-          </button>
+            }
+            fileName={(() => {
+              const role = userRole === 0 ? "Instructor" : "Adviser";
+              const filterParts = [];
+              if (searchTerm) filterParts.push(`Search-${searchTerm.slice(0, 10)}`);
+              if (startDate) filterParts.push(`Start-${startDate}`);
+              if (endDate) filterParts.push(`End-${endDate}`);
+              if (appliedActionFilters.length > 0) filterParts.push(`Actions-${appliedActionFilters.length}`);
+              if (appliedEntityTypeFilters.length > 0) filterParts.push(`Entities-${appliedEntityTypeFilters.length}`);
+              
+              const date = new Date();
+              const dateTime = `${date.getFullYear()}${(
+                date.getMonth() + 1
+              )
+                .toString()
+                .padStart(2, "0")}${date
+                .getDate()
+                .toString()
+                .padStart(2, "0")}_${date
+                .getHours()
+                .toString()
+                .padStart(2, "0")}${date
+                .getMinutes()
+                .toString()
+                .padStart(2, "0")}${date
+                .getSeconds()
+                .toString()
+                .padStart(2, "0")}`;
+              
+              const filterSuffix = filterParts.length > 0 ? `_${filterParts.join("_")}` : "";
+              return `${role}Logs${filterSuffix}_${dateTime}.pdf`;
+            })()}
+          >
+            {({ loading }) => (
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors disabled:opacity-50"
+                title="Download Log Report (PDF)"
+                disabled={loading}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                {loading ? "Preparing..." : "Download Report"}
+              </button>
+            )}
+          </PDFDownloadLink>
         )}
       </div>
       <div className="relative w-full overflow-x-auto">
