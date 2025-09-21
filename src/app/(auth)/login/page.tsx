@@ -577,7 +577,7 @@ const LoginPage = () => {
           "This password has been compromised in a data breach. Please use forgot password.",
           "error",
         );
-      } else if (errorMessage.includes("Your account is locked")) {
+      } else if (errorMessage.includes("Your account is locked") || errorMessage.includes("account is locked")) {
         showNotification(
           "Your account is locked. Please try again later or contact your capstone instructor.",
           "error",
@@ -699,11 +699,21 @@ const LoginPage = () => {
         return false;
       }
     } catch (err) {
-      const errorMessage = getErrorMessage(
-        err,
-        ErrorContexts.fetchData("user"),
-      );
-      showNotification(errorMessage, "error");
+      const errorMessage = err instanceof Error ? err.message : "";
+      
+      // Check for account locked error specifically
+      if (errorMessage.includes("Your account is locked") || errorMessage.includes("account is locked")) {
+        showNotification(
+          "Your account is locked. Please try again later or contact your capstone instructor.",
+          "error",
+        );
+      } else {
+        const genericErrorMessage = getErrorMessage(
+          err,
+          ErrorContexts.fetchData("user"),
+        );
+        showNotification(genericErrorMessage, "error");
+      }
       return false;
     } finally {
       setSendingCode(false);

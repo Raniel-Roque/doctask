@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 interface ForgotPasswordResendTimerProps {
-  onResend: () => void;
+  onResend: () => Promise<boolean>;
   disabled?: boolean;
   loading?: boolean;
   email: string;
