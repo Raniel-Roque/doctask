@@ -582,7 +582,12 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
               value={startDate}
               onChange={(e) => {
-                setStartDate(e.target.value);
+                const newStartDate = e.target.value;
+                setStartDate(newStartDate);
+                // If new start date is after end date, clear end date
+                if (newStartDate && endDate && newStartDate > endDate) {
+                  setEndDate("");
+                }
                 setCurrentPage(1);
               }}
               max={getLocalDateString()}

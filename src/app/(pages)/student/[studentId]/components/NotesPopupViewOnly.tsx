@@ -202,7 +202,12 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                   value={startDate}
                   max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => {
-                    setStartDate(e.target.value);
+                    const newStartDate = e.target.value;
+                    setStartDate(newStartDate);
+                    // If new start date is after end date, clear end date
+                    if (newStartDate && endDate && newStartDate > endDate) {
+                      setEndDate("");
+                    }
                     setCurrentPage(1);
                   }}
                 />
@@ -228,6 +233,7 @@ const NotesPopupViewOnly: React.FC<NotesPopupViewOnlyProps> = ({
                   placeholder="YYYY-MM-DD"
                   className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   value={endDate}
+                  min={startDate || undefined}
                   max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => {
                     setEndDate(e.target.value);
