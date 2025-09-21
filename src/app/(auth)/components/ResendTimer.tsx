@@ -73,48 +73,56 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
           return;
         }
       }
-      await onResend();
+      const resendResult = await onResend();
 
-      // Only start timer if this is not the first resend
-      if (hasResentBefore) {
-        // 2 minute timer
-        const resetTime = Date.now() + 120000;
-        setTimeLeft(120);
-        setCanResend(false);
-        localStorage.setItem(
-          `resendTimer_${email}`,
-          JSON.stringify({ resetTime }),
-        );
-      } else {
-        // First resend - mark that we've resent before but don't start timer
-        setHasResentBefore(true);
-      }
-
-      // Update rate limit
-      const storedRateLimitData = localStorage.getItem(rateLimitKey);
-      const now = Date.now();
-      if (storedRateLimitData) {
-        const { count, resetTime: oldResetTime } =
-          JSON.parse(storedRateLimitData);
-        if (now < oldResetTime) {
+      // Only start timer and update rate limit if resend was successful
+      // The onResend function should return a boolean or throw an error on failure
+      if (resendResult !== false) {
+        // Only start timer if this is not the first resend
+        if (hasResentBefore) {
+          // 2 minute timer
+          const resetTime = Date.now() + 120000;
+          setTimeLeft(120);
+          setCanResend(false);
           localStorage.setItem(
-            rateLimitKey,
-            JSON.stringify({ count: count + 1, resetTime: oldResetTime }),
+            `resendTimer_${email}`,
+            JSON.stringify({ resetTime }),
           );
+        } else {
+          // First resend - mark that we've resent before but don't start timer
+          setHasResentBefore(true);
+        }
+
+        // Update rate limit
+        const storedRateLimitData = localStorage.getItem(rateLimitKey);
+        const now = Date.now();
+        if (storedRateLimitData) {
+          const { count, resetTime: oldResetTime } =
+            JSON.parse(storedRateLimitData);
+          if (now < oldResetTime) {
+            localStorage.setItem(
+              rateLimitKey,
+              JSON.stringify({ count: count + 1, resetTime: oldResetTime }),
+            );
+          } else {
+            localStorage.setItem(
+              rateLimitKey,
+              JSON.stringify({ count: 1, resetTime: now + 300000 }),
+            );
+          }
         } else {
           localStorage.setItem(
             rateLimitKey,
             JSON.stringify({ count: 1, resetTime: now + 300000 }),
           );
         }
-      } else {
-        localStorage.setItem(
-          rateLimitKey,
-          JSON.stringify({ count: 1, resetTime: now + 300000 }),
-        );
+        setRateLimited(false);
       }
-      setRateLimited(false);
-    } catch {}
+    } catch (error) {
+      // Handle any errors from the onResend function
+      console.error("Error in resend timer:", error);
+      // Don't show error here as the parent component should handle it
+    }
   };
 
   return (

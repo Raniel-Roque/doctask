@@ -381,10 +381,8 @@ export const UserTable = ({
 
   const CollapsibleEmail = ({
     email,
-    userId,
   }: {
     email: string;
-    userId: string;
   }) => {
     const isExpanded = expandedColumns.email;
 
@@ -831,7 +829,7 @@ export const UserTable = ({
                     {user.last_name}
                   </td>
                   <td className="px-6 py-4 border-b text-center">
-                    <CollapsibleEmail email={user.email} userId={user._id} />
+                    <CollapsibleEmail email={user.email} />
                   </td>
                   <td className="px-6 py-4 border-b text-center">
                     <span

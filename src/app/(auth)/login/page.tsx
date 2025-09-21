@@ -596,8 +596,8 @@ const LoginPage = () => {
     }
   };
 
-  const handleResendCode = async () => {
-    if (!isLoaded) return;
+  const handleResendCode = async (): Promise<boolean> => {
+    if (!isLoaded) return false;
 
     // Check if there's an existing timer
     const timerKey = `resendTimer_${email}`;
@@ -606,8 +606,15 @@ const LoginPage = () => {
       const { resetTime } = JSON.parse(storedTimer);
       const now = Date.now();
       if (now < resetTime) {
-        // Timer is still active, skip sending but don't show error
-        return;
+        // Timer is still active, show user feedback
+        const remainingTime = Math.ceil((resetTime - now) / 1000);
+        const minutes = Math.floor(remainingTime / 60);
+        const seconds = remainingTime % 60;
+        showNotification(
+          `Please wait ${minutes}:${seconds.toString().padStart(2, "0")} before requesting another code.`,
+          "warning"
+        );
+        return false;
       }
     }
 
@@ -623,12 +630,16 @@ const LoginPage = () => {
         // Clear the shouldSendCode flag since we just sent a code
         localStorage.removeItem(`shouldSendCode_${email}`);
 
+        // Rate limit tracking is now handled by the ResendTimer component
+
         showNotification(
           "A new verification code has been sent to your email. Please check your inbox and spam folder.",
           "success",
         );
+        return true;
       } else {
         showNotification("Failed to send new code. Please try again.", "error");
+        return false;
       }
     } catch (err) {
       const errorMessage = getErrorMessage(
@@ -636,13 +647,14 @@ const LoginPage = () => {
         ErrorContexts.fetchData("user"),
       );
       showNotification(errorMessage, "error");
+      return false;
     } finally {
       setSendingCode(false);
     }
   };
 
-  const handleForgotPasswordResendCode = async () => {
-    if (!isLoaded) return;
+  const handleForgotPasswordResendCode = async (): Promise<boolean> => {
+    if (!isLoaded) return false;
 
     // Check if there's an existing timer for forgot password
     const timerKey = `forgotPasswordResendTimer_${email}`;
@@ -651,8 +663,15 @@ const LoginPage = () => {
       const { resetTime } = JSON.parse(storedTimer);
       const now = Date.now();
       if (now < resetTime) {
-        // Timer is still active, skip sending but don't show error
-        return;
+        // Timer is still active, show user feedback
+        const remainingTime = Math.ceil((resetTime - now) / 1000);
+        const minutes = Math.floor(remainingTime / 60);
+        const seconds = remainingTime % 60;
+        showNotification(
+          `Please wait ${minutes}:${seconds.toString().padStart(2, "0")} before requesting another password reset code.`,
+          "warning"
+        );
+        return false;
       }
     }
 
@@ -668,21 +687,16 @@ const LoginPage = () => {
         // Clear the shouldSendForgotPasswordCode flag since we just sent a code
         localStorage.removeItem(`shouldSendForgotPasswordCode_${email}`);
 
-        // Start the timer immediately for forgot password
-        const resetTime = Date.now() + 120000;
-        localStorage.setItem(
-          `forgotPasswordResendTimer_${email}`,
-          JSON.stringify({ resetTime }),
-        );
-
-        updateCodeRateLimit(email);
+        // Timer and rate limit tracking is now handled by the ForgotPasswordResendTimer component
 
         showNotification(
           "A new password reset code has been sent to your email. Please check your inbox and spam folder.",
           "success",
         );
+        return true;
       } else {
         showNotification("Failed to send new code. Please try again.", "error");
+        return false;
       }
     } catch (err) {
       const errorMessage = getErrorMessage(
@@ -690,6 +704,7 @@ const LoginPage = () => {
         ErrorContexts.fetchData("user"),
       );
       showNotification(errorMessage, "error");
+      return false;
     } finally {
       setSendingCode(false);
     }

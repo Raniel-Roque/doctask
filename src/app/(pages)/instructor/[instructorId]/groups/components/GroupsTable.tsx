@@ -319,11 +319,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   const CollapsibleText = ({
     text,
     maxLength = 50,
-    groupId,
   }: {
     text: string | null | undefined;
     maxLength?: number;
-    groupId: string;
   }) => {
     if (!text) return <span>-</span>;
     if (text.length <= maxLength) return <span>{text}</span>;
@@ -710,7 +708,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 <td className="px-6 py-4 text-sm text-gray-900">
                   <CollapsibleText
                     text={group.capstone_title}
-                    groupId={group._id}
                   />
                 </td>
                 <td className="px-6 py-4 text-center">
