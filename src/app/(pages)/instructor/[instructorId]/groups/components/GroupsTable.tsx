@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FaSearch,
   FaSort,
@@ -14,8 +14,16 @@ import {
 } from "react-icons/fa"; // Import icons and pagination icons
 import { User, Group } from "./types";
 import DeleteGroupConfirmation from "./DeleteGroupConfirmation";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import GroupPDFReport from "./GroupPDFReport";
+// Using jsPDF for better performance - no React re-rendering
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: Record<string, unknown>) => jsPDF;
+  }
+}
 import GroupMembersModal from "./GroupMembersModal";
 
 // =========================================
@@ -220,44 +228,70 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     </div>
   );
 
-  // Strengthen key with group IDs checksum - memoize to prevent unnecessary re-renders
-  const exportReady = Array.isArray(groups) && groups.length >= 0;
+  // Removed exportReady and stableExportKey - no longer needed with jsPDF
 
-  // Create a stable key that only changes when the actual data or filters change
-  const stableExportKey = useMemo(() => {
-    const filterHash = JSON.stringify({
-      searchTerm,
-      gradeFilters: gradeFilters.sort(),
-      capstoneFilter,
-      sortField,
-      sortDirection,
-      groupsCount: groups.length,
-      totalCount,
-      firstGroupId: groups[0]?._id,
-      lastGroupId: groups[groups.length - 1]?._id,
-    });
-    // Create a simple hash from the string
-    let hash = 0;
-    for (let i = 0; i < filterHash.length; i++) {
-      const char = filterHash.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
+  // Efficient PDF generation function - no React re-rendering
+  const generatePDF = () => {
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text("Groups Report", 14, 20);
+    
+    // Add filters info
+    doc.setFontSize(10);
+    let yPos = 30;
+    const filterParts = [];
+    if (searchTerm) filterParts.push(`Search: ${searchTerm.slice(0, 20)}...`);
+    if (gradeFilters.length > 0) filterParts.push(`Grades: ${gradeFilters.join(', ')}`);
+    if (capstoneFilter !== CAPSTONE_FILTERS.ALL) filterParts.push(`Capstone: ${capstoneFilter}`);
+    
+    if (filterParts.length > 0) {
+      doc.text(`Filters: ${filterParts.join(' | ')}`, 14, yPos);
+      yPos += 8;
     }
-    return `pdf-groups-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [searchTerm, gradeFilters, capstoneFilter, sortField, sortDirection]);
-
-  // Memoize the PDF props to prevent unnecessary re-renders
-  const pdfProps = useMemo(
-    () => ({
-      groups,
-      title: "Groups Report",
-      filters: {
-        searchTerm,
-        gradeFilters,
-      },
-    }),
-    [groups, searchTerm, gradeFilters],
-  );
+    
+    // Add generation date
+    const now = new Date();
+    doc.text(`Generated: ${now.toLocaleString()}`, 14, yPos);
+    yPos += 15;
+    
+    // Prepare table data
+    const tableData = groups.map(group => {
+      const name = group.name || 'N/A';
+      const capstoneTitle = group.capstone_title || 'No title';
+      const projectManager = group.projectManager ? 
+        `${group.projectManager.first_name} ${group.projectManager.last_name}` : 'N/A';
+      const memberCount = group.members?.length || 0;
+      const createdAt = new Date(group._creationTime).toLocaleDateString();
+      
+      return [name, capstoneTitle, projectManager, memberCount.toString(), createdAt];
+    });
+    
+    // Add table
+    doc.autoTable({
+      head: [['Group Name', 'Capstone Title', 'Project Manager', 'Members', 'Created']],
+      body: tableData,
+      startY: yPos,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [181, 74, 74] },
+      margin: { left: 14, right: 14 },
+      tableWidth: 'auto',
+      columnStyles: {
+        0: { cellWidth: 35 },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 25 }
+      }
+    });
+    
+    // Save the PDF
+    const date = new Date();
+    const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+    const fileName = `Groups_Report_${dateTime}.pdf`;
+    doc.save(fileName);
+  };
 
   // =========================================
   // Collapsible Text Component
@@ -380,38 +414,27 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
         {!isDeleting &&
           !isModalOpen &&
           groups.length > 0 &&
-          status === "idle" &&
-          exportReady && (
-            <PDFDownloadLink
-              key={stableExportKey}
-              document={<GroupPDFReport {...pdfProps} />}
-              fileName={`GroupsReport-${gradeFilters.join(",")}_${new Date()
-                .toISOString()
-                .slice(0, 10)}.pdf`}
+          status === "idle" && (
+            <button
+              onClick={generatePDF}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              title="Download Report"
             >
-              {({ loading }) => (
-                <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
-                  disabled={loading}
-                  title="Download Report"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  {loading ? "Preparing..." : "Download Report"}
-                </button>
-              )}
-            </PDFDownloadLink>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Download Report
+            </button>
           )}
       </div>
 

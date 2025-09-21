@@ -16,8 +16,16 @@ import {
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import PDFReport from "./PDFReport";
+// Using jsPDF for better performance - no React re-rendering
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: Record<string, unknown>) => jsPDF;
+  }
+}
 import { api } from "../../../../../../../convex/_generated/api";
 
 // =========================================
@@ -97,7 +105,7 @@ export const UserTable = ({
   hasResults,
   pageSize,
   onPageSizeChange,
-  isStudent,
+  // isStudent, // Removed - no longer needed with jsPDF
   isDeleting = false,
   onExcelUpload,
   isUploading = false,
@@ -198,68 +206,79 @@ export const UserTable = ({
         : [],
     [allFilteredUsersQuery?.users],
   );
-  const exportReady = Array.isArray(allFilteredUsersQuery?.users);
+  // Removed exportReady and stableExportKey - no longer needed with jsPDF
 
-  // Create a stable key that only changes when the actual data or filters change
-  const stableExportKey = useMemo(() => {
-    const filterHash = JSON.stringify({
-      searchTerm,
-      statusFilter,
-      roleFilter,
-      showRoleColumn,
-      isStudent,
-      sortField,
-      sortDirection,
-      usersCount: exportUsers.length,
-      totalCount,
-      firstUserId: exportUsers[0]?._id,
-      lastUserId: exportUsers[exportUsers.length - 1]?._id,
-    });
-    // Create a simple hash from the string
-    let hash = 0;
-    for (let i = 0; i < filterHash.length; i++) {
-      const char = filterHash.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
+  // Efficient PDF generation function - no React re-rendering
+  const generatePDF = () => {
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+    
+    // Add title
+    const title = showRoleColumn ? "Students Report" : "Advisers Report";
+    doc.setFontSize(16);
+    doc.text(title, 14, 20);
+    
+    // Add filters info
+    doc.setFontSize(10);
+    let yPos = 30;
+    const filterParts = [];
+    if (searchTerm) filterParts.push(`Search: ${searchTerm.slice(0, 20)}...`);
+    filterParts.push(`Status: ${statusFilter}`);
+    if (showRoleColumn) {
+      const role = roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER ? "MANAGER" : 
+                   roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER ? "MEMBER" : "ALL";
+      filterParts.push(`Role: ${role}`);
     }
-    return `pdf-users-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [
-    searchTerm,
-    statusFilter,
-    roleFilter,
-    showRoleColumn,
-    isStudent,
-    sortField,
-    sortDirection,
-  ]);
-
-  // Memoize the PDF props to prevent unnecessary re-renders
-  const pdfProps = useMemo(
-    () => ({
-      users: exportUsers,
-      title: showRoleColumn ? "Students Report" : "Advisers Report",
-      filters: {
-        status: statusFilter,
-        subrole: showRoleColumn
-          ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
-            ? "MANAGER"
-            : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
-              ? "MEMBER"
-              : "ALL ROLE"
-          : undefined,
-      },
-      isStudent,
-      adviserCodes,
-    }),
-    [
-      exportUsers,
-      showRoleColumn,
-      statusFilter,
-      roleFilter,
-      isStudent,
-      adviserCodes,
-    ],
-  );
+    
+    if (filterParts.length > 0) {
+      doc.text(`Filters: ${filterParts.join(' | ')}`, 14, yPos);
+      yPos += 8;
+    }
+    
+    // Add generation date
+    const now = new Date();
+    doc.text(`Generated: ${now.toLocaleString()}`, 14, yPos);
+    yPos += 15;
+    
+    // Prepare table data
+    const tableData = exportUsers.map(user => {
+      const name = `${user.first_name} ${user.middle_name || ''} ${user.last_name}`.trim();
+      const email = user.email || 'N/A';
+      const status = 'Active'; // Default to active since status property may not exist
+      const role = showRoleColumn ? 
+        (user.subrole === 1 ? 'Manager' : 'Member') : 
+        'Adviser';
+      const createdAt = new Date(user._creationTime).toLocaleDateString();
+      
+      return [name, email, status, role, createdAt];
+    });
+    
+    // Add table
+    const headers = ['Name', 'Email', 'Status', 'Role', 'Created'];
+    
+    doc.autoTable({
+      head: [headers],
+      body: tableData,
+      startY: yPos,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [181, 74, 74] },
+      margin: { left: 14, right: 14 },
+      tableWidth: 'auto',
+      columnStyles: {
+        0: { cellWidth: 40 },
+        1: { cellWidth: 50 },
+        2: { cellWidth: 20 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 25 }
+      }
+    });
+    
+    // Save the PDF
+    const date = new Date();
+    const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+    const role = showRoleColumn ? "Students" : "Advisers";
+    const fileName = `${role}_Report_${dateTime}.pdf`;
+    doc.save(fileName);
+  };
 
   // =========================================
   // Helper Functions
@@ -504,62 +523,26 @@ export const UserTable = ({
                 {!isDeleting &&
                   !isModalOpen &&
                   users.length > 0 &&
-                  !isLoading &&
-                  exportReady && (
-                    <PDFDownloadLink
-                      key={stableExportKey}
-                      document={<PDFReport {...pdfProps} />}
-                      fileName={(() => {
-                        const role = showRoleColumn ? "Student" : "Adviser";
-                        const filters = [
-                          `Status-${statusFilter}`,
-                          `Role-${roleFilter}`,
-                        ];
-                        const date = new Date();
-                        const dateTime = `${date.getFullYear()}${(
-                          date.getMonth() + 1
-                        )
-                          .toString()
-                          .padStart(2, "0")}${date
-                          .getDate()
-                          .toString()
-                          .padStart(2, "0")}_${date
-                          .getHours()
-                          .toString()
-                          .padStart(2, "0")}${date
-                          .getMinutes()
-                          .toString()
-                          .padStart(2, "0")}${date
-                          .getSeconds()
-                          .toString()
-                          .padStart(2, "0")}`;
-                        return `${role}Report-${filters.join("_")}-${dateTime}.pdf`;
-                      })()}
+                  !isLoading && (
+                    <button
+                      onClick={generatePDF}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
                     >
-                      {({ loading }) => (
-                        <button
-                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2 disabled:opacity-50"
-                          disabled={loading}
-                        >
-                          <svg
-                            className="w-4 h-4 text-blue-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          {loading
-                            ? "Preparing..."
-                            : `${showRoleColumn ? "Students" : "Advisers"} Report (.pdf)`}
-                        </button>
-                      )}
-                    </PDFDownloadLink>
+                      <svg
+                        className="w-4 h-4 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      {showRoleColumn ? "Students" : "Advisers"} Report (.pdf)
+                    </button>
                   )}
               </div>
             </div>

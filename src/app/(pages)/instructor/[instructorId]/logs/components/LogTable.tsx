@@ -12,32 +12,23 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import LogPDFReport from "./LogPDFReport";
+// Using jsPDF for better performance - no React re-rendering
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: Record<string, unknown>) => jsPDF;
+  }
+}
 
 // =========================================
 // Performance Optimization: Limit Rendered Items
 // =========================================
 const MAX_VISIBLE_ITEMS = 50; // Only render 50 items at a time for better performance
 
-// =========================================
-// Custom Hook for Debouncing
-// =========================================
-const useDebounce = (value: string, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
+// Removed useDebounce hook - no longer needed with jsPDF
 
 // =========================================
 // Types
@@ -186,10 +177,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  // Debounced versions for PDF key stability
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  const debouncedStartDate = useDebounce(startDate, 500);
-  const debouncedEndDate = useDebounce(endDate, 500);
+  // Removed debounced variables - no longer needed with jsPDF
 
   // Update the state to track column-level expansion
   type ExpandedColumns = {
@@ -269,8 +257,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     sortDirection,
   });
 
-  // Use the same query for download
-  const allFilteredLogsQuery = logsQuery;
+  // Removed allFilteredLogsQuery - no longer needed with jsPDF
 
   const logs: Log[] = useMemo(() => logsQuery?.logs || [], [logsQuery?.logs]);
 
@@ -454,8 +441,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     localStorage.setItem("logsPageSize", size.toString());
   };
 
-  // Prepare data for PDF export - memoize to prevent unnecessary re-renders
-  const exportReady = Array.isArray(allFilteredLogsQuery?.logs);
+  // Removed exportReady - no longer needed with jsPDF
 
   // Helper: normalize string for search
   const normalize = (str: string | undefined | null) =>
@@ -523,38 +509,9 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     return false;
   });
 
-  // Create a stable key that only changes when the actual applied filters change
-  // This key should NOT change when temporary filters change
-  const stableExportKey = useMemo(() => {
-    const filterHash = JSON.stringify({
-      searchTerm: debouncedSearchTerm,
-      startDate: debouncedStartDate,
-      endDate: debouncedEndDate,
-      appliedActionFilters: appliedActionFilters.sort(),
-      appliedEntityTypeFilters: appliedEntityTypeFilters.sort(),
-      userRole,
-      sortField,
-      sortDirection,
-    });
-    // Create a simple hash from the string
-    let hash = 0;
-    for (let i = 0; i < filterHash.length; i++) {
-      const char = filterHash.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return `pdf-export-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [debouncedSearchTerm, debouncedStartDate, debouncedEndDate, appliedActionFilters, appliedEntityTypeFilters, userRole, sortField, sortDirection]);
+  // Removed stableExportKey - no longer needed with jsPDF
 
-  const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
-  
-  const filters = useMemo(() => ({
-    searchTerm: searchTerm || undefined,
-    startDate: startDate || undefined,
-    endDate: endDate || undefined,
-    actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
-    entityTypeFilters: appliedEntityTypeFilters.length > 0 ? appliedEntityTypeFilters : undefined,
-  }), [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters]);
+  // Removed title and filters - no longer needed with jsPDF
 
   // Apply sorting to filtered logs for PDF export
   const sortedFilteredLogs = useMemo(() => {
@@ -589,13 +546,69 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     return sorted;
   }, [filteredLogs, sortField, sortDirection]);
 
-  // Memoize the PDF props to prevent unnecessary re-renders
-  const pdfProps = useMemo(() => ({
-    logs: sortedFilteredLogs, // Use sorted frontend-filtered logs
-    title,
-    userRole,
-    filters,
-  }), [sortedFilteredLogs, title, userRole, filters]);
+  // Efficient PDF generation function - no React re-rendering
+  const generatePDF = () => {
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+    
+    // Add title
+    const role = userRole === 0 ? "Instructor" : "Adviser";
+    doc.setFontSize(16);
+    doc.text(`Capstone ${role} System Logs`, 14, 20);
+    
+    // Add filters info
+    doc.setFontSize(10);
+    let yPos = 30;
+    const filterParts = [];
+    if (searchTerm) filterParts.push(`Search: ${searchTerm.slice(0, 20)}...`);
+    if (startDate) filterParts.push(`Start: ${startDate}`);
+    if (endDate) filterParts.push(`End: ${endDate}`);
+    if (appliedActionFilters.length > 0) filterParts.push(`Actions: ${appliedActionFilters.join(', ')}`);
+    if (appliedEntityTypeFilters.length > 0) filterParts.push(`Entities: ${appliedEntityTypeFilters.join(', ')}`);
+    
+    if (filterParts.length > 0) {
+      doc.text(`Filters: ${filterParts.join(' | ')}`, 14, yPos);
+      yPos += 8;
+    }
+    
+    // Add generation date
+    const now = new Date();
+    doc.text(`Generated: ${now.toLocaleString()}`, 14, yPos);
+    yPos += 15;
+    
+    // Prepare table data
+    const tableData = sortedFilteredLogs.map(log => {
+      const date = new Date(log._creationTime).toLocaleString();
+      const user = log.user ? `${log.user.first_name} ${log.user.last_name}` : 'Unknown';
+      const affectedEntity = getAffectedEntityName(log).display;
+      const details = log.details.length > 50 ? log.details.substring(0, 50) + '...' : log.details;
+      
+      return [date, user, log.action, affectedEntity, details];
+    });
+    
+    // Add table
+    doc.autoTable({
+      head: [['Date & Time', 'User', 'Action', 'Affected Entity', 'Details']],
+      body: tableData,
+      startY: yPos,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [181, 74, 74] },
+      margin: { left: 14, right: 14 },
+      tableWidth: 'auto',
+      columnStyles: {
+        0: { cellWidth: 35 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 35 },
+        4: { cellWidth: 50 }
+      }
+    });
+    
+    // Save the PDF
+    const date = new Date();
+    const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+    const fileName = `Capstone_${role}_System_Logs_${dateTime}.pdf`;
+    doc.save(fileName);
+  };
 
   // Apply client-side pagination
   const totalFilteredCount = filteredLogs.length;
@@ -686,65 +699,27 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             />
           </div>
         </div>
-        {filteredLogs.length > 0 && exportReady && (
-          <PDFDownloadLink
-            key={stableExportKey}
-            document={<LogPDFReport {...pdfProps} />}
-            fileName={(() => {
-              const role = userRole === 0 ? "Instructor" : "Adviser";
-              const filterParts = [];
-              if (searchTerm) filterParts.push(`Search-${searchTerm.slice(0, 10)}`);
-              if (startDate) filterParts.push(`Start-${startDate}`);
-              if (endDate) filterParts.push(`End-${endDate}`);
-              if (appliedActionFilters.length > 0) filterParts.push(`Actions-${appliedActionFilters.length}`);
-              if (appliedEntityTypeFilters.length > 0) filterParts.push(`Entities-${appliedEntityTypeFilters.length}`);
-              
-              const date = new Date();
-              const dateTime = `${date.getFullYear()}${(
-                date.getMonth() + 1
-              )
-                .toString()
-                .padStart(2, "0")}${date
-                .getDate()
-                .toString()
-                .padStart(2, "0")}_${date
-                .getHours()
-                .toString()
-                .padStart(2, "0")}${date
-                .getMinutes()
-                .toString()
-                .padStart(2, "0")}${date
-                .getSeconds()
-                .toString()
-                .padStart(2, "0")}`;
-              
-              const filterSuffix = filterParts.length > 0 ? `_${filterParts.join("_")}` : "";
-              return `${role}Logs${filterSuffix}_${dateTime}.pdf`;
-            })()}
+        {filteredLogs.length > 0 && (
+          <button
+            onClick={generatePDF}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+            title="Download Log Report (PDF)"
           >
-            {({ loading }) => (
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors disabled:opacity-50"
-                title="Download Log Report (PDF)"
-                disabled={loading}
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                {loading ? "Preparing..." : "Download Report"}
-              </button>
-            )}
-          </PDFDownloadLink>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Download Report
+          </button>
         )}
       </div>
       <div className="relative w-full overflow-x-auto">
