@@ -243,7 +243,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   // Use the same query for download
   const allFilteredLogsQuery = logsQuery;
 
-  const logs: Log[] = logsQuery?.logs || [];
+  const logs: Log[] = useMemo(() => logsQuery?.logs || [], [logsQuery?.logs]);
 
   const getUserName = (log: Log) => {
     if (log.user?.first_name && log.user?.last_name) {
@@ -533,7 +533,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   // Apply sorting to filtered logs for PDF export
   const sortedFilteredLogs = useMemo(() => {
     const sorted = [...filteredLogs].sort((a, b) => {
-      let aValue: any, bValue: any;
+      let aValue: string | number, bValue: string | number;
       
       switch (sortField) {
         case "_creationTime":
