@@ -396,13 +396,13 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             </div>
           </div>
 
-          {/* Instructor Commands Section */}
+          {/* Delete Data Section */}
           <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FaExclamationTriangle className="text-red-500" />
                 <span className="text-sm text-gray-600">
-                  Instructor Commands
+                  Delete Data
                 </span>
               </div>
               <button
