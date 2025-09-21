@@ -217,7 +217,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
 
   // Strengthen key with group IDs checksum - memoize to prevent unnecessary re-renders
   const exportReady = Array.isArray(groups) && groups.length >= 0;
-  
+
   // Create a stable key that only changes when the actual data or filters change
   const stableExportKey = useMemo(() => {
     const filterHash = JSON.stringify({
@@ -235,21 +235,24 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     let hash = 0;
     for (let i = 0; i < filterHash.length; i++) {
       const char = filterHash.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return `pdf-groups-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [searchTerm, gradeFilters, capstoneFilter, sortField, sortDirection, groups, totalCount]);
+  }, [searchTerm, gradeFilters, capstoneFilter, sortField, sortDirection]);
 
   // Memoize the PDF props to prevent unnecessary re-renders
-  const pdfProps = useMemo(() => ({
-    groups,
-    title: "Groups Report",
-    filters: {
-      searchTerm,
-      gradeFilters,
-    },
-  }), [groups, searchTerm, gradeFilters]);
+  const pdfProps = useMemo(
+    () => ({
+      groups,
+      title: "Groups Report",
+      filters: {
+        searchTerm,
+        gradeFilters,
+      },
+    }),
+    [groups, searchTerm, gradeFilters],
+  );
 
   // =========================================
   // Collapsible Text Component

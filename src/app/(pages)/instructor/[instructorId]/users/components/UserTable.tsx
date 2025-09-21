@@ -158,7 +158,10 @@ export const UserTable = ({
 
   // Fetch adviser codes - memoize to prevent unnecessary re-renders
   const adviserCodesQuery = useQuery(api.fetch.getAdviserCodes);
-  const adviserCodes = useMemo(() => adviserCodesQuery || {}, [adviserCodesQuery]);
+  const adviserCodes = useMemo(
+    () => adviserCodesQuery || {},
+    [adviserCodesQuery],
+  );
 
   // Fetch all filtered users for PDF export
   const allFilteredUsersQuery = useQuery(api.fetch.searchUsers, {
@@ -183,14 +186,15 @@ export const UserTable = ({
   });
 
   // Export readiness and key strengthening - memoize to prevent unnecessary re-renders
-  const exportUsers = useMemo(() => 
-    Array.isArray(allFilteredUsersQuery?.users)
-      ? (allFilteredUsersQuery?.users as User[])
-      : [], 
-    [allFilteredUsersQuery?.users]
+  const exportUsers = useMemo(
+    () =>
+      Array.isArray(allFilteredUsersQuery?.users)
+        ? (allFilteredUsersQuery?.users as User[])
+        : [],
+    [allFilteredUsersQuery?.users],
   );
   const exportReady = Array.isArray(allFilteredUsersQuery?.users);
-  
+
   // Create a stable key that only changes when the actual data or filters change
   const stableExportKey = useMemo(() => {
     const filterHash = JSON.stringify({
@@ -210,29 +214,47 @@ export const UserTable = ({
     let hash = 0;
     for (let i = 0; i < filterHash.length; i++) {
       const char = filterHash.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return `pdf-users-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [searchTerm, statusFilter, roleFilter, showRoleColumn, isStudent, sortField, sortDirection, exportUsers, totalCount]);
+  }, [
+    searchTerm,
+    statusFilter,
+    roleFilter,
+    showRoleColumn,
+    isStudent,
+    sortField,
+    sortDirection,
+  ]);
 
   // Memoize the PDF props to prevent unnecessary re-renders
-  const pdfProps = useMemo(() => ({
-    users: exportUsers,
-    title: showRoleColumn ? "Students Report" : "Advisers Report",
-    filters: {
-      status: statusFilter,
-      subrole: showRoleColumn
-        ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
-          ? "MANAGER"
-          : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
-            ? "MEMBER"
-            : "ALL ROLE"
-        : undefined,
-    },
-    isStudent,
-    adviserCodes,
-  }), [exportUsers, showRoleColumn, statusFilter, roleFilter, isStudent, adviserCodes]);
+  const pdfProps = useMemo(
+    () => ({
+      users: exportUsers,
+      title: showRoleColumn ? "Students Report" : "Advisers Report",
+      filters: {
+        status: statusFilter,
+        subrole: showRoleColumn
+          ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
+            ? "MANAGER"
+            : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
+              ? "MEMBER"
+              : "ALL ROLE"
+          : undefined,
+      },
+      isStudent,
+      adviserCodes,
+    }),
+    [
+      exportUsers,
+      showRoleColumn,
+      statusFilter,
+      roleFilter,
+      isStudent,
+      adviserCodes,
+    ],
+  );
 
   // =========================================
   // Helper Functions
