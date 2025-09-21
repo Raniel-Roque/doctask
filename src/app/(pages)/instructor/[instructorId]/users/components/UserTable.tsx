@@ -14,7 +14,7 @@ import {
   FaSync,
 } from "react-icons/fa";
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import PDFReport from "./PDFReport";
@@ -156,8 +156,9 @@ export const UserTable = ({
     if (showRoleDropdown) setTempRoleFilter(roleFilter);
   }, [showRoleDropdown, roleFilter]);
 
-  // Fetch adviser codes
-  const adviserCodes = useQuery(api.fetch.getAdviserCodes) || {};
+  // Fetch adviser codes - memoize to prevent unnecessary re-renders
+  const adviserCodesQuery = useQuery(api.fetch.getAdviserCodes);
+  const adviserCodes = useMemo(() => adviserCodesQuery || {}, [adviserCodesQuery]);
 
   // Fetch all filtered users for PDF export
   const allFilteredUsersQuery = useQuery(api.fetch.searchUsers, {
@@ -181,14 +182,50 @@ export const UserTable = ({
     sortDirection,
   });
 
-  // Export readiness and key strengthening
-  const exportUsers = Array.isArray(allFilteredUsersQuery?.users)
-    ? (allFilteredUsersQuery?.users as User[])
-    : [];
+  // Export readiness and key strengthening - memoize to prevent unnecessary re-renders
+  const exportUsers = useMemo(() => 
+    Array.isArray(allFilteredUsersQuery?.users)
+      ? (allFilteredUsersQuery?.users as User[])
+      : [], 
+    [allFilteredUsersQuery?.users]
+  );
   const exportReady = Array.isArray(allFilteredUsersQuery?.users);
-  const exportIdsChecksum = exportUsers.length
-    ? `${exportUsers[0]._id}-${exportUsers[exportUsers.length - 1]._id}-${exportUsers.length}`
-    : `empty-${users.length}-${totalCount}`;
+  
+  // Create a stable key that only changes when the actual data or filters change
+  const stableExportKey = useMemo(() => {
+    const filterHash = JSON.stringify({
+      searchTerm,
+      statusFilter,
+      roleFilter,
+      showRoleColumn,
+      isStudent,
+      usersCount: exportUsers.length,
+      totalCount,
+      firstUserId: exportUsers[0]?._id,
+      lastUserId: exportUsers[exportUsers.length - 1]?._id,
+    });
+    return `pdf-users-${btoa(filterHash).slice(0, 16)}`;
+  }, [searchTerm, statusFilter, roleFilter, showRoleColumn, isStudent, exportUsers, totalCount]);
+
+  // Memoize the PDF document to prevent unnecessary re-renders
+  const pdfDocument = useMemo(() => (
+    <PDFReport
+      users={exportUsers}
+      title={showRoleColumn ? "Students Report" : "Advisers Report"}
+      filters={{
+        status: statusFilter,
+        subrole: showRoleColumn
+          ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
+            ? "MANAGER"
+            : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
+              ? "MEMBER"
+              : "ALL ROLE"
+          : undefined,
+      }}
+      isStudent={isStudent}
+      adviserCodes={adviserCodes}
+    />
+  ), [exportUsers, showRoleColumn, statusFilter, roleFilter, isStudent, adviserCodes]);
 
   // =========================================
   // Helper Functions
@@ -432,31 +469,8 @@ export const UserTable = ({
                   !isLoading &&
                   exportReady && (
                     <PDFDownloadLink
-                      key={`pdf-users-${users.length}-${totalCount}-${statusFilter}-${roleFilter}-${showRoleColumn}-${Boolean(isStudent)}-${searchTerm}-${exportIdsChecksum}`}
-                      document={
-                        <PDFReport
-                          users={exportUsers}
-                          title={
-                            showRoleColumn
-                              ? "Students Report"
-                              : "Advisers Report"
-                          }
-                          filters={{
-                            status: statusFilter,
-                            subrole: showRoleColumn
-                              ? roleFilter ===
-                                TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
-                                ? "MANAGER"
-                                : roleFilter ===
-                                    TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
-                                  ? "MEMBER"
-                                  : "ALL ROLE"
-                              : undefined,
-                          }}
-                          isStudent={isStudent}
-                          adviserCodes={adviserCodes}
-                        />
-                      }
+                      key={stableExportKey}
+                      document={pdfDocument}
                       fileName={(() => {
                         const role = showRoleColumn ? "Student" : "Adviser";
                         const filters = [

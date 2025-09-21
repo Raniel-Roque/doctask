@@ -8,7 +8,7 @@ import {
   FaSortDown,
   FaFilter,
 } from "react-icons/fa";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
@@ -425,22 +425,45 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     localStorage.setItem("logsPageSize", size.toString());
   };
 
-  // Prepare data for PDF export
-  const exportLogs = allFilteredLogsQuery?.logs || [];
+  // Prepare data for PDF export - memoize to prevent unnecessary re-renders
+  const exportLogs = useMemo(() => allFilteredLogsQuery?.logs || [], [allFilteredLogsQuery?.logs]);
   const exportReady = Array.isArray(allFilteredLogsQuery?.logs);
-  const exportIdsChecksum = exportLogs.length
-    ? `${exportLogs[0]._id}-${exportLogs[exportLogs.length - 1]._id}-${exportLogs.length}`
-    : `empty-${logs.length}`;
+  
+  // Create a stable key that only changes when the actual data or filters change
+  const stableExportKey = useMemo(() => {
+    const filterHash = JSON.stringify({
+      searchTerm,
+      startDate,
+      endDate,
+      appliedActionFilters: appliedActionFilters.sort(),
+      appliedEntityTypeFilters: appliedEntityTypeFilters.sort(),
+      userRole,
+      logsCount: exportLogs.length,
+      firstLogId: exportLogs[0]?._id,
+      lastLogId: exportLogs[exportLogs.length - 1]?._id,
+    });
+    return `pdf-export-${btoa(filterHash).slice(0, 16)}`;
+  }, [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters, userRole, exportLogs]);
 
   const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
   
-  const filters = {
+  const filters = useMemo(() => ({
     searchTerm: searchTerm || undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
     entityTypeFilters: appliedEntityTypeFilters.length > 0 ? appliedEntityTypeFilters : undefined,
-  };
+  }), [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters]);
+
+  // Memoize the PDF document to prevent unnecessary re-renders
+  const pdfDocument = useMemo(() => (
+    <LogPDFReport
+      logs={exportLogs}
+      title={title}
+      userRole={userRole}
+      filters={filters}
+    />
+  ), [exportLogs, title, userRole, filters]);
 
   // Helper: normalize string for search
   const normalize = (str: string | undefined | null) =>
@@ -591,15 +614,8 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
         </div>
         {logs.length > 0 && exportReady && (
           <PDFDownloadLink
-            key={`pdf-logs-${logs.length}-${userRole}-${searchTerm}-${startDate}-${endDate}-${appliedActionFilters.join(",")}-${appliedEntityTypeFilters.join(",")}-${exportIdsChecksum}`}
-            document={
-              <LogPDFReport
-                logs={exportLogs}
-                title={title}
-                userRole={userRole}
-                filters={filters}
-              />
-            }
+            key={stableExportKey}
+            document={pdfDocument}
             fileName={(() => {
               const role = userRole === 0 ? "Instructor" : "Adviser";
               const filterParts = [];

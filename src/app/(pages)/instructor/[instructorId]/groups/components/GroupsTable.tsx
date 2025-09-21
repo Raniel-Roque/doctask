@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   FaSearch,
   FaSort,
@@ -215,11 +215,34 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     </div>
   );
 
-  // Strengthen key with group IDs checksum
+  // Strengthen key with group IDs checksum - memoize to prevent unnecessary re-renders
   const exportReady = Array.isArray(groups) && groups.length >= 0;
-  const exportIdsChecksum = groups.length
-    ? `${groups[0]._id}-${groups[groups.length - 1]._id}-${groups.length}`
-    : `empty-${totalCount}`;
+  
+  // Create a stable key that only changes when the actual data or filters change
+  const stableExportKey = useMemo(() => {
+    const filterHash = JSON.stringify({
+      searchTerm,
+      gradeFilters: gradeFilters.sort(),
+      capstoneFilter,
+      groupsCount: groups.length,
+      totalCount,
+      firstGroupId: groups[0]?._id,
+      lastGroupId: groups[groups.length - 1]?._id,
+    });
+    return `pdf-groups-${btoa(filterHash).slice(0, 16)}`;
+  }, [searchTerm, gradeFilters, capstoneFilter, groups, totalCount]);
+
+  // Memoize the PDF document to prevent unnecessary re-renders
+  const pdfDocument = useMemo(() => (
+    <GroupPDFReport
+      groups={groups}
+      title="Groups Report"
+      filters={{
+        searchTerm,
+        gradeFilters,
+      }}
+    />
+  ), [groups, searchTerm, gradeFilters]);
 
   // =========================================
   // Collapsible Text Component
@@ -344,17 +367,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           status === "idle" &&
           exportReady && (
             <PDFDownloadLink
-              key={`pdf-groups-${searchTerm}-${gradeFilters.join(",")}-${groups.length}-${totalCount}-${exportIdsChecksum}`}
-              document={
-                <GroupPDFReport
-                  groups={groups}
-                  title="Groups Report"
-                  filters={{
-                    searchTerm,
-                    gradeFilters,
-                  }}
-                />
-              }
+              key={stableExportKey}
+              document={pdfDocument}
               fileName={`GroupsReport-${gradeFilters.join(",")}_${new Date()
                 .toISOString()
                 .slice(0, 10)}.pdf`}
