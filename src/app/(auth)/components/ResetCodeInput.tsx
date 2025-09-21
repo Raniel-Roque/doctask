@@ -8,7 +8,7 @@ interface ResetCodeInputProps {
   loading?: boolean;
   sendingCode?: boolean;
   email: string;
-  onResendCode?: () => void;
+  onResendCode?: () => Promise<boolean>;
   onSubmit: (e: React.FormEvent) => void;
 }
 
