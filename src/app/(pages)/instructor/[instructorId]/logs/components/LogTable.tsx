@@ -494,7 +494,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     return false;
   });
 
-  // Create a stable key that only changes when the actual data or filters change
+  // Create a stable key that only changes when the actual data or applied filters change
   const stableExportKey = useMemo(() => {
     const filterHash = JSON.stringify({
       searchTerm,
@@ -503,9 +503,12 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       appliedActionFilters: appliedActionFilters.sort(),
       appliedEntityTypeFilters: appliedEntityTypeFilters.sort(),
       userRole,
-      logsCount: filteredLogs.length,
-      firstLogId: filteredLogs[0]?._id,
-      lastLogId: filteredLogs[filteredLogs.length - 1]?._id,
+      sortField,
+      sortDirection,
+      // Use backend data for stable key instead of frontend filtered data
+      logsCount: logs.length,
+      firstLogId: logs[0]?._id,
+      lastLogId: logs[logs.length - 1]?._id,
     });
     // Create a simple hash from the string
     let hash = 0;
@@ -515,7 +518,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       hash = hash & hash; // Convert to 32-bit integer
     }
     return `pdf-export-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters, userRole, filteredLogs]);
+  }, [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters, userRole, sortField, sortDirection, logs]);
 
   const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
   
@@ -527,13 +530,46 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     entityTypeFilters: appliedEntityTypeFilters.length > 0 ? appliedEntityTypeFilters : undefined,
   }), [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters]);
 
+  // Apply sorting to filtered logs for PDF export
+  const sortedFilteredLogs = useMemo(() => {
+    const sorted = [...filteredLogs].sort((a, b) => {
+      let aValue: any, bValue: any;
+      
+      switch (sortField) {
+        case "_creationTime":
+          aValue = a._creationTime;
+          bValue = b._creationTime;
+          break;
+        case "affectedEntity":
+          aValue = getAffectedEntityName(a).display.toLowerCase();
+          bValue = getAffectedEntityName(b).display.toLowerCase();
+          break;
+        case "action":
+          aValue = a.action.toLowerCase();
+          bValue = b.action.toLowerCase();
+          break;
+        default:
+          aValue = a._creationTime;
+          bValue = b._creationTime;
+      }
+      
+      if (sortDirection === "asc") {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+    
+    return sorted;
+  }, [filteredLogs, sortField, sortDirection]);
+
   // Memoize the PDF props to prevent unnecessary re-renders
   const pdfProps = useMemo(() => ({
-    logs: filteredLogs, // Use frontend-filtered logs instead of backend-filtered
+    logs: sortedFilteredLogs, // Use sorted frontend-filtered logs
     title,
     userRole,
     filters,
-  }), [filteredLogs, title, userRole, filters]);
+  }), [sortedFilteredLogs, title, userRole, filters]);
 
   // Apply client-side pagination
   const totalFilteredCount = filteredLogs.length;

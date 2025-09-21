@@ -199,6 +199,8 @@ export const UserTable = ({
       roleFilter,
       showRoleColumn,
       isStudent,
+      sortField,
+      sortDirection,
       usersCount: exportUsers.length,
       totalCount,
       firstUserId: exportUsers[0]?._id,
@@ -212,7 +214,7 @@ export const UserTable = ({
       hash = hash & hash; // Convert to 32-bit integer
     }
     return `pdf-users-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [searchTerm, statusFilter, roleFilter, showRoleColumn, isStudent, exportUsers, totalCount]);
+  }, [searchTerm, statusFilter, roleFilter, showRoleColumn, isStudent, sortField, sortDirection, exportUsers, totalCount]);
 
   // Memoize the PDF props to prevent unnecessary re-renders
   const pdfProps = useMemo(() => ({

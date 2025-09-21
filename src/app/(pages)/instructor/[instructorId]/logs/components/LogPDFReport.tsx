@@ -138,9 +138,8 @@ const LogPDFReport: React.FC<LogPDFReportProps> = ({
     return "-";
   };
 
-  // Logs are already filtered by the parent component, so we use them directly
-  // Sort logs by creation time (newest first)
-  const filteredLogs = [...validLogs].sort((a, b) => b._creationTime - a._creationTime);
+  // Logs are already filtered and sorted by the parent component, so we use them directly
+  const filteredLogs = [...validLogs];
 
   return (
     <Document>

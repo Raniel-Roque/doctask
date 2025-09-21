@@ -224,6 +224,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
       searchTerm,
       gradeFilters: gradeFilters.sort(),
       capstoneFilter,
+      sortField,
+      sortDirection,
       groupsCount: groups.length,
       totalCount,
       firstGroupId: groups[0]?._id,
@@ -237,7 +239,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
       hash = hash & hash; // Convert to 32-bit integer
     }
     return `pdf-groups-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [searchTerm, gradeFilters, capstoneFilter, groups, totalCount]);
+  }, [searchTerm, gradeFilters, capstoneFilter, sortField, sortDirection, groups, totalCount]);
 
   // Memoize the PDF props to prevent unnecessary re-renders
   const pdfProps = useMemo(() => ({
