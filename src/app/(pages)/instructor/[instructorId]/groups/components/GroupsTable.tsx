@@ -16,7 +16,7 @@ import { User, Group } from "./types";
 import DeleteGroupConfirmation from "./DeleteGroupConfirmation";
 // Using jsPDF for better performance - no React re-rendering
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
@@ -272,7 +272,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
       });
       
       // Add table
-      doc.autoTable({
+      autoTable(doc, {
         head: [['Group Name', 'Capstone Title', 'Project Manager', 'Members', 'Created']],
         body: tableData,
         startY: yPos,

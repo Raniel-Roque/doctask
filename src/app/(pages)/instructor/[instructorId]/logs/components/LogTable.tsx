@@ -14,7 +14,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 // Using jsPDF for better performance - no React re-rendering
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
@@ -589,7 +589,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       });
       
       // Add table
-      doc.autoTable({
+      autoTable(doc, {
         head: [['Date & Time', 'User', 'Action', 'Affected Entity', 'Details']],
         body: tableData,
         startY: yPos,

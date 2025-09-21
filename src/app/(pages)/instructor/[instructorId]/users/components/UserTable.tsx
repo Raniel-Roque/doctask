@@ -18,7 +18,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
 // Using jsPDF for better performance - no React re-rendering
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
@@ -262,7 +262,7 @@ export const UserTable = ({
       // Add table
       const headers = ['Name', 'Email', 'Status', 'Role', 'Created'];
       
-      doc.autoTable({
+      autoTable(doc, {
         head: [headers],
         body: tableData,
         startY: yPos,
