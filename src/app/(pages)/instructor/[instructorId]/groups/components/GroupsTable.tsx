@@ -569,6 +569,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                           e.stopPropagation();
                           setCapstoneFilter(tempCapstoneFilter);
                           setShowCapstoneDropdown(false);
+                          onPageChange(1);
                         }}
                         className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                       >
@@ -577,18 +578,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     </div>
                   </div>
                 )}
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
-              >
-                Project Manager
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
-              >
-                Members
               </th>
               <th
                 scope="col"
@@ -695,21 +684,21 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {status === "loading" && (
               <tr>
-                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                   Loading...
                 </td>
               </tr>
             )}
             {status === "error" && (
               <tr>
-                <td colSpan={7} className="px-6 py-4 text-center text-red-500">
+                <td colSpan={5} className="px-6 py-4 text-center text-red-500">
                   An error occurred while loading groups. Please try again.
                 </td>
               </tr>
             )}
             {status === "idle" && !hasResults && (
               <tr>
-                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
                   {searchTerm
                     ? "No groups found matching your search criteria."
                     : 'No groups available. Click "Add Group" to create a new group.'}
@@ -726,27 +715,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     text={group.capstone_title}
                     groupId={group._id}
                   />
-                </td>
-                <td className="px-6 py-4 text-left text-sm text-gray-900">
-                  {group.projectManager ? (
-                    <div className="font-medium">
-                      {group.projectManager.first_name} {group.projectManager.last_name}
-                    </div>
-                  ) : (
-                    <div className="text-gray-500">No manager</div>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-left text-sm text-gray-900">
-                  <div className="space-y-1">
-                    {group.members?.map((member, index) => (
-                      <div key={index}>
-                        {member.first_name} {member.last_name}
-                      </div>
-                    ))}
-                    {(!group.members || group.members.length === 0) && (
-                      <div className="text-gray-500">No members</div>
-                    )}
-                  </div>
                 </td>
                 <td className="px-6 py-4 text-center">
                   <button
