@@ -370,6 +370,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           <FaPlus /> Add Group
         </button>
         {!isDeleting &&
+          !isModalOpen &&
           groups.length > 0 &&
           status === "idle" &&
           exportReady && (

@@ -494,7 +494,8 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     return false;
   });
 
-  // Create a stable key that only changes when the actual data or applied filters change
+  // Create a stable key that only changes when the actual applied filters change
+  // This key should NOT change when temporary filters change
   const stableExportKey = useMemo(() => {
     const filterHash = JSON.stringify({
       searchTerm,
@@ -505,10 +506,6 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       userRole,
       sortField,
       sortDirection,
-      // Use backend data for stable key instead of frontend filtered data
-      logsCount: logs.length,
-      firstLogId: logs[0]?._id,
-      lastLogId: logs[logs.length - 1]?._id,
     });
     // Create a simple hash from the string
     let hash = 0;
@@ -518,7 +515,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       hash = hash & hash; // Convert to 32-bit integer
     }
     return `pdf-export-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters, userRole, sortField, sortDirection, logs]);
+  }, [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters, userRole, sortField, sortDirection]);
 
   const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
   

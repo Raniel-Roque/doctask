@@ -472,6 +472,7 @@ export const UserTable = ({
 
                 {/* Report Download */}
                 {!isDeleting &&
+                  !isModalOpen &&
                   users.length > 0 &&
                   !isLoading &&
                   exportReady && (
