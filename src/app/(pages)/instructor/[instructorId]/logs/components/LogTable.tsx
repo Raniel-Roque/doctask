@@ -16,6 +16,30 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import LogPDFReport from "./LogPDFReport";
 
 // =========================================
+// Performance Optimization: Limit Rendered Items
+// =========================================
+const MAX_VISIBLE_ITEMS = 50; // Only render 50 items at a time for better performance
+
+// =========================================
+// Custom Hook for Debouncing
+// =========================================
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+// =========================================
 // Types
 // =========================================
 interface Log {
@@ -162,6 +186,11 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
+  // Debounced versions for PDF key stability
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const debouncedStartDate = useDebounce(startDate, 500);
+  const debouncedEndDate = useDebounce(endDate, 500);
+
   // Update the state to track column-level expansion
   type ExpandedColumns = {
     instructor: boolean;
@@ -229,7 +258,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   // Fetch logs with backend filtering for action and entity type only
   const logsQuery = useQuery(api.fetch.getLogsWithDetails, {
     userRole: userRole,
-    pageSize: 10000, // Get all logs for frontend filtering
+    pageSize: 100, // Reduced for better performance
     pageNumber: 1,
     action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
     entityType:
@@ -498,9 +527,9 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   // This key should NOT change when temporary filters change
   const stableExportKey = useMemo(() => {
     const filterHash = JSON.stringify({
-      searchTerm,
-      startDate,
-      endDate,
+      searchTerm: debouncedSearchTerm,
+      startDate: debouncedStartDate,
+      endDate: debouncedEndDate,
       appliedActionFilters: appliedActionFilters.sort(),
       appliedEntityTypeFilters: appliedEntityTypeFilters.sort(),
       userRole,
@@ -515,7 +544,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       hash = hash & hash; // Convert to 32-bit integer
     }
     return `pdf-export-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters, userRole, sortField, sortDirection]);
+  }, [debouncedSearchTerm, debouncedStartDate, debouncedEndDate, appliedActionFilters, appliedEntityTypeFilters, userRole, sortField, sortDirection]);
 
   const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
   
@@ -574,6 +603,9 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+  
+  // Performance optimization: Limit rendered items to prevent slowdown with large datasets
+  const visibleLogs = paginatedLogs.slice(0, MAX_VISIBLE_ITEMS);
 
   return (
     <div className="mt-4 w-full">
@@ -1014,7 +1046,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                   No logs available
                 </td>
               </tr>
-            ) : paginatedLogs.length === 0 ? (
+            ) : visibleLogs.length === 0 ? (
               <tr>
                 <td
                   colSpan={userRole === 0 ? 5 : 4}
@@ -1026,7 +1058,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                 </td>
               </tr>
             ) : (
-              paginatedLogs.map((log: Log, index: number) => {
+              visibleLogs.map((log: Log, index: number) => {
                 const instructor = getUserName(log);
                 const affectedEntity = getAffectedEntityName(log);
                 return (
@@ -1073,6 +1105,19 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             )}
           </tbody>
         </table>
+        
+        {/* Performance Warning */}
+        {paginatedLogs.length > MAX_VISIBLE_ITEMS && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+            <div className="flex">
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>Performance Notice:</strong> Showing first {MAX_VISIBLE_ITEMS} of {paginatedLogs.length} items on this page for optimal performance.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="min-w-full flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
           <div className="flex items-center gap-4">
             <p className="text-sm text-gray-700">

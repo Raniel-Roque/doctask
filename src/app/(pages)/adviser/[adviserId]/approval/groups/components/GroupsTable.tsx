@@ -13,6 +13,11 @@ import {
 import { Group } from "./types";
 import GroupMembersModal from "./GroupMembersModal";
 
+// =========================================
+// Performance Optimization: Limit Rendered Items
+// =========================================
+const MAX_VISIBLE_ITEMS = 50; // Only render 50 items at a time for better performance
+
 interface GroupsTableProps {
   groups: Group[];
   onAccept: (group: Group) => void;
@@ -229,7 +234,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   </td>
                 </tr>
               )}
-              {groups.map((group) => (
+              {groups.slice(0, MAX_VISIBLE_ITEMS).map((group) => (
                 <tr key={group._id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {group.name || "-"}
@@ -279,6 +284,19 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               ))}
             </tbody>
           </table>
+          
+          {/* Performance Warning */}
+          {groups.length > MAX_VISIBLE_ITEMS && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-700">
+                    <strong>Performance Notice:</strong> Showing first {MAX_VISIBLE_ITEMS} of {groups.length} items on this page for optimal performance.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
