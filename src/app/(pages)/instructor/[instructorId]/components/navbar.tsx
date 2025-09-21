@@ -10,7 +10,6 @@ import {
   FaUser,
   FaUsers,
   FaClipboardList,
-  FaDatabase,
   FaChevronDown,
 } from "react-icons/fa";
 import {
@@ -327,21 +326,6 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
             )}
           </li>
 
-          <li className="font-semibold text-white">|</li>
-
-          {/* Backup & Restore Link */}
-          <li>
-            <Link
-              href={`/instructor/${instructorId}/backup`}
-              onClick={(e) =>
-                handleNavClick(`/instructor/${instructorId}/backup`, e)
-              }
-              className={`flex items-center gap-2 hover:text-gray-300 transition-colors duration-200 ${isActive(`/instructor/${instructorId}/backup`) ? "underline italic" : ""}`}
-            >
-              <FaDatabase size={16} />
-              Backup & Restore
-            </Link>
-          </li>
         </ul>
       </nav>
 

@@ -11,9 +11,17 @@ import { PrimaryProfile } from "@/app/(pages)/components/PrimaryProfile";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import { FaExclamationTriangle, FaTrash } from "react-icons/fa";
+import { FaExclamationTriangle, FaTrash, FaDatabase } from "react-icons/fa";
 import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
 import { apiRequest } from "@/lib/utils";
+import {
+  generateEncryptionKey,
+  exportKey,
+  encryptData,
+  importKey,
+  decryptData,
+} from "@/utils/encryption";
+import JSZip from "jszip";
 
 interface InstructorProfilePageProps {
   params: Promise<{ instructorId: string }>;
@@ -29,6 +37,16 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [confirmName, setConfirmName] = useState("");
+  
+  // Backup-related state
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showBackupPasswordVerify, setShowBackupPasswordVerify] = useState(false);
+  const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
+  const [pendingBackupAction, setPendingBackupAction] = useState<
+    "download" | "restore" | null
+  >(null);
 
   // Fetch user data from Convex
   const userData = useQuery(api.fetch.getUserById, {
@@ -159,6 +177,169 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     }
   };
 
+  // Backup functions
+  const verifyBackupPassword = async (password: string, signal?: AbortSignal) => {
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Verify password with enhanced retry logic
+    await apiRequest("/api/clerk/verify-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        clerkId: user.id,
+        currentPassword: password,
+      }),
+      signal,
+    });
+
+    // Execute the pending action
+    if (pendingBackupAction === "download") {
+      await handleBackupDownload();
+    } else if (pendingBackupAction === "restore") {
+      setShowBackupModal(true);
+    }
+
+    // Close the password verification modal after successful verification
+    setShowBackupPasswordVerify(false);
+    setPendingBackupAction(null);
+  };
+
+  const initiateBackupAction = (action: "download" | "restore") => {
+    setPendingBackupAction(action);
+    setShowBackupPasswordVerify(true);
+  };
+
+  const handleBackupDownload = async () => {
+    try {
+      setIsDownloading(true);
+
+      // Call API route for backup with enhanced retry logic
+      const backup = await apiRequest("/api/convex/backup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ instructorId }),
+      });
+
+      const key = await generateEncryptionKey();
+      const keyString = await exportKey(key);
+      const encryptedData = await encryptData(backup, key);
+
+      // Create a new ZIP file
+      const zip = new JSZip();
+      zip.file("backup.enc", encryptedData);
+      zip.file("backup.key", keyString);
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const zipUrl = window.URL.createObjectURL(zipBlob);
+      const zipLink = document.createElement("a");
+      zipLink.href = zipUrl;
+      zipLink.download = `doctask-backup-${new Date().toISOString()}.zip`;
+      document.body.appendChild(zipLink);
+      zipLink.click();
+      window.URL.revokeObjectURL(zipUrl);
+      document.body.removeChild(zipLink);
+
+      addBanner({
+        message:
+          "Database backup has been successfully downloaded as a ZIP file. Keep it safe!",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
+      });
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error, ErrorContexts.uploadFile());
+      addBanner({
+        message: errorMessage,
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleBackupRestore = () => {
+    initiateBackupAction("restore");
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedZipFile(file);
+    }
+  };
+
+  const confirmBackupRestore = async () => {
+    if (!selectedZipFile) {
+      addBanner({
+        message: "Please select a backup ZIP file",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
+    try {
+      setIsRestoring(true);
+
+      // Read and extract the ZIP file
+      const zip = await JSZip.loadAsync(selectedZipFile);
+      const encryptedData = await zip.file("backup.enc")?.async("text");
+      const keyString = await zip.file("backup.key")?.async("text");
+      if (!encryptedData || !keyString) {
+        throw new Error("ZIP file must contain both backup.enc and backup.key");
+      }
+
+      // Import the key
+      const key = await importKey(keyString);
+
+      // Decrypt the backup
+      const backup = (await decryptData(encryptedData, key)) as Record<
+        string,
+        unknown
+      >;
+
+      // Restore database backup with enhanced retry logic
+      await apiRequest("/api/convex/restore", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          backup,
+          instructorId: instructorId,
+        }),
+      });
+
+      addBanner({
+        message: "Database has been successfully restored!",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
+      });
+
+      setShowBackupModal(false);
+      setSelectedZipFile(null);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error, ErrorContexts.uploadFile());
+      addBanner({
+        message: errorMessage,
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar instructorId={instructorId} />
@@ -186,6 +367,34 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             }
             onUploading={setIsUploading}
           />
+
+          {/* Backup & Restore Section */}
+          <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FaDatabase className="text-blue-500" />
+                <span className="text-sm text-gray-600">
+                  Backup & Restore
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => initiateBackupAction("download")}
+                  disabled={isDownloading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+                >
+                  {isDownloading ? "Downloading..." : "Download Backup"}
+                </button>
+                <button
+                  onClick={handleBackupRestore}
+                  disabled={isRestoring}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+                >
+                  {isRestoring ? "Restoring..." : "Restore Backup"}
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Instructor Commands Section */}
           <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
@@ -273,6 +482,85 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Wiping Data..." : "Yes, Wipe All Data"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Backup Password Verification Modal */}
+      <PasswordVerification
+        isOpen={showBackupPasswordVerify}
+        onClose={() => {
+          setShowBackupPasswordVerify(false);
+          setPendingBackupAction(null);
+        }}
+        onVerify={verifyBackupPassword}
+        title="Verify Password"
+        description={
+          pendingBackupAction === "download"
+            ? "Please enter your password to download the backup."
+            : "Please enter your password to restore the backup."
+        }
+        buttonText="Verify Password"
+        userEmail={user?.emailAddresses?.[0]?.emailAddress}
+      />
+
+      {/* Backup Restore Modal */}
+      {showBackupModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-blue-600 flex items-center gap-2">
+                <FaDatabase />
+                Restore Database
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Select your backup ZIP file to restore the database. This will delete all existing data.
+              </p>
+
+              <div>
+                <label
+                  htmlFor="backup-zip-file"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Select Backup ZIP File
+                </label>
+                <input
+                  type="file"
+                  id="backup-zip-file"
+                  accept=".zip"
+                  onChange={handleFileSelect}
+                  disabled={isRestoring}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {selectedZipFile && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selected: {selectedZipFile.name}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowBackupModal(false);
+                    setSelectedZipFile(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBackupRestore}
+                  disabled={isRestoring || !selectedZipFile}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isRestoring ? "Restoring..." : "Restore Database"}
                 </button>
               </div>
             </div>
