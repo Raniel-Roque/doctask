@@ -548,66 +548,75 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
 
   // Efficient PDF generation function - no React re-rendering
   const generatePDF = () => {
-    const doc = new jsPDF('landscape', 'mm', 'a4');
-    
-    // Add title
-    const role = userRole === 0 ? "Instructor" : "Adviser";
-    doc.setFontSize(16);
-    doc.text(`Capstone ${role} System Logs`, 14, 20);
-    
-    // Add filters info
-    doc.setFontSize(10);
-    let yPos = 30;
-    const filterParts = [];
-    if (searchTerm) filterParts.push(`Search: ${searchTerm.slice(0, 20)}...`);
-    if (startDate) filterParts.push(`Start: ${startDate}`);
-    if (endDate) filterParts.push(`End: ${endDate}`);
-    if (appliedActionFilters.length > 0) filterParts.push(`Actions: ${appliedActionFilters.join(', ')}`);
-    if (appliedEntityTypeFilters.length > 0) filterParts.push(`Entities: ${appliedEntityTypeFilters.join(', ')}`);
-    
-    if (filterParts.length > 0) {
-      doc.text(`Filters: ${filterParts.join(' | ')}`, 14, yPos);
-      yPos += 8;
-    }
-    
-    // Add generation date
-    const now = new Date();
-    doc.text(`Generated: ${now.toLocaleString()}`, 14, yPos);
-    yPos += 15;
-    
-    // Prepare table data
-    const tableData = sortedFilteredLogs.map(log => {
-      const date = new Date(log._creationTime).toLocaleString();
-      const user = log.user ? `${log.user.first_name} ${log.user.last_name}` : 'Unknown';
-      const affectedEntity = getAffectedEntityName(log).display;
-      const details = log.details.length > 50 ? log.details.substring(0, 50) + '...' : log.details;
+    try {
+      console.log('Generating Logs PDF...', { sortedFilteredLogs: sortedFilteredLogs.length });
       
-      return [date, user, log.action, affectedEntity, details];
-    });
-    
-    // Add table
-    doc.autoTable({
-      head: [['Date & Time', 'User', 'Action', 'Affected Entity', 'Details']],
-      body: tableData,
-      startY: yPos,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [181, 74, 74] },
-      margin: { left: 14, right: 14 },
-      tableWidth: 'auto',
-      columnStyles: {
-        0: { cellWidth: 35 },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 25 },
-        3: { cellWidth: 35 },
-        4: { cellWidth: 50 }
+      const doc = new jsPDF('landscape', 'mm', 'a4');
+      
+      // Add title
+      const role = userRole === 0 ? "Instructor" : "Adviser";
+      doc.setFontSize(16);
+      doc.text(`Capstone ${role} System Logs`, 14, 20);
+      
+      // Add filters info
+      doc.setFontSize(10);
+      let yPos = 30;
+      const filterParts = [];
+      if (searchTerm) filterParts.push(`Search: ${searchTerm.slice(0, 20)}...`);
+      if (startDate) filterParts.push(`Start: ${startDate}`);
+      if (endDate) filterParts.push(`End: ${endDate}`);
+      if (appliedActionFilters.length > 0) filterParts.push(`Actions: ${appliedActionFilters.join(', ')}`);
+      if (appliedEntityTypeFilters.length > 0) filterParts.push(`Entities: ${appliedEntityTypeFilters.join(', ')}`);
+      
+      if (filterParts.length > 0) {
+        doc.text(`Filters: ${filterParts.join(' | ')}`, 14, yPos);
+        yPos += 8;
       }
-    });
-    
-    // Save the PDF
-    const date = new Date();
-    const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
-    const fileName = `Capstone_${role}_System_Logs_${dateTime}.pdf`;
-    doc.save(fileName);
+      
+      // Add generation date
+      const now = new Date();
+      doc.text(`Generated: ${now.toLocaleString()}`, 14, yPos);
+      yPos += 15;
+      
+      // Prepare table data
+      const tableData = sortedFilteredLogs.map(log => {
+        const date = new Date(log._creationTime).toLocaleString();
+        const user = log.user ? `${log.user.first_name} ${log.user.last_name}` : 'Unknown';
+        const affectedEntity = getAffectedEntityName(log).display;
+        const details = log.details.length > 50 ? log.details.substring(0, 50) + '...' : log.details;
+        
+        return [date, user, log.action, affectedEntity, details];
+      });
+      
+      // Add table
+      doc.autoTable({
+        head: [['Date & Time', 'User', 'Action', 'Affected Entity', 'Details']],
+        body: tableData,
+        startY: yPos,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [181, 74, 74] },
+        margin: { left: 14, right: 14 },
+        tableWidth: 'auto',
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 50 }
+        }
+      });
+      
+      // Save the PDF
+      const date = new Date();
+      const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+      const fileName = `Capstone_${role}_System_Logs_${dateTime}.pdf`;
+      doc.save(fileName);
+      
+      console.log('Logs PDF generated successfully:', fileName);
+    } catch (error) {
+      console.error('Error generating Logs PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    }
   };
 
   // Apply client-side pagination

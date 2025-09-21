@@ -210,74 +210,87 @@ export const UserTable = ({
 
   // Efficient PDF generation function - no React re-rendering
   const generatePDF = () => {
-    const doc = new jsPDF('landscape', 'mm', 'a4');
-    
-    // Add title
-    const title = showRoleColumn ? "Students Report" : "Advisers Report";
-    doc.setFontSize(16);
-    doc.text(title, 14, 20);
-    
-    // Add filters info
-    doc.setFontSize(10);
-    let yPos = 30;
-    const filterParts = [];
-    if (searchTerm) filterParts.push(`Search: ${searchTerm.slice(0, 20)}...`);
-    filterParts.push(`Status: ${statusFilter}`);
-    if (showRoleColumn) {
-      const role = roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER ? "MANAGER" : 
-                   roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER ? "MEMBER" : "ALL";
-      filterParts.push(`Role: ${role}`);
-    }
-    
-    if (filterParts.length > 0) {
-      doc.text(`Filters: ${filterParts.join(' | ')}`, 14, yPos);
-      yPos += 8;
-    }
-    
-    // Add generation date
-    const now = new Date();
-    doc.text(`Generated: ${now.toLocaleString()}`, 14, yPos);
-    yPos += 15;
-    
-    // Prepare table data
-    const tableData = exportUsers.map(user => {
-      const name = `${user.first_name} ${user.middle_name || ''} ${user.last_name}`.trim();
-      const email = user.email || 'N/A';
-      const status = 'Active'; // Default to active since status property may not exist
-      const role = showRoleColumn ? 
-        (user.subrole === 1 ? 'Manager' : 'Member') : 
-        'Adviser';
-      const createdAt = new Date(user._creationTime).toLocaleDateString();
+    try {
+      console.log('Generating PDF...', { exportUsers: exportUsers.length, users: users.length });
       
-      return [name, email, status, role, createdAt];
-    });
-    
-    // Add table
-    const headers = ['Name', 'Email', 'Status', 'Role', 'Created'];
-    
-    doc.autoTable({
-      head: [headers],
-      body: tableData,
-      startY: yPos,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [181, 74, 74] },
-      margin: { left: 14, right: 14 },
-      tableWidth: 'auto',
-      columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 20 },
-        3: { cellWidth: 25 },
-        4: { cellWidth: 25 }
+      const doc = new jsPDF('landscape', 'mm', 'a4');
+      
+      // Add title
+      const title = showRoleColumn ? "Students Report" : "Advisers Report";
+      doc.setFontSize(16);
+      doc.text(title, 14, 20);
+      
+      // Add filters info
+      doc.setFontSize(10);
+      let yPos = 30;
+      const filterParts = [];
+      if (searchTerm) filterParts.push(`Search: ${searchTerm.slice(0, 20)}...`);
+      filterParts.push(`Status: ${statusFilter}`);
+      if (showRoleColumn) {
+        const role = roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER ? "MANAGER" : 
+                     roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER ? "MEMBER" : "ALL";
+        filterParts.push(`Role: ${role}`);
       }
-    });
-    
-    // Save the PDF
-    const date = new Date();
-    const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
-    const role = showRoleColumn ? "Students" : "Advisers";
-    const fileName = `${role}_Report_${dateTime}.pdf`;
-    doc.save(fileName);
+      
+      if (filterParts.length > 0) {
+        doc.text(`Filters: ${filterParts.join(' | ')}`, 14, yPos);
+        yPos += 8;
+      }
+      
+      // Add generation date
+      const now = new Date();
+      doc.text(`Generated: ${now.toLocaleString()}`, 14, yPos);
+      yPos += 15;
+      
+      // Use current users data instead of exportUsers if it's empty
+      const dataToUse = exportUsers.length > 0 ? exportUsers : users;
+      console.log('Using data:', dataToUse.length, 'items');
+      
+      // Prepare table data
+      const tableData = dataToUse.map(user => {
+        const name = `${user.first_name} ${user.middle_name || ''} ${user.last_name}`.trim();
+        const email = user.email || 'N/A';
+        const status = 'Active'; // Default to active since status property may not exist
+        const role = showRoleColumn ? 
+          (user.subrole === 1 ? 'Manager' : 'Member') : 
+          'Adviser';
+        const createdAt = new Date(user._creationTime).toLocaleDateString();
+        
+        return [name, email, status, role, createdAt];
+      });
+      
+      // Add table
+      const headers = ['Name', 'Email', 'Status', 'Role', 'Created'];
+      
+      doc.autoTable({
+        head: [headers],
+        body: tableData,
+        startY: yPos,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [181, 74, 74] },
+        margin: { left: 14, right: 14 },
+        tableWidth: 'auto',
+        columnStyles: {
+          0: { cellWidth: 40 },
+          1: { cellWidth: 50 },
+          2: { cellWidth: 20 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 25 }
+        }
+      });
+      
+      // Save the PDF
+      const date = new Date();
+      const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+      const role = showRoleColumn ? "Students" : "Advisers";
+      const fileName = `${role}_Report_${dateTime}.pdf`;
+      doc.save(fileName);
+      
+      console.log('PDF generated successfully:', fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    }
   };
 
   // =========================================
