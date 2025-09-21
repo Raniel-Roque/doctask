@@ -229,20 +229,25 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
       firstGroupId: groups[0]?._id,
       lastGroupId: groups[groups.length - 1]?._id,
     });
-    return `pdf-groups-${btoa(filterHash).slice(0, 16)}`;
+    // Create a simple hash from the string
+    let hash = 0;
+    for (let i = 0; i < filterHash.length; i++) {
+      const char = filterHash.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `pdf-groups-${Math.abs(hash).toString(36).slice(0, 8)}`;
   }, [searchTerm, gradeFilters, capstoneFilter, groups, totalCount]);
 
-  // Memoize the PDF document to prevent unnecessary re-renders
-  const pdfDocument = useMemo(() => (
-    <GroupPDFReport
-      groups={groups}
-      title="Groups Report"
-      filters={{
-        searchTerm,
-        gradeFilters,
-      }}
-    />
-  ), [groups, searchTerm, gradeFilters]);
+  // Memoize the PDF props to prevent unnecessary re-renders
+  const pdfProps = useMemo(() => ({
+    groups,
+    title: "Groups Report",
+    filters: {
+      searchTerm,
+      gradeFilters,
+    },
+  }), [groups, searchTerm, gradeFilters]);
 
   // =========================================
   // Collapsible Text Component
@@ -368,7 +373,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           exportReady && (
             <PDFDownloadLink
               key={stableExportKey}
-              document={pdfDocument}
+              document={<GroupPDFReport {...pdfProps} />}
               fileName={`GroupsReport-${gradeFilters.join(",")}_${new Date()
                 .toISOString()
                 .slice(0, 10)}.pdf`}

@@ -204,28 +204,33 @@ export const UserTable = ({
       firstUserId: exportUsers[0]?._id,
       lastUserId: exportUsers[exportUsers.length - 1]?._id,
     });
-    return `pdf-users-${btoa(filterHash).slice(0, 16)}`;
+    // Create a simple hash from the string
+    let hash = 0;
+    for (let i = 0; i < filterHash.length; i++) {
+      const char = filterHash.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `pdf-users-${Math.abs(hash).toString(36).slice(0, 8)}`;
   }, [searchTerm, statusFilter, roleFilter, showRoleColumn, isStudent, exportUsers, totalCount]);
 
-  // Memoize the PDF document to prevent unnecessary re-renders
-  const pdfDocument = useMemo(() => (
-    <PDFReport
-      users={exportUsers}
-      title={showRoleColumn ? "Students Report" : "Advisers Report"}
-      filters={{
-        status: statusFilter,
-        subrole: showRoleColumn
-          ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
-            ? "MANAGER"
-            : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
-              ? "MEMBER"
-              : "ALL ROLE"
-          : undefined,
-      }}
-      isStudent={isStudent}
-      adviserCodes={adviserCodes}
-    />
-  ), [exportUsers, showRoleColumn, statusFilter, roleFilter, isStudent, adviserCodes]);
+  // Memoize the PDF props to prevent unnecessary re-renders
+  const pdfProps = useMemo(() => ({
+    users: exportUsers,
+    title: showRoleColumn ? "Students Report" : "Advisers Report",
+    filters: {
+      status: statusFilter,
+      subrole: showRoleColumn
+        ? roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
+          ? "MANAGER"
+          : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
+            ? "MEMBER"
+            : "ALL ROLE"
+        : undefined,
+    },
+    isStudent,
+    adviserCodes,
+  }), [exportUsers, showRoleColumn, statusFilter, roleFilter, isStudent, adviserCodes]);
 
   // =========================================
   // Helper Functions
@@ -470,7 +475,7 @@ export const UserTable = ({
                   exportReady && (
                     <PDFDownloadLink
                       key={stableExportKey}
-                      document={pdfDocument}
+                      document={<PDFReport {...pdfProps} />}
                       fileName={(() => {
                         const role = showRoleColumn ? "Student" : "Adviser";
                         const filters = [
