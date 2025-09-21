@@ -258,7 +258,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   // Fetch logs with backend filtering for action and entity type only
   const logsQuery = useQuery(api.fetch.getLogsWithDetails, {
     userRole: userRole,
-    pageSize: 100, // Reduced for better performance
+    pageSize: 10000, // Get all logs for frontend filtering
     pageNumber: 1,
     action: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
     entityType:
