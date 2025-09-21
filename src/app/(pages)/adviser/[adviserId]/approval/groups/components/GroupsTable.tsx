@@ -64,10 +64,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
 
-  // Add state for expanded capstone titles
-  const [expandedCapstoneTitles, setExpandedCapstoneTitles] = useState<
-    Set<string>
-  >(new Set());
+  // Per-column expansion state for collapsible content
+  const [expandedColumns, setExpandedColumns] = useState<{
+    capstoneTitle: boolean;
+  }>({
+    capstoneTitle: false,
+  });
 
   const handleViewMembers = (group: Group) => {
     setSelectedGroup(group);
@@ -94,20 +96,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     if (!text) return <span>-</span>;
     if (text.length <= maxLength) return <span>{text}</span>;
 
-    const isExpanded = expandedCapstoneTitles.has(groupId);
+    const isExpanded = expandedColumns.capstoneTitle;
 
     return (
       <button
         onClick={() => {
-          setExpandedCapstoneTitles((prev) => {
-            const newSet = new Set(prev);
-            if (isExpanded) {
-              newSet.delete(groupId);
-            } else {
-              newSet.add(groupId);
-            }
-            return newSet;
-          });
+          setExpandedColumns((prev) => ({
+            ...prev,
+            capstoneTitle: !prev.capstoneTitle,
+          }));
         }}
         className="w-full text-left hover:bg-gray-50 rounded px-1 py-1 transition-colors"
         title={isExpanded ? "Click to collapse" : "Click to expand"}

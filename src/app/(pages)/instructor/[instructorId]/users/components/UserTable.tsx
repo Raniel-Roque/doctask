@@ -112,12 +112,14 @@ export const UserTable = ({
   uploadProgress = 0,
   isModalOpen = false,
 }: UserTableProps) => {
-  const [expandedCode, setExpandedCode] = useState<{ [key: string]: boolean }>(
-    {},
-  );
-  const [expandedEmail, setExpandedEmail] = useState<{
-    [key: string]: boolean;
-  }>({});
+  // Per-column expansion state for collapsible content
+  const [expandedColumns, setExpandedColumns] = useState<{
+    email: boolean;
+    code: boolean;
+  }>({
+    email: false,
+    code: false,
+  });
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [tempStatusFilter, setTempStatusFilter] = useState(statusFilter);
@@ -363,12 +365,12 @@ export const UserTable = ({
   // =========================================
   const CollapsibleCode = ({ userId }: { userId: string }) => {
     const code = adviserCodes[userId]?.code || "Loading...";
-    const isExpanded = expandedCode[userId] || false;
+    const isExpanded = expandedColumns.code;
 
     return (
       <button
         onClick={() =>
-          setExpandedCode((prev) => ({ ...prev, [userId]: !prev[userId] }))
+          setExpandedColumns((prev) => ({ ...prev, code: !prev.code }))
         }
         className="w-full text-center"
       >
@@ -384,12 +386,12 @@ export const UserTable = ({
     email: string;
     userId: string;
   }) => {
-    const isExpanded = expandedEmail[userId] || false;
+    const isExpanded = expandedColumns.email;
 
     return (
       <button
         onClick={() =>
-          setExpandedEmail((prev) => ({ ...prev, [userId]: !prev[userId] }))
+          setExpandedColumns((prev) => ({ ...prev, email: !prev.email }))
         }
         className="w-full text-left"
       >
