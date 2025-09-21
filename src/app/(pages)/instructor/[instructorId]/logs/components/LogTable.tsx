@@ -426,49 +426,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   };
 
   // Prepare data for PDF export - memoize to prevent unnecessary re-renders
-  const exportLogs = useMemo(() => allFilteredLogsQuery?.logs || [], [allFilteredLogsQuery?.logs]);
   const exportReady = Array.isArray(allFilteredLogsQuery?.logs);
-  
-  // Create a stable key that only changes when the actual data or filters change
-  const stableExportKey = useMemo(() => {
-    const filterHash = JSON.stringify({
-      searchTerm,
-      startDate,
-      endDate,
-      appliedActionFilters: appliedActionFilters.sort(),
-      appliedEntityTypeFilters: appliedEntityTypeFilters.sort(),
-      userRole,
-      logsCount: exportLogs.length,
-      firstLogId: exportLogs[0]?._id,
-      lastLogId: exportLogs[exportLogs.length - 1]?._id,
-    });
-    // Create a simple hash from the string
-    let hash = 0;
-    for (let i = 0; i < filterHash.length; i++) {
-      const char = filterHash.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return `pdf-export-${Math.abs(hash).toString(36).slice(0, 8)}`;
-  }, [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters, userRole, exportLogs]);
-
-  const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
-  
-  const filters = useMemo(() => ({
-    searchTerm: searchTerm || undefined,
-    startDate: startDate || undefined,
-    endDate: endDate || undefined,
-    actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
-    entityTypeFilters: appliedEntityTypeFilters.length > 0 ? appliedEntityTypeFilters : undefined,
-  }), [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters]);
-
-  // Memoize the PDF props to prevent unnecessary re-renders
-  const pdfProps = useMemo(() => ({
-    logs: exportLogs,
-    title,
-    userRole,
-    filters,
-  }), [exportLogs, title, userRole, filters]);
 
   // Helper: normalize string for search
   const normalize = (str: string | undefined | null) =>
@@ -535,6 +493,47 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
     if (affectedName.includes(term)) return true;
     return false;
   });
+
+  // Create a stable key that only changes when the actual data or filters change
+  const stableExportKey = useMemo(() => {
+    const filterHash = JSON.stringify({
+      searchTerm,
+      startDate,
+      endDate,
+      appliedActionFilters: appliedActionFilters.sort(),
+      appliedEntityTypeFilters: appliedEntityTypeFilters.sort(),
+      userRole,
+      logsCount: filteredLogs.length,
+      firstLogId: filteredLogs[0]?._id,
+      lastLogId: filteredLogs[filteredLogs.length - 1]?._id,
+    });
+    // Create a simple hash from the string
+    let hash = 0;
+    for (let i = 0; i < filterHash.length; i++) {
+      const char = filterHash.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `pdf-export-${Math.abs(hash).toString(36).slice(0, 8)}`;
+  }, [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters, userRole, filteredLogs]);
+
+  const title = userRole === 0 ? "Capstone Instructor System Logs" : "Capstone Adviser System Logs";
+  
+  const filters = useMemo(() => ({
+    searchTerm: searchTerm || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    actionFilters: appliedActionFilters.length > 0 ? appliedActionFilters : undefined,
+    entityTypeFilters: appliedEntityTypeFilters.length > 0 ? appliedEntityTypeFilters : undefined,
+  }), [searchTerm, startDate, endDate, appliedActionFilters, appliedEntityTypeFilters]);
+
+  // Memoize the PDF props to prevent unnecessary re-renders
+  const pdfProps = useMemo(() => ({
+    logs: filteredLogs, // Use frontend-filtered logs instead of backend-filtered
+    title,
+    userRole,
+    filters,
+  }), [filteredLogs, title, userRole, filters]);
 
   // Apply client-side pagination
   const totalFilteredCount = filteredLogs.length;
@@ -622,7 +621,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             />
           </div>
         </div>
-        {logs.length > 0 && exportReady && (
+        {filteredLogs.length > 0 && exportReady && (
           <PDFDownloadLink
             key={stableExportKey}
             document={<LogPDFReport {...pdfProps} />}

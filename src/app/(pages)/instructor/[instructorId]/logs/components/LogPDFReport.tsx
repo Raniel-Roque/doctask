@@ -138,54 +138,9 @@ const LogPDFReport: React.FC<LogPDFReportProps> = ({
     return "-";
   };
 
-  // Apply filters to logs
-  let filteredLogs = [...validLogs];
-
-  if (filters) {
-    // Search term filter
-    if (filters.searchTerm) {
-      const searchLower = filters.searchTerm.toLowerCase();
-      filteredLogs = filteredLogs.filter(log => {
-        const userName = getUserName(log).toLowerCase();
-        const affectedEntity = getAffectedEntityName(log).toLowerCase();
-        const action = log.action.toLowerCase();
-        const details = log.details.toLowerCase();
-        
-        return userName.includes(searchLower) ||
-               affectedEntity.includes(searchLower) ||
-               action.includes(searchLower) ||
-               details.includes(searchLower);
-      });
-    }
-
-    // Date range filter
-    if (filters.startDate) {
-      const startDate = new Date(filters.startDate + 'T00:00:00.000Z').getTime();
-      filteredLogs = filteredLogs.filter(log => log._creationTime >= startDate);
-    }
-
-    if (filters.endDate) {
-      const endDate = new Date(filters.endDate + 'T23:59:59.999Z').getTime();
-      filteredLogs = filteredLogs.filter(log => log._creationTime <= endDate);
-    }
-
-    // Action filters
-    if (filters.actionFilters && filters.actionFilters.length > 0) {
-      filteredLogs = filteredLogs.filter(log => 
-        filters.actionFilters!.includes(log.action)
-      );
-    }
-
-    // Entity type filters
-    if (filters.entityTypeFilters && filters.entityTypeFilters.length > 0) {
-      filteredLogs = filteredLogs.filter(log => 
-        filters.entityTypeFilters!.includes(log.affected_entity_type)
-      );
-    }
-  }
-
+  // Logs are already filtered by the parent component, so we use them directly
   // Sort logs by creation time (newest first)
-  filteredLogs.sort((a, b) => b._creationTime - a._creationTime);
+  const filteredLogs = [...validLogs].sort((a, b) => b._creationTime - a._creationTime);
 
   return (
     <Document>
