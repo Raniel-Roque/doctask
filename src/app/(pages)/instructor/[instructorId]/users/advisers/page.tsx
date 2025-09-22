@@ -117,7 +117,6 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const logLockAccount = useMutationWithRetry(
     api.mutations.logLockAccountMutation,
   );
-  const resetAdviserCode = useMutationWithRetry(api.mutations.resetAdviserCode);
 
   // =========================================
   // Queries
@@ -611,25 +610,31 @@ const UsersPage = ({ params }: UsersPageProps) => {
     setIsSubmitting(true);
 
     try {
-      const result = await resetAdviserCode.mutate({
-        adviserId: user._id,
-        instructorId: instructor._id,
+      const data = await apiRequest<{
+        success: boolean;
+        message?: string;
+        newCode?: string;
+        error?: string;
+      }>("/api/clerk/reset-adviser-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adviserId: user._id,
+          instructorId: instructor._id,
+        }),
       });
 
-      // Check if result is null/undefined (connection failure)
-      if (!result) {
-        throw new Error("Failed to fetch - no response received");
-      }
-
-      if (result.success) {
+      if (data.success) {
         addBanner({
-          message: result.message || "Adviser code successfully reset",
+          message: data.message || "Adviser code successfully reset",
           type: "success",
           onClose: () => {},
           autoClose: true,
         });
       } else {
-        throw new Error("Failed to fetch - operation was not successful");
+        throw new Error(data.error || "Failed to reset adviser code");
       }
     } catch (error) {
       const errorMessage = getErrorMessage(
