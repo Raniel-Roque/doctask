@@ -16,6 +16,7 @@ import {
 import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
+import { ResetCodeConfirmation } from "./ResetCodeConfirmation";
 // Using jsPDF for better performance - no React re-rendering
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -130,6 +131,9 @@ export const UserTable = ({
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [tempStatusFilter, setTempStatusFilter] = useState(statusFilter);
   const [tempRoleFilter, setTempRoleFilter] = useState(roleFilter);
+  const [resetCodeUser, setResetCodeUser] = useState<User | null>(null);
+  const [isResettingCode, setIsResettingCode] = useState(false);
+  const [resetCodeError, setResetCodeError] = useState<string | null>(null);
 
   // Add refs for dropdown elements
   const statusDropdownRef = useRef<HTMLDivElement>(null);
@@ -938,7 +942,7 @@ export const UserTable = ({
                             |
                           </span>
                           <button
-                            onClick={() => onResetCode(user)}
+                            onClick={() => setResetCodeUser(user)}
                             className="p-2 text-orange-600 hover:text-orange-800"
                             title="Reset Adviser Code"
                           >
@@ -1039,6 +1043,32 @@ export const UserTable = ({
           </button>
         </div>
       </div>
+
+      {/* Reset Code Confirmation Modal */}
+      {resetCodeUser && onResetCode && (
+        <ResetCodeConfirmation
+          user={resetCodeUser}
+          onCancel={() => {
+            setResetCodeUser(null);
+            setResetCodeError(null);
+            setIsResettingCode(false);
+          }}
+          onConfirm={async () => {
+            setIsResettingCode(true);
+            setResetCodeError(null);
+            try {
+              await onResetCode(resetCodeUser);
+              setResetCodeUser(null);
+            } catch (error) {
+              setResetCodeError(error instanceof Error ? error.message : "Failed to reset adviser code");
+            } finally {
+              setIsResettingCode(false);
+            }
+          }}
+          isSubmitting={isResettingCode}
+          networkError={resetCodeError}
+        />
+      )}
     </div>
   );
 };
