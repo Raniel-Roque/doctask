@@ -80,7 +80,7 @@ export const VALIDATION_RULES = {
   // Name fields
   name: {
     maxLength: 50,
-    pattern: /^[a-zA-Z\s-']+$/,
+    pattern: /^[a-zA-ZÀ-ÿ\s-']+$/,
     message: "Name can only contain letters, spaces, hyphens, and apostrophes",
     required: true,
   },
@@ -101,7 +101,7 @@ export const VALIDATION_RULES = {
   // Capstone title
   capstoneTitle: {
     maxLength: 255,
-    pattern: /^[a-zA-Z0-9\s.,!?;:-]+$/,
+    pattern: /^[a-zA-ZÀ-ÿ0-9\s.,!?;:-]+$/,
     message:
       "Capstone Title can include letters, numbers, spaces, . , ! ? : ; -",
     required: false,

@@ -5,21 +5,21 @@ export const VALIDATION_RULES = {
   // Name fields
   firstName: {
     maxLength: 50,
-    pattern: /^[a-zA-Z\s-']+$/,
+    pattern: /^[a-zA-ZÀ-ÿ\s-']+$/,
     message:
       "First name can only contain letters, spaces, hyphens, and apostrophes",
     required: true,
   },
   middleName: {
     maxLength: 50,
-    pattern: /^[a-zA-Z\s-']*$/,
+    pattern: /^[a-zA-ZÀ-ÿ\s-']*$/,
     message:
       "Middle name can only contain letters, spaces, hyphens, and apostrophes",
     required: false,
   },
   lastName: {
     maxLength: 50,
-    pattern: /^[a-zA-Z\s-']+$/,
+    pattern: /^[a-zA-ZÀ-ÿ\s-']+$/,
     message:
       "Last name can only contain letters, spaces, hyphens, and apostrophes",
     required: true,
