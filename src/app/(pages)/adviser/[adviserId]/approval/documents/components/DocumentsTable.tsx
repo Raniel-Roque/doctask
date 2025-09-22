@@ -520,11 +520,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                   </td>
                 </tr>
               )}
-              {(searchTerm.trim()
-                ? groups // Show all results when searching
-                : groups.slice(0, MAX_VISIBLE_ITEMS)
-              ) // Limit when not searching
-                .map((group) => (
+              {groups.map((group) => (
                   <React.Fragment key={group._id}>
                     {/* Main Group Row */}
                     <tr
@@ -810,7 +806,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
           </table>
 
           {/* Performance Warning */}
-          {!searchTerm.trim() && groups.length > MAX_VISIBLE_ITEMS && (
+          {groups.length > MAX_VISIBLE_ITEMS && (
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
               <div className="flex">
                 <div className="ml-3">
