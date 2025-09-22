@@ -25,7 +25,7 @@ import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 // =========================================
 // Performance Optimization: Limit Rendered Items
 // =========================================
-const MAX_VISIBLE_ITEMS = 50; // Only render 50 items at a time for better performance
+// MAX_VISIBLE_ITEMS removed - tabs component shows all groups
 
 interface DocumentsTableTabsProps {
   groups: Group[];
