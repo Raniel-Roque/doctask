@@ -11,7 +11,7 @@ type NetworkState =
 const HEALTH_ENDPOINT = "/api/health";
 
 export function NetworkStatusBanner() {
-  const { addBanner, removeBanner } = useBannerManager();
+  const { addBanner, removeBanner, clearAllBanners } = useBannerManager();
   const [state, setState] = useState<NetworkState>(() => ({
     status: "online", // Default to online to avoid hydration mismatch
     unstable: false,
@@ -47,6 +47,8 @@ export function NetworkStatusBanner() {
             setDetails(
               message.includes("abort")
                 ? "Network timeout while contacting server"
+                : message.includes("Circuit breaker is OPEN")
+                ? "Service temporarily unavailable - circuit breaker is open"
                 : `Cannot reach server: ${message}`,
             );
           } else {
@@ -83,11 +85,9 @@ export function NetworkStatusBanner() {
     const handleOnline = () => {
       setState({ status: "online", unstable: false });
       setDetails(null);
-      // Remove existing banner when connection is restored
-      if (bannerId) {
-        removeBanner(bannerId);
-        setBannerId(null);
-      }
+      // Clear all banners when connection is fully restored
+      clearAllBanners();
+      setBannerId(null);
     };
     const handleOffline = () => {
       setState({ status: "offline", unstable: false });
@@ -112,7 +112,7 @@ export function NetworkStatusBanner() {
         intervalRef.current = null;
       }
     };
-  }, [startHealthChecks, bannerId, removeBanner]);
+  }, [startHealthChecks, bannerId, removeBanner, clearAllBanners]);
 
   // Manage banner display based on network state
   useEffect(() => {
@@ -125,7 +125,7 @@ export function NetworkStatusBanner() {
     const type = isOffline ? "error" : ("warning" as const);
 
     if (shouldShowBanner && !bannerId) {
-      // Add new banner
+      // Add new banner with high priority to override all other banners
       const id = addBanner({
         message,
         type,
@@ -133,11 +133,12 @@ export function NetworkStatusBanner() {
           // Banner was dismissed by user
         },
         autoClose: false,
+        priority: "high", // Network status banners have high priority
       });
       setBannerId(id);
     } else if (!shouldShowBanner && bannerId) {
-      // Remove banner when network is stable
-      removeBanner(bannerId);
+      // Remove banner when network is stable and clear all banners
+      clearAllBanners();
       setBannerId(null);
     }
   }, [
@@ -148,6 +149,7 @@ export function NetworkStatusBanner() {
     bannerId,
     addBanner,
     removeBanner,
+    clearAllBanners,
   ]);
 
   // Don't render anything - the banner is managed by BannerContainer

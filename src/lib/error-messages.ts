@@ -8,6 +8,7 @@ export interface ErrorContext {
     | "edit"
     | "delete"
     | "reset-password"
+    | "verify-password"
     | "lock-account"
     | "reset-code"
     | "upload"
@@ -62,6 +63,16 @@ export function getErrorMessage(
     return getDuplicateErrorMessage(context);
   }
 
+  // Handle password verification errors specifically
+  if (
+    lowerError.includes("password is incorrect") ||
+    lowerError.includes("incorrect password") ||
+    lowerError.includes("wrong password") ||
+    lowerError.includes("invalid password")
+  ) {
+    return "Incorrect password. Please try again.";
+  }
+
   // Return the original error message if it's already user-friendly
   if (isUserFriendlyMessage(errorMessage)) {
     return errorMessage;
@@ -86,6 +97,8 @@ function getNetworkErrorMessage(context: ErrorContext): string {
       return `Failed to delete ${entity}. Please check your internet connection and try again.`;
     case "reset-password":
       return `Failed to reset password. Please check your internet connection and try again.`;
+    case "verify-password":
+      return `Failed to verify password. Please check your internet connection and try again.`;
     case "lock-account":
       return `Failed to ${context.details || "update account status"}. Please check your internet connection and try again.`;
     case "reset-code":
@@ -175,6 +188,8 @@ function getDefaultErrorMessage(context: ErrorContext): string {
       return `Failed to delete ${entity}. Please try again.`;
     case "reset-password":
       return `Failed to reset password. Please try again.`;
+    case "verify-password":
+      return `Failed to verify password. Please try again.`;
     case "lock-account":
       return `Failed to ${context.details || "update account status"}. Please try again.`;
     case "reset-code":
@@ -227,6 +242,10 @@ export const ErrorContexts = {
   deleteGroup: (): ErrorContext => ({ operation: "delete", entity: "group" }),
   resetPassword: (): ErrorContext => ({
     operation: "reset-password",
+    entity: "user",
+  }),
+  verifyPassword: (): ErrorContext => ({
+    operation: "verify-password",
     entity: "user",
   }),
   lockAccount: (action: "lock" | "unlock"): ErrorContext => ({

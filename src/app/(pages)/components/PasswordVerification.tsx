@@ -74,7 +74,7 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
       if (err instanceof Error && err.name !== "AbortError") {
         const errorMessage = getErrorMessage(
           err,
-          ErrorContexts.resetPassword(),
+          ErrorContexts.verifyPassword(),
         );
         setError(errorMessage);
       }

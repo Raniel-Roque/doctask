@@ -15,6 +15,7 @@ interface Banner {
   onClose: () => void;
   autoClose?: boolean;
   duration?: number;
+  priority?: "high" | "normal"; // Add priority system
 }
 
 interface BannerContextType {
@@ -43,9 +44,14 @@ export const BannerProvider: React.FC<BannerProviderProps> = ({ children }) => {
 
   const addBanner = useCallback((banner: Omit<Banner, "id">) => {
     const id = Math.random().toString(36).substr(2, 9);
-    const newBanner = { ...banner, id };
+    const newBanner = { ...banner, id, priority: banner.priority || "normal" };
 
     setBanners((prev) => {
+      // If this is a high priority banner (like network status), clear all other banners
+      if (newBanner.priority === "high") {
+        return [newBanner];
+      }
+      
       // Remove any existing banner of the same type to prevent duplicates
       const filtered = prev.filter((b) => b.type !== banner.type);
       return [...filtered, newBanner];
