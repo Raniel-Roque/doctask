@@ -616,6 +616,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
         instructorId: instructor._id,
       });
 
+      // Check if result is null/undefined (connection failure)
+      if (!result) {
+        throw new Error("Failed to fetch - no response received");
+      }
+
       if (result.success) {
         addBanner({
           message: result.message || "Adviser code successfully reset",
@@ -624,7 +629,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
           autoClose: true,
         });
       } else {
-        throw new Error("Failed to reset adviser code");
+        throw new Error("Failed to fetch - operation was not successful");
       }
     } catch (error) {
       const errorMessage = getErrorMessage(
