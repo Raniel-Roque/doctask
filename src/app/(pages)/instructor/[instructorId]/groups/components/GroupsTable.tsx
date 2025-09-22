@@ -442,31 +442,28 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
         >
           <FaPlus /> Add Group
         </button>
-        {!isDeleting &&
-          !isModalOpen &&
-          groups.length > 0 &&
-          status === "idle" && (
-            <button
-              onClick={generatePDF}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-              title="Download Report"
+        {!isDeleting && groups.length > 0 && status === "idle" && (
+          <button
+            onClick={generatePDF}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            title="Download Report"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              Download Report
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Download Report
+          </button>
+        )}
       </div>
 
       {/* Table content */}
@@ -718,79 +715,83 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 </td>
               </tr>
             )}
-            {groups.slice(0, MAX_VISIBLE_ITEMS).map((group) => (
-              <tr key={group._id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {group.name || "-"}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
-                  <CollapsibleText text={group.capstone_title} />
-                </td>
-                <td className="px-6 py-4 text-center">
-                  <button
-                    onClick={() => handleViewMembers(group)}
-                    className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                    disabled={!group.members && !group.projectManager}
-                  >
-                    <FaUser className="mr-1" size={12} />
+            {(searchTerm.trim()
+              ? groups // Show all results when searching
+              : groups.slice(0, MAX_VISIBLE_ITEMS)
+            ) // Limit when not searching
+              .map((group) => (
+                <tr key={group._id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {group.name || "-"}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                    <CollapsibleText text={group.capstone_title} />
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      onClick={() => handleViewMembers(group)}
+                      className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      disabled={!group.members && !group.projectManager}
+                    >
+                      <FaUser className="mr-1" size={12} />
+                      {(() => {
+                        const memberCount =
+                          (group.members?.length || 0) +
+                          (group.projectManager ? 1 : 0);
+                        return memberCount > 0
+                          ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
+                          : "No members";
+                      })()}
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {group.adviser ? getAdviserDisplay(group.adviser) : "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
                     {(() => {
-                      const memberCount =
-                        (group.members?.length || 0) +
-                        (group.projectManager ? 1 : 0);
-                      return memberCount > 0
-                        ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
-                        : "No members";
+                      const { text, color } = getGradeDisplay(group.grade);
+                      return (
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}
+                        >
+                          {text}
+                        </span>
+                      );
                     })()}
-                  </button>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {group.adviser ? getAdviserDisplay(group.adviser) : "-"}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  {(() => {
-                    const { text, color } = getGradeDisplay(group.grade);
-                    return (
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => onEdit(group)}
+                        className="p-2 text-blue-600 hover:text-blue-800"
+                        title="Edit Group"
                       >
-                        {text}
-                      </span>
-                    );
-                  })()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                  <div className="flex justify-center gap-2">
-                    <button
-                      onClick={() => onEdit(group)}
-                      className="p-2 text-blue-600 hover:text-blue-800"
-                      title="Edit Group"
-                    >
-                      <FaEdit />
-                    </button>
-                    <span className="mx-1 text-gray-300 select-none">|</span>
-                    <button
-                      onClick={() => setGroupToDelete(group)}
-                      className="p-2 text-red-600 hover:text-red-800"
-                      title="Delete Group"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                        <FaEdit />
+                      </button>
+                      <span className="mx-1 text-gray-300 select-none">|</span>
+                      <button
+                        onClick={() => setGroupToDelete(group)}
+                        className="p-2 text-red-600 hover:text-red-800"
+                        title="Delete Group"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
 
         {/* Performance Warning */}
-        {groups.length > MAX_VISIBLE_ITEMS && (
+        {!searchTerm.trim() && groups.length > MAX_VISIBLE_ITEMS && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
                   <strong>Performance Notice:</strong> Showing first{" "}
                   {MAX_VISIBLE_ITEMS} of {groups.length} items on this page for
-                  optimal performance.
+                  optimal performance. Use search to find specific groups.
                 </p>
               </div>
             </div>

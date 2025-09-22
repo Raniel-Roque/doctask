@@ -229,63 +229,67 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   </td>
                 </tr>
               )}
-              {groups.slice(0, MAX_VISIBLE_ITEMS).map((group) => (
-                <tr key={group._id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {group.name || "-"}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    <CollapsibleText text={group.capstone_title} />
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <button
-                      onClick={() => handleViewMembers(group)}
-                      className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                      disabled={!group.members && !group.projectManager}
-                    >
-                      <FaUser className="mr-1" size={12} />
-                      {(() => {
-                        const memberCount =
-                          (group.members?.length || 0) +
-                          (group.projectManager ? 1 : 0);
-                        return memberCount > 0
-                          ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
-                          : "No members";
-                      })()}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center justify-center gap-2">
+              {(searchTerm.trim()
+                ? groups // Show all results when searching
+                : groups.slice(0, MAX_VISIBLE_ITEMS)
+              ) // Limit when not searching
+                .map((group) => (
+                  <tr key={group._id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {group.name || "-"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      <CollapsibleText text={group.capstone_title} />
+                    </td>
+                    <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => onAccept(group)}
-                        className="p-2 text-green-600 hover:text-green-800 transition-colors"
-                        title="Accept"
+                        onClick={() => handleViewMembers(group)}
+                        className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        disabled={!group.members && !group.projectManager}
                       >
-                        <FaCheck />
+                        <FaUser className="mr-1" size={12} />
+                        {(() => {
+                          const memberCount =
+                            (group.members?.length || 0) +
+                            (group.projectManager ? 1 : 0);
+                          return memberCount > 0
+                            ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
+                            : "No members";
+                        })()}
                       </button>
-                      <button
-                        onClick={() => onReject(group)}
-                        className="p-2 text-red-600 hover:text-red-800 transition-colors"
-                        title="Reject"
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => onAccept(group)}
+                          className="p-2 text-green-600 hover:text-green-800 transition-colors"
+                          title="Accept"
+                        >
+                          <FaCheck />
+                        </button>
+                        <button
+                          onClick={() => onReject(group)}
+                          className="p-2 text-red-600 hover:text-red-800 transition-colors"
+                          title="Reject"
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
 
           {/* Performance Warning */}
-          {groups.length > MAX_VISIBLE_ITEMS && (
+          {!searchTerm.trim() && groups.length > MAX_VISIBLE_ITEMS && (
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
               <div className="flex">
                 <div className="ml-3">
                   <p className="text-sm text-yellow-700">
                     <strong>Performance Notice:</strong> Showing first{" "}
                     {MAX_VISIBLE_ITEMS} of {groups.length} items on this page
-                    for optimal performance.
+                    for optimal performance. Use search to find specific groups.
                   </p>
                 </div>
               </div>

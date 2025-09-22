@@ -378,9 +378,11 @@ export default function EditGroupForm({
               Edit Group
             </h2>
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setValidationErrors({});
-                handleClose({} as React.MouseEvent);
+                handleClose(e);
               }}
               className="text-gray-500 hover:text-gray-700 transition-colors"
               disabled={isSubmitting}

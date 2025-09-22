@@ -608,6 +608,18 @@ const UsersPage = ({ params }: UsersPageProps) => {
   const handleResetCode = async (user: User) => {
     if (!instructor) return;
 
+    // Check if offline before attempting the operation
+    if (!navigator.onLine) {
+      addBanner({
+        message:
+          "You are offline. Please check your internet connection and try again.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {

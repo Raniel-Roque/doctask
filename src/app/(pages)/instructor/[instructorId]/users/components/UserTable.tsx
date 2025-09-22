@@ -373,7 +373,10 @@ export const UserTable = ({
   const paginatedUsers = users;
 
   // Performance optimization: Limit rendered items to prevent slowdown with large datasets
-  const visibleUsers = paginatedUsers.slice(0, MAX_VISIBLE_ITEMS);
+  // Only apply this limit if we're not searching (to ensure search results are always visible)
+  const visibleUsers = searchTerm.trim()
+    ? paginatedUsers // Show all results when searching
+    : paginatedUsers.slice(0, MAX_VISIBLE_ITEMS); // Limit when not searching
 
   // =========================================
   // Collapsible Text Component
@@ -606,30 +609,27 @@ export const UserTable = ({
                 </a>
 
                 {/* Report Download */}
-                {!isDeleting &&
-                  !isModalOpen &&
-                  users.length > 0 &&
-                  !isLoading && (
-                    <button
-                      onClick={generatePDF}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
+                {!isDeleting && users.length > 0 && !isLoading && (
+                  <button
+                    onClick={generatePDF}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
+                  >
+                    <svg
+                      className="w-4 h-4 text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <svg
-                        className="w-4 h-4 text-blue-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      {showRoleColumn ? "Students" : "Advisers"} Report (.pdf)
-                    </button>
-                  )}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    {showRoleColumn ? "Students" : "Advisers"} Report (.pdf)
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -963,14 +963,15 @@ export const UserTable = ({
         </table>
 
         {/* Performance Warning */}
-        {paginatedUsers.length > MAX_VISIBLE_ITEMS && (
+        {!searchTerm.trim() && paginatedUsers.length > MAX_VISIBLE_ITEMS && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
                   <strong>Performance Notice:</strong> Showing first{" "}
                   {MAX_VISIBLE_ITEMS} of {paginatedUsers.length} items on this
-                  page for optimal performance.
+                  page for optimal performance. Use search to find specific
+                  users.
                 </p>
               </div>
             </div>

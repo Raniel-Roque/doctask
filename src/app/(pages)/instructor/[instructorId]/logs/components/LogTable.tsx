@@ -635,7 +635,10 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
   const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
   
   // Performance optimization: Limit rendered items to prevent slowdown with large datasets
-  const visibleLogs = paginatedLogs.slice(0, MAX_VISIBLE_ITEMS);
+  // Only apply this limit if we're not searching (to ensure search results are always visible)
+  const visibleLogs = searchTerm.trim() 
+    ? paginatedLogs // Show all results when searching
+    : paginatedLogs.slice(0, MAX_VISIBLE_ITEMS); // Limit when not searching
 
   return (
     <div className="mt-4 w-full">
@@ -1099,12 +1102,12 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
         </table>
         
         {/* Performance Warning */}
-        {paginatedLogs.length > MAX_VISIBLE_ITEMS && (
+        {!searchTerm.trim() && paginatedLogs.length > MAX_VISIBLE_ITEMS && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <strong>Performance Notice:</strong> Showing first {MAX_VISIBLE_ITEMS} of {paginatedLogs.length} items on this page for optimal performance.
+                  <strong>Performance Notice:</strong> Showing first {MAX_VISIBLE_ITEMS} of {paginatedLogs.length} items on this page for optimal performance. Use search to find specific logs.
                 </p>
               </div>
             </div>

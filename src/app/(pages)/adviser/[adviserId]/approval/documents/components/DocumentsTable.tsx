@@ -520,294 +520,304 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
                   </td>
                 </tr>
               )}
-              {groups.slice(0, MAX_VISIBLE_ITEMS).map((group) => (
-                <React.Fragment key={group._id}>
-                  {/* Main Group Row */}
-                  <tr
-                    className="hover:bg-gray-50 cursor-pointer"
-                    ref={(el) => {
-                      groupRowRefs.current[group._id] = el;
-                    }}
-                    onClick={() => toggleExpand(group._id)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {group.name || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {group.capstone_title || "-"}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewMembers(group);
-                        }}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                        disabled={!group.members && !group.projectManager}
-                      >
-                        <FaUser className="mr-1" size={12} />
-                        {(() => {
-                          const memberCount =
-                            (group.members?.length || 0) +
-                            (group.projectManager ? 1 : 0);
-                          return memberCount > 0
-                            ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
-                            : "No members";
-                        })()}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex items-center justify-center">
-                        <span className="font-medium">
-                          {getSubmittedDocuments(group.documents || []).length}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex items-center justify-center space-x-2">
+              {(searchTerm.trim()
+                ? groups // Show all results when searching
+                : groups.slice(0, MAX_VISIBLE_ITEMS)
+              ) // Limit when not searching
+                .map((group) => (
+                  <React.Fragment key={group._id}>
+                    {/* Main Group Row */}
+                    <tr
+                      className="hover:bg-gray-50 cursor-pointer"
+                      ref={(el) => {
+                        groupRowRefs.current[group._id] = el;
+                      }}
+                      onClick={() => toggleExpand(group._id)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {group.name || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {group.capstone_title || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-center">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleExpand(group._id);
+                            handleViewMembers(group);
                           }}
-                          className="px-3 py-1.5 text-sm bg-[#B54A4A] text-white rounded-md hover:bg-[#A03A3A] focus:outline-none focus:ring-2 focus:ring-[#B54A4A] focus:ring-offset-2 transition-colors"
-                          disabled={
-                            getAllDocuments(group.documents || []).length === 0
-                          }
+                          className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          disabled={!group.members && !group.projectManager}
                         >
-                          View Documents
+                          <FaUser className="mr-1" size={12} />
+                          {(() => {
+                            const memberCount =
+                              (group.members?.length || 0) +
+                              (group.projectManager ? 1 : 0);
+                            return memberCount > 0
+                              ? `${memberCount} member${memberCount === 1 ? "" : "s"}`
+                              : "No members";
+                          })()}
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-
-                  {/* Expanded Documents Row */}
-                  {expandedGroupId === group._id && (
-                    <tr>
-                      <td colSpan={5} className="px-4 pb-4 pt-0 bg-gray-50">
-                        <div className="bg-white rounded-b-lg shadow-md border-x border-b border-gray-200 p-6">
-                          <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-100">
-                                <tr>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Document
-                                  </th>
-                                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    <div className="flex items-center justify-center gap-2">
-                                      <select
-                                        className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
-                                        value={selectedStatus}
-                                        onChange={(e) =>
-                                          setSelectedStatus(e.target.value)
-                                        }
-                                      >
-                                        {statusOptions.map((option) => (
-                                          <option
-                                            key={option.value}
-                                            value={option.value}
-                                          >
-                                            {option.label}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                  </th>
-                                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {filterDocumentsByStatus(group.documents || [])
-                                  .length > 0 ? (
-                                  filterDocumentsByStatus(
-                                    group.documents || [],
-                                  ).map((doc) => (
-                                    <tr
-                                      key={doc._id}
-                                      className="hover:bg-gray-50"
-                                    >
-                                      <td className="px-4 py-3 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">
-                                          {doc.title}
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-3 whitespace-nowrap text-center">
-                                        {canChangeStatus(doc) ? (
-                                          <div className="relative inline-block">
-                                            <select
-                                              value={doc.status}
-                                              onChange={(e) =>
-                                                handleStatusChange(
-                                                  doc._id,
-                                                  parseInt(e.target.value),
-                                                )
-                                              }
-                                              disabled={
-                                                updatingStatus === doc._id
-                                              }
-                                              className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${getStatusColor(doc.status)} ${updatingStatus === doc._id ? "opacity-50 cursor-not-allowed" : ""}`}
-                                              onClick={(e) =>
-                                                e.stopPropagation()
-                                              }
-                                            >
-                                              <option
-                                                value={doc.status}
-                                                disabled
-                                              >
-                                                {doc.status === 0
-                                                  ? "Not Submitted"
-                                                  : doc.status === 1
-                                                    ? "Submitted"
-                                                    : doc.status === 2
-                                                      ? "Approved"
-                                                      : doc.status === 3
-                                                        ? "Rejected"
-                                                        : "Unknown"}
-                                              </option>
-                                              <option
-                                                value={2}
-                                                className="bg-green-100 text-green-800"
-                                              >
-                                                Approve
-                                              </option>
-                                              <option
-                                                value={3}
-                                                className="bg-red-100 text-red-800"
-                                              >
-                                                Reject
-                                              </option>
-                                            </select>
-                                            <FaChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs pointer-events-none" />
-                                            {updatingStatus === doc._id && (
-                                              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
-                                                <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                              </div>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <span
-                                            className={`px-2 py-1 text-xs inline-flex items-center rounded-full ${getStatusColor(doc.status)}`}
-                                          >
-                                            {doc.status === 0
-                                              ? "Not Submitted"
-                                              : doc.status === 1
-                                                ? "Submitted"
-                                                : doc.status === 2
-                                                  ? "Approved"
-                                                  : doc.status === 3
-                                                    ? "Rejected"
-                                                    : "Unknown"}
-                                          </span>
-                                        )}
-                                      </td>
-                                      <td className="px-4 py-3 whitespace-nowrap text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                          {/* View button - always visible for all documents */}
-                                          <button
-                                            className="text-blue-600 hover:text-blue-800 transition-colors p-1"
-                                            title="View Document"
-                                            onClick={() =>
-                                              handleViewDocument(doc._id)
-                                            }
-                                          >
-                                            <FaEye className="w-4 h-4" />
-                                          </button>
-
-                                          {/* Edit button - only for submitted, approved, or rejected documents */}
-                                          {doc.status !== 0 && (
-                                            <>
-                                              <span className="mx-1 text-gray-300 select-none">
-                                                |
-                                              </span>
-                                              <button
-                                                className="text-purple-600 hover:text-purple-800 transition-colors p-1"
-                                                title="Edit Document"
-                                                onClick={() =>
-                                                  handleEditDocument(doc._id)
-                                                }
-                                              >
-                                                <FaEdit className="w-4 h-4" />
-                                              </button>
-                                            </>
-                                          )}
-
-                                          {/* Download button - only for submitted, approved, or rejected documents */}
-                                          {doc.status !== 0 && (
-                                            <>
-                                              <span className="mx-1 text-gray-300 select-none">
-                                                |
-                                              </span>
-                                              <button
-                                                className="text-green-600 hover:text-green-800 transition-colors p-1"
-                                                title="Download Document"
-                                                onClick={() =>
-                                                  handleDownloadDocx(doc)
-                                                }
-                                                disabled={
-                                                  downloadingDocx === doc._id
-                                                }
-                                              >
-                                                {downloadingDocx === doc._id ? (
-                                                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                                ) : (
-                                                  <FaDownload className="w-4 h-4" />
-                                                )}
-                                              </button>
-                                            </>
-                                          )}
-
-                                          {/* Notes button - always visible */}
-                                          <span className="mx-1 text-gray-300 select-none">
-                                            |
-                                          </span>
-                                          <button
-                                            className="text-yellow-500 hover:text-yellow-700 transition-colors p-1"
-                                            title="Add/Edit Notes"
-                                            onClick={() =>
-                                              handleNotesClick(doc, group)
-                                            }
-                                          >
-                                            <FaStickyNote className="w-4 h-4" />
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))
-                                ) : (
-                                  <tr>
-                                    <td
-                                      colSpan={3}
-                                      className="text-center px-6 py-4 text-gray-500"
-                                    >
-                                      {selectedStatus !== "all"
-                                        ? "No documents match the selected filter."
-                                        : "This group has no documents to display."}
-                                    </td>
-                                  </tr>
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center justify-center">
+                          <span className="font-medium">
+                            {
+                              getSubmittedDocuments(group.documents || [])
+                                .length
+                            }
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center justify-center space-x-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpand(group._id);
+                            }}
+                            className="px-3 py-1.5 text-sm bg-[#B54A4A] text-white rounded-md hover:bg-[#A03A3A] focus:outline-none focus:ring-2 focus:ring-[#B54A4A] focus:ring-offset-2 transition-colors"
+                            disabled={
+                              getAllDocuments(group.documents || []).length ===
+                              0
+                            }
+                          >
+                            View Documents
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              ))}
+
+                    {/* Expanded Documents Row */}
+                    {expandedGroupId === group._id && (
+                      <tr>
+                        <td colSpan={5} className="px-4 pb-4 pt-0 bg-gray-50">
+                          <div className="bg-white rounded-b-lg shadow-md border-x border-b border-gray-200 p-6">
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-100">
+                                  <tr>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                      Document
+                                    </th>
+                                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <select
+                                          className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700 shadow-sm"
+                                          value={selectedStatus}
+                                          onChange={(e) =>
+                                            setSelectedStatus(e.target.value)
+                                          }
+                                        >
+                                          {statusOptions.map((option) => (
+                                            <option
+                                              key={option.value}
+                                              value={option.value}
+                                            >
+                                              {option.label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    </th>
+                                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                      Actions
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                  {filterDocumentsByStatus(
+                                    group.documents || [],
+                                  ).length > 0 ? (
+                                    filterDocumentsByStatus(
+                                      group.documents || [],
+                                    ).map((doc) => (
+                                      <tr
+                                        key={doc._id}
+                                        className="hover:bg-gray-50"
+                                      >
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                          <div className="text-sm font-medium text-gray-900">
+                                            {doc.title}
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                                          {canChangeStatus(doc) ? (
+                                            <div className="relative inline-block">
+                                              <select
+                                                value={doc.status}
+                                                onChange={(e) =>
+                                                  handleStatusChange(
+                                                    doc._id,
+                                                    parseInt(e.target.value),
+                                                  )
+                                                }
+                                                disabled={
+                                                  updatingStatus === doc._id
+                                                }
+                                                className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${getStatusColor(doc.status)} ${updatingStatus === doc._id ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                onClick={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                              >
+                                                <option
+                                                  value={doc.status}
+                                                  disabled
+                                                >
+                                                  {doc.status === 0
+                                                    ? "Not Submitted"
+                                                    : doc.status === 1
+                                                      ? "Submitted"
+                                                      : doc.status === 2
+                                                        ? "Approved"
+                                                        : doc.status === 3
+                                                          ? "Rejected"
+                                                          : "Unknown"}
+                                                </option>
+                                                <option
+                                                  value={2}
+                                                  className="bg-green-100 text-green-800"
+                                                >
+                                                  Approve
+                                                </option>
+                                                <option
+                                                  value={3}
+                                                  className="bg-red-100 text-red-800"
+                                                >
+                                                  Reject
+                                                </option>
+                                              </select>
+                                              <FaChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs pointer-events-none" />
+                                              {updatingStatus === doc._id && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
+                                                  <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <span
+                                              className={`px-2 py-1 text-xs inline-flex items-center rounded-full ${getStatusColor(doc.status)}`}
+                                            >
+                                              {doc.status === 0
+                                                ? "Not Submitted"
+                                                : doc.status === 1
+                                                  ? "Submitted"
+                                                  : doc.status === 2
+                                                    ? "Approved"
+                                                    : doc.status === 3
+                                                      ? "Rejected"
+                                                      : "Unknown"}
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                                          <div className="flex items-center justify-center gap-2">
+                                            {/* View button - always visible for all documents */}
+                                            <button
+                                              className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                                              title="View Document"
+                                              onClick={() =>
+                                                handleViewDocument(doc._id)
+                                              }
+                                            >
+                                              <FaEye className="w-4 h-4" />
+                                            </button>
+
+                                            {/* Edit button - only for submitted, approved, or rejected documents */}
+                                            {doc.status !== 0 && (
+                                              <>
+                                                <span className="mx-1 text-gray-300 select-none">
+                                                  |
+                                                </span>
+                                                <button
+                                                  className="text-purple-600 hover:text-purple-800 transition-colors p-1"
+                                                  title="Edit Document"
+                                                  onClick={() =>
+                                                    handleEditDocument(doc._id)
+                                                  }
+                                                >
+                                                  <FaEdit className="w-4 h-4" />
+                                                </button>
+                                              </>
+                                            )}
+
+                                            {/* Download button - only for submitted, approved, or rejected documents */}
+                                            {doc.status !== 0 && (
+                                              <>
+                                                <span className="mx-1 text-gray-300 select-none">
+                                                  |
+                                                </span>
+                                                <button
+                                                  className="text-green-600 hover:text-green-800 transition-colors p-1"
+                                                  title="Download Document"
+                                                  onClick={() =>
+                                                    handleDownloadDocx(doc)
+                                                  }
+                                                  disabled={
+                                                    downloadingDocx === doc._id
+                                                  }
+                                                >
+                                                  {downloadingDocx ===
+                                                  doc._id ? (
+                                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                                  ) : (
+                                                    <FaDownload className="w-4 h-4" />
+                                                  )}
+                                                </button>
+                                              </>
+                                            )}
+
+                                            {/* Notes button - always visible */}
+                                            <span className="mx-1 text-gray-300 select-none">
+                                              |
+                                            </span>
+                                            <button
+                                              className="text-yellow-500 hover:text-yellow-700 transition-colors p-1"
+                                              title="Add/Edit Notes"
+                                              onClick={() =>
+                                                handleNotesClick(doc, group)
+                                              }
+                                            >
+                                              <FaStickyNote className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))
+                                  ) : (
+                                    <tr>
+                                      <td
+                                        colSpan={3}
+                                        className="text-center px-6 py-4 text-gray-500"
+                                      >
+                                        {selectedStatus !== "all"
+                                          ? "No documents match the selected filter."
+                                          : "This group has no documents to display."}
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
             </tbody>
           </table>
 
           {/* Performance Warning */}
-          {groups.length > MAX_VISIBLE_ITEMS && (
+          {!searchTerm.trim() && groups.length > MAX_VISIBLE_ITEMS && (
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
               <div className="flex">
                 <div className="ml-3">
                   <p className="text-sm text-yellow-700">
                     <strong>Performance Notice:</strong> Showing first{" "}
                     {MAX_VISIBLE_ITEMS} of {groups.length} items on this page
-                    for optimal performance.
+                    for optimal performance. Use search to find specific groups.
                   </p>
                 </div>
               </div>
