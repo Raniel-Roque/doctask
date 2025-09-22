@@ -1,3 +1,4 @@
+import { clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -12,40 +13,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get Clerk secret key from environment
-    const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-    if (!clerkSecretKey) {
+    // Use Clerk client to get user status
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.getUser(userId);
+
+    if (!clerkUser) {
       return NextResponse.json(
-        { error: "Clerk secret key not configured" },
-        { status: 500 }
+        { error: "User not found" },
+        { status: 404 }
       );
     }
-
-    // Fetch user status from Clerk API
-    const response = await fetch(
-      `https://api.clerk.com/v1/users/${userId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${clerkSecretKey}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      console.error(`Clerk API error: ${response.status} ${response.statusText}`);
-      return NextResponse.json(
-        { error: "Failed to fetch user status from Clerk" },
-        { status: response.status }
-      );
-    }
-
-    const clerkUser = await response.json();
     
     return NextResponse.json({
       locked: clerkUser.locked || false,
-      email: clerkUser.email_addresses?.[0]?.email_address,
-      firstName: clerkUser.first_name,
-      lastName: clerkUser.last_name,
+      email: clerkUser.emailAddresses?.[0]?.emailAddress,
+      firstName: clerkUser.firstName,
+      lastName: clerkUser.lastName,
     });
 
   } catch (error) {
