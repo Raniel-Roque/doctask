@@ -442,7 +442,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
         >
           <FaPlus /> Add Group
         </button>
-        {!isDeleting && groups.length > 0 && status === "idle" && (
+        {!isDeleting && groups.length > 0 && (
           <button
             onClick={generatePDF}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
