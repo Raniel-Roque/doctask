@@ -473,10 +473,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
             <tr>
               <th
                 scope="col"
-                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("name")}
               >
-                <div className="flex items-center justify-center">
+                <div className="flex items-center">
                   Group Name
                   <span className="ml-1">{getSortIcon("name")}</span>
                 </div>
@@ -484,9 +484,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               <th
                 ref={capstoneThRef}
                 scope="col"
-                className="relative px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+                className="relative px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center gap-2">
                   <span className="font-medium uppercase">CAPSTONE TITLE</span>
                   <div className="flex items-center gap-1">
                     <button
@@ -597,10 +597,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("adviser")}
               >
-                <div className="flex items-center justify-center">
+                <div className="flex items-center">
                   ADVISER
                   <span className="ml-1">{getSortIcon("adviser")}</span>
                 </div>
@@ -721,10 +721,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
             ) // Limit when not searching
               .map((group) => (
                 <tr key={group._id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {group.name || "-"}
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900 text-left max-w-xs">
+                    <div className="break-words">
+                      {group.name || "-"}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                  <td className="px-6 py-4 text-sm text-gray-900 max-w-xs text-left">
                     <CollapsibleText text={group.capstone_title} />
                   </td>
                   <td className="px-6 py-4 text-center">
@@ -744,7 +746,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                       })()}
                     </button>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left">
                     {group.adviser ? getAdviserDisplay(group.adviser) : "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">

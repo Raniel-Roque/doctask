@@ -657,31 +657,31 @@ export const UserTable = ({
           <thead>
             <tr className="bg-[#B54A4A]">
               <th
-                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 border-b text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("first_name")}
               >
-                <div className="flex items-center justify-center">
+                <div className="flex items-center">
                   First Name
                   <span className="ml-1">{getSortIcon("first_name")}</span>
                 </div>
               </th>
-              <th className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider">
+              <th className="px-6 py-3 border-b text-left text-xs font-medium text-white uppercase tracking-wider">
                 Middle Name
               </th>
               <th
-                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 border-b text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("last_name")}
               >
-                <div className="flex items-center justify-center">
+                <div className="flex items-center">
                   Last Name
                   <span className="ml-1">{getSortIcon("last_name")}</span>
                 </div>
               </th>
               <th
-                className="px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 border-b text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort("email")}
               >
-                <div className="flex items-center justify-center">
+                <div className="flex items-center">
                   Email
                   <span className="ml-1">{getSortIcon("email")}</span>
                 </div>
@@ -883,7 +883,7 @@ export const UserTable = ({
                   <td className="px-6 py-4 border-b text-left max-w-xs">
                     <CollapsibleName name={user.last_name} type="lastName" />
                   </td>
-                  <td className="px-6 py-4 border-b text-center max-w-xs">
+                  <td className="px-6 py-4 border-b text-left max-w-xs">
                     <CollapsibleEmail email={user.email} />
                   </td>
                   <td className="px-6 py-4 border-b text-center">
