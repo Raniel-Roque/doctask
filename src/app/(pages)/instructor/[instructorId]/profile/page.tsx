@@ -88,6 +88,11 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     setShowWipeModal(false);
   };
 
+  const handleCloseOnSuccess = () => {
+    resetForm();
+    setShowWipeModal(false);
+  };
+
   const handleVerifyPassword = async (
     password: string,
     signal?: AbortSignal,
@@ -159,8 +164,9 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         autoClose: true,
       });
 
+      // Only close modal on success
       setTimeout(() => {
-        handleClose();
+        handleCloseOnSuccess();
       }, 2000);
     } catch (err) {
       const errorMessage = getErrorMessage(
@@ -173,6 +179,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         onClose: () => {},
         autoClose: true,
       });
+      // Don't close modal on failure - let user retry without re-verification
     } finally {
       setIsLoading(false);
     }
@@ -329,6 +336,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         autoClose: true,
       });
 
+      // Only close modal on success
       setShowBackupModal(false);
       setSelectedZipFile(null);
     } catch (error: unknown) {
@@ -339,6 +347,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         onClose: () => {},
         autoClose: true,
       });
+      // Don't close modal on failure - let user retry without re-verification
     } finally {
       setIsRestoring(false);
     }

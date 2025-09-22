@@ -136,6 +136,8 @@ export default function ChangePassword({
     } catch (err) {
       const errorMessage = getErrorMessage(err, ErrorContexts.resetPassword());
       setError(errorMessage);
+      // Don't reset form on failure - let user retry with same new password
+      // Keep them in the new password form without requiring re-verification
     } finally {
       setIsLoading(false);
     }
