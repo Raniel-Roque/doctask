@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Cropper, ReactCropperElement } from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import { apiRequest } from "@/lib/utils";
+import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 interface User {
   id: string;
@@ -106,9 +107,11 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
         window.location.reload();
       }, 2000);
     } catch (err) {
-      onError(
-        err instanceof Error ? err.message : "Failed to update profile picture",
+      const errorMessage = getErrorMessage(
+        err,
+        ErrorContexts.uploadFile(),
       );
+      onError(errorMessage);
     } finally {
       setIsLoading(false);
       onUploading?.(false);
