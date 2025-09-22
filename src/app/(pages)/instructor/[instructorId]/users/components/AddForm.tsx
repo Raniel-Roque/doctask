@@ -111,7 +111,21 @@ export const AddForm = ({
   // Use modal focus management hook
   const modalRef = useModalFocus({
     isOpen,
-    onClose: () => onClose(),
+    onClose: () => {
+      // Check for unsaved changes when ESC is pressed
+      const hasChanges =
+        formData.first_name.trim() ||
+        formData.middle_name.trim() ||
+        formData.last_name.trim() ||
+        formData.email.trim() ||
+        (isStudent && formData.subrole !== undefined);
+
+      if (hasChanges) {
+        setShowUnsavedChangesDialog(true);
+      } else {
+        onClose();
+      }
+    },
   });
 
   // Clear validation errors when form is opened

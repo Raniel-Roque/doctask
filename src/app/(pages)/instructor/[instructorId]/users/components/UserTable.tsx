@@ -17,11 +17,11 @@ import { User, SortField, SortDirection, TABLE_CONSTANTS } from "./types";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
 // Using jsPDF for better performance - no React re-rendering
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Extend jsPDF type to include autoTable
-declare module 'jspdf' {
+declare module "jspdf" {
   interface jsPDF {
     autoTable: (options: Record<string, unknown>) => jsPDF;
   }
@@ -116,9 +116,15 @@ export const UserTable = ({
   const [expandedColumns, setExpandedColumns] = useState<{
     email: boolean;
     code: boolean;
+    firstName: boolean;
+    middleName: boolean;
+    lastName: boolean;
   }>({
     email: false,
     code: false,
+    firstName: false,
+    middleName: false,
+    lastName: false,
   });
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
@@ -213,15 +219,13 @@ export const UserTable = ({
   // Efficient PDF generation function - no React re-rendering
   const generatePDF = () => {
     try {
-      console.log('Generating PDF...', { exportUsers: exportUsers.length, users: users.length });
-      
-      const doc = new jsPDF('landscape', 'mm', 'a4');
-      
+      const doc = new jsPDF("landscape", "mm", "a4");
+
       // Add title
       const title = showRoleColumn ? "Students Report" : "Advisers Report";
       doc.setFontSize(16);
       doc.text(title, 14, 20);
-      
+
       // Add filters info
       doc.setFontSize(10);
       let yPos = 30;
@@ -229,63 +233,76 @@ export const UserTable = ({
       if (searchTerm) filterParts.push(`Search: ${searchTerm.slice(0, 20)}...`);
       filterParts.push(`Status: ${statusFilter}`);
       if (showRoleColumn) {
-        const role = roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER ? "MANAGER" : 
-                     roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER ? "MEMBER" : "ALL";
+        const role =
+          roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MANAGER
+            ? "MANAGER"
+            : roleFilter === TABLE_CONSTANTS.ROLE_FILTERS.MEMBER
+              ? "MEMBER"
+              : "ALL";
         filterParts.push(`Role: ${role}`);
       }
-      
+
       if (filterParts.length > 0) {
-        doc.text(`Filters: ${filterParts.join(' | ')}`, 14, yPos);
+        doc.text(`Filters: ${filterParts.join(" | ")}`, 14, yPos);
         yPos += 8;
       }
-      
+
       // Add generation date
       const now = new Date();
       doc.text(`Generated: ${now.toLocaleString()}`, 14, yPos);
       yPos += 15;
-      
+
       // Use current users data instead of exportUsers if it's empty
       const dataToUse = exportUsers.length > 0 ? exportUsers : users;
-      console.log('Using data:', dataToUse.length, 'items');
-      
+
       // Prepare table data
-      const tableData = dataToUse.map(user => {
-        const firstName = user.first_name || '';
-        const middleName = user.middle_name || '-';
-        const lastName = user.last_name || '';
-        const email = user.email || 'N/A';
-        const status = user.email_verified ? 'Verified' : 'Unverified';
-        
+      const tableData = dataToUse.map((user) => {
+        const firstName = user.first_name || "";
+        const middleName = user.middle_name || "-";
+        const lastName = user.last_name || "";
+        const email = user.email || "N/A";
+        const status = user.email_verified ? "Verified" : "Unverified";
+
         // Get adviser code if showCodeColumn is true
-        const code = showCodeColumn ? (adviserCodes[user._id]?.code || 'Loading...') : '';
-        
+        const code = showCodeColumn
+          ? adviserCodes[user._id]?.code || "Loading..."
+          : "";
+
         // Get role if showRoleColumn is true
-        const role = showRoleColumn ? 
-          (user.subrole === 1 ? 'Project Manager' : 'Project Member') : 
-          '';
-        
+        const role = showRoleColumn
+          ? user.subrole === 1
+            ? "Project Manager"
+            : "Project Member"
+          : "";
+
         // Build row based on which columns are shown
         const row = [firstName, middleName, lastName, email, status];
         if (showCodeColumn) row.push(code);
         if (showRoleColumn) row.push(role);
-        
+
         return row;
       });
-      
+
       // Build headers based on which columns are shown
-      const headers = ['First Name', 'Middle Name', 'Last Name', 'Email', 'Status'];
-      if (showCodeColumn) headers.push('Code');
-      if (showRoleColumn) headers.push('Role');
-      
+      const headers = [
+        "First Name",
+        "Middle Name",
+        "Last Name",
+        "Email",
+        "Status",
+      ];
+      if (showCodeColumn) headers.push("Code");
+      if (showRoleColumn) headers.push("Role");
+
       // Build column styles based on which columns are shown
       const columnStyles: Record<number, { cellWidth: number }> = {
         0: { cellWidth: 30 }, // First Name
         1: { cellWidth: 25 }, // Middle Name
         2: { cellWidth: 30 }, // Last Name
         3: { cellWidth: 50 }, // Email
-        4: { cellWidth: 20 }  // Status
+        4: { cellWidth: 20 }, // Status
       };
-      
+
       let colIndex = 5;
       if (showCodeColumn) {
         columnStyles[colIndex] = { cellWidth: 35 }; // Code
@@ -294,7 +311,7 @@ export const UserTable = ({
       if (showRoleColumn) {
         columnStyles[colIndex] = { cellWidth: 30 }; // Role
       }
-      
+
       autoTable(doc, {
         head: [headers],
         body: tableData,
@@ -302,21 +319,19 @@ export const UserTable = ({
         styles: { fontSize: 8 },
         headStyles: { fillColor: [181, 74, 74] },
         margin: { left: 14, right: 14 },
-        tableWidth: 'auto',
-        columnStyles
+        tableWidth: "auto",
+        columnStyles,
       });
-      
+
       // Save the PDF
       const date = new Date();
-      const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+      const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}_${date.getHours().toString().padStart(2, "0")}${date.getMinutes().toString().padStart(2, "0")}`;
       const role = showRoleColumn ? "Students" : "Advisers";
       const fileName = `${role}_Report_${dateTime}.pdf`;
       doc.save(fileName);
-      
-      console.log('PDF generated successfully:', fileName);
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      console.error("Error generating PDF:", error);
+      alert("Error generating PDF. Please try again.");
     }
   };
 
@@ -356,13 +371,48 @@ export const UserTable = ({
   // =========================================
   // No client-side pagination: users is already paginated from parent
   const paginatedUsers = users;
-  
+
   // Performance optimization: Limit rendered items to prevent slowdown with large datasets
   const visibleUsers = paginatedUsers.slice(0, MAX_VISIBLE_ITEMS);
 
   // =========================================
   // Collapsible Text Component
   // =========================================
+  const CollapsibleName = ({
+    name,
+    type,
+    maxLength = 20,
+  }: {
+    name: string;
+    type: "firstName" | "middleName" | "lastName";
+    maxLength?: number;
+  }) => {
+    if (!name) return <span>-</span>;
+    if (name.length <= maxLength)
+      return <span className="break-words">{name}</span>;
+
+    const isExpanded = expandedColumns[type];
+
+    return (
+      <button
+        onClick={() => {
+          setExpandedColumns((prev) => ({
+            ...prev,
+            [type]: !prev[type],
+          }));
+        }}
+        className="w-full text-left hover:bg-gray-50 rounded px-1 py-1 transition-colors break-words"
+        title={isExpanded ? "Click to collapse" : "Click to expand"}
+      >
+        {isExpanded ? (
+          <span className="break-words">{name}</span>
+        ) : (
+          <span className="break-words">{name.slice(0, maxLength)}...</span>
+        )}
+      </button>
+    );
+  };
+
   const CollapsibleCode = ({ userId }: { userId: string }) => {
     const code = adviserCodes[userId]?.code || "Loading...";
     const isExpanded = expandedColumns.code;
@@ -372,18 +422,15 @@ export const UserTable = ({
         onClick={() =>
           setExpandedColumns((prev) => ({ ...prev, code: !prev.code }))
         }
-        className="w-full text-center"
+        className="w-full text-center break-words"
+        title={isExpanded ? "Click to collapse" : "Click to expand"}
       >
         {isExpanded ? code : `${code.slice(0, 4)}...`}
       </button>
     );
   };
 
-  const CollapsibleEmail = ({
-    email,
-  }: {
-    email: string;
-  }) => {
+  const CollapsibleEmail = ({ email }: { email: string }) => {
     const isExpanded = expandedColumns.email;
 
     return (
@@ -391,7 +438,8 @@ export const UserTable = ({
         onClick={() =>
           setExpandedColumns((prev) => ({ ...prev, email: !prev.email }))
         }
-        className="w-full text-left"
+        className="w-full text-left break-words"
+        title={isExpanded ? "Click to collapse" : "Click to expand"}
       >
         {isExpanded ? email : `${email.slice(0, 10)}...`}
       </button>
@@ -817,18 +865,25 @@ export const UserTable = ({
             ) : (
               visibleUsers.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 border-b text-left">
-                    {user.first_name}
+                  <td className="px-6 py-4 border-b text-left max-w-xs">
+                    <CollapsibleName name={user.first_name} type="firstName" />
                   </td>
                   <td
-                    className={`px-6 py-4 border-b ${!user.middle_name ? "text-center" : "text-left"}`}
+                    className={`px-6 py-4 border-b max-w-xs ${!user.middle_name ? "text-center" : "text-left"}`}
                   >
-                    {user.middle_name || "-"}
+                    {user.middle_name ? (
+                      <CollapsibleName
+                        name={user.middle_name}
+                        type="middleName"
+                      />
+                    ) : (
+                      "-"
+                    )}
                   </td>
-                  <td className="px-6 py-4 border-b text-left">
-                    {user.last_name}
+                  <td className="px-6 py-4 border-b text-left max-w-xs">
+                    <CollapsibleName name={user.last_name} type="lastName" />
                   </td>
-                  <td className="px-6 py-4 border-b text-center">
+                  <td className="px-6 py-4 border-b text-center max-w-xs">
                     <CollapsibleEmail email={user.email} />
                   </td>
                   <td className="px-6 py-4 border-b text-center">
@@ -906,14 +961,16 @@ export const UserTable = ({
             )}
           </tbody>
         </table>
-        
+
         {/* Performance Warning */}
         {paginatedUsers.length > MAX_VISIBLE_ITEMS && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <strong>Performance Notice:</strong> Showing first {MAX_VISIBLE_ITEMS} of {paginatedUsers.length} items on this page for optimal performance.
+                  <strong>Performance Notice:</strong> Showing first{" "}
+                  {MAX_VISIBLE_ITEMS} of {paginatedUsers.length} items on this
+                  page for optimal performance.
                 </p>
               </div>
             </div>

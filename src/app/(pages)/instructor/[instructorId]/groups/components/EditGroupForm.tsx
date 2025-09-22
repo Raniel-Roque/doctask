@@ -90,7 +90,14 @@ export default function EditGroupForm({
   // Use modal focus management hook
   const modalRef = useModalFocus({
     isOpen,
-    onClose: () => onClose(),
+    onClose: () => {
+      // Check for unsaved changes when ESC is pressed
+      if (hasUnsavedChanges) {
+        setShowUnsavedChanges(true);
+      } else {
+        onClose();
+      }
+    },
     focusFirstInput: false,
   });
 

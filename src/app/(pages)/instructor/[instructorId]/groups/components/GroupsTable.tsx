@@ -15,11 +15,11 @@ import {
 import { User, Group } from "./types";
 import DeleteGroupConfirmation from "./DeleteGroupConfirmation";
 // Using jsPDF for better performance - no React re-rendering
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Extend jsPDF type to include autoTable
-declare module 'jspdf' {
+declare module "jspdf" {
   interface jsPDF {
     autoTable: (options: Record<string, unknown>) => jsPDF;
   }
@@ -235,81 +235,98 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   // Efficient PDF generation function - no React re-rendering
   const generatePDF = () => {
     try {
-      console.log('Generating Groups PDF...', { groups: groups.length });
-      
-      const doc = new jsPDF('landscape', 'mm', 'a4');
-      
+      const doc = new jsPDF("landscape", "mm", "a4");
+
       // Add title
       doc.setFontSize(16);
       doc.text("Groups Report", 14, 20);
-      
+
       // Add filters info
       doc.setFontSize(10);
       let yPos = 30;
       const filterParts = [];
       if (searchTerm) filterParts.push(`Search: ${searchTerm.slice(0, 20)}...`);
-      if (gradeFilters.length > 0) filterParts.push(`Grades: ${gradeFilters.join(', ')}`);
-      if (capstoneFilter !== CAPSTONE_FILTERS.ALL) filterParts.push(`Capstone: ${capstoneFilter}`);
-      
+      if (gradeFilters.length > 0)
+        filterParts.push(`Grades: ${gradeFilters.join(", ")}`);
+      if (capstoneFilter !== CAPSTONE_FILTERS.ALL)
+        filterParts.push(`Capstone: ${capstoneFilter}`);
+
       if (filterParts.length > 0) {
-        doc.text(`Filters: ${filterParts.join(' | ')}`, 14, yPos);
+        doc.text(`Filters: ${filterParts.join(" | ")}`, 14, yPos);
         yPos += 8;
       }
-      
+
       // Add generation date
       const now = new Date();
       doc.text(`Generated: ${now.toLocaleString()}`, 14, yPos);
       yPos += 15;
-      
+
       // Prepare table data
-      const tableData = groups.map(group => {
-        const name = group.name || 'N/A';
-        const capstoneTitle = group.capstone_title || 'No title';
-        
+      const tableData = groups.map((group) => {
+        const name = group.name || "N/A";
+        const capstoneTitle = group.capstone_title || "No title";
+
         // Project Manager
-        const projectManager = group.projectManager ? 
-          `${group.projectManager.first_name} ${group.projectManager.last_name}` : 'No manager';
-        
+        const projectManager = group.projectManager
+          ? `${group.projectManager.first_name} ${group.projectManager.last_name}`
+          : "No manager";
+
         // Members list
-        const members = group.members?.map(member => 
-          `${member.first_name} ${member.last_name}`
-        ).join('\n') || 'No members';
-        
-        const memberCount = (group.members?.length || 0) + (group.projectManager ? 1 : 0);
+        const members =
+          group.members
+            ?.map((member) => `${member.first_name} ${member.last_name}`)
+            .join("\n") || "No members";
+
+        const memberCount =
+          (group.members?.length || 0) + (group.projectManager ? 1 : 0);
         const createdAt = new Date(group._creationTime).toLocaleDateString();
-        
-        return [name, capstoneTitle, projectManager, members, memberCount.toString(), createdAt];
+
+        return [
+          name,
+          capstoneTitle,
+          projectManager,
+          members,
+          memberCount.toString(),
+          createdAt,
+        ];
       });
-      
+
       // Add table
       autoTable(doc, {
-        head: [['Group Name', 'Capstone Title', 'Project Manager', 'Members', 'Group Members', 'Created']],
+        head: [
+          [
+            "Group Name",
+            "Capstone Title",
+            "Project Manager",
+            "Members",
+            "Group Members",
+            "Created",
+          ],
+        ],
         body: tableData,
         startY: yPos,
         styles: { fontSize: 8 },
         headStyles: { fillColor: [181, 74, 74] },
         margin: { left: 14, right: 14 },
-        tableWidth: 'auto',
+        tableWidth: "auto",
         columnStyles: {
           0: { cellWidth: 25 }, // Group Name
           1: { cellWidth: 40 }, // Capstone Title
           2: { cellWidth: 30 }, // Project Manager
           3: { cellWidth: 30 }, // Members
           4: { cellWidth: 20 }, // Group Members count
-          5: { cellWidth: 20 }  // Created
-        }
+          5: { cellWidth: 20 }, // Created
+        },
       });
-      
+
       // Save the PDF
       const date = new Date();
-      const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`;
+      const dateTime = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}_${date.getHours().toString().padStart(2, "0")}${date.getMinutes().toString().padStart(2, "0")}`;
       const fileName = `Groups_Report_${dateTime}.pdf`;
       doc.save(fileName);
-      
-      console.log('Groups PDF generated successfully:', fileName);
     } catch (error) {
-      console.error('Error generating Groups PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      console.error("Error generating Groups PDF:", error);
+      alert("Error generating PDF. Please try again.");
     }
   };
 
@@ -324,7 +341,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     maxLength?: number;
   }) => {
     if (!text) return <span>-</span>;
-    if (text.length <= maxLength) return <span>{text}</span>;
+    if (text.length <= maxLength)
+      return <span className="break-words">{text}</span>;
 
     const isExpanded = expandedColumns.capstoneTitle;
 
@@ -336,13 +354,13 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
             capstoneTitle: !prev.capstoneTitle,
           }));
         }}
-        className="w-full text-left hover:bg-gray-50 rounded px-1 py-1 transition-colors"
+        className="w-full text-left hover:bg-gray-50 rounded px-1 py-1 transition-colors break-words"
         title={isExpanded ? "Click to collapse" : "Click to expand"}
       >
         {isExpanded ? (
-          <span>{text}</span>
+          <span className="break-words">{text}</span>
         ) : (
-          <span>{text.slice(0, maxLength)}...</span>
+          <span className="break-words">{text.slice(0, maxLength)}...</span>
         )}
       </button>
     );
@@ -705,10 +723,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {group.name || "-"}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  <CollapsibleText
-                    text={group.capstone_title}
-                  />
+                <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                  <CollapsibleText text={group.capstone_title} />
                 </td>
                 <td className="px-6 py-4 text-center">
                   <button
@@ -765,14 +781,16 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
             ))}
           </tbody>
         </table>
-        
+
         {/* Performance Warning */}
         {groups.length > MAX_VISIBLE_ITEMS && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <strong>Performance Notice:</strong> Showing first {MAX_VISIBLE_ITEMS} of {groups.length} items on this page for optimal performance.
+                  <strong>Performance Notice:</strong> Showing first{" "}
+                  {MAX_VISIBLE_ITEMS} of {groups.length} items on this page for
+                  optimal performance.
                 </p>
               </div>
             </div>

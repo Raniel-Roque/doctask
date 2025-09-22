@@ -37,12 +37,13 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [confirmName, setConfirmName] = useState("");
-  
+
   // Backup-related state
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
-  const [showBackupPasswordVerify, setShowBackupPasswordVerify] = useState(false);
+  const [showBackupPasswordVerify, setShowBackupPasswordVerify] =
+    useState(false);
   const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
   const [pendingBackupAction, setPendingBackupAction] = useState<
     "download" | "restore" | null
@@ -178,7 +179,10 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   };
 
   // Backup functions
-  const verifyBackupPassword = async (password: string, signal?: AbortSignal) => {
+  const verifyBackupPassword = async (
+    password: string,
+    signal?: AbortSignal,
+  ) => {
     if (!user) {
       throw new Error("User not found");
     }
@@ -373,9 +377,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FaDatabase className="text-blue-500" />
-                <span className="text-sm text-gray-600">
-                  Backup & Restore
-                </span>
+                <span className="text-sm text-gray-600">Backup & Restore</span>
               </div>
               <div className="flex gap-2">
                 <button
@@ -401,9 +403,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FaExclamationTriangle className="text-red-500" />
-                <span className="text-sm text-gray-600">
-                  Delete Data
-                </span>
+                <span className="text-sm text-gray-600">Delete Data</span>
               </div>
               <button
                 onClick={() => setShowWipeModal(true)}
@@ -520,7 +520,8 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
 
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                Select your backup ZIP file to restore the database. This will delete all existing data.
+                Select your backup ZIP file to restore the database. This will
+                delete all existing data.
               </p>
 
               <div>

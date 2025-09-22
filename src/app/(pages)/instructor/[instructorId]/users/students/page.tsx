@@ -776,18 +776,28 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
     users.forEach((user, index) => {
       const rowNumber = index + 2; // +2 because we skip header row and arrays are 0-indexed
+      const missingFields: string[] = [];
 
-      // Check required fields
+      // Check required fields and collect missing ones
       if (!user.first_name.trim()) {
-        errors.push(`Row ${rowNumber}: First name is required`);
-        return;
+        missingFields.push("First Name");
       }
       if (!user.last_name.trim()) {
-        errors.push(`Row ${rowNumber}: Last name is required`);
-        return;
+        missingFields.push("Last Name");
       }
       if (!user.email.trim()) {
-        errors.push(`Row ${rowNumber}: Email is required`);
+        missingFields.push("Email");
+      }
+
+      // If any required fields are missing, add error and skip this row
+      if (missingFields.length > 0) {
+        if (missingFields.length === 1) {
+          errors.push(`Row ${rowNumber}: Missing ${missingFields[0]} field`);
+        } else {
+          errors.push(
+            `Row ${rowNumber}: Missing ${missingFields.join(", ")} fields`,
+          );
+        }
         return;
       }
 
@@ -831,6 +841,18 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Check if user is online
+    if (!navigator.onLine) {
+      addBanner({
+        message:
+          "You are currently offline. Please check your internet connection and try again.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
 
     // Validate file type
     const validTypes = [
@@ -909,6 +931,19 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       for (let i = 0; i < validUsers.length; i++) {
         const user = validUsers[i];
         setUploadProgress(Math.round(((i + 1) / validUsers.length) * 100));
+
+        // Check network connectivity before each user creation
+        if (!navigator.onLine) {
+          setIsUploading(false);
+          setUploadProgress(0);
+          addBanner({
+            message: `Upload interrupted: You went offline while processing. ${successCount} users were successfully imported before the connection was lost.`,
+            type: "error",
+            onClose: () => {},
+            autoClose: true,
+          });
+          return;
+        }
 
         try {
           // Call distributed-safe API route for creation with enhanced retry logic

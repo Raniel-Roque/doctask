@@ -325,7 +325,6 @@ export const Navbar = ({ instructorId }: NavbarProps) => {
               </div>
             )}
           </li>
-
         </ul>
       </nav>
 

@@ -34,8 +34,10 @@ export const LockAccountConfirmation = ({
 
       try {
         setIsLoadingStatus(true);
-        const response = await fetch(`/api/clerk/get-user-status?userId=${user.clerk_id}`);
-        
+        const response = await fetch(
+          `/api/clerk/get-user-status?userId=${user.clerk_id}`,
+        );
+
         if (response.ok) {
           const data = await response.json();
           setIsLocked(data.locked || false);
@@ -44,7 +46,7 @@ export const LockAccountConfirmation = ({
           setIsLocked(false);
         }
       } catch (error) {
-        console.error('Error fetching user lock status:', error);
+        console.error("Error fetching user lock status:", error);
         // Default to unlocked if there's an error
         setIsLocked(false);
       } finally {
@@ -87,13 +89,11 @@ export const LockAccountConfirmation = ({
         </div>
 
         <p className="text-gray-600 mb-6">
-          {isLoadingStatus ? (
-            "Loading account status..."
-          ) : isLocked ? (
-            `${user.first_name} ${user.last_name}'s account is currently locked.`
-          ) : (
-            `${user.first_name} ${user.last_name}'s account is currently unlocked.`
-          )}
+          {isLoadingStatus
+            ? "Loading account status..."
+            : isLocked
+              ? `${user.first_name} ${user.last_name}'s account is currently locked.`
+              : `${user.first_name} ${user.last_name}'s account is currently unlocked.`}
         </p>
 
         {networkError && (

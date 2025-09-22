@@ -798,14 +798,16 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
               ))}
             </tbody>
           </table>
-          
+
           {/* Performance Warning */}
           {groups.length > MAX_VISIBLE_ITEMS && (
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
               <div className="flex">
                 <div className="ml-3">
                   <p className="text-sm text-yellow-700">
-                    <strong>Performance Notice:</strong> Showing first {MAX_VISIBLE_ITEMS} of {groups.length} items on this page for optimal performance.
+                    <strong>Performance Notice:</strong> Showing first{" "}
+                    {MAX_VISIBLE_ITEMS} of {groups.length} items on this page
+                    for optimal performance.
                   </p>
                 </div>
               </div>

@@ -577,7 +577,10 @@ const LoginPage = () => {
           "This password has been compromised in a data breach. Please use forgot password.",
           "error",
         );
-      } else if (errorMessage.includes("Your account is locked") || errorMessage.includes("account is locked")) {
+      } else if (
+        errorMessage.includes("Your account is locked") ||
+        errorMessage.includes("account is locked")
+      ) {
         showNotification(
           "Your account is locked. Please try again later or contact your capstone instructor.",
           "error",
@@ -612,7 +615,7 @@ const LoginPage = () => {
         const seconds = remainingTime % 60;
         showNotification(
           `Please wait ${minutes}:${seconds.toString().padStart(2, "0")} before requesting another code.`,
-          "warning"
+          "warning",
         );
         return false;
       }
@@ -669,7 +672,7 @@ const LoginPage = () => {
         const seconds = remainingTime % 60;
         showNotification(
           `Please wait ${minutes}:${seconds.toString().padStart(2, "0")} before requesting another password reset code.`,
-          "warning"
+          "warning",
         );
         return false;
       }
@@ -700,9 +703,12 @@ const LoginPage = () => {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "";
-      
+
       // Check for account locked error specifically
-      if (errorMessage.includes("Your account is locked") || errorMessage.includes("account is locked")) {
+      if (
+        errorMessage.includes("Your account is locked") ||
+        errorMessage.includes("account is locked")
+      ) {
         showNotification(
           "Your account is locked. Please try again later or contact your capstone instructor.",
           "error",

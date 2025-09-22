@@ -113,7 +113,14 @@ export default function EditForm({
   // Use modal focus management hook
   const modalRef = useModalFocus({
     isOpen: !!user,
-    onClose: () => onClose(),
+    onClose: () => {
+      // Check for unsaved changes when ESC is pressed
+      if (hasUnsavedChanges) {
+        setShowUnsavedChangesDialog(true);
+      } else {
+        onClose();
+      }
+    },
   });
 
   // Clear validation errors when form is opened

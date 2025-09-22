@@ -531,80 +531,131 @@ export const searchUsers = query({
         // Optimize search by running searches in parallel and using Set for deduplication
         const searchTermLower = searchTerm.toLowerCase();
 
-        const [firstNameResults, lastNameResults, emailResults] =
-          await Promise.all([
-            ctx.db
-              .query("users")
-              .withSearchIndex("search_by_first_name", (q) => {
-                let searchQuery = q.search("first_name", searchTerm);
-                if (emailVerified !== undefined) {
-                  searchQuery = searchQuery.eq("email_verified", emailVerified);
-                }
-                if (subrole !== undefined) {
-                  searchQuery = searchQuery.eq("subrole", subrole);
-                }
-                return searchQuery.eq("role", role);
-              })
-              .collect()
-              .then((results) => results.filter((u) => !u.isDeleted)),
+        // For very long search terms (>50 characters), use fallback search method
+        // as Convex search indexes may have limitations with very long text
+        if (searchTerm.length > 50) {
+          // Fallback: Use regular filter query for long search terms
+          results = await ctx.db
+            .query("users")
+            .filter((q) => {
+              const roleFilter = q.eq(q.field("role"), role);
+              const emailVerifiedFilter =
+                emailVerified !== undefined
+                  ? q.eq(q.field("email_verified"), emailVerified)
+                  : null;
+              const subroleFilter =
+                subrole !== undefined
+                  ? q.eq(q.field("subrole"), subrole)
+                  : null;
 
-            ctx.db
-              .query("users")
-              .withSearchIndex("search_by_last_name", (q) => {
-                let searchQuery = q.search("last_name", searchTerm);
-                if (emailVerified !== undefined) {
-                  searchQuery = searchQuery.eq("email_verified", emailVerified);
-                }
-                if (subrole !== undefined) {
-                  searchQuery = searchQuery.eq("subrole", subrole);
-                }
-                return searchQuery.eq("role", role);
-              })
-              .collect()
-              .then((results) => results.filter((u) => !u.isDeleted)),
+              // Combine all filters
+              let finalFilter = roleFilter;
+              if (emailVerifiedFilter) {
+                finalFilter = q.and(finalFilter, emailVerifiedFilter);
+              }
+              if (subroleFilter) {
+                finalFilter = q.and(finalFilter, subroleFilter);
+              }
+              return finalFilter;
+            })
+            .collect()
+            .then((results) =>
+              results.filter(
+                (u) =>
+                  !u.isDeleted &&
+                  (u.first_name.toLowerCase().includes(searchTermLower) ||
+                    u.last_name.toLowerCase().includes(searchTermLower) ||
+                    u.email.toLowerCase().includes(searchTermLower) ||
+                    (u.middle_name &&
+                      u.middle_name.toLowerCase().includes(searchTermLower))),
+              ),
+            );
+        } else {
+          // Use search indexes for shorter search terms
+          const [firstNameResults, lastNameResults, emailResults] =
+            await Promise.all([
+              ctx.db
+                .query("users")
+                .withSearchIndex("search_by_first_name", (q) => {
+                  let searchQuery = q.search("first_name", searchTerm);
+                  if (emailVerified !== undefined) {
+                    searchQuery = searchQuery.eq(
+                      "email_verified",
+                      emailVerified,
+                    );
+                  }
+                  if (subrole !== undefined) {
+                    searchQuery = searchQuery.eq("subrole", subrole);
+                  }
+                  return searchQuery.eq("role", role);
+                })
+                .collect()
+                .then((results) => results.filter((u) => !u.isDeleted)),
 
-            // Only search by email if it looks like an email
-            searchTermLower.includes("@")
-              ? ctx.db
-                  .query("users")
-                  .filter((q) => {
-                    const roleFilter = q.eq(q.field("role"), role);
-                    const emailFilter = q.eq(q.field("email"), searchTermLower);
-                    const emailVerifiedFilter =
-                      emailVerified !== undefined
-                        ? q.eq(q.field("email_verified"), emailVerified)
-                        : null;
-                    const subroleFilter =
-                      subrole !== undefined
-                        ? q.eq(q.field("subrole"), subrole)
-                        : null;
+              ctx.db
+                .query("users")
+                .withSearchIndex("search_by_last_name", (q) => {
+                  let searchQuery = q.search("last_name", searchTerm);
+                  if (emailVerified !== undefined) {
+                    searchQuery = searchQuery.eq(
+                      "email_verified",
+                      emailVerified,
+                    );
+                  }
+                  if (subrole !== undefined) {
+                    searchQuery = searchQuery.eq("subrole", subrole);
+                  }
+                  return searchQuery.eq("role", role);
+                })
+                .collect()
+                .then((results) => results.filter((u) => !u.isDeleted)),
 
-                    let finalFilter = q.and(roleFilter, emailFilter);
-                    if (emailVerifiedFilter) {
-                      finalFilter = q.and(finalFilter, emailVerifiedFilter);
-                    }
-                    if (subroleFilter) {
-                      finalFilter = q.and(finalFilter, subroleFilter);
-                    }
-                    return finalFilter;
-                  })
-                  .collect()
-                  .then((results) => results.filter((u) => !u.isDeleted))
-              : [],
-          ]);
+              // Only search by email if it looks like an email
+              searchTermLower.includes("@")
+                ? ctx.db
+                    .query("users")
+                    .filter((q) => {
+                      const roleFilter = q.eq(q.field("role"), role);
+                      const emailFilter = q.eq(
+                        q.field("email"),
+                        searchTermLower,
+                      );
+                      const emailVerifiedFilter =
+                        emailVerified !== undefined
+                          ? q.eq(q.field("email_verified"), emailVerified)
+                          : null;
+                      const subroleFilter =
+                        subrole !== undefined
+                          ? q.eq(q.field("subrole"), subrole)
+                          : null;
 
-        // Use Map for efficient deduplication
-        const userMap = new Map<string, Doc<"users">>();
+                      let finalFilter = q.and(roleFilter, emailFilter);
+                      if (emailVerifiedFilter) {
+                        finalFilter = q.and(finalFilter, emailVerifiedFilter);
+                      }
+                      if (subroleFilter) {
+                        finalFilter = q.and(finalFilter, subroleFilter);
+                      }
+                      return finalFilter;
+                    })
+                    .collect()
+                    .then((results) => results.filter((u) => !u.isDeleted))
+                : [],
+            ]);
 
-        [...firstNameResults, ...lastNameResults, ...emailResults].forEach(
-          (user) => {
-            if (!user.isDeleted) {
-              userMap.set(user._id, user);
-            }
-          },
-        );
+          // Use Map for efficient deduplication
+          const userMap = new Map<string, Doc<"users">>();
 
-        results = Array.from(userMap.values());
+          [...firstNameResults, ...lastNameResults, ...emailResults].forEach(
+            (user) => {
+              if (!user.isDeleted) {
+                userMap.set(user._id, user);
+              }
+            },
+          );
+
+          results = Array.from(userMap.values());
+        }
       }
 
       // Get total count before sorting/pagination
