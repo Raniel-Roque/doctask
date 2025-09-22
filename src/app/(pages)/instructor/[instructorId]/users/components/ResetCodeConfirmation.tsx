@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import {
   FaExclamationTriangle,
   FaSync,
@@ -6,8 +6,6 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 import { User } from "./types";
-import { useBannerManager } from "@/app/(pages)/components/BannerManager";
-import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 
 // =========================================
 // Types
@@ -30,23 +28,6 @@ export const ResetCodeConfirmation = ({
   isSubmitting = false,
   networkError = null,
 }: ResetCodeConfirmationProps) => {
-  const { addBanner } = useBannerManager();
-
-  // Handle network errors
-  useEffect(() => {
-    if (networkError) {
-      const errorMessage = getErrorMessage(
-        new Error(networkError),
-        ErrorContexts.resetCode("adviser"),
-      );
-      addBanner({
-        message: errorMessage,
-        type: "error",
-        onClose: () => {},
-        autoClose: true,
-      });
-    }
-  }, [networkError, addBanner]);
 
   if (!user) return null;
 
