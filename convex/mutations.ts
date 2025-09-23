@@ -624,89 +624,46 @@ export const updateUser = mutation({
           .collect();
 
         for (const group of managedGroups) {
-          // Update all members' group_id to null in studentsTable
-          const memberships = await ctx.db
-            .query("studentsTable")
-            .withIndex("by_group", (q) => q.eq("group_id", group._id))
-            .collect();
-
-          for (const membership of memberships) {
-            await ctx.db.patch(membership._id, { group_id: null });
-          }
-
-          // Update adviser's group_ids if exists
-          if (group.adviser_id) {
-            const adviserCode = await ctx.db
-              .query("advisersTable")
-              .withIndex("by_adviser", (q) =>
-                q.eq("adviser_id", group.adviser_id!),
-              )
-              .first();
-
-            if (adviserCode) {
-              await ctx.db.patch(adviserCode._id, {
-                group_ids: (adviserCode.group_ids || []).filter(
-                  (id) => id !== group._id,
-                ),
-              });
+          // Find a suitable replacement project manager from the group members
+          let newProjectManagerId: Id<"users"> | null = null;
+          
+          // First, try to find a member who is currently a project manager (subrole 1)
+          for (const memberId of group.member_ids) {
+            const member = await ctx.db.get(memberId);
+            if (member && member.subrole === 1) {
+              newProjectManagerId = memberId;
+              break;
             }
           }
-
-          // Also remove group from any pending adviser requests
-          if (group.requested_adviser) {
-            const adviser = await ctx.db
-              .query("advisersTable")
-              .withIndex("by_adviser", (q) =>
-                q.eq("adviser_id", group.requested_adviser!),
-              )
-              .first();
-            if (adviser && adviser.requests_group_ids) {
-              await ctx.db.patch(adviser._id, {
-                requests_group_ids: adviser.requests_group_ids.filter(
-                  (id) => id !== group._id,
-                ),
-              });
-            }
+          
+          // If no project manager found in members, pick the first available member
+          if (!newProjectManagerId && group.member_ids.length > 0) {
+            newProjectManagerId = group.member_ids[0];
           }
-
-          // Soft delete all documents associated with this group
-          const docs = await ctx.db
-            .query("documents")
-            .withIndex("by_group_chapter", (q) => q.eq("group_id", group._id))
-            .collect();
-          for (const doc of docs) {
-            await ctx.db.patch(doc._id, { isDeleted: true });
+          
+          if (newProjectManagerId) {
+            // Update the group with the new project manager
+            await ctx.db.patch(group._id, {
+              project_manager_id: newProjectManagerId,
+              member_ids: group.member_ids.filter(id => id !== newProjectManagerId),
+            });
+            
+            // Update the new project manager's role to manager (subrole 1)
+            await ctx.db.patch(newProjectManagerId, { subrole: 1 });
+            
+            // Add the demoted user to the group as a regular member
+            await ctx.db.patch(group._id, {
+              member_ids: [...group.member_ids.filter(id => id !== newProjectManagerId), args.userId],
+            });
+          } else {
+            // If no suitable replacement found, we need to handle this case
+            // For now, we'll keep the group but mark it as needing attention
+            // The instructor can manually assign a new project manager later
+            throw new Error(
+              `Cannot demote project manager: No suitable replacement found for group. ` +
+              `Please assign a new project manager to the group first, or add more members to the group.`
+            );
           }
-
-          // Soft delete all task assignments associated with this group
-          const taskAssignments = await ctx.db
-            .query("taskAssignments")
-            .withIndex("by_group", (q) => q.eq("group_id", group._id))
-            .collect();
-          for (const task of taskAssignments) {
-            await ctx.db.patch(task._id, { isDeleted: true });
-          }
-
-          // Soft delete all document status entries associated with this group
-          const documentStatuses = await ctx.db
-            .query("documentStatus")
-            .withIndex("by_group", (q) => q.eq("group_id", group._id))
-            .collect();
-          for (const status of documentStatuses) {
-            await ctx.db.patch(status._id, { isDeleted: true });
-          }
-
-          // Soft delete all images associated with this group
-          const images = await ctx.db
-            .query("images")
-            .withIndex("by_group", (q) => q.eq("group_id", group._id))
-            .collect();
-          for (const image of images) {
-            await ctx.db.patch(image._id, { isDeleted: true });
-          }
-
-          // Soft delete the group
-          await ctx.db.patch(group._id, { isDeleted: true });
         }
       }
     }

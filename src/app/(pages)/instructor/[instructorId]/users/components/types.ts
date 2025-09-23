@@ -25,6 +25,7 @@ export interface EditFormData {
   last_name: string;
   email: string;
   subrole?: number;
+  newProjectManagerId?: string;
 }
 
 export interface AddFormData {

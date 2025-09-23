@@ -17,6 +17,7 @@ import { useBannerManager } from "../../../../components/BannerManager";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { useModalFocus } from "@/hooks/use-modal-focus";
+import ProjectManagerSelectionModal from "./ProjectManagerSelectionModal";
 
 // =========================================
 // Types
@@ -106,6 +107,12 @@ export default function EditForm({
   }, [successMessage, addBanner]);
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] =
     useState(false);
+  const [showProjectManagerSelection, setShowProjectManagerSelection] =
+    useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState<{
+    from: number;
+    to: number;
+  } | null>(null);
 
   const roleTriggerRef = useRef<HTMLDivElement>(null);
   const roleDropdownRef = useRef<HTMLDivElement>(null);
@@ -172,12 +179,22 @@ export default function EditForm({
   }, [showRoleSearch]);
 
   const handleRoleSelect = (role: { value: number; label: string }) => {
-    onFormDataChange({
-      ...formData,
-      subrole: role.value,
-    });
-    setRoleSearch("");
-    setShowRoleSearch(false);
+    // Check if we're demoting a project manager (subrole 1 -> 0)
+    if (user?.subrole === 1 && role.value === 0) {
+      // Store the pending role change and show project manager selection modal
+      setPendingRoleChange({ from: user.subrole, to: role.value });
+      setShowProjectManagerSelection(true);
+      setRoleSearch("");
+      setShowRoleSearch(false);
+    } else {
+      // Normal role change - apply immediately
+      onFormDataChange({
+        ...formData,
+        subrole: role.value,
+      });
+      setRoleSearch("");
+      setShowRoleSearch(false);
+    }
   };
 
   const handleChange = (
@@ -209,6 +226,23 @@ export default function EditForm({
 
   const handleRoleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRoleSearch(e.target.value);
+  };
+
+  // Project Manager Selection Modal Handlers
+  const handleProjectManagerSelectionClose = () => {
+    setShowProjectManagerSelection(false);
+    setPendingRoleChange(null);
+  };
+
+  const handleProjectManagerSelectionConfirm = (newProjectManagerId: string) => {
+    // Apply the role change with the selected new project manager
+    onFormDataChange({
+      ...formData,
+      subrole: pendingRoleChange?.to || 0,
+      newProjectManagerId: newProjectManagerId,
+    });
+    setShowProjectManagerSelection(false);
+    setPendingRoleChange(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -587,6 +621,25 @@ export default function EditForm({
         }}
         onCancel={() => setShowUnsavedChangesDialog(false)}
       />
+
+      {/* Project Manager Selection Modal */}
+      {user && (
+        <ProjectManagerSelectionModal
+          isOpen={showProjectManagerSelection}
+          onClose={handleProjectManagerSelectionClose}
+          onConfirm={handleProjectManagerSelectionConfirm}
+          isSubmitting={isSubmitting}
+          currentProjectManager={{
+            _id: user._id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            middle_name: user.middle_name,
+            email: user.email,
+          }}
+          availableProjectManagers={[]} // TODO: Get from props or context
+          groupName="Current Group" // TODO: Get actual group name
+        />
+      )}
     </>
   );
 }

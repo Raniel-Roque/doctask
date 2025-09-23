@@ -1,3 +1,4 @@
+import React from "react";
 import {
   FaEye,
   FaDownload,
@@ -166,6 +167,11 @@ export const LatestDocumentsTable = ({
     null,
   );
 
+  // Add state for expanded chapters (for chapters with subtasks)
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
+    new Set(),
+  );
+
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
   const [notesPopupDoc, setNotesPopupDoc] = useState<Document | null>(null);
   const [viewedNotesDocuments, setViewedNotesDocuments] = useState<Set<string>>(
@@ -233,6 +239,23 @@ export const LatestDocumentsTable = ({
 
   const handleToggleDetails = (detailType: "documents" | "tasks") => {
     setOpenDetails((prev) => (prev === detailType ? null : detailType));
+  };
+
+  // Toggle chapter expansion for chapters with subtasks
+  const toggleChapter = (chapter: string) => {
+    const newExpanded = new Set(expandedChapters);
+    if (newExpanded.has(chapter)) {
+      newExpanded.delete(chapter);
+    } else {
+      newExpanded.add(chapter);
+    }
+    setExpandedChapters(newExpanded);
+  };
+
+  // Check if chapter has subtasks (multiple tasks for the same chapter)
+  const hasSubparts = (chapter: string) => {
+    const chapterTasks = tasks.filter((task) => task.chapter === chapter);
+    return chapterTasks.length > 1;
   };
 
   // Handle edit document navigation
@@ -2459,6 +2482,25 @@ export const LatestDocumentsTable = ({
       return a.chapter.localeCompare(b.chapter);
     });
 
+  // Group documents by chapter for chapters with subtasks
+  const groupedDocuments = filteredDocuments.reduce(
+    (acc, doc) => {
+      const chapter = doc.chapter;
+      if (!acc[chapter]) {
+        acc[chapter] = [];
+      }
+      acc[chapter].push(doc);
+      return acc;
+    },
+    {} as Record<string, Document[]>,
+  );
+
+  // Create sorted grouped documents to maintain the correct chapter order
+  const sortedGroupedDocuments = Object.fromEntries(
+    CHAPTER_ORDER.filter((chapter) => groupedDocuments[chapter]) // Only include chapters that have documents
+      .map((chapter) => [chapter, groupedDocuments[chapter]]),
+  );
+
   // Format last modified time
   const formatLastModified = (timestamp?: number) => {
     if (!timestamp) return "Never";
@@ -2979,190 +3021,426 @@ export const LatestDocumentsTable = ({
                       </td>
                     </tr>
                   )}
-                {filteredDocuments.map((doc) => (
-                  <tr
-                    key={doc._id}
-                    className="hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {doc.title}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[doc.status] || STATUS_COLORS[0]}`}
-                      >
-                        {STATUS_LABELS[doc.status] || STATUS_LABELS[0]}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {renderTaskStatusDropdown(doc)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                      {formatLastModified(doc.last_modified)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      <div className="flex items-center gap-2 justify-center">
-                        {!["title_page", "appendix_a", "appendix_d"].includes(
-                          doc.chapter,
-                        ) && (
-                          <>
-                            <button
-                              className="text-blue-600 hover:text-blue-800 transition-colors"
-                              title="View Document"
-                              onClick={() => handleViewDocument(doc)}
-                            >
-                              <FaEye className="w-4 h-4" />
-                            </button>
-                            <span className="mx-1 text-gray-300 select-none">
-                              |
-                            </span>
-                          </>
-                        )}
-                        {canEditDocument(doc) && (
-                          <>
-                            <button
-                              className="text-purple-600 hover:text-purple-800 transition-colors"
-                              title="Edit Document"
-                              onClick={() => handleEditDocument(doc)}
-                            >
-                              <FaEdit className="w-4 h-4" />
-                            </button>
-                            <span className="mx-1 text-gray-300 select-none">
-                              |
-                            </span>
-                          </>
-                        )}
-                        <button
-                          className="text-green-600 hover:text-green-800 transition-colors"
-                          title="Download Document"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownloadDocx(doc);
-                          }}
-                          disabled={
-                            downloadingDocx === doc._id ||
-                            (doc.chapter === "appendix_d" &&
-                              downloadingAppendixD)
-                          }
-                        >
-                          {downloadingDocx === doc._id ||
-                          (doc.chapter === "appendix_d" &&
-                            downloadingAppendixD) ? (
-                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <FaDownload className="w-4 h-4" />
-                          )}
-                        </button>
-                        {/* Only show Notes and Submit for non-excluded chapters */}
-                        {!["title_page", "appendix_a", "appendix_d"].includes(
-                          doc.chapter,
-                        ) &&
-                          doc.note_count > 0 && (
-                            <>
-                              <span className="mx-3 text-gray-300 select-none">
-                                |
-                              </span>
-                              <button
-                                className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
-                                title="View Notes"
-                                onClick={() => {
-                                  setNotesPopupDoc(doc);
-                                  setNotesPopupOpen(true);
-                                  // Mark this document's notes as viewed and save to localStorage
-                                  const newViewedSet = new Set(
-                                    viewedNotesDocuments,
-                                  ).add(doc._id);
-                                  setViewedNotesDocuments(newViewedSet);
-                                  localStorage.setItem(
-                                    "viewedNotesDocuments",
-                                    JSON.stringify([...newViewedSet]),
-                                  );
-
-                                  // Save the current note count when viewed
-                                  const newViewedCounts = {
-                                    ...viewedNoteCounts,
-                                    [doc._id]: doc.note_count,
-                                  };
-                                  setViewedNoteCounts(newViewedCounts);
-                                  localStorage.setItem(
-                                    "viewedNoteCounts",
-                                    JSON.stringify(newViewedCounts),
-                                  );
-                                }}
+                {Object.keys(sortedGroupedDocuments).map((chapter) => {
+                  const chapterDocuments = sortedGroupedDocuments[chapter] || [];
+                  return (
+                    <React.Fragment key={chapter}>
+                      {hasSubparts(chapter) ? (
+                        <>
+                          {/* Main chapter header */}
+                          <tr
+                            key={`${chapter}-header`}
+                            className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer"
+                            onClick={() => toggleChapter(chapter)}
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500">
+                                  {expandedChapters.has(chapter) ? "−" : "+"}
+                                </span>
+                                <div className="text-sm font-semibold text-gray-900">
+                                  {chapter
+                                    .replace(/_/g, " ")
+                                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[chapterDocuments[0]?.status] || STATUS_COLORS[0]}`}
                               >
-                                <FaStickyNote className="w-4 h-4" />
-                                {(() => {
-                                  const viewedCount =
-                                    viewedNoteCounts[doc._id] || 0;
-                                  const newNotesCount =
-                                    doc.note_count - viewedCount;
-                                  const hasNewNotes = newNotesCount > 0;
-                                  return (
-                                    hasNewNotes && (
-                                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                                        {newNotesCount > 99
-                                          ? "99+"
-                                          : newNotesCount}
-                                      </span>
-                                    )
-                                  );
-                                })()}
-                              </button>
-                            </>
-                          )}
-                        {/* Submit/Cancel button for project managers */}
-                        {group &&
-                          group.project_manager_id === currentUserId &&
-                          !["title_page", "appendix_a", "appendix_d"].includes(
-                            doc.chapter,
-                          ) &&
-                          doc.status !== 3 && // Hide for rejected documents
-                          (canSubmitDocument(doc) ||
-                            canCancelSubmission(doc)) && (
-                            <>
-                              <span className="mx-3 text-gray-300 select-none">
-                                |
+                                {STATUS_LABELS[chapterDocuments[0]?.status] || STATUS_LABELS[0]}
                               </span>
-                              <button
-                                className={`transition-colors ${
-                                  canCancelSubmission(doc)
-                                    ? "text-red-600 hover:text-red-800"
-                                    : "text-green-600 hover:text-green-800"
-                                }`}
-                                title={
-                                  canCancelSubmission(doc)
-                                    ? "Cancel Submission"
-                                    : "Submit Document"
-                                }
-                                onClick={() => {
-                                  if (canSubmitDocument(doc)) {
-                                    handleSubmitDocument(doc);
-                                  } else if (canCancelSubmission(doc)) {
-                                    handleCancelSubmission(doc);
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              {renderTaskStatusDropdown(chapterDocuments[0])}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                              {formatLastModified(chapterDocuments[0]?.last_modified)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                              <div className="flex items-center gap-2 justify-center">
+                                {!["title_page", "appendix_a", "appendix_d"].includes(
+                                  chapter,
+                                ) && (
+                                  <>
+                                    <button
+                                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                                      title="View Document"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleViewDocument(chapterDocuments[0]);
+                                      }}
+                                    >
+                                      <FaEye className="w-4 h-4" />
+                                    </button>
+                                    <span className="mx-1 text-gray-300 select-none">
+                                      |
+                                    </span>
+                                  </>
+                                )}
+                                {canEditDocument(chapterDocuments[0]) && (
+                                  <>
+                                    <button
+                                      className="text-purple-600 hover:text-purple-800 transition-colors"
+                                      title="Edit Document"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditDocument(chapterDocuments[0]);
+                                      }}
+                                    >
+                                      <FaEdit className="w-4 h-4" />
+                                    </button>
+                                    <span className="mx-1 text-gray-300 select-none">
+                                      |
+                                    </span>
+                                  </>
+                                )}
+                                <button
+                                  className="text-green-600 hover:text-green-800 transition-colors"
+                                  title="Download Document"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownloadDocx(chapterDocuments[0]);
+                                  }}
+                                  disabled={
+                                    downloadingDocx === chapterDocuments[0]?._id ||
+                                    (chapter === "appendix_d" && downloadingAppendixD)
                                   }
+                                >
+                                  {downloadingDocx === chapterDocuments[0]?._id ||
+                                  (chapter === "appendix_d" && downloadingAppendixD) ? (
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                  ) : (
+                                    <FaDownload className="w-4 h-4" />
+                                  )}
+                                </button>
+                                {/* Only show Notes and Submit for non-excluded chapters */}
+                                {!["title_page", "appendix_a", "appendix_d"].includes(
+                                  chapter,
+                                ) &&
+                                  chapterDocuments[0]?.note_count > 0 && (
+                                    <>
+                                      <span className="mx-3 text-gray-300 select-none">
+                                        |
+                                      </span>
+                                      <button
+                                        className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
+                                        title="View Notes"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setNotesPopupDoc(chapterDocuments[0]);
+                                          setNotesPopupOpen(true);
+                                          // Mark this document's notes as viewed and save to localStorage
+                                          const newViewedSet = new Set(
+                                            viewedNotesDocuments,
+                                          ).add(chapterDocuments[0]._id);
+                                          setViewedNotesDocuments(newViewedSet);
+                                          localStorage.setItem(
+                                            "viewedNotesDocuments",
+                                            JSON.stringify([...newViewedSet]),
+                                          );
+
+                                          // Save the current note count when viewed
+                                          const newViewedCounts = {
+                                            ...viewedNoteCounts,
+                                            [chapterDocuments[0]._id]: chapterDocuments[0].note_count,
+                                          };
+                                          setViewedNoteCounts(newViewedCounts);
+                                          localStorage.setItem(
+                                            "viewedNoteCounts",
+                                            JSON.stringify(newViewedCounts),
+                                          );
+                                        }}
+                                      >
+                                        <FaStickyNote className="w-4 h-4" />
+                                        {(() => {
+                                          const viewedCount =
+                                            viewedNoteCounts[chapterDocuments[0]._id] || 0;
+                                          const newNotesCount =
+                                            chapterDocuments[0].note_count - viewedCount;
+                                          const hasNewNotes = newNotesCount > 0;
+                                          return (
+                                            hasNewNotes && (
+                                              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                                {newNotesCount > 99
+                                                  ? "99+"
+                                                  : newNotesCount}
+                                              </span>
+                                            )
+                                          );
+                                        })()}
+                                      </button>
+                                    </>
+                                  )}
+                                {/* Submit/Cancel button for project managers */}
+                                {group &&
+                                  group.project_manager_id === currentUserId &&
+                                  !["title_page", "appendix_a", "appendix_d"].includes(
+                                    chapter,
+                                  ) &&
+                                  chapterDocuments[0]?.status !== 3 && // Hide for rejected documents
+                                  (canSubmitDocument(chapterDocuments[0]) ||
+                                    canCancelSubmission(chapterDocuments[0])) && (
+                                    <>
+                                      <span className="mx-3 text-gray-300 select-none">
+                                        |
+                                      </span>
+                                      <button
+                                        className={`transition-colors ${
+                                          canCancelSubmission(chapterDocuments[0])
+                                            ? "text-red-600 hover:text-red-800"
+                                            : "text-green-600 hover:text-green-800"
+                                        }`}
+                                        title={
+                                          canCancelSubmission(chapterDocuments[0])
+                                            ? "Cancel Submission"
+                                            : "Submit Document"
+                                        }
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (canSubmitDocument(chapterDocuments[0])) {
+                                            handleSubmitDocument(chapterDocuments[0]);
+                                          } else if (canCancelSubmission(chapterDocuments[0])) {
+                                            handleCancelSubmission(chapterDocuments[0]);
+                                          }
+                                        }}
+                                        disabled={
+                                          submittingDocument === chapterDocuments[0]?._id ||
+                                          cancelingSubmission === chapterDocuments[0]?._id
+                                        }
+                                      >
+                                        {submittingDocument === chapterDocuments[0]?._id ||
+                                        cancelingSubmission === chapterDocuments[0]?._id ? (
+                                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                        ) : canCancelSubmission(chapterDocuments[0]) ? (
+                                          <FaTimes className="w-4 h-4" />
+                                        ) : (
+                                          <FaCheck className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                    </>
+                                  )}
+                              </div>
+                            </td>
+                          </tr>
+                          {/* Subparts rows: show individual documents when expanded */}
+                          {expandedChapters.has(chapter) &&
+                            chapterDocuments.map((doc) => (
+                              <tr
+                                key={`${doc._id}-subpart`}
+                                className="hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer"
+                              >
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900 ml-6">
+                                    ○ {doc.title}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                  <span
+                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[doc.status] || STATUS_COLORS[0]}`}
+                                  >
+                                    {STATUS_LABELS[doc.status] || STATUS_LABELS[0]}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                  {renderTaskStatusDropdown(doc)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                  {formatLastModified(doc.last_modified)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                  {/* No actions for subparts */}
+                                </td>
+                              </tr>
+                            ))}
+                        </>
+                      ) : (
+                        // Regular document row (not expandable, with actions)
+                        <tr
+                          key={`${chapterDocuments[0]._id}-regular`}
+                          className="bg-gray-50 hover:bg-gray-100 transition-colors duration-150 ease-in-out"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-semibold text-gray-900">
+                              {chapterDocuments[0].title}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[chapterDocuments[0].status] || STATUS_COLORS[0]}`}
+                            >
+                              {STATUS_LABELS[chapterDocuments[0].status] || STATUS_LABELS[0]}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            {renderTaskStatusDropdown(chapterDocuments[0])}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                            {formatLastModified(chapterDocuments[0].last_modified)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                            <div className="flex items-center gap-2 justify-center">
+                              {!["title_page", "appendix_a", "appendix_d"].includes(
+                                chapter,
+                              ) && (
+                                <>
+                                  <button
+                                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                                    title="View Document"
+                                    onClick={() => handleViewDocument(chapterDocuments[0])}
+                                  >
+                                    <FaEye className="w-4 h-4" />
+                                  </button>
+                                  <span className="mx-1 text-gray-300 select-none">
+                                    |
+                                  </span>
+                                </>
+                              )}
+                              {canEditDocument(chapterDocuments[0]) && (
+                                <>
+                                  <button
+                                    className="text-purple-600 hover:text-purple-800 transition-colors"
+                                    title="Edit Document"
+                                    onClick={() => handleEditDocument(chapterDocuments[0])}
+                                  >
+                                    <FaEdit className="w-4 h-4" />
+                                  </button>
+                                  <span className="mx-1 text-gray-300 select-none">
+                                    |
+                                  </span>
+                                </>
+                              )}
+                              <button
+                                className="text-green-600 hover:text-green-800 transition-colors"
+                                title="Download Document"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadDocx(chapterDocuments[0]);
                                 }}
                                 disabled={
-                                  submittingDocument === doc._id ||
-                                  cancelingSubmission === doc._id
+                                  downloadingDocx === chapterDocuments[0]._id ||
+                                  (chapter === "appendix_d" && downloadingAppendixD)
                                 }
                               >
-                                {submittingDocument === doc._id ||
-                                cancelingSubmission === doc._id ? (
+                                {downloadingDocx === chapterDocuments[0]._id ||
+                                (chapter === "appendix_d" && downloadingAppendixD) ? (
                                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                ) : canCancelSubmission(doc) ? (
-                                  <FaTimes className="w-4 h-4" />
                                 ) : (
-                                  <FaCheck className="w-4 h-4" />
+                                  <FaDownload className="w-4 h-4" />
                                 )}
                               </button>
-                            </>
-                          )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                              {/* Only show Notes and Submit for non-excluded chapters */}
+                              {!["title_page", "appendix_a", "appendix_d"].includes(
+                                chapter,
+                              ) &&
+                                chapterDocuments[0].note_count > 0 && (
+                                  <>
+                                    <span className="mx-3 text-gray-300 select-none">
+                                      |
+                                    </span>
+                                    <button
+                                      className="text-yellow-500 hover:text-yellow-600 transition-colors relative"
+                                      title="View Notes"
+                                      onClick={() => {
+                                        setNotesPopupDoc(chapterDocuments[0]);
+                                        setNotesPopupOpen(true);
+                                        // Mark this document's notes as viewed and save to localStorage
+                                        const newViewedSet = new Set(
+                                          viewedNotesDocuments,
+                                        ).add(chapterDocuments[0]._id);
+                                        setViewedNotesDocuments(newViewedSet);
+                                        localStorage.setItem(
+                                          "viewedNotesDocuments",
+                                          JSON.stringify([...newViewedSet]),
+                                        );
+
+                                        // Save the current note count when viewed
+                                        const newViewedCounts = {
+                                          ...viewedNoteCounts,
+                                          [chapterDocuments[0]._id]: chapterDocuments[0].note_count,
+                                        };
+                                        setViewedNoteCounts(newViewedCounts);
+                                        localStorage.setItem(
+                                          "viewedNoteCounts",
+                                          JSON.stringify(newViewedCounts),
+                                        );
+                                      }}
+                                    >
+                                      <FaStickyNote className="w-4 h-4" />
+                                      {(() => {
+                                        const viewedCount =
+                                          viewedNoteCounts[chapterDocuments[0]._id] || 0;
+                                        const newNotesCount =
+                                          chapterDocuments[0].note_count - viewedCount;
+                                        const hasNewNotes = newNotesCount > 0;
+                                        return (
+                                          hasNewNotes && (
+                                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                              {newNotesCount > 99
+                                                ? "99+"
+                                                : newNotesCount}
+                                            </span>
+                                          )
+                                        );
+                                      })()}
+                                    </button>
+                                  </>
+                                )}
+                              {/* Submit/Cancel button for project managers */}
+                              {group &&
+                                group.project_manager_id === currentUserId &&
+                                !["title_page", "appendix_a", "appendix_d"].includes(
+                                  chapter,
+                                ) &&
+                                chapterDocuments[0].status !== 3 && // Hide for rejected documents
+                                (canSubmitDocument(chapterDocuments[0]) ||
+                                  canCancelSubmission(chapterDocuments[0])) && (
+                                  <>
+                                    <span className="mx-3 text-gray-300 select-none">
+                                      |
+                                    </span>
+                                    <button
+                                      className={`transition-colors ${
+                                        canCancelSubmission(chapterDocuments[0])
+                                          ? "text-red-600 hover:text-red-800"
+                                          : "text-green-600 hover:text-green-800"
+                                      }`}
+                                      title={
+                                        canCancelSubmission(chapterDocuments[0])
+                                          ? "Cancel Submission"
+                                          : "Submit Document"
+                                      }
+                                      onClick={() => {
+                                        if (canSubmitDocument(chapterDocuments[0])) {
+                                          handleSubmitDocument(chapterDocuments[0]);
+                                        } else if (canCancelSubmission(chapterDocuments[0])) {
+                                          handleCancelSubmission(chapterDocuments[0]);
+                                        }
+                                      }}
+                                      disabled={
+                                        submittingDocument === chapterDocuments[0]._id ||
+                                        cancelingSubmission === chapterDocuments[0]._id
+                                      }
+                                    >
+                                      {submittingDocument === chapterDocuments[0]._id ||
+                                      cancelingSubmission === chapterDocuments[0]._id ? (
+                                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                      ) : canCancelSubmission(chapterDocuments[0]) ? (
+                                        <FaTimes className="w-4 h-4" />
+                                      ) : (
+                                        <FaCheck className="w-4 h-4" />
+                                      )}
+                                    </button>
+                                  </>
+                                )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
