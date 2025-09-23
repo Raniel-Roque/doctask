@@ -1509,6 +1509,37 @@ export const getAdviserDocuments = query({
   },
 });
 
+export const getTotalHandledGroupsCount = query({
+  args: {
+    adviserId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Get adviser and their group IDs
+    const adviser = await ctx.db
+      .query("advisersTable")
+      .withIndex("by_adviser", (q) => q.eq("adviser_id", args.adviserId))
+      .first();
+
+    if (!adviser) {
+      return 0;
+    }
+
+    const groupIds = adviser.group_ids || [];
+    if (groupIds.length === 0) {
+      return 0;
+    }
+
+    // Fetch all groups handled by the adviser
+    const groups = await Promise.all(groupIds.map((id) => ctx.db.get(id)));
+
+    const validGroups = groups.filter(
+      (group): group is NonNullable<typeof group> => group !== null,
+    );
+
+    return validGroups.length;
+  },
+});
+
 export const getHandledGroupsWithProgress = query({
   args: {
     adviserId: v.id("users"),
