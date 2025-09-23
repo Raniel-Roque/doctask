@@ -523,6 +523,9 @@ export const TaskAssignmentTable = ({
       return false; // No one can edit task status when document is approved
     }
 
+    // Project managers can always edit task status (except for excluded chapters and approved docs)
+    if (mode === "manager") return true;
+
     // Check if document is submitted - if so, can only change from incomplete to complete, not vice versa
     if (documentStatus === 1) {
       // Document is submitted
@@ -531,8 +534,6 @@ export const TaskAssignmentTable = ({
         return false; // Cannot change from complete to incomplete when document is submitted
       }
     }
-
-    if (mode === "manager") return true;
 
     // Check if user is assigned to the task
     const isAssigned = task.assigned_student_ids.includes(currentUserId);

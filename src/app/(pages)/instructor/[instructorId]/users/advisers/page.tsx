@@ -758,7 +758,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       
       if (validationErrors) {
         // Convert validation errors to row-specific error messages
-        Object.entries(validationErrors).forEach(([field, message]) => {
+        Object.entries(validationErrors).forEach(([, message]) => {
           errors.push(`Row ${rowNumber}: ${message}`);
         });
         return;
