@@ -26,6 +26,7 @@ import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
 import { apiRequest } from "@/lib/utils";
 import { useMutationWithRetry } from "@/lib/convex-retry";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
+import { validateUserForm } from "../../utils/validation";
 import * as XLSX from "exceljs";
 
 // =========================================
@@ -751,40 +752,15 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
     users.forEach((user, index) => {
       const rowNumber = index + 2; // +2 because we skip header row and arrays are 0-indexed
-      const missingFields: string[] = [];
 
-      // Check required fields and collect missing ones
-      if (!user.first_name.trim()) {
-        missingFields.push("First Name");
-      }
-      if (!user.last_name.trim()) {
-        missingFields.push("Last Name");
-      }
-      if (!user.email.trim()) {
-        missingFields.push("Email");
-      }
-
-      // If any required fields are missing, add error and skip this row
-      if (missingFields.length > 0) {
-        if (missingFields.length === 1) {
-          errors.push(`Row ${rowNumber}: Missing ${missingFields[0]} field`);
-        } else {
-          errors.push(
-            `Row ${rowNumber}: Missing ${missingFields.join(", ")} fields`,
-          );
-        }
-        return;
-      }
-
-      // Check email format
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) {
-        errors.push(`Row ${rowNumber}: Invalid email format`);
-        return;
-      }
-
-      // Check email length
-      if (user.email.length > 100) {
-        errors.push(`Row ${rowNumber}: Email must be less than 100 characters`);
+      // Use the same validation logic as AddForm and EditForm
+      const validationErrors = validateUserForm(user);
+      
+      if (validationErrors) {
+        // Convert validation errors to row-specific error messages
+        Object.entries(validationErrors).forEach(([field, message]) => {
+          errors.push(`Row ${rowNumber}: ${message}`);
+        });
         return;
       }
 

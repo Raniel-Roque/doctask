@@ -256,7 +256,7 @@ export default function EditGroupForm({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "capstoneTitle" ? value.trim() : value,
+      [name]: value, // Don't trim during typing - allow spaces
     }));
   };
 
