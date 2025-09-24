@@ -611,9 +611,12 @@ export default function EditForm({
                     </h3>
                   </div>
                   <p className="text-gray-600 mb-6">
-                    Changing this user&apos;s role will reset any group
-                    affiliations associated with their account. This action
-                    cannot be undone. Are you sure you want to proceed?
+                    {user?.subrole === 1 && groupInfo && groupInfo.member_ids && groupInfo.member_ids.length > 0
+                      ? "You have already selected a replacement project manager. This user will be removed from their current group. This action cannot be undone. Are you sure you want to proceed?"
+                      : user?.subrole === 0 && groupInfo
+                        ? "This user will be removed from their current group. This action cannot be undone. Are you sure you want to proceed?"
+                        : "Changing this user's role will remove them from any group they are currently in. This action cannot be undone. Are you sure you want to proceed?"
+                    }
                   </p>
                   <div className="flex justify-end gap-3">
                     <button
