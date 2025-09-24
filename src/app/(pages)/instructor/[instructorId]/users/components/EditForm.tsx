@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
+import React, { useState, useRef, useLayoutEffect, useEffect, useMemo } from "react";
 import {
   FaEdit,
   FaTimes,
@@ -96,6 +96,37 @@ export default function EditForm({
     api.fetch.getGroupById,
     studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip"
   );
+
+  // Get all users to filter for available project managers
+  const allUsers = useQuery(api.fetch.searchUsers, {
+    searchTerm: "",
+    role: 0, // Students only
+    emailVerified: undefined,
+    subrole: undefined,
+    pageSize: 10000,
+    pageNumber: 1,
+    sortField: "first_name",
+    sortDirection: "asc",
+  });
+
+  // Get all groups to check which project managers are already assigned
+  const allGroups = useQuery(api.fetch.getGroups, {
+    pageSize: 10000,
+    pageNumber: 1,
+  });
+
+  // Filter available project managers (role 0, subrole 1, not already managing a group)
+  const availableProjectManagers = useMemo(() => {
+    if (!allUsers?.users || !allGroups?.groups) return [];
+    
+    const usedManagerIds = new Set(
+      allGroups.groups.map((g) => g.project_manager_id) || []
+    );
+    
+    return allUsers.users.filter(
+      (u) => u && u.role === 0 && u.subrole === 1 && !usedManagerIds.has(u._id)
+    );
+  }, [allUsers, allGroups]);
 
   // Handle error messages
   useEffect(() => {
@@ -662,7 +693,7 @@ export default function EditForm({
             middle_name: user.middle_name,
             email: user.email,
           }}
-          availableProjectManagers={[]} // TODO: Get from props or context
+          availableProjectManagers={availableProjectManagers}
           groupName={groupInfo?.capstone_title || "Untitled Group"}
         />
       )}
