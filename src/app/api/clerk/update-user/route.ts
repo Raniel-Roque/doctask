@@ -15,6 +15,7 @@ type UpdateUserArgs = {
   email: string;
   clerk_id?: string;
   subrole?: number;
+  newProjectManagerId?: Id<"users">;
 };
 
 const convex = getConvexClient();
@@ -165,6 +166,9 @@ export async function POST(request: Request) {
       if (convexUser.role === 0 && typeof body.subrole !== "undefined") {
         updateArgs.subrole = body.subrole;
       }
+      if (body.newProjectManagerId) {
+        updateArgs.newProjectManagerId = body.newProjectManagerId as Id<"users">;
+      }
       await convex.mutation(api.mutations.updateUser, updateArgs);
       return NextResponse.json({ success: true });
     }
@@ -213,6 +217,9 @@ export async function POST(request: Request) {
       };
       if (convexUser.role === 0 && typeof body.subrole !== "undefined") {
         updateArgs.subrole = body.subrole;
+      }
+      if (body.newProjectManagerId) {
+        updateArgs.newProjectManagerId = body.newProjectManagerId as Id<"users">;
       }
       await convex.mutation(api.mutations.updateUser, updateArgs);
     } catch {

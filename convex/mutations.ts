@@ -560,6 +560,7 @@ export const updateUser = mutation({
     clerk_id: v.optional(v.string()),
     subrole: v.optional(v.number()),
     role: v.optional(v.number()),
+    newProjectManagerId: v.optional(v.id("users")), // For project manager replacement
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -624,21 +625,24 @@ export const updateUser = mutation({
           .collect();
 
         for (const group of managedGroups) {
-          // Find a suitable replacement project manager from the group members
-          let newProjectManagerId: Id<"users"> | null = null;
+          // Use the provided newProjectManagerId if available, otherwise find a suitable replacement
+          let newProjectManagerId: Id<"users"> | null = args.newProjectManagerId || null;
           
-          // First, try to find a member who is currently a project manager (subrole 1)
-          for (const memberId of group.member_ids) {
-            const member = await ctx.db.get(memberId);
-            if (member && member.subrole === 1) {
-              newProjectManagerId = memberId;
-              break;
+          // If no newProjectManagerId provided, find a suitable replacement from the group members
+          if (!newProjectManagerId) {
+            // First, try to find a member who is currently a project manager (subrole 1)
+            for (const memberId of group.member_ids) {
+              const member = await ctx.db.get(memberId);
+              if (member && member.subrole === 1) {
+                newProjectManagerId = memberId;
+                break;
+              }
             }
-          }
-          
-          // If no project manager found in members, pick the first available member
-          if (!newProjectManagerId && group.member_ids.length > 0) {
-            newProjectManagerId = group.member_ids[0];
+            
+            // If no project manager found in members, pick the first available member
+            if (!newProjectManagerId && group.member_ids.length > 0) {
+              newProjectManagerId = group.member_ids[0];
+            }
           }
           
           if (newProjectManagerId) {

@@ -378,6 +378,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           lastName: toSentenceCase(editFormData.last_name.trim()),
           subrole: editFormData.subrole,
           instructorId: instructorId,
+          newProjectManagerId: editFormData.newProjectManagerId,
         }),
       });
       addBanner({
