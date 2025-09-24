@@ -3058,11 +3058,24 @@ export const LatestDocumentsTable = ({
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <span
-                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${TASK_STATUS_COLORS[getTaskStatus(chapterDocuments[0])] || TASK_STATUS_COLORS[0]}`}
-                              >
-                                {TASK_STATUS_LABELS[getTaskStatus(chapterDocuments[0])] || TASK_STATUS_LABELS[0]}
-                              </span>
+                              {(() => {
+                                // Special chapters are always considered completed
+                                if (["title_page", "appendix_a", "appendix_d"].includes(chapter)) {
+                                  return (
+                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                      Completed
+                                    </span>
+                                  );
+                                }
+                                
+                                return (
+                                  <span
+                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${TASK_STATUS_COLORS[getTaskStatus(chapterDocuments[0])] || TASK_STATUS_COLORS[0]}`}
+                                  >
+                                    {TASK_STATUS_LABELS[getTaskStatus(chapterDocuments[0])] || TASK_STATUS_LABELS[0]}
+                                  </span>
+                                );
+                              })()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                               {formatLastModified(chapterDocuments[0]?.last_modified)}
@@ -3280,6 +3293,15 @@ export const LatestDocumentsTable = ({
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             {(() => {
+                              // Special chapters are always considered completed
+                              if (["title_page", "appendix_a", "appendix_d"].includes(chapter)) {
+                                return (
+                                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    Completed
+                                  </span>
+                                );
+                              }
+                              
                               const relatedTasks = tasks.filter((task) => task.chapter === chapter);
                               const task = relatedTasks[0];
                               if (!task) {

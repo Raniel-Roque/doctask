@@ -625,48 +625,37 @@ export const updateUser = mutation({
           .collect();
 
         for (const group of managedGroups) {
-          // Use the provided newProjectManagerId if available, otherwise find a suitable replacement
-          let newProjectManagerId: Id<"users"> | null = args.newProjectManagerId || null;
-          
-          // If no newProjectManagerId provided, find a suitable replacement from the group members
-          if (!newProjectManagerId) {
-            // First, try to find a member who is currently a project manager (subrole 1)
-            for (const memberId of group.member_ids) {
-              const member = await ctx.db.get(memberId);
-              if (member && member.subrole === 1) {
-                newProjectManagerId = memberId;
-                break;
-              }
-            }
-            
-            // If no project manager found in members, pick the first available member
-            if (!newProjectManagerId && group.member_ids.length > 0) {
-              newProjectManagerId = group.member_ids[0];
-            }
-          }
-          
-          if (newProjectManagerId) {
+          // If we have a replacement project manager from the edit form
+          if (args.newProjectManagerId) {
             // Update the group with the new project manager
             await ctx.db.patch(group._id, {
-              project_manager_id: newProjectManagerId,
-              member_ids: group.member_ids.filter(id => id !== newProjectManagerId),
+              project_manager_id: args.newProjectManagerId,
+              member_ids: group.member_ids.filter(id => id !== args.newProjectManagerId),
             });
             
             // Update the new project manager's role to manager (subrole 1)
-            await ctx.db.patch(newProjectManagerId, { subrole: 1 });
+            await ctx.db.patch(args.newProjectManagerId, { subrole: 1 });
             
-            // Add the demoted user to the group as a regular member
-            await ctx.db.patch(group._id, {
-              member_ids: [...group.member_ids.filter(id => id !== newProjectManagerId), args.userId],
-            });
+            // Update the new project manager's studentsTable entry to have this group_id
+            const newManagerMembership = await ctx.db
+              .query("studentsTable")
+              .withIndex("by_user", (q) => q.eq("user_id", args.newProjectManagerId!))
+              .first();
+            
+            if (newManagerMembership) {
+              await ctx.db.patch(newManagerMembership._id, { group_id: group._id });
+            }
           } else {
-            // If no suitable replacement found, we need to handle this case
-            // For now, we'll keep the group but mark it as needing attention
-            // The instructor can manually assign a new project manager later
-            throw new Error(
-              `Cannot demote project manager: No suitable replacement found for group. ` +
-              `Please assign a new project manager to the group first, or add more members to the group.`
-            );
+            // No replacement provided - this means the group has no members or the user is being demoted without a group
+            // Just remove the user from the group and set their group_id to null
+            const userMembership = await ctx.db
+              .query("studentsTable")
+              .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+              .first();
+            
+            if (userMembership) {
+              await ctx.db.patch(userMembership._id, { group_id: null });
+            }
           }
         }
       }
