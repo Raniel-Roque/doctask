@@ -316,7 +316,14 @@ export const LatestDocumentsTable = ({
       return 1;
     const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
     if (relatedTasks.length === 0) return 0;
-    return relatedTasks.every((task) => task.task_status === 1) ? 1 : 0;
+    
+    // For chapters with subparts, check if all subparts are completed
+    if (relatedTasks.length > 1) {
+      return relatedTasks.every((task) => task.task_status === 1) ? 1 : 0;
+    }
+    
+    // For regular documents, return the task's status
+    return relatedTasks[0]?.task_status || 0;
   };
 
   // Status color mapping for task_status (member/manager communication)
@@ -365,75 +372,49 @@ export const LatestDocumentsTable = ({
     return isAssigned && (doc.status === 0 || doc.status === 3); // Can edit not submitted or rejected documents
   };
 
-  // Check if user can edit task status for a document
-  const canEditTaskStatus = (doc: Document) => {
+  // Check if user can edit task status for a specific task
+  const canEditTaskStatus = (task: Task) => {
     if (!group) return false;
 
     // Exclude special chapters that should always be completed and read-only
-    if (["title_page", "appendix_a", "appendix_d"].includes(doc.chapter)) {
+    if (["title_page", "appendix_a", "appendix_d"].includes(task.chapter)) {
       return false;
     }
 
     // Check if document is approved - if so, no one can edit task status
-    if (doc.status === 2) {
+    const document = documents.find((doc) => doc.chapter === task.chapter);
+    if (document?.status === 2) {
       // Document is approved
       return false; // No one can edit task status when document is approved
     }
 
+    // Project managers can always edit task status (except for excluded chapters and approved docs)
+    if (mode === "manager") return true;
+
     // Check if document is submitted - if so, can only change from incomplete to complete, not vice versa
-    if (doc.status === 1) {
+    if (document?.status === 1) {
       // Document is submitted
-      const currentTaskStatus = getTaskStatus(doc);
-      if (currentTaskStatus === 1) {
+      if (task.task_status === 1) {
         // Task is currently complete
         return false; // Cannot change from complete to incomplete when document is submitted
       }
     }
 
-    // Project managers can always edit task status (except for excluded chapters, approved docs, and submitted complete tasks)
-    if (group.project_manager_id === currentUserId) return true;
-
-    // Check if user is assigned to any task for this document
-    const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
-    const isAssignedToAnyTask = relatedTasks.some((task) =>
-      task.assigned_student_ids.includes(currentUserId),
-    );
-
-    if (!isAssignedToAnyTask) return false;
+    // Check if user is assigned to the task
+    const isAssigned = task.assigned_student_ids.includes(currentUserId);
+    if (!isAssigned) return false;
 
     return true;
   };
 
   // Handle task status change
-  const handleTaskStatusChange = async (doc: Document, newStatus: number) => {
+  const handleTaskStatusChange = async (task: Task, newStatus: number) => {
     try {
-      setUpdatingTaskStatus(doc._id);
-
-      // Find tasks for this document
-      const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
-
-      if (relatedTasks.length === 0) {
-        throw new Error("No tasks found for this document");
-      }
-
-      // For project managers, use the first task (they can edit any task)
-      // For members, find a task they are assigned to
-      let userTask;
-      if (group?.project_manager_id === currentUserId) {
-        userTask = relatedTasks[0]; // Project manager can edit any task
-      } else {
-        userTask = relatedTasks.find((task) =>
-          task.assigned_student_ids.includes(currentUserId),
-        );
-      }
-
-      if (!userTask) {
-        throw new Error("No assigned task found for this document");
-      }
+      setUpdatingTaskStatus(task._id);
 
       // Call the Convex mutation
       await updateTaskStatus({
-        taskId: userTask._id,
+        taskId: task._id,
         newStatus,
         userId: currentUserId,
       });
@@ -458,9 +439,83 @@ export const LatestDocumentsTable = ({
 
   // Render status dropdown for task status
   const renderTaskStatusDropdown = (doc: Document) => {
-    const canEdit = canEditTaskStatus(doc);
-    const currentStatus = getTaskStatus(doc);
-    const isLoading = updatingTaskStatus === doc._id;
+    const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
+    
+    // For chapters with subparts, show individual task statuses
+    if (relatedTasks.length > 1) {
+      return (
+        <div className="space-y-1">
+          {relatedTasks.map((task) => {
+            const canEdit = canEditTaskStatus(task);
+            const currentStatus = task.task_status;
+            const isLoading = updatingTaskStatus === task._id;
+
+            if (!canEdit) {
+              // Show read-only status badge
+              return (
+                <div key={task._id} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-600 truncate max-w-20">
+                    {task.section}:
+                  </span>
+                  <span
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${TASK_STATUS_COLORS[currentStatus] || TASK_STATUS_COLORS[0]}`}
+                  >
+                    {TASK_STATUS_LABELS[currentStatus] || TASK_STATUS_LABELS[0]}
+                  </span>
+                </div>
+              );
+            }
+
+            // Show editable dropdown with chevron
+            return (
+              <div key={task._id} className="flex items-center gap-2">
+                <span className="text-xs text-gray-600 truncate max-w-20">
+                  {task.section}:
+                </span>
+                <div className="relative inline-block">
+                  <select
+                    value={currentStatus}
+                    onChange={(e) =>
+                      handleTaskStatusChange(task, parseInt(e.target.value))
+                    }
+                    disabled={isLoading}
+                    className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${TASK_STATUS_COLORS[currentStatus] || TASK_STATUS_COLORS[0]} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value={0} className="bg-yellow-100 text-yellow-800">
+                      Incomplete
+                    </option>
+                    <option value={1} className="bg-green-100 text-green-800">
+                      Completed
+                    </option>
+                  </select>
+                  <FaChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs pointer-events-none" />
+                  {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
+                      <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // For regular documents (single task), show simple status
+    const task = relatedTasks[0];
+    if (!task) {
+      return (
+        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+          No Task
+        </span>
+      );
+    }
+
+    const canEdit = canEditTaskStatus(task);
+    const currentStatus = task.task_status;
+    const isLoading = updatingTaskStatus === task._id;
 
     if (!canEdit) {
       // Show read-only status badge
@@ -479,7 +534,7 @@ export const LatestDocumentsTable = ({
         <select
           value={currentStatus}
           onChange={(e) =>
-            handleTaskStatusChange(doc, parseInt(e.target.value))
+            handleTaskStatusChange(task, parseInt(e.target.value))
           }
           disabled={isLoading}
           className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${TASK_STATUS_COLORS[currentStatus] || TASK_STATUS_COLORS[0]} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}

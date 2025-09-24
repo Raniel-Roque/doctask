@@ -157,34 +157,6 @@ const LoginPage = () => {
     );
   }
 
-  const updateCodeRateLimit = (email: string) => {
-    const rateLimitKey = `rateLimit_${email}`;
-    const timerKey = `resendTimer_${email}`;
-    const now = Date.now();
-    // Set 2 min timer
-    localStorage.setItem(timerKey, JSON.stringify({ resetTime: now + 120000 }));
-    // Update rate limit (3 per 5 min)
-    const rateLimitData = localStorage.getItem(rateLimitKey);
-    if (rateLimitData) {
-      const { count, resetTime: oldResetTime } = JSON.parse(rateLimitData);
-      if (now < oldResetTime) {
-        localStorage.setItem(
-          rateLimitKey,
-          JSON.stringify({ count: count + 1, resetTime: oldResetTime }),
-        );
-      } else {
-        localStorage.setItem(
-          rateLimitKey,
-          JSON.stringify({ count: 1, resetTime: now + 300000 }),
-        );
-      }
-    } else {
-      localStorage.setItem(
-        rateLimitKey,
-        JSON.stringify({ count: 1, resetTime: now + 300000 }),
-      );
-    }
-  };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -268,7 +240,6 @@ const LoginPage = () => {
           });
 
           if (result.status === "needs_first_factor") {
-            updateCodeRateLimit(emailToCheck);
             setStep(2);
             showNotification(
               "A new verification code has been sent to your email. Please check your inbox and spam folder.",
