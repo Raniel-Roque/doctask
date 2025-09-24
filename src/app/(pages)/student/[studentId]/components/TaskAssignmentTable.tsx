@@ -248,6 +248,22 @@ export const TaskAssignmentTable = ({
     }
   }, [notification, addBanner]);
 
+  // Check for note count changes and reset viewed state if notes were edited
+  useEffect(() => {
+    if (!documents || documents.length === 0) return;
+
+    documents.forEach((doc) => {
+      const currentNoteCount = doc.note_count;
+      const viewedCount = viewedNoteCounts[doc._id] || 0;
+      
+      // If the current note count is greater than what we last viewed,
+      // it means notes were added or edited, so reset the viewed state
+      if (currentNoteCount > viewedCount && viewedCount > 0) {
+        resetViewedStateForDocument(doc._id);
+      }
+    });
+  }, [documents, viewedNoteCounts, resetViewedStateForDocument]);
+
   // Add state for notes popup
   const [notesPopupOpen, setNotesPopupOpen] = useState(false);
   const [notesPopupDoc, setNotesPopupDoc] = useState<Document | null>(null);
@@ -273,6 +289,14 @@ export const TaskAssignmentTable = ({
     }
     return {};
   });
+
+  // Function to reset viewed state for a document when notes are edited
+  const resetViewedStateForDocument = useCallback((documentId: string) => {
+    const newViewedCounts = { ...viewedNoteCounts };
+    delete newViewedCounts[documentId];
+    setViewedNoteCounts(newViewedCounts);
+    localStorage.setItem("viewedNoteCounts", JSON.stringify(newViewedCounts));
+  }, [viewedNoteCounts]);
 
   // Create a stable dependency from the members list
   const memberIds = useMemo(() => {

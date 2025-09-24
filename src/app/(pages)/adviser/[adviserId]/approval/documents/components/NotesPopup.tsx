@@ -245,9 +245,16 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
 
   const handleEditNote = async (noteId: Id<"notes">) => {
     const content = editingContent.trim();
+    const note = notes.find(n => n._id === noteId);
 
     if (!content) {
       showNotification("Note content cannot be empty", "error");
+      return;
+    }
+
+    // Check if there are actual changes
+    if (note && !hasChanges(note)) {
+      showNotification("No changes to save", "info");
       return;
     }
 
@@ -295,6 +302,11 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
     setEditingNoteId(note._id);
     setEditingContent(note.content);
     setExpandedNotes((prev) => new Set([...prev, note._id]));
+  };
+
+  // Helper function to check if there are changes to save
+  const hasChanges = (note: Note) => {
+    return editingContent.trim() !== note.content.trim();
   };
 
   const cancelEditing = () => {
@@ -470,8 +482,13 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                           <>
                             <button
                               onClick={() => handleEditNote(note._id)}
-                              className="text-green-600 hover:text-green-800 transition-colors p-1"
+                              className={`transition-colors p-1 ${
+                                hasChanges(note)
+                                  ? "text-green-600 hover:text-green-800"
+                                  : "text-gray-400 cursor-not-allowed"
+                              }`}
                               title="Save Changes"
+                              disabled={!hasChanges(note)}
                             >
                               <FaSave className="w-4 h-4" />
                             </button>

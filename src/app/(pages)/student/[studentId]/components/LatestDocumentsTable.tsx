@@ -10,7 +10,7 @@ import {
   FaChevronDown,
 } from "react-icons/fa";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useConvex } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -197,6 +197,14 @@ export const LatestDocumentsTable = ({
     return {};
   });
 
+  // Function to reset viewed state for a document when notes are edited
+  const resetViewedStateForDocument = useCallback((documentId: string) => {
+    const newViewedCounts = { ...viewedNoteCounts };
+    delete newViewedCounts[documentId];
+    setViewedNoteCounts(newViewedCounts);
+    localStorage.setItem("viewedNoteCounts", JSON.stringify(newViewedCounts));
+  }, [viewedNoteCounts]);
+
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "info" | "warning";
@@ -213,6 +221,22 @@ export const LatestDocumentsTable = ({
       });
     }
   }, [notification, addBanner]);
+
+  // Check for note count changes and reset viewed state if notes were edited
+  useEffect(() => {
+    if (!documents || documents.length === 0) return;
+
+    documents.forEach((doc) => {
+      const currentNoteCount = doc.note_count;
+      const viewedCount = viewedNoteCounts[doc._id] || 0;
+      
+      // If the current note count is greater than what we last viewed,
+      // it means notes were added or edited, so reset the viewed state
+      if (currentNoteCount > viewedCount && viewedCount > 0) {
+        resetViewedStateForDocument(doc._id);
+      }
+    });
+  }, [documents, viewedNoteCounts, resetViewedStateForDocument]);
 
   // Add loading states for submit/cancel
   const [submittingDocument, setSubmittingDocument] = useState<string | null>(
