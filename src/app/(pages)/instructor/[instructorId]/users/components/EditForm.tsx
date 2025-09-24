@@ -18,6 +18,9 @@ import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { UnsavedChangesConfirmation } from "../../../../components/UnsavedChangesConfirmation";
 import { useModalFocus } from "@/hooks/use-modal-focus";
 import ProjectManagerSelectionModal from "./ProjectManagerSelectionModal";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../../convex/_generated/dataModel";
 
 // =========================================
 // Types
@@ -81,6 +84,18 @@ export default function EditForm({
     useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Get group information for the user being edited
+  const studentGroup = useQuery(
+    api.fetch.getStudentGroup,
+    user ? { userId: user._id as Id<"users"> } : "skip"
+  );
+
+  // Get the actual group information if the student has a group
+  const groupInfo = useQuery(
+    api.fetch.getGroupById,
+    studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip"
+  );
 
   // Handle error messages
   useEffect(() => {
@@ -181,11 +196,22 @@ export default function EditForm({
   const handleRoleSelect = (role: { value: number; label: string }) => {
     // Check if we're demoting a project manager (subrole 1 -> 0)
     if (user?.subrole === 1 && role.value === 0) {
-      // Store the pending role change and show project manager selection modal
-      setPendingRoleChange({ from: user.subrole, to: role.value });
-      setShowProjectManagerSelection(true);
-      setRoleSearch("");
-      setShowRoleSearch(false);
+      // Check if the project manager has a group
+      if (groupInfo && groupInfo.member_ids && groupInfo.member_ids.length > 0) {
+        // Project manager has a group with members - need to select a new project manager
+        setPendingRoleChange({ from: user.subrole, to: role.value });
+        setShowProjectManagerSelection(true);
+        setRoleSearch("");
+        setShowRoleSearch(false);
+      } else {
+        // Project manager doesn't have a group or has no members - can demote directly
+        onFormDataChange({
+          ...formData,
+          subrole: role.value,
+        });
+        setRoleSearch("");
+        setShowRoleSearch(false);
+      }
     } else {
       // Normal role change - apply immediately
       onFormDataChange({
@@ -512,7 +538,7 @@ export default function EditForm({
                             value={roleSearch}
                             onChange={handleRoleSearch}
                             placeholder="Search role..."
-                            className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            className="w-full pl-8 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 border-0 shadow-none bg-white"
                             autoFocus
                           />
                           <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">
@@ -637,7 +663,7 @@ export default function EditForm({
             email: user.email,
           }}
           availableProjectManagers={[]} // TODO: Get from props or context
-          groupName="Current Group" // TODO: Get actual group name
+          groupName={groupInfo?.capstone_title || "Untitled Group"}
         />
       )}
     </>
