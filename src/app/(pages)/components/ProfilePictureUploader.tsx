@@ -107,10 +107,7 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
         window.location.reload();
       }, 2000);
     } catch (err) {
-      const errorMessage = getErrorMessage(
-        err,
-        ErrorContexts.uploadFile(),
-      );
+      const errorMessage = getErrorMessage(err, ErrorContexts.uploadFile());
       onError(errorMessage);
     } finally {
       setIsLoading(false);

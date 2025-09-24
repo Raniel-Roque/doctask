@@ -1060,7 +1060,11 @@ export const UserTable = ({
               await onResetCode(resetCodeUser);
               setResetCodeUser(null);
             } catch (error) {
-              setResetCodeError(error instanceof Error ? error.message : "Failed to reset adviser code");
+              setResetCodeError(
+                error instanceof Error
+                  ? error.message
+                  : "Failed to reset adviser code",
+              );
             } finally {
               setIsResettingCode(false);
             }

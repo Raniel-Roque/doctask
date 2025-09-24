@@ -167,7 +167,8 @@ export async function POST(request: Request) {
         updateArgs.subrole = body.subrole;
       }
       if (body.newProjectManagerId) {
-        updateArgs.newProjectManagerId = body.newProjectManagerId as Id<"users">;
+        updateArgs.newProjectManagerId =
+          body.newProjectManagerId as Id<"users">;
       }
       await convex.mutation(api.mutations.updateUser, updateArgs);
       return NextResponse.json({ success: true });
@@ -219,7 +220,8 @@ export async function POST(request: Request) {
         updateArgs.subrole = body.subrole;
       }
       if (body.newProjectManagerId) {
-        updateArgs.newProjectManagerId = body.newProjectManagerId as Id<"users">;
+        updateArgs.newProjectManagerId =
+          body.newProjectManagerId as Id<"users">;
       }
       await convex.mutation(api.mutations.updateUser, updateArgs);
     } catch {

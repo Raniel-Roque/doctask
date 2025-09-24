@@ -198,12 +198,15 @@ export const LatestDocumentsTable = ({
   });
 
   // Function to reset viewed state for a document when notes are edited
-  const resetViewedStateForDocument = useCallback((documentId: string) => {
-    const newViewedCounts = { ...viewedNoteCounts };
-    delete newViewedCounts[documentId];
-    setViewedNoteCounts(newViewedCounts);
-    localStorage.setItem("viewedNoteCounts", JSON.stringify(newViewedCounts));
-  }, [viewedNoteCounts]);
+  const resetViewedStateForDocument = useCallback(
+    (documentId: string) => {
+      const newViewedCounts = { ...viewedNoteCounts };
+      delete newViewedCounts[documentId];
+      setViewedNoteCounts(newViewedCounts);
+      localStorage.setItem("viewedNoteCounts", JSON.stringify(newViewedCounts));
+    },
+    [viewedNoteCounts],
+  );
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -217,7 +220,7 @@ export const LatestDocumentsTable = ({
         message: notification.message,
         type: notification.type,
         onClose: () => setNotification(null),
-        autoClose: notification.type === "error" ? false : true,
+        autoClose: true,
       });
     }
   }, [notification, addBanner]);
@@ -229,7 +232,7 @@ export const LatestDocumentsTable = ({
     documents.forEach((doc) => {
       const currentNoteCount = doc.note_count;
       const viewedCount = viewedNoteCounts[doc._id] || 0;
-      
+
       // If the current note count is greater than what we last viewed,
       // it means notes were added or edited, so reset the viewed state
       if (currentNoteCount > viewedCount && viewedCount > 0) {
@@ -316,12 +319,12 @@ export const LatestDocumentsTable = ({
       return 1;
     const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
     if (relatedTasks.length === 0) return 0;
-    
+
     // For chapters with subparts, check if all subparts are completed
     if (relatedTasks.length > 1) {
       return relatedTasks.every((task) => task.task_status === 1) ? 1 : 0;
     }
-    
+
     // For regular documents, return the task's status
     return relatedTasks[0]?.task_status || 0;
   };
@@ -3027,7 +3030,8 @@ export const LatestDocumentsTable = ({
                     </tr>
                   )}
                 {Object.keys(sortedGroupedDocuments).map((chapter) => {
-                  const chapterDocuments = sortedGroupedDocuments[chapter] || [];
+                  const chapterDocuments =
+                    sortedGroupedDocuments[chapter] || [];
                   return (
                     <React.Fragment key={chapter}>
                       {hasSubparts(chapter) ? (
@@ -3054,37 +3058,50 @@ export const LatestDocumentsTable = ({
                               <span
                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[chapterDocuments[0]?.status] || STATUS_COLORS[0]}`}
                               >
-                                {STATUS_LABELS[chapterDocuments[0]?.status] || STATUS_LABELS[0]}
+                                {STATUS_LABELS[chapterDocuments[0]?.status] ||
+                                  STATUS_LABELS[0]}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               {(() => {
                                 // Special chapters are always considered completed
-                                if (["title_page", "appendix_a", "appendix_d"].includes(chapter)) {
+                                if (
+                                  [
+                                    "title_page",
+                                    "appendix_a",
+                                    "appendix_d",
+                                  ].includes(chapter)
+                                ) {
                                   return (
                                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                       Completed
                                     </span>
                                   );
                                 }
-                                
+
                                 return (
                                   <span
                                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${TASK_STATUS_COLORS[getTaskStatus(chapterDocuments[0])] || TASK_STATUS_COLORS[0]}`}
                                   >
-                                    {TASK_STATUS_LABELS[getTaskStatus(chapterDocuments[0])] || TASK_STATUS_LABELS[0]}
+                                    {TASK_STATUS_LABELS[
+                                      getTaskStatus(chapterDocuments[0])
+                                    ] || TASK_STATUS_LABELS[0]}
                                   </span>
                                 );
                               })()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                              {formatLastModified(chapterDocuments[0]?.last_modified)}
+                              {formatLastModified(
+                                chapterDocuments[0]?.last_modified,
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                               <div className="flex items-center gap-2 justify-center">
-                                {!["title_page", "appendix_a", "appendix_d"].includes(
-                                  chapter,
-                                ) && (
+                                {![
+                                  "title_page",
+                                  "appendix_a",
+                                  "appendix_d",
+                                ].includes(chapter) && (
                                   <>
                                     <button
                                       className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -3126,21 +3143,27 @@ export const LatestDocumentsTable = ({
                                     handleDownloadDocx(chapterDocuments[0]);
                                   }}
                                   disabled={
-                                    downloadingDocx === chapterDocuments[0]?._id ||
-                                    (chapter === "appendix_d" && downloadingAppendixD)
+                                    downloadingDocx ===
+                                      chapterDocuments[0]?._id ||
+                                    (chapter === "appendix_d" &&
+                                      downloadingAppendixD)
                                   }
                                 >
-                                  {downloadingDocx === chapterDocuments[0]?._id ||
-                                  (chapter === "appendix_d" && downloadingAppendixD) ? (
+                                  {downloadingDocx ===
+                                    chapterDocuments[0]?._id ||
+                                  (chapter === "appendix_d" &&
+                                    downloadingAppendixD) ? (
                                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                   ) : (
                                     <FaDownload className="w-4 h-4" />
                                   )}
                                 </button>
                                 {/* Only show Notes and Submit for non-excluded chapters */}
-                                {!["title_page", "appendix_a", "appendix_d"].includes(
-                                  chapter,
-                                ) &&
+                                {![
+                                  "title_page",
+                                  "appendix_a",
+                                  "appendix_d",
+                                ].includes(chapter) &&
                                   chapterDocuments[0]?.note_count > 0 && (
                                     <>
                                       <span className="mx-3 text-gray-300 select-none">
@@ -3166,7 +3189,8 @@ export const LatestDocumentsTable = ({
                                           // Save the current note count when viewed
                                           const newViewedCounts = {
                                             ...viewedNoteCounts,
-                                            [chapterDocuments[0]._id]: chapterDocuments[0].note_count,
+                                            [chapterDocuments[0]._id]:
+                                              chapterDocuments[0].note_count,
                                           };
                                           setViewedNoteCounts(newViewedCounts);
                                           localStorage.setItem(
@@ -3178,9 +3202,12 @@ export const LatestDocumentsTable = ({
                                         <FaStickyNote className="w-4 h-4" />
                                         {(() => {
                                           const viewedCount =
-                                            viewedNoteCounts[chapterDocuments[0]._id] || 0;
+                                            viewedNoteCounts[
+                                              chapterDocuments[0]._id
+                                            ] || 0;
                                           const newNotesCount =
-                                            chapterDocuments[0].note_count - viewedCount;
+                                            chapterDocuments[0].note_count -
+                                            viewedCount;
                                           const hasNewNotes = newNotesCount > 0;
                                           return (
                                             hasNewNotes && (
@@ -3198,44 +3225,70 @@ export const LatestDocumentsTable = ({
                                 {/* Submit/Cancel button for project managers */}
                                 {group &&
                                   group.project_manager_id === currentUserId &&
-                                  !["title_page", "appendix_a", "appendix_d"].includes(
-                                    chapter,
-                                  ) &&
+                                  ![
+                                    "title_page",
+                                    "appendix_a",
+                                    "appendix_d",
+                                  ].includes(chapter) &&
                                   chapterDocuments[0]?.status !== 3 && // Hide for rejected documents
                                   (canSubmitDocument(chapterDocuments[0]) ||
-                                    canCancelSubmission(chapterDocuments[0])) && (
+                                    canCancelSubmission(
+                                      chapterDocuments[0],
+                                    )) && (
                                     <>
                                       <span className="mx-3 text-gray-300 select-none">
                                         |
                                       </span>
                                       <button
                                         className={`transition-colors ${
-                                          canCancelSubmission(chapterDocuments[0])
+                                          canCancelSubmission(
+                                            chapterDocuments[0],
+                                          )
                                             ? "text-red-600 hover:text-red-800"
                                             : "text-green-600 hover:text-green-800"
                                         }`}
                                         title={
-                                          canCancelSubmission(chapterDocuments[0])
+                                          canCancelSubmission(
+                                            chapterDocuments[0],
+                                          )
                                             ? "Cancel Submission"
                                             : "Submit Document"
                                         }
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          if (canSubmitDocument(chapterDocuments[0])) {
-                                            handleSubmitDocument(chapterDocuments[0]);
-                                          } else if (canCancelSubmission(chapterDocuments[0])) {
-                                            handleCancelSubmission(chapterDocuments[0]);
+                                          if (
+                                            canSubmitDocument(
+                                              chapterDocuments[0],
+                                            )
+                                          ) {
+                                            handleSubmitDocument(
+                                              chapterDocuments[0],
+                                            );
+                                          } else if (
+                                            canCancelSubmission(
+                                              chapterDocuments[0],
+                                            )
+                                          ) {
+                                            handleCancelSubmission(
+                                              chapterDocuments[0],
+                                            );
                                           }
                                         }}
                                         disabled={
-                                          submittingDocument === chapterDocuments[0]?._id ||
-                                          cancelingSubmission === chapterDocuments[0]?._id
+                                          submittingDocument ===
+                                            chapterDocuments[0]?._id ||
+                                          cancelingSubmission ===
+                                            chapterDocuments[0]?._id
                                         }
                                       >
-                                        {submittingDocument === chapterDocuments[0]?._id ||
-                                        cancelingSubmission === chapterDocuments[0]?._id ? (
+                                        {submittingDocument ===
+                                          chapterDocuments[0]?._id ||
+                                        cancelingSubmission ===
+                                          chapterDocuments[0]?._id ? (
                                           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                        ) : canCancelSubmission(chapterDocuments[0]) ? (
+                                        ) : canCancelSubmission(
+                                            chapterDocuments[0],
+                                          ) ? (
                                           <FaTimes className="w-4 h-4" />
                                         ) : (
                                           <FaCheck className="w-4 h-4" />
@@ -3248,30 +3301,32 @@ export const LatestDocumentsTable = ({
                           </tr>
                           {/* Subparts rows: show individual tasks when expanded */}
                           {expandedChapters.has(chapter) &&
-                            tasks.filter((task) => task.chapter === chapter).map((task) => (
-                              <tr
-                                key={`${task._id}-subpart`}
-                                className="hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer"
-                              >
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm font-medium text-gray-900 ml-6">
-                                    ○ {task.title}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                  {/* Document status handled by main chapter header */}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                  {renderTaskStatusDropdown(task)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                  {/* Last modified handled by main chapter header */}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                  {/* No actions for subparts */}
-                                </td>
-                              </tr>
-                            ))}
+                            tasks
+                              .filter((task) => task.chapter === chapter)
+                              .map((task) => (
+                                <tr
+                                  key={`${task._id}-subpart`}
+                                  className="hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer"
+                                >
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm font-medium text-gray-900 ml-6">
+                                      ○ {task.title}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    {/* Document status handled by main chapter header */}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    {renderTaskStatusDropdown(task)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                    {/* Last modified handled by main chapter header */}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                    {/* No actions for subparts */}
+                                  </td>
+                                </tr>
+                              ))}
                         </>
                       ) : (
                         // Regular document row (not expandable, with actions)
@@ -3288,21 +3343,30 @@ export const LatestDocumentsTable = ({
                             <span
                               className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[chapterDocuments[0].status] || STATUS_COLORS[0]}`}
                             >
-                              {STATUS_LABELS[chapterDocuments[0].status] || STATUS_LABELS[0]}
+                              {STATUS_LABELS[chapterDocuments[0].status] ||
+                                STATUS_LABELS[0]}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             {(() => {
                               // Special chapters are always considered completed
-                              if (["title_page", "appendix_a", "appendix_d"].includes(chapter)) {
+                              if (
+                                [
+                                  "title_page",
+                                  "appendix_a",
+                                  "appendix_d",
+                                ].includes(chapter)
+                              ) {
                                 return (
                                   <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                     Completed
                                   </span>
                                 );
                               }
-                              
-                              const relatedTasks = tasks.filter((task) => task.chapter === chapter);
+
+                              const relatedTasks = tasks.filter(
+                                (task) => task.chapter === chapter,
+                              );
                               const task = relatedTasks[0];
                               if (!task) {
                                 return (
@@ -3315,18 +3379,24 @@ export const LatestDocumentsTable = ({
                             })()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                            {formatLastModified(chapterDocuments[0].last_modified)}
+                            {formatLastModified(
+                              chapterDocuments[0].last_modified,
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                             <div className="flex items-center gap-2 justify-center">
-                              {!["title_page", "appendix_a", "appendix_d"].includes(
-                                chapter,
-                              ) && (
+                              {![
+                                "title_page",
+                                "appendix_a",
+                                "appendix_d",
+                              ].includes(chapter) && (
                                 <>
                                   <button
                                     className="text-blue-600 hover:text-blue-800 transition-colors"
                                     title="View Document"
-                                    onClick={() => handleViewDocument(chapterDocuments[0])}
+                                    onClick={() =>
+                                      handleViewDocument(chapterDocuments[0])
+                                    }
                                   >
                                     <FaEye className="w-4 h-4" />
                                   </button>
@@ -3340,7 +3410,9 @@ export const LatestDocumentsTable = ({
                                   <button
                                     className="text-purple-600 hover:text-purple-800 transition-colors"
                                     title="Edit Document"
-                                    onClick={() => handleEditDocument(chapterDocuments[0])}
+                                    onClick={() =>
+                                      handleEditDocument(chapterDocuments[0])
+                                    }
                                   >
                                     <FaEdit className="w-4 h-4" />
                                   </button>
@@ -3358,20 +3430,24 @@ export const LatestDocumentsTable = ({
                                 }}
                                 disabled={
                                   downloadingDocx === chapterDocuments[0]._id ||
-                                  (chapter === "appendix_d" && downloadingAppendixD)
+                                  (chapter === "appendix_d" &&
+                                    downloadingAppendixD)
                                 }
                               >
                                 {downloadingDocx === chapterDocuments[0]._id ||
-                                (chapter === "appendix_d" && downloadingAppendixD) ? (
+                                (chapter === "appendix_d" &&
+                                  downloadingAppendixD) ? (
                                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                 ) : (
                                   <FaDownload className="w-4 h-4" />
                                 )}
                               </button>
                               {/* Only show Notes and Submit for non-excluded chapters */}
-                              {!["title_page", "appendix_a", "appendix_d"].includes(
-                                chapter,
-                              ) &&
+                              {![
+                                "title_page",
+                                "appendix_a",
+                                "appendix_d",
+                              ].includes(chapter) &&
                                 chapterDocuments[0].note_count > 0 && (
                                   <>
                                     <span className="mx-3 text-gray-300 select-none">
@@ -3396,7 +3472,8 @@ export const LatestDocumentsTable = ({
                                         // Save the current note count when viewed
                                         const newViewedCounts = {
                                           ...viewedNoteCounts,
-                                          [chapterDocuments[0]._id]: chapterDocuments[0].note_count,
+                                          [chapterDocuments[0]._id]:
+                                            chapterDocuments[0].note_count,
                                         };
                                         setViewedNoteCounts(newViewedCounts);
                                         localStorage.setItem(
@@ -3408,9 +3485,12 @@ export const LatestDocumentsTable = ({
                                       <FaStickyNote className="w-4 h-4" />
                                       {(() => {
                                         const viewedCount =
-                                          viewedNoteCounts[chapterDocuments[0]._id] || 0;
+                                          viewedNoteCounts[
+                                            chapterDocuments[0]._id
+                                          ] || 0;
                                         const newNotesCount =
-                                          chapterDocuments[0].note_count - viewedCount;
+                                          chapterDocuments[0].note_count -
+                                          viewedCount;
                                         const hasNewNotes = newNotesCount > 0;
                                         return (
                                           hasNewNotes && (
@@ -3428,9 +3508,11 @@ export const LatestDocumentsTable = ({
                               {/* Submit/Cancel button for project managers */}
                               {group &&
                                 group.project_manager_id === currentUserId &&
-                                !["title_page", "appendix_a", "appendix_d"].includes(
-                                  chapter,
-                                ) &&
+                                ![
+                                  "title_page",
+                                  "appendix_a",
+                                  "appendix_d",
+                                ].includes(chapter) &&
                                 chapterDocuments[0].status !== 3 && // Hide for rejected documents
                                 (canSubmitDocument(chapterDocuments[0]) ||
                                   canCancelSubmission(chapterDocuments[0])) && (
@@ -3450,21 +3532,37 @@ export const LatestDocumentsTable = ({
                                           : "Submit Document"
                                       }
                                       onClick={() => {
-                                        if (canSubmitDocument(chapterDocuments[0])) {
-                                          handleSubmitDocument(chapterDocuments[0]);
-                                        } else if (canCancelSubmission(chapterDocuments[0])) {
-                                          handleCancelSubmission(chapterDocuments[0]);
+                                        if (
+                                          canSubmitDocument(chapterDocuments[0])
+                                        ) {
+                                          handleSubmitDocument(
+                                            chapterDocuments[0],
+                                          );
+                                        } else if (
+                                          canCancelSubmission(
+                                            chapterDocuments[0],
+                                          )
+                                        ) {
+                                          handleCancelSubmission(
+                                            chapterDocuments[0],
+                                          );
                                         }
                                       }}
                                       disabled={
-                                        submittingDocument === chapterDocuments[0]._id ||
-                                        cancelingSubmission === chapterDocuments[0]._id
+                                        submittingDocument ===
+                                          chapterDocuments[0]._id ||
+                                        cancelingSubmission ===
+                                          chapterDocuments[0]._id
                                       }
                                     >
-                                      {submittingDocument === chapterDocuments[0]._id ||
-                                      cancelingSubmission === chapterDocuments[0]._id ? (
+                                      {submittingDocument ===
+                                        chapterDocuments[0]._id ||
+                                      cancelingSubmission ===
+                                        chapterDocuments[0]._id ? (
                                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                      ) : canCancelSubmission(chapterDocuments[0]) ? (
+                                      ) : canCancelSubmission(
+                                          chapterDocuments[0],
+                                        ) ? (
                                         <FaTimes className="w-4 h-4" />
                                       ) : (
                                         <FaCheck className="w-4 h-4" />

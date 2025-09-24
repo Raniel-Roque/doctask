@@ -32,7 +32,9 @@ interface ProjectManagerSelectionModalProps {
   groupName?: string;
 }
 
-const ProjectManagerSelectionModal: React.FC<ProjectManagerSelectionModalProps> = ({
+const ProjectManagerSelectionModal: React.FC<
+  ProjectManagerSelectionModalProps
+> = ({
   isOpen,
   onClose,
   onConfirm,
@@ -41,7 +43,8 @@ const ProjectManagerSelectionModal: React.FC<ProjectManagerSelectionModalProps> 
   availableProjectManagers,
   groupName,
 }) => {
-  const [selectedProjectManager, setSelectedProjectManager] = useState<string>("");
+  const [selectedProjectManager, setSelectedProjectManager] =
+    useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [validationError, setValidationError] = useState<string>("");
@@ -70,11 +73,14 @@ const ProjectManagerSelectionModal: React.FC<ProjectManagerSelectionModalProps> 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      
-      if (dropdownRef.current?.contains(target) || triggerRef.current?.contains(target)) {
+
+      if (
+        dropdownRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      ) {
         return;
       }
-      
+
       setShowDropdown(false);
     };
 
@@ -122,11 +128,11 @@ const ProjectManagerSelectionModal: React.FC<ProjectManagerSelectionModalProps> 
       `${pm.first_name} ${pm.last_name}`
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      pm.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      pm.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const selectedPM = availableProjectManagers.find(
-    (pm) => pm._id === selectedProjectManager
+    (pm) => pm._id === selectedProjectManager,
   );
 
   if (!isOpen) return null;
@@ -169,7 +175,9 @@ const ProjectManagerSelectionModal: React.FC<ProjectManagerSelectionModalProps> 
               <p className="text-sm mt-1">
                 <strong>
                   {currentProjectManager.first_name}{" "}
-                  {currentProjectManager.middle_name ? currentProjectManager.middle_name + " " : ""}
+                  {currentProjectManager.middle_name
+                    ? currentProjectManager.middle_name + " "
+                    : ""}
                   {currentProjectManager.last_name}
                 </strong>
                 {groupName && (
@@ -177,7 +185,8 @@ const ProjectManagerSelectionModal: React.FC<ProjectManagerSelectionModalProps> 
                 )}
               </p>
               <p className="text-sm mt-2">
-                Please select a new project manager to take over the group. The current project manager will become a regular member.
+                Please select a new project manager to take over the group. The
+                current project manager will become a regular member.
               </p>
             </div>
           </div>
@@ -195,9 +204,7 @@ const ProjectManagerSelectionModal: React.FC<ProjectManagerSelectionModalProps> 
             <div
               ref={triggerRef}
               className={`w-full px-4 py-2 rounded-lg border-2 ${
-                validationError
-                  ? "border-red-500"
-                  : "border-gray-300"
+                validationError ? "border-red-500" : "border-gray-300"
               } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all cursor-pointer flex items-center justify-between`}
               onClick={handleTriggerClick}
             >
@@ -252,9 +259,7 @@ const ProjectManagerSelectionModal: React.FC<ProjectManagerSelectionModalProps> 
                           {pm.middle_name ? pm.middle_name + " " : ""}
                           {pm.last_name}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {pm.email}
-                        </div>
+                        <div className="text-xs text-gray-500">{pm.email}</div>
                       </div>
                     </div>
                   ))}
@@ -275,7 +280,9 @@ const ProjectManagerSelectionModal: React.FC<ProjectManagerSelectionModalProps> 
         {/* Available Project Managers Count */}
         <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-700">
-            <strong>{availableProjectManagers.length}</strong> project manager{availableProjectManagers.length !== 1 ? 's' : ''} available for selection
+            <strong>{availableProjectManagers.length}</strong> project manager
+            {availableProjectManagers.length !== 1 ? "s" : ""} available for
+            selection
           </p>
         </div>
 

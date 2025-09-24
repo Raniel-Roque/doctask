@@ -51,7 +51,7 @@ export const BannerProvider: React.FC<BannerProviderProps> = ({ children }) => {
       if (newBanner.priority === "high") {
         return [newBanner];
       }
-      
+
       // Remove any existing banner of the same type to prevent duplicates
       const filtered = prev.filter((b) => b.type !== banner.type);
       return [...filtered, newBanner];

@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     if (!adviserId || !instructorId) {
       return NextResponse.json(
         { success: false, error: "Missing required parameters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     } else {
       return NextResponse.json(
         { success: false, error: "Failed to reset adviser code" },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

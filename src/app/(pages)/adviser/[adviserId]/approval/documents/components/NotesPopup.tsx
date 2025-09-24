@@ -245,7 +245,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
 
   const handleEditNote = async (noteId: Id<"notes">) => {
     const content = editingContent.trim();
-    const note = notes.find(n => n._id === noteId);
+    const note = notes.find((n) => n._id === noteId);
 
     if (!content) {
       showNotification("Note content cannot be empty", "error");

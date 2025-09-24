@@ -243,7 +243,7 @@ export const TaskAssignmentTable = ({
         message: notification.message,
         type: notification.type,
         onClose: () => setNotification(null),
-        autoClose: notification.type === "error" ? false : true,
+        autoClose: true,
       });
     }
   }, [notification, addBanner]);
@@ -275,12 +275,15 @@ export const TaskAssignmentTable = ({
   });
 
   // Function to reset viewed state for a document when notes are edited
-  const resetViewedStateForDocument = useCallback((documentId: string) => {
-    const newViewedCounts = { ...viewedNoteCounts };
-    delete newViewedCounts[documentId];
-    setViewedNoteCounts(newViewedCounts);
-    localStorage.setItem("viewedNoteCounts", JSON.stringify(newViewedCounts));
-  }, [viewedNoteCounts]);
+  const resetViewedStateForDocument = useCallback(
+    (documentId: string) => {
+      const newViewedCounts = { ...viewedNoteCounts };
+      delete newViewedCounts[documentId];
+      setViewedNoteCounts(newViewedCounts);
+      localStorage.setItem("viewedNoteCounts", JSON.stringify(newViewedCounts));
+    },
+    [viewedNoteCounts],
+  );
 
   // Check for note count changes and reset viewed state if notes were edited
   useEffect(() => {
@@ -289,7 +292,7 @@ export const TaskAssignmentTable = ({
     documents.forEach((doc) => {
       const currentNoteCount = doc.note_count;
       const viewedCount = viewedNoteCounts[doc._id] || 0;
-      
+
       // If the current note count is greater than what we last viewed,
       // it means notes were added or edited, so reset the viewed state
       if (currentNoteCount > viewedCount && viewedCount > 0) {

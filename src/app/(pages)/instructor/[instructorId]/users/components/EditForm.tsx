@@ -1,4 +1,10 @@
-import React, { useState, useRef, useLayoutEffect, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useLayoutEffect,
+  useEffect,
+  useMemo,
+} from "react";
 import {
   FaEdit,
   FaTimes,
@@ -88,13 +94,13 @@ export default function EditForm({
   // Get group information for the user being edited
   const studentGroup = useQuery(
     api.fetch.getStudentGroup,
-    user ? { userId: user._id as Id<"users"> } : "skip"
+    user ? { userId: user._id as Id<"users"> } : "skip",
   );
 
   // Get the actual group information if the student has a group
   const groupInfo = useQuery(
     api.fetch.getGroupById,
-    studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip"
+    studentGroup?.group_id ? { groupId: studentGroup.group_id } : "skip",
   );
 
   // Get all users to filter for available project managers
@@ -118,13 +124,13 @@ export default function EditForm({
   // Filter available project managers (role 0, subrole 1, not already managing a group)
   const availableProjectManagers = useMemo(() => {
     if (!allUsers?.users || !allGroups?.groups) return [];
-    
+
     const usedManagerIds = new Set(
-      allGroups.groups.map((g) => g.project_manager_id) || []
+      allGroups.groups.map((g) => g.project_manager_id) || [],
     );
-    
+
     return allUsers.users.filter(
-      (u) => u && u.role === 0 && u.subrole === 1 && !usedManagerIds.has(u._id)
+      (u) => u && u.role === 0 && u.subrole === 1 && !usedManagerIds.has(u._id),
     );
   }, [allUsers, allGroups]);
 
@@ -228,7 +234,11 @@ export default function EditForm({
     // Check if we're demoting a project manager (subrole 1 -> 0)
     if (user?.subrole === 1 && role.value === 0) {
       // Check if the project manager has a group
-      if (groupInfo && groupInfo.member_ids && groupInfo.member_ids.length > 0) {
+      if (
+        groupInfo &&
+        groupInfo.member_ids &&
+        groupInfo.member_ids.length > 0
+      ) {
         // Project manager has a group with members - need to select a new project manager
         setPendingRoleChange({ from: user.subrole, to: role.value });
         setShowProjectManagerSelection(true);
@@ -291,7 +301,9 @@ export default function EditForm({
     setPendingRoleChange(null);
   };
 
-  const handleProjectManagerSelectionConfirm = (newProjectManagerId: string) => {
+  const handleProjectManagerSelectionConfirm = (
+    newProjectManagerId: string,
+  ) => {
     // Apply the role change with the selected new project manager
     onFormDataChange({
       ...formData,
@@ -611,12 +623,14 @@ export default function EditForm({
                     </h3>
                   </div>
                   <p className="text-gray-600 mb-6">
-                    {user?.subrole === 1 && groupInfo && groupInfo.member_ids && groupInfo.member_ids.length > 0
+                    {user?.subrole === 1 &&
+                    groupInfo &&
+                    groupInfo.member_ids &&
+                    groupInfo.member_ids.length > 0
                       ? "You have already selected a replacement project manager. This user will be removed from their current group. This action cannot be undone. Are you sure you want to proceed?"
                       : user?.subrole === 0 && groupInfo
                         ? "This user will be removed from their current group. This action cannot be undone. Are you sure you want to proceed?"
-                        : "Changing this user's role will remove them from any group they are currently in. This action cannot be undone. Are you sure you want to proceed?"
-                    }
+                        : "Changing this user's role will remove them from any group they are currently in. This action cannot be undone. Are you sure you want to proceed?"}
                   </p>
                   <div className="flex justify-end gap-3">
                     <button

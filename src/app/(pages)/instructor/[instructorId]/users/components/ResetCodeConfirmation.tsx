@@ -28,7 +28,6 @@ export const ResetCodeConfirmation = ({
   isSubmitting = false,
   networkError = null,
 }: ResetCodeConfirmationProps) => {
-
   if (!user) return null;
 
   const handleCancel = () => {
@@ -79,8 +78,9 @@ export const ResetCodeConfirmation = ({
         {/* Reset Information */}
         <div className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
           <p className="text-gray-700">
-            A new unique adviser code will be generated and the old code will be invalidated. 
-            The adviser will need to use the new code for future operations.
+            A new unique adviser code will be generated and the old code will be
+            invalidated. The adviser will need to use the new code for future
+            operations.
           </p>
         </div>
 

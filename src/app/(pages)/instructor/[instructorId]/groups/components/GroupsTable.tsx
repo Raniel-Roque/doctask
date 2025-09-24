@@ -722,9 +722,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               .map((group) => (
                 <tr key={group._id}>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900 text-left max-w-xs">
-                    <div className="break-words">
-                      {group.name || "-"}
-                    </div>
+                    <div className="break-words">{group.name || "-"}</div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900 max-w-xs text-left">
                     <CollapsibleText text={group.capstone_title} />

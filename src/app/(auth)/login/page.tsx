@@ -157,7 +157,6 @@ const LoginPage = () => {
     );
   }
 
-
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoaded) return;

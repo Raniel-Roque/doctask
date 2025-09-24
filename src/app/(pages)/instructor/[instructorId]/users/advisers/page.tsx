@@ -755,7 +755,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
       // Use the same validation logic as AddForm and EditForm
       const validationErrors = validateUserForm(user);
-      
+
       if (validationErrors) {
         // Convert validation errors to row-specific error messages
         Object.entries(validationErrors).forEach(([, message]) => {

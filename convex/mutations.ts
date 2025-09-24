@@ -630,20 +630,26 @@ export const updateUser = mutation({
             // Update the group with the new project manager
             await ctx.db.patch(group._id, {
               project_manager_id: args.newProjectManagerId,
-              member_ids: group.member_ids.filter(id => id !== args.newProjectManagerId),
+              member_ids: group.member_ids.filter(
+                (id) => id !== args.newProjectManagerId,
+              ),
             });
-            
+
             // Update the new project manager's role to manager (subrole 1)
             await ctx.db.patch(args.newProjectManagerId, { subrole: 1 });
-            
+
             // Update the new project manager's studentsTable entry to have this group_id
             const newManagerMembership = await ctx.db
               .query("studentsTable")
-              .withIndex("by_user", (q) => q.eq("user_id", args.newProjectManagerId!))
+              .withIndex("by_user", (q) =>
+                q.eq("user_id", args.newProjectManagerId!),
+              )
               .first();
-            
+
             if (newManagerMembership) {
-              await ctx.db.patch(newManagerMembership._id, { group_id: group._id });
+              await ctx.db.patch(newManagerMembership._id, {
+                group_id: group._id,
+              });
             }
           } else {
             // No replacement provided - this means the group has no members or the user is being demoted without a group
@@ -652,7 +658,7 @@ export const updateUser = mutation({
               .query("studentsTable")
               .withIndex("by_user", (q) => q.eq("user_id", args.userId))
               .first();
-            
+
             if (userMembership) {
               await ctx.db.patch(userMembership._id, { group_id: null });
             }

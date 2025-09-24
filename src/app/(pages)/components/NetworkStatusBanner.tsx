@@ -48,8 +48,8 @@ export function NetworkStatusBanner() {
               message.includes("abort")
                 ? "Network timeout while contacting server"
                 : message.includes("Circuit breaker is OPEN")
-                ? "Service temporarily unavailable - circuit breaker is open"
-                : `Cannot reach server: ${message}`,
+                  ? "Service temporarily unavailable - circuit breaker is open"
+                  : `Cannot reach server: ${message}`,
             );
           } else {
             setState({ status: "offline", unstable: false });
