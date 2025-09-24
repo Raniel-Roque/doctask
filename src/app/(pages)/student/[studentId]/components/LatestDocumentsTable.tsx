@@ -437,82 +437,8 @@ export const LatestDocumentsTable = ({
     }
   };
 
-  // Render status dropdown for task status
-  const renderTaskStatusDropdown = (doc: Document) => {
-    const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
-    
-    // For chapters with subparts, show individual task statuses
-    if (relatedTasks.length > 1) {
-      return (
-        <div className="space-y-1">
-          {relatedTasks.map((task) => {
-            const canEdit = canEditTaskStatus(task);
-            const currentStatus = task.task_status;
-            const isLoading = updatingTaskStatus === task._id;
-
-            if (!canEdit) {
-              // Show read-only status badge
-              return (
-                <div key={task._id} className="flex items-center gap-2">
-                  <span className="text-xs text-gray-600 truncate max-w-20">
-                    {task.section}:
-                  </span>
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${TASK_STATUS_COLORS[currentStatus] || TASK_STATUS_COLORS[0]}`}
-                  >
-                    {TASK_STATUS_LABELS[currentStatus] || TASK_STATUS_LABELS[0]}
-                  </span>
-                </div>
-              );
-            }
-
-            // Show editable dropdown with chevron
-            return (
-              <div key={task._id} className="flex items-center gap-2">
-                <span className="text-xs text-gray-600 truncate max-w-20">
-                  {task.section}:
-                </span>
-                <div className="relative inline-block">
-                  <select
-                    value={currentStatus}
-                    onChange={(e) =>
-                      handleTaskStatusChange(task, parseInt(e.target.value))
-                    }
-                    disabled={isLoading}
-                    className={`px-2 py-1 pr-6 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none ${TASK_STATUS_COLORS[currentStatus] || TASK_STATUS_COLORS[0]} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <option value={0} className="bg-yellow-100 text-yellow-800">
-                      Incomplete
-                    </option>
-                    <option value={1} className="bg-green-100 text-green-800">
-                      Completed
-                    </option>
-                  </select>
-                  <FaChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 text-xs pointer-events-none" />
-                  {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
-                      <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
-
-    // For regular documents (single task), show simple status
-    const task = relatedTasks[0];
-    if (!task) {
-      return (
-        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-          No Task
-        </span>
-      );
-    }
-
+  // Render status dropdown for task status (for individual tasks)
+  const renderTaskStatusDropdown = (task: Task) => {
     const canEdit = canEditTaskStatus(task);
     const currentStatus = task.task_status;
     const isLoading = updatingTaskStatus === task._id;
@@ -3132,7 +3058,11 @@ export const LatestDocumentsTable = ({
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                              {renderTaskStatusDropdown(chapterDocuments[0])}
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${TASK_STATUS_COLORS[getTaskStatus(chapterDocuments[0])] || TASK_STATUS_COLORS[0]}`}
+                              >
+                                {TASK_STATUS_LABELS[getTaskStatus(chapterDocuments[0])] || TASK_STATUS_LABELS[0]}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                               {formatLastModified(chapterDocuments[0]?.last_modified)}
@@ -3303,30 +3233,26 @@ export const LatestDocumentsTable = ({
                               </div>
                             </td>
                           </tr>
-                          {/* Subparts rows: show individual documents when expanded */}
+                          {/* Subparts rows: show individual tasks when expanded */}
                           {expandedChapters.has(chapter) &&
-                            chapterDocuments.map((doc) => (
+                            tasks.filter((task) => task.chapter === chapter).map((task) => (
                               <tr
-                                key={`${doc._id}-subpart`}
+                                key={`${task._id}-subpart`}
                                 className="hover:bg-gray-100 transition-colors duration-150 ease-in-out cursor-pointer"
                               >
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="text-sm font-medium text-gray-900 ml-6">
-                                    ○ {doc.title}
+                                    ○ {task.title}
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                                  <span
-                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[doc.status] || STATUS_COLORS[0]}`}
-                                  >
-                                    {STATUS_LABELS[doc.status] || STATUS_LABELS[0]}
-                                  </span>
+                                  {/* Document status handled by main chapter header */}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                                  {renderTaskStatusDropdown(doc)}
+                                  {renderTaskStatusDropdown(task)}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                  {formatLastModified(doc.last_modified)}
+                                  {/* Last modified handled by main chapter header */}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                   {/* No actions for subparts */}
@@ -3353,7 +3279,18 @@ export const LatestDocumentsTable = ({
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
-                            {renderTaskStatusDropdown(chapterDocuments[0])}
+                            {(() => {
+                              const relatedTasks = tasks.filter((task) => task.chapter === chapter);
+                              const task = relatedTasks[0];
+                              if (!task) {
+                                return (
+                                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    No Task
+                                  </span>
+                                );
+                              }
+                              return renderTaskStatusDropdown(task);
+                            })()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                             {formatLastModified(chapterDocuments[0].last_modified)}
