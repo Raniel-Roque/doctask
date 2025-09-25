@@ -178,6 +178,7 @@ export const deleteAllData = mutation({
       advisers: 0,
       groups: 0,
       documents: 0,
+      documentEdits: 0,
       taskAssignments: 0,
       documentStatus: 0,
       notes: 0,
@@ -193,6 +194,7 @@ export const deleteAllData = mutation({
         advisers,
         groups,
         documents,
+        documentEdits,
         taskAssignments,
         documentStatus,
         notes,
@@ -204,6 +206,7 @@ export const deleteAllData = mutation({
         ctx.db.query("advisersTable").collect(),
         ctx.db.query("groupsTable").collect(),
         ctx.db.query("documents").collect(),
+        ctx.db.query("documentEdits").collect(),
         ctx.db.query("taskAssignments").collect(),
         ctx.db.query("documentStatus").collect(),
         ctx.db.query("notes").collect(),
@@ -233,6 +236,8 @@ export const deleteAllData = mutation({
         ...groups.map((group) => ctx.db.delete(group._id)),
         // Documents
         ...documents.map((doc) => ctx.db.delete(doc._id)),
+        // Document Edits
+        ...documentEdits.map((edit) => ctx.db.delete(edit._id)),
         // Task Assignments
         ...taskAssignments.map((task) => ctx.db.delete(task._id)),
         // Document Status
@@ -257,6 +262,7 @@ export const deleteAllData = mutation({
       results.advisers = advisers.length;
       results.groups = groups.length;
       results.documents = documents.length;
+      results.documentEdits = documentEdits.length;
       results.taskAssignments = taskAssignments.length;
       results.documentStatus = documentStatus.length;
       results.notes = notes.length;
