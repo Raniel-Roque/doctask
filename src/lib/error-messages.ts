@@ -264,4 +264,8 @@ export const ErrorContexts = {
     operation: "fetch",
     entity,
   }),
+  deleteAllData: (): ErrorContext => ({
+    operation: "delete",
+    entity: "data",
+  }),
 };

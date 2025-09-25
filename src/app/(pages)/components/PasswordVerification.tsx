@@ -52,6 +52,16 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
     focusFirstInput: false,
   });
 
+  // Clear password field when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setPassword("");
+      setShowPassword(false);
+      setError(null);
+      setIsVerifying(false);
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password.trim()) {

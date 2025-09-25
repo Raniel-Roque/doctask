@@ -169,10 +169,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         handleCloseOnSuccess();
       }, 2000);
     } catch (err) {
-      const errorMessage = getErrorMessage(
-        err,
-        ErrorContexts.deleteUser("student"),
-      );
+      const errorMessage = getErrorMessage(err, ErrorContexts.deleteAllData());
       addBanner({
         message: errorMessage,
         type: "error",
@@ -317,7 +314,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         unknown
       >;
 
-      // Restore database backup with enhanced retry logic
+      // Restore database backup (including logs) with enhanced retry logic
       await apiRequest("/api/convex/restore", {
         method: "POST",
         headers: {
