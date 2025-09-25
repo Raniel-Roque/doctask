@@ -881,9 +881,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         validateBulkUsers(users);
 
       if (validationErrors.length > 0) {
-        const errorMessage = validationErrors.length === 1 
-          ? `Validation error found:\n${validationErrors[0]}`
-          : `Multiple rows have validation issues (${validationErrors.length} errors found). Please check your Excel file format and data.`;
+        const errorMessage =
+          validationErrors.length === 1
+            ? `Validation error found:\n${validationErrors[0]}`
+            : `Multiple rows have validation issues (${validationErrors.length} errors found). Please check your Excel file format and data.`;
         addBanner({
           message: errorMessage,
           type: "error",
@@ -1019,9 +1020,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           autoClose: true,
         });
       } else if (successCount > 0 && errorCount > 0) {
-        const errorMessage = errorCount === 1 
-          ? `Imported ${successCount} student${successCount > 1 ? "s" : ""} successfully. 1 failed:\n${creationErrors[0]}`
-          : `Imported ${successCount} student${successCount > 1 ? "s" : ""} successfully. Multiple rows failed to import (${errorCount} errors).`;
+        const errorMessage =
+          errorCount === 1
+            ? `Imported ${successCount} student${successCount > 1 ? "s" : ""} successfully. 1 failed:\n${creationErrors[0]}`
+            : `Imported ${successCount} student${successCount > 1 ? "s" : ""} successfully. Multiple rows failed to import (${errorCount} errors).`;
         addBanner({
           message: errorMessage,
           type: "warning",
@@ -1029,9 +1031,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           autoClose: true,
         });
       } else {
-        const errorMessage = errorCount === 1 
-          ? `Failed to import any students:\n${creationErrors[0]}`
-          : `Failed to import any students. Multiple rows have issues (${errorCount} errors found).`;
+        const errorMessage =
+          errorCount === 1
+            ? `Failed to import any students:\n${creationErrors[0]}`
+            : `Failed to import any students. Multiple rows have issues (${errorCount} errors found).`;
         addBanner({
           message: errorMessage,
           type: "error",

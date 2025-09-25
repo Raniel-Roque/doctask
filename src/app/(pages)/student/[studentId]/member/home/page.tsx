@@ -92,7 +92,8 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
       };
     } else if (
       groupDetails?.requested_adviser &&
-      (groupDetails.adviser_id === undefined || groupDetails.adviser_id === null) &&
+      (groupDetails.adviser_id === undefined ||
+        groupDetails.adviser_id === null) &&
       requestedAdviser?.first_name
     ) {
       adviserObj = {

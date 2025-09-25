@@ -855,9 +855,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
         validateBulkUsers(users);
 
       if (validationErrors.length > 0) {
-        const errorMessage = validationErrors.length === 1 
-          ? `Validation error found:\n${validationErrors[0]}`
-          : `Multiple rows have validation issues (${validationErrors.length} errors found). Please check your Excel file format and data.`;
+        const errorMessage =
+          validationErrors.length === 1
+            ? `Validation error found:\n${validationErrors[0]}`
+            : `Multiple rows have validation issues (${validationErrors.length} errors found). Please check your Excel file format and data.`;
         addBanner({
           message: errorMessage,
           type: "error",
@@ -993,9 +994,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
           autoClose: true,
         });
       } else if (successCount > 0 && errorCount > 0) {
-        const errorMessage = errorCount === 1 
-          ? `Imported ${successCount} adviser${successCount > 1 ? "s" : ""} successfully. 1 failed:\n${creationErrors[0]}`
-          : `Imported ${successCount} adviser${successCount > 1 ? "s" : ""} successfully. Multiple rows failed to import (${errorCount} errors).`;
+        const errorMessage =
+          errorCount === 1
+            ? `Imported ${successCount} adviser${successCount > 1 ? "s" : ""} successfully. 1 failed:\n${creationErrors[0]}`
+            : `Imported ${successCount} adviser${successCount > 1 ? "s" : ""} successfully. Multiple rows failed to import (${errorCount} errors).`;
         addBanner({
           message: errorMessage,
           type: "warning",
@@ -1003,9 +1005,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
           autoClose: true,
         });
       } else {
-        const errorMessage = errorCount === 1 
-          ? `Failed to import any advisers:\n${creationErrors[0]}`
-          : `Failed to import any advisers. Multiple rows have issues (${errorCount} errors found).`;
+        const errorMessage =
+          errorCount === 1
+            ? `Failed to import any advisers:\n${creationErrors[0]}`
+            : `Failed to import any advisers. Multiple rows have issues (${errorCount} errors found).`;
         addBanner({
           message: errorMessage,
           type: "error",
