@@ -148,6 +148,13 @@ export const LatestDocumentsTable = ({
   const convex = useConvex();
   const { addBanner } = useBannerManager();
 
+  // Debug logging to see what's being passed
+  console.log('LatestDocumentsTable debug:', {
+    mode: mode,
+    adviser: adviser,
+    adviser_first_name: adviser?.first_name
+  });
+
   // Add Convex mutations
   const submitDocumentForReview = useMutation(
     api.mutations.submitDocumentForReview,

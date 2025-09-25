@@ -181,6 +181,13 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     adviserObj = undefined;
   }
 
+  // Debug logging to see what's happening
+  console.log('Manager page debug:', {
+    groupDetails_adviser_id: groupDetails?.adviser_id,
+    adviser: adviser,
+    adviserObj: adviserObj
+  });
+
   // Always get the adviser code for the pending request
   const pendingAdviserId = groupDetails?.requested_adviser;
   const pendingAdviserCodeObj = useQuery(
