@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useState, useRef, useEffect } from "react";
+import { use, useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Navbar } from "../components/navbar";
 import { api } from "../../../../../../../convex/_generated/api";
 import { useQuery, useMutation, useConvex } from "convex/react";
@@ -24,6 +25,7 @@ interface StudentGroup {
 
 const ManagerHomePage = ({ params }: ManagerHomeProps) => {
   const { studentId } = use(params);
+  const router = useRouter();
   const { addBanner } = useBannerManager();
 
   // UI State
@@ -40,6 +42,18 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
   const user = useQuery(api.fetch.getUserById, {
     id: studentId as Id<"users">,
   });
+
+  // Check if user role has changed and redirect to root for automatic routing
+  const redirectToRoot = useCallback(() => {
+    router.replace("/");
+  }, [router]);
+
+  useEffect(() => {
+    if (user && user.subrole !== 1) {
+      // User is no longer a project manager, redirect to root for automatic routing
+      redirectToRoot();
+    }
+  }, [user, redirectToRoot]);
   const studentGroup = useQuery(api.fetch.getStudentGroup, {
     userId: studentId as Id<"users">,
   }) as StudentGroup | null;
@@ -180,13 +194,6 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     // Explicitly set to undefined when no adviser
     adviserObj = undefined;
   }
-
-  // Debug logging to see what's happening
-  console.log('Manager page debug:', {
-    groupDetails_adviser_id: groupDetails?.adviser_id,
-    adviser: adviser,
-    adviserObj: adviserObj
-  });
 
   // Always get the adviser code for the pending request
   const pendingAdviserId = groupDetails?.requested_adviser;

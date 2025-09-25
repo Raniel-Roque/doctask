@@ -1,8 +1,9 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { use } from "react";
+import { use, useEffect, useCallback } from "react";
 import { useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { LatestDocumentsTable } from "../../components/LatestDocumentsTable";
@@ -13,11 +14,24 @@ interface MemberHomeProps {
 
 const MemberHomePage = ({ params }: MemberHomeProps) => {
   const { studentId } = use(params);
+  const router = useRouter();
 
   // Fetch data
   const user = useQuery(api.fetch.getUserById, {
     id: studentId as Id<"users">,
   });
+
+  // Check if user role has changed and redirect to root for automatic routing
+  const redirectToRoot = useCallback(() => {
+    router.replace("/");
+  }, [router]);
+
+  useEffect(() => {
+    if (user && user.subrole === 1) {
+      // User is now a project manager, redirect to root for automatic routing
+      redirectToRoot();
+    }
+  }, [user, redirectToRoot]);
   const studentGroup = useQuery(api.fetch.getStudentGroup, {
     userId: studentId as Id<"users">,
   });
