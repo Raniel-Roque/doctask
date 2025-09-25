@@ -88,6 +88,9 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
         pending: true,
         pendingName: `${requestedAdviser.first_name} ${requestedAdviser.last_name}`,
       };
+    } else {
+      // Explicitly set to undefined when no adviser
+      adviserObj = undefined;
     }
   }
 

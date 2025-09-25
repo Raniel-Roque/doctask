@@ -176,6 +176,9 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
       pendingName: `${requestedAdviser.first_name} ${requestedAdviser.last_name}`,
       onCancel: () => setShowCancelPopup(true),
     };
+  } else {
+    // Explicitly set to undefined when no adviser
+    adviserObj = undefined;
   }
 
   // Always get the adviser code for the pending request
