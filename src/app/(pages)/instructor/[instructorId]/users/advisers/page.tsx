@@ -855,8 +855,11 @@ const UsersPage = ({ params }: UsersPageProps) => {
         validateBulkUsers(users);
 
       if (validationErrors.length > 0) {
+        const errorMessage = validationErrors.length === 1 
+          ? `Validation error found:\n${validationErrors[0]}`
+          : `Multiple rows have validation issues (${validationErrors.length} errors found). Please check your Excel file format and data.`;
         addBanner({
-          message: `Validation errors found:\n${validationErrors.slice(0, 5).join("\n")}${validationErrors.length > 5 ? `\n... and ${validationErrors.length - 5} more errors` : ""}`,
+          message: errorMessage,
           type: "error",
           onClose: () => {},
           autoClose: true,
@@ -990,15 +993,21 @@ const UsersPage = ({ params }: UsersPageProps) => {
           autoClose: true,
         });
       } else if (successCount > 0 && errorCount > 0) {
+        const errorMessage = errorCount === 1 
+          ? `Imported ${successCount} adviser${successCount > 1 ? "s" : ""} successfully. 1 failed:\n${creationErrors[0]}`
+          : `Imported ${successCount} adviser${successCount > 1 ? "s" : ""} successfully. Multiple rows failed to import (${errorCount} errors).`;
         addBanner({
-          message: `Imported ${successCount} adviser${successCount > 1 ? "s" : ""} successfully. ${errorCount} failed:\n${creationErrors.slice(0, 3).join("\n")}${creationErrors.length > 3 ? `\n... and ${creationErrors.length - 3} more errors` : ""}`,
+          message: errorMessage,
           type: "warning",
           onClose: () => {},
           autoClose: true,
         });
       } else {
+        const errorMessage = errorCount === 1 
+          ? `Failed to import any advisers:\n${creationErrors[0]}`
+          : `Failed to import any advisers. Multiple rows have issues (${errorCount} errors found).`;
         addBanner({
-          message: `Failed to import any advisers:\n${creationErrors.slice(0, 5).join("\n")}${creationErrors.length > 5 ? `\n... and ${creationErrors.length - 5} more errors` : ""}`,
+          message: errorMessage,
           type: "error",
           onClose: () => {},
           autoClose: true,
