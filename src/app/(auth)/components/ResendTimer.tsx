@@ -127,7 +127,9 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
 
   return (
     <div
-      className="text-sm text-center mt-4"
+      className={`text-sm text-center mt-4 ${
+        canResend && !loading && !disabled ? "hover:underline" : ""
+      }`}
       style={{
         cursor: canResend && !loading && !disabled ? "pointer" : "default",
         color: "#fff",
