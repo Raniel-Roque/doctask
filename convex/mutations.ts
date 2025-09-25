@@ -891,13 +891,28 @@ export const updateGroup = mutation({
     }
 
     // Update the group
-    await ctx.db.patch(args.groupId, {
+    const updateData: {
+      project_manager_id: Id<"users">;
+      member_ids: Id<"users">[];
+      capstone_title: string;
+      grade: number;
+      adviser_id?: Id<"users">;
+      $unset?: { adviser_id: boolean };
+    } = {
       project_manager_id: args.project_manager_id,
       member_ids: args.member_ids,
-      adviser_id: args.adviser_id ? args.adviser_id : undefined,
       capstone_title: args.capstone_title,
       grade: args.grade,
-    });
+    };
+    
+    // Handle adviser_id - if undefined, we need to explicitly unset it
+    if (args.adviser_id === undefined) {
+      updateData.$unset = { adviser_id: true };
+    } else {
+      updateData.adviser_id = args.adviser_id;
+    }
+    
+    await ctx.db.patch(args.groupId, updateData);
 
     // Create human-readable details for edited fields
     const changes = [];
