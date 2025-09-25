@@ -65,7 +65,12 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
   let adviserObj = undefined;
 
   if (!isLoadingAdviser) {
-    if (groupDetails?.adviser_id && adviser?.first_name) {
+    // Only show adviser if adviser_id exists and is not undefined/null
+    if (
+      groupDetails?.adviser_id !== undefined &&
+      groupDetails?.adviser_id !== null &&
+      adviser?.first_name
+    ) {
       adviserObj = {
         first_name: adviser.first_name,
         middle_name: adviser.middle_name,
@@ -73,7 +78,7 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
       };
     } else if (
       groupDetails?.requested_adviser &&
-      !groupDetails.adviser_id &&
+      (groupDetails.adviser_id === undefined || groupDetails.adviser_id === null) &&
       requestedAdviser?.first_name
     ) {
       adviserObj = {

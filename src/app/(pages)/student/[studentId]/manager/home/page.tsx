@@ -147,9 +147,12 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
         onCancel?: () => void;
       }
     | undefined = undefined;
+  
+  // Only show adviser if adviser_id exists and is not undefined/null
   if (
     groupDetails &&
-    groupDetails.adviser_id &&
+    groupDetails.adviser_id !== undefined &&
+    groupDetails.adviser_id !== null &&
     adviser &&
     adviser.first_name
   ) {
@@ -161,7 +164,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
   } else if (
     groupDetails &&
     groupDetails.requested_adviser &&
-    !groupDetails.adviser_id &&
+    (groupDetails.adviser_id === undefined || groupDetails.adviser_id === null) &&
     requestedAdviser &&
     requestedAdviser.first_name
   ) {
