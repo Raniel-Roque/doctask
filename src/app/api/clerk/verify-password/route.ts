@@ -1,7 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
-import { decryptData, importKey } from "@/utils/encryption";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { clerkId, currentPassword, encryptionKey } = body;
+    const { clerkId, currentPassword } = body;
 
     // Validate required fields
     if (!clerkId || !currentPassword) {
@@ -25,21 +24,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Decrypt password if encryption key is provided
-    let decryptedPassword = currentPassword;
-    if (encryptionKey && Array.isArray(encryptionKey)) {
-      try {
-        const key = await importKey(
-          Buffer.from(encryptionKey).toString("base64"),
-        );
-        decryptedPassword = await decryptData(currentPassword, key);
-      } catch {
-        return NextResponse.json(
-          { error: "Failed to decrypt password" },
-          { status: 400 },
-        );
-      }
-    }
+    // Use password as-is (already secure over HTTPS)
+    // The encryption was causing compatibility issues between client and server
+    const passwordToVerify = currentPassword;
 
     // Apply rate limiting
     const rateLimit = createRateLimiter(RATE_LIMITS.PASSWORD_VERIFY);
@@ -68,7 +55,7 @@ export async function POST(request: NextRequest) {
     try {
       await client.users.verifyPassword({
         userId: clerkId,
-        password: decryptedPassword,
+        password: passwordToVerify,
       });
       return NextResponse.json({ success: true });
     } catch {

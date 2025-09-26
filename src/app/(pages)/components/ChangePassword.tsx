@@ -77,11 +77,7 @@ export default function ChangePassword({
       throw new Error("User not loaded");
     }
 
-    // Encrypt password before sending
-    const key = await generateEncryptionKey();
-    const encryptedPassword = await encryptData(password, key);
-
-    // Verify password with enhanced retry logic
+    // Send password as plain text (secure over HTTPS)
     await apiRequest("/api/clerk/verify-password", {
       method: "POST",
       headers: {
@@ -89,10 +85,7 @@ export default function ChangePassword({
       },
       body: JSON.stringify({
         clerkId: user.id,
-        currentPassword: encryptedPassword,
-        encryptionKey: await crypto.subtle
-          .exportKey("raw", key)
-          .then((buffer) => Array.from(new Uint8Array(buffer))),
+        currentPassword: password,
       }),
       signal, // Add the AbortSignal to the fetch request
     });

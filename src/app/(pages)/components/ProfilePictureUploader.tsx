@@ -170,7 +170,7 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
                   setSelectedImage(null);
                   // Clear the file input so the same file can be selected again
                   if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
+                    fileInputRef.current.value = "";
                   }
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
