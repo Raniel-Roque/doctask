@@ -68,24 +68,24 @@ export const calculatePasswordStrength = (
   score = Math.min(score, 4);
 
   // Check for common patterns that weaken passwords
-  const commonPatterns = [
-    /123456/,
-    /password/i,
-    /qwerty/i,
-    /abc123/i,
-    /admin/i,
-    /letmein/i,
+    const commonPatterns = [
+      /123456/,
+      /password/i,
+      /qwerty/i,
+      /abc123/i,
+      /admin/i,
+      /letmein/i,
     /12345678/,
     /password123/i,
     /qwerty123/i,
     /admin123/i,
-  ];
+    ];
 
-  const hasCommonPattern = commonPatterns.some((pattern) =>
-    pattern.test(password),
-  );
-  if (hasCommonPattern && score > 1) {
-    score = Math.max(1, score - 1);
+    const hasCommonPattern = commonPatterns.some((pattern) =>
+      pattern.test(password),
+    );
+    if (hasCommonPattern && score > 1) {
+      score = Math.max(1, score - 1);
     feedback = "Avoid common patterns";
   }
 

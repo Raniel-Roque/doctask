@@ -45,11 +45,11 @@ export async function POST(request: NextRequest) {
         );
         decryptedPassword = await decryptData(newPassword, key);
       } catch {
-        return NextResponse.json(
+      return NextResponse.json(
           { error: "Failed to decrypt password" },
-          { status: 400 },
-        );
-      }
+        { status: 400 },
+      );
+    }
     }
 
     // Validate password strength using shared utility (NIST guidelines)
