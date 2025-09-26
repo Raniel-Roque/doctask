@@ -100,11 +100,7 @@ export async function POST(request: Request) {
     }
 
     const client = await clerkClient();
-    const password = generatePassword(
-      trimmedFirstName,
-      trimmedLastName,
-      Date.now(),
-    );
+    const password = generatePassword(trimmedFirstName, trimmedLastName);
 
     // 1. Create user in Clerk
     clerkUser = await client.users.createUser({

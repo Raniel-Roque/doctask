@@ -1,4 +1,4 @@
-// Password strength calculation based on NIST guidelines
+// Password strength calculation based on NIST SP 800-63B guidelines
 // NIST recommends focusing on length over complexity and avoiding mandatory composition rules
 
 export interface PasswordStrength {
@@ -18,7 +18,7 @@ export const calculatePasswordStrength = (
     };
   }
 
-  // NIST minimum length requirement
+  // NIST minimum length requirement (8 characters minimum)
   if (password.length < 8) {
     return {
       score: 0,
@@ -30,7 +30,7 @@ export const calculatePasswordStrength = (
   // NIST maximum length (64 characters)
   if (password.length > 64) {
     return {
-      score: 2,
+      score: 0,
       feedback: "Password is too long (maximum 64 characters)",
       isAcceptable: false,
     };
@@ -39,13 +39,13 @@ export const calculatePasswordStrength = (
   let score = 0;
   let feedback = "";
 
-  // Length scoring (NIST emphasizes length)
+  // Length scoring (NIST emphasizes length over complexity)
   if (password.length >= 8) score += 1;
   if (password.length >= 12) score += 1;
   if (password.length >= 16) score += 1;
   if (password.length >= 20) score += 1;
 
-  // Character variety (optional bonus, not required by NIST)
+  // Character variety (bonus points, not required by NIST)
   const hasLowercase = /[a-z]/.test(password);
   const hasUppercase = /[A-Z]/.test(password);
   const hasNumber = /\d/.test(password);
@@ -67,43 +67,45 @@ export const calculatePasswordStrength = (
   // Cap at 4
   score = Math.min(score, 4);
 
+  // Check for common patterns that weaken passwords
+  const commonPatterns = [
+    /123456/,
+    /password/i,
+    /qwerty/i,
+    /abc123/i,
+    /admin/i,
+    /letmein/i,
+    /12345678/,
+    /password123/i,
+    /qwerty123/i,
+    /admin123/i,
+  ];
+
+  const hasCommonPattern = commonPatterns.some((pattern) =>
+    pattern.test(password),
+  );
+  if (hasCommonPattern && score > 1) {
+    score = Math.max(1, score - 1);
+    feedback = "Avoid common patterns";
+  }
+
   // Generate feedback based on score
   switch (score) {
     case 0:
-      feedback = "Very weak - Use at least 8 characters";
+      feedback = feedback || "Very weak - Use at least 8 characters";
       break;
     case 1:
-      feedback = "Weak - Consider using more characters";
+      feedback = feedback || "Weak - Consider using more characters";
       break;
     case 2:
-      feedback = "Fair - Good length, consider adding variety";
+      feedback = feedback || "Fair - Good length, consider adding variety";
       break;
     case 3:
-      feedback = "Good - Strong password";
+      feedback = feedback || "Good - Strong password";
       break;
     case 4:
-      feedback = "Very strong - Excellent password";
+      feedback = feedback || "Very strong - Excellent password";
       break;
-  }
-
-  // Check for common patterns that weaken passwords
-  if (password.length >= 8) {
-    const commonPatterns = [
-      /123456/,
-      /password/i,
-      /qwerty/i,
-      /abc123/i,
-      /admin/i,
-      /letmein/i,
-    ];
-
-    const hasCommonPattern = commonPatterns.some((pattern) =>
-      pattern.test(password),
-    );
-    if (hasCommonPattern && score > 1) {
-      score = Math.max(1, score - 1);
-      feedback += " - Avoid common patterns";
-    }
   }
 
   return {

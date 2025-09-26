@@ -9,6 +9,7 @@ import {
   FaStickyNote,
   FaChevronDown,
 } from "react-icons/fa";
+import DOMPurify from "dompurify";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import NotesPopupViewOnly from "./NotesPopupViewOnly";
 import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
+import { secureStorage, validators } from "@/lib/secure-storage";
 import { apiRequest } from "@/lib/utils";
 import { formatDateTime } from "@/lib/date-utils";
 
@@ -176,10 +178,13 @@ export const LatestDocumentsTable = ({
   const [notesPopupDoc, setNotesPopupDoc] = useState<Document | null>(null);
   const [viewedNotesDocuments, setViewedNotesDocuments] = useState<Set<string>>(
     () => {
-      // Load viewed notes from localStorage on component mount
+      // Load viewed notes from secure storage on component mount
       if (typeof window !== "undefined") {
-        const stored = localStorage.getItem("viewedNotesDocuments");
-        return stored ? new Set(JSON.parse(stored)) : new Set();
+        const stored = secureStorage.get<string[]>("viewedNotesDocuments", {
+          validate: validators.documentIds,
+          defaultValue: [],
+        });
+        return new Set(stored);
       }
       return new Set();
     },
@@ -189,10 +194,16 @@ export const LatestDocumentsTable = ({
   const [viewedNoteCounts, setViewedNoteCounts] = useState<
     Record<string, number>
   >(() => {
-    // Load viewed note counts from localStorage on component mount
+    // Load viewed note counts from secure storage on component mount
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("viewedNoteCounts");
-      return stored ? JSON.parse(stored) : {};
+      const stored = secureStorage.get<Record<string, number>>(
+        "viewedNoteCounts",
+        {
+          validate: validators.noteCounts,
+          defaultValue: {},
+        },
+      );
+      return stored || {};
     }
     return {};
   });
@@ -203,7 +214,9 @@ export const LatestDocumentsTable = ({
       const newViewedCounts = { ...viewedNoteCounts };
       delete newViewedCounts[documentId];
       setViewedNoteCounts(newViewedCounts);
-      localStorage.setItem("viewedNoteCounts", JSON.stringify(newViewedCounts));
+      secureStorage.set("viewedNoteCounts", newViewedCounts, {
+        validate: validators.noteCounts,
+      });
     },
     [viewedNoteCounts],
   );
@@ -715,7 +728,8 @@ export const LatestDocumentsTable = ({
 
     const htmlContent = doc.content;
     const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = htmlContent;
+    // Use DOMPurify to sanitize HTML content before setting innerHTML
+    tempDiv.innerHTML = DOMPurify.sanitize(htmlContent);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const children: any[] = [];
@@ -881,7 +895,7 @@ export const LatestDocumentsTable = ({
       .replace(/style="[^"]*position:\s*fixed[^"]*"/g, "")
       .replace(/style="[^"]*position:\s*absolute[^"]*"/g, "");
 
-    cleanContent.innerHTML = editorHTML;
+    cleanContent.innerHTML = DOMPurify.sanitize(editorHTML);
 
     const printStyles = document.createElement("style");
     printStyles.innerHTML = `
@@ -1096,7 +1110,7 @@ export const LatestDocumentsTable = ({
 
       // Create a temporary DOM element to parse the HTML
       const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = htmlContent;
+      tempDiv.innerHTML = DOMPurify.sanitize(htmlContent);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const children: any[] = [];

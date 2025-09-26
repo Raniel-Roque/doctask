@@ -8,6 +8,7 @@ import PasswordVerification from "./PasswordVerification";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
 import { PasswordStrengthMeter } from "@/components/ui/password-strength-meter";
 import { apiRequest } from "@/lib/utils";
+import { encryptData, generateEncryptionKey } from "@/utils/encryption";
 
 interface ChangePasswordProps {
   isOpen: boolean;
@@ -76,6 +77,10 @@ export default function ChangePassword({
       throw new Error("User not loaded");
     }
 
+    // Encrypt password before sending
+    const key = await generateEncryptionKey();
+    const encryptedPassword = await encryptData(password, key);
+
     // Verify password with enhanced retry logic
     await apiRequest("/api/clerk/verify-password", {
       method: "POST",
@@ -84,7 +89,10 @@ export default function ChangePassword({
       },
       body: JSON.stringify({
         clerkId: user.id,
-        currentPassword: password,
+        currentPassword: encryptedPassword,
+        encryptionKey: await crypto.subtle
+          .exportKey("raw", key)
+          .then((buffer) => Array.from(new Uint8Array(buffer))),
       }),
       signal, // Add the AbortSignal to the fetch request
     });
@@ -117,6 +125,10 @@ export default function ChangePassword({
     setError(null);
 
     try {
+      // Encrypt new password before sending
+      const key = await generateEncryptionKey();
+      const encryptedPassword = await encryptData(newPassword, key);
+
       // Update the password using our API endpoint with enhanced retry logic
       await apiRequest("/api/clerk/user-reset-password", {
         method: "POST",
@@ -125,7 +137,10 @@ export default function ChangePassword({
         },
         body: JSON.stringify({
           clerkId: user.id,
-          newPassword: newPassword,
+          newPassword: encryptedPassword,
+          encryptionKey: await crypto.subtle
+            .exportKey("raw", key)
+            .then((buffer) => Array.from(new Uint8Array(buffer))),
         }),
       });
 

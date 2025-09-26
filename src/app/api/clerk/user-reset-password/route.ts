@@ -3,6 +3,8 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
+import { calculatePasswordStrength } from "@/utils/passwordStrength";
+import { decryptData, importKey } from "@/utils/encryption";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { clerkId, newPassword } = body;
+    const { clerkId, newPassword, encryptionKey } = body;
 
     // Validate required fields
     if (!clerkId || !newPassword) {
@@ -34,49 +36,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password length
-    if (newPassword.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters long" },
-        { status: 400 },
-      );
+    // Decrypt password if encryption key is provided
+    let decryptedPassword = newPassword;
+    if (encryptionKey && Array.isArray(encryptionKey)) {
+      try {
+        const key = await importKey(
+          Buffer.from(encryptionKey).toString("base64"),
+        );
+        decryptedPassword = await decryptData(newPassword, key);
+      } catch {
+        return NextResponse.json(
+          { error: "Failed to decrypt password" },
+          { status: 400 },
+        );
+      }
     }
 
-    // Validate password complexity requirements
-    const hasLowercase = /[a-z]/.test(newPassword);
-    const hasUppercase = /[A-Z]/.test(newPassword);
-    const hasNumber = /\d/.test(newPassword);
-    const hasSpecialChar = /[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/.test(
-      newPassword,
-    );
-
-    if (!hasLowercase) {
+    // Validate password strength using shared utility (NIST guidelines)
+    const passwordStrength = calculatePasswordStrength(decryptedPassword);
+    if (!passwordStrength.isAcceptable) {
       return NextResponse.json(
-        { error: "Password must contain at least 1 lowercase character" },
-        { status: 400 },
-      );
-    }
-
-    if (!hasUppercase) {
-      return NextResponse.json(
-        { error: "Password must contain at least 1 uppercase character" },
-        { status: 400 },
-      );
-    }
-
-    if (!hasNumber) {
-      return NextResponse.json(
-        { error: "Password must contain at least 1 number" },
-        { status: 400 },
-      );
-    }
-
-    if (!hasSpecialChar) {
-      return NextResponse.json(
-        {
-          error:
-            "Password must contain at least 1 special character (!\"#$%&'()*+,-./:;<=>?@[]^_`{|}~)",
-        },
+        { error: passwordStrength.feedback },
         { status: 400 },
       );
     }
@@ -118,7 +98,7 @@ export async function POST(request: NextRequest) {
     try {
       // Update the user's password
       await client.users.updateUser(clerkId, {
-        password: newPassword,
+        password: decryptedPassword,
       });
 
       return NextResponse.json({

@@ -177,11 +177,7 @@ export async function POST(request: Request) {
     // --- Clerk update: create new user, then Convex, then delete old Clerk user ---
     try {
       // 1. Create new user in Clerk (only email and password)
-      newPassword = generatePassword(
-        sanitizedFirstName,
-        sanitizedLastName,
-        Date.now(),
-      );
+      newPassword = generatePassword(sanitizedFirstName, sanitizedLastName);
       newUser = await client.users.createUser({
         emailAddress: [sanitizedEmailNormalized],
         password: newPassword,

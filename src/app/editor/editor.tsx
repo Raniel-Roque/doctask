@@ -211,7 +211,7 @@ export const Editor = ({
         hasInitialized
       ) {
         // This will be called whenever the document content changes
-        console.log("Document edited by user:", self.info.name);
+        // console.log("Document edited by user:", self.info.name); // Removed for security
 
         trackEditMutation({
           documentId: documentId,

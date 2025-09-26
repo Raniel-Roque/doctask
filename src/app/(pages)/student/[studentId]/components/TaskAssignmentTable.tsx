@@ -8,6 +8,7 @@ import {
   FaChevronDown,
   FaStickyNote,
 } from "react-icons/fa";
+import DOMPurify from "dompurify";
 import {
   useState,
   useRef,
@@ -786,7 +787,7 @@ export const TaskAssignmentTable = ({
 
       // Create a temporary DOM element to parse the HTML
       const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = htmlContent;
+      tempDiv.innerHTML = DOMPurify.sanitize(htmlContent);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const children: any[] = [];

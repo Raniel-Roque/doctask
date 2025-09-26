@@ -15,7 +15,7 @@ interface SecurityConfig {
 
 export function createSecurityMiddleware(config: SecurityConfig = {}) {
   const {
-    maxBodySize = 10 * 1024 * 1024, // 10MB default
+    maxBodySize = 5 * 1024 * 1024, // 5MB default (matches file upload limits)
     allowedMethods = ["GET", "POST", "PUT", "DELETE"],
     requireAuth = true,
     rateLimitOperation,

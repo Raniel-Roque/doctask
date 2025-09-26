@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
+import { decryptData, importKey } from "@/utils/encryption";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { clerkId, currentPassword } = body;
+    const { clerkId, currentPassword, encryptionKey } = body;
 
     // Validate required fields
     if (!clerkId || !currentPassword) {
@@ -22,6 +23,22 @@ export async function POST(request: NextRequest) {
         { error: "Clerk ID and current password are required" },
         { status: 400 },
       );
+    }
+
+    // Decrypt password if encryption key is provided
+    let decryptedPassword = currentPassword;
+    if (encryptionKey && Array.isArray(encryptionKey)) {
+      try {
+        const key = await importKey(
+          Buffer.from(encryptionKey).toString("base64"),
+        );
+        decryptedPassword = await decryptData(currentPassword, key);
+      } catch {
+        return NextResponse.json(
+          { error: "Failed to decrypt password" },
+          { status: 400 },
+        );
+      }
     }
 
     // Apply rate limiting
@@ -51,7 +68,7 @@ export async function POST(request: NextRequest) {
     try {
       await client.users.verifyPassword({
         userId: clerkId,
-        password: currentPassword,
+        password: decryptedPassword,
       });
       return NextResponse.json({ success: true });
     } catch {

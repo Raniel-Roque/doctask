@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { useRouter, usePathname } from "next/navigation";
+import { secureStorage, validators } from "@/lib/secure-storage";
 
 const TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 const LAST_ACTIVITY_KEY = "lastActivityTimestamp";
@@ -20,35 +21,35 @@ export function SessionTimeout() {
   useEffect(() => {
     setMounted(true);
 
-    // Initialize from localStorage after mount
-    const stored = localStorage.getItem(LAST_ACTIVITY_KEY);
-    if (stored) {
-      setLastActivity(parseInt(stored));
-    } else {
-      setLastActivity(Date.now());
-    }
+    // Initialize from secure storage after mount
+    const stored = secureStorage.get<number>(LAST_ACTIVITY_KEY, {
+      validate: validators.timestamp,
+      defaultValue: Date.now(),
+    });
+    setLastActivity(stored || Date.now());
 
     // Clear timestamp if we're on the login page
     if (pathname === "/login") {
-      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      secureStorage.remove(LAST_ACTIVITY_KEY);
       return;
     }
 
     // Check if session has expired on mount
     const checkInitialTimeout = () => {
       const currentTime = Date.now();
-      const storedTime = localStorage.getItem(LAST_ACTIVITY_KEY);
+      const storedTime = secureStorage.get<number>(LAST_ACTIVITY_KEY, {
+        validate: validators.timestamp,
+        defaultValue: currentTime,
+      });
 
-      if (storedTime) {
-        const timeSinceLastActivity = currentTime - parseInt(storedTime);
-        if (timeSinceLastActivity >= TIMEOUT_DURATION) {
-          localStorage.removeItem(LAST_ACTIVITY_KEY);
-          localStorage.removeItem("viewedNotesDocuments");
-          localStorage.removeItem("viewedNoteCounts");
-          signOut();
-          router.replace("/login");
-          return;
-        }
+      const timeSinceLastActivity = currentTime - (storedTime || currentTime);
+      if (timeSinceLastActivity >= TIMEOUT_DURATION) {
+        secureStorage.remove(LAST_ACTIVITY_KEY);
+        secureStorage.remove("viewedNotesDocuments");
+        secureStorage.remove("viewedNoteCounts");
+        signOut();
+        router.replace("/login");
+        return;
       }
     };
 
@@ -63,7 +64,9 @@ export function SessionTimeout() {
       if (now - lastUpdateTime > 1000) {
         lastUpdateTime = now;
         setLastActivity(now);
-        localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+        secureStorage.set(LAST_ACTIVITY_KEY, now, {
+          validate: validators.timestamp,
+        });
       }
     };
 
@@ -77,18 +80,18 @@ export function SessionTimeout() {
     // Check for timeout
     const checkTimeout = () => {
       const currentTime = Date.now();
-      const storedTime = localStorage.getItem(LAST_ACTIVITY_KEY);
+      const storedTime = secureStorage.get<number>(LAST_ACTIVITY_KEY, {
+        validate: validators.timestamp,
+        defaultValue: currentTime,
+      });
 
-      if (storedTime) {
-        const timeSinceLastActivity = currentTime - parseInt(storedTime);
-
-        if (timeSinceLastActivity >= TIMEOUT_DURATION) {
-          localStorage.removeItem(LAST_ACTIVITY_KEY);
-          localStorage.removeItem("viewedNotesDocuments");
-          localStorage.removeItem("viewedNoteCounts");
-          signOut();
-          router.replace("/login");
-        }
+      const timeSinceLastActivity = currentTime - (storedTime || currentTime);
+      if (timeSinceLastActivity >= TIMEOUT_DURATION) {
+        secureStorage.remove(LAST_ACTIVITY_KEY);
+        secureStorage.remove("viewedNotesDocuments");
+        secureStorage.remove("viewedNoteCounts");
+        signOut();
+        router.replace("/login");
       }
     };
 
@@ -119,7 +122,9 @@ export function SessionTimeout() {
 
     // Handle tab/window close - save current time
     const handleBeforeUnload = () => {
-      localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+      secureStorage.set(LAST_ACTIVITY_KEY, Date.now(), {
+        validate: validators.timestamp,
+      });
     };
 
     // Add visibility and focus event listeners with passive option where possible

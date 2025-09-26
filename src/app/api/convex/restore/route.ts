@@ -273,11 +273,7 @@ export async function POST(request: Request) {
 
       const batchResults = await Promise.all(
         batch.map(async (user) => {
-          const password = generatePassword(
-            user.first_name,
-            user.last_name,
-            Date.now(),
-          );
+          const password = generatePassword(user.first_name, user.last_name);
 
           // Create user in Clerk with just email and password
           const newUser = await clerk.users.createUser({

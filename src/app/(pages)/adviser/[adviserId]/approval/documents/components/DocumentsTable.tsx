@@ -11,6 +11,7 @@ import {
   FaDownload,
   FaUser,
 } from "react-icons/fa";
+import DOMPurify from "dompurify";
 import { User, Group, Document } from "./types";
 import { useMutation } from "convex/react";
 import { Id } from "../../../../../../../../convex/_generated/dataModel";
@@ -332,7 +333,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 
       // Create a temporary DOM element to parse the HTML
       const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = htmlContent;
+      tempDiv.innerHTML = DOMPurify.sanitize(htmlContent);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const children: any[] = [];

@@ -45,15 +45,7 @@ export const ProfilePictureUploader: React.FC<ProfilePictureUploaderProps> = ({
       file.name.toLowerCase().endsWith(ext),
     );
 
-    // Debug logging
-    console.log("File validation:", {
-      fileName: file.name,
-      fileType: file.type,
-      hasValidType,
-      hasValidExtension,
-      allowedTypes,
-      allowedExtensions,
-    });
+    // Debug logging removed for security
 
     if (!hasValidType && !hasValidExtension) {
       onError(

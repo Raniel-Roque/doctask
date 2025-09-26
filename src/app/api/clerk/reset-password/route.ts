@@ -71,7 +71,6 @@ export async function POST(request: Request) {
     const newPassword = generatePassword(
       convexUser.first_name,
       convexUser.last_name,
-      Date.now(),
     );
 
     // Update the user's password

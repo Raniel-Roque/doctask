@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import DOMPurify from "dompurify";
 import {
   Menubar,
   MenubarContent,
@@ -162,7 +163,7 @@ export const Navbar = ({
         .replace(/style="[^"]*position:\s*fixed[^"]*"/g, "")
         .replace(/style="[^"]*position:\s*absolute[^"]*"/g, "");
 
-      cleanContent.innerHTML = editorHTML;
+      cleanContent.innerHTML = DOMPurify.sanitize(editorHTML);
 
       // Apply print-specific styles to clean up the content
       const printStyles = document.createElement("style");
@@ -360,7 +361,7 @@ export const Navbar = ({
 
     // Create a temporary DOM element to parse the HTML
     const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = htmlContent;
+    tempDiv.innerHTML = DOMPurify.sanitize(htmlContent);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const children: any[] = [];
@@ -459,7 +460,9 @@ export const Navbar = ({
     // Inject styles into head
     const head = document.head || document.getElementsByTagName("head")[0];
     const printStyleElement = document.createElement("style");
-    printStyleElement.innerHTML = printStyles.replace(/<\/?style>/g, "");
+    printStyleElement.innerHTML = DOMPurify.sanitize(
+      printStyles.replace(/<\/?style>/g, ""),
+    );
     head.appendChild(printStyleElement);
 
     // Trigger print

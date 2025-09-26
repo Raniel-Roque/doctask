@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/utils";
+import DOMPurify from "dompurify";
 
 interface ImageUploadResponse {
   success: boolean;
@@ -1035,7 +1036,9 @@ export const Toolbar = ({ toolbarMode = "default" }: ToolbarProps) => {
     // Inject styles into head
     const head = document.head || document.getElementsByTagName("head")[0];
     const printStyleElement = document.createElement("style");
-    printStyleElement.innerHTML = printStyles.replace(/<\/?style>/g, "");
+    printStyleElement.innerHTML = DOMPurify.sanitize(
+      printStyles.replace(/<\/?style>/g, ""),
+    );
     head.appendChild(printStyleElement);
 
     // Trigger print

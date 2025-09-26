@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getResendInstance, resendConfig } from "@/lib/resend-config";
+import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 const resend = getResendInstance();
 
@@ -33,29 +34,57 @@ export async function POST(request: Request) {
       );
     }
 
+    // Sanitize inputs
+    const sanitizedFirstName = sanitizeInput(firstName, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true,
+      maxLength: 50,
+    });
+    const sanitizedLastName = sanitizeInput(lastName, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true,
+      maxLength: 50,
+    });
+    const sanitizedEmail = sanitizeInput(email, {
+      trim: true,
+      removeHtml: true,
+      escapeSpecialChars: true,
+      maxLength: 100,
+    });
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(sanitizedEmail)) {
       return NextResponse.json(
         { error: "Invalid email format" },
         { status: 400 },
       );
     }
 
+    // Validate required fields after sanitization
+    if (!sanitizedFirstName || !sanitizedLastName || !sanitizedEmail) {
+      return NextResponse.json(
+        { error: "Invalid input data" },
+        { status: 400 },
+      );
+    }
+
     const emailResult = await resend.emails.send({
       from: resendConfig.templates.resetPassword.from,
-      to: email,
+      to: sanitizedEmail,
       subject: resendConfig.templates.resetPassword.subject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Password Reset Notification</h2>
           
-          <p>Dear ${firstName} ${lastName},</p>
+          <p>Dear ${sanitizedFirstName} ${sanitizedLastName},</p>
           
           <p>Your password has been reset by an instructor. Here are your new login credentials:</p>
           
           <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 0;"><strong>Email:</strong> ${sanitizedEmail}</p>
             <p style="margin: 10px 0 0 0;"><strong>New Password:</strong> ${password}</p>
           </div>
           
