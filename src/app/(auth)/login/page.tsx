@@ -721,6 +721,8 @@ const LoginPage = () => {
 
     if (shouldSendCode) {
       // Send password reset code only if no active timer
+      if (!isLoaded || !signIn) return;
+      
       try {
         setSendingCode(true);
         const result = await signIn.create({
