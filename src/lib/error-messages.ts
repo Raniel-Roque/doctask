@@ -63,6 +63,15 @@ export function getErrorMessage(
     return getDuplicateErrorMessage(context);
   }
 
+  // Handle rate limit errors specifically
+  if (
+    lowerError.includes("rate limit exceeded") ||
+    lowerError.includes("try again in") ||
+    lowerError.includes("429")
+  ) {
+    return errorMessage; // Return the original rate limit message with timing
+  }
+
   // Handle password verification errors specifically
   if (
     lowerError.includes("password is incorrect") ||
