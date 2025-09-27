@@ -729,32 +729,29 @@ const LoginPage = () => {
     // This makes it consistent with the regular verification flow
   };
 
-  const handleForgotBack = () => {
-    if (forgotStepIndex === 1) {
-      // If on reset password input, go back to password input (step 3)
-      setForgotStep(false);
-      setStep(3);
-      // Clear any existing notifications
-      setCode("");
-      setPassword("");
-      setConfirmPassword("");
-    } else if (step === 2) {
+  const handleBack = () => {
+    if (step === 2) {
       // If on verification code step, go back to email input (step 1)
       setStep(1);
-      // Clear any existing notifications
       setCode("");
     } else if (step === 3 && !forgotStep) {
-      // If on password step, go back to email input
+      // If on password step (normal login), go back to email input
       setStep(1);
-      // Clear any existing notifications
       setPassword("");
-    } else {
-      setForgotStep(false);
-      setStep(3);
-      // Clear any existing notifications
-      setCode("");
-      setPassword("");
-      setConfirmPassword("");
+    } else if (step === 4 && forgotStep) {
+      // If in forgot password flow
+      if (forgotStepIndex === 1) {
+        // If on reset password input, go back to password step (step 3)
+        setForgotStep(false);
+        setStep(3);
+        setPassword("");
+        setConfirmPassword("");
+      } else if (forgotStepIndex === 0) {
+        // If on reset code input, go back to password step (step 3)
+        setForgotStep(false);
+        setStep(3);
+        setCode("");
+      }
     }
   };
 
@@ -789,7 +786,7 @@ const LoginPage = () => {
           {step > 1 && (
             <button
               type="button"
-              onClick={handleForgotBack}
+              onClick={handleBack}
               disabled={sendingCode}
               className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ marginTop: "-2rem", marginLeft: "-1rem" }}
@@ -855,11 +852,7 @@ const LoginPage = () => {
               {/* Back Button for verification step */}
               <button
                 type="button"
-                onClick={() => {
-                  setStep(1);
-                  setCode("");
-                  // Clear any existing notifications
-                }}
+                onClick={handleBack}
                 disabled={loading}
                 className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ marginTop: "-2rem", marginLeft: "-1rem" }}
@@ -972,7 +965,7 @@ const LoginPage = () => {
               {/* Back Button for forgot password sub-steps */}
               <button
                 type="button"
-                onClick={handleForgotBack}
+                onClick={handleBack}
                 disabled={sendingCode}
                 className="absolute top-0 left-0 flex items-center text-white hover:text-gray-200 focus:outline-none z-20 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ marginTop: "-2rem", marginLeft: "-1rem" }}
