@@ -722,7 +722,7 @@ const LoginPage = () => {
     if (shouldSendCode) {
       // Send password reset code only if no active timer
       if (!isLoaded || !signIn) return;
-      
+
       try {
         setSendingCode(true);
         const result = await signIn.create({
@@ -745,7 +745,7 @@ const LoginPage = () => {
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "";
-        
+
         // Check for account locked error specifically
         if (
           errorMessage.includes("Your account is locked") ||

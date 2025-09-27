@@ -486,7 +486,7 @@ export async function POST(request: Request) {
         : undefined;
 
       // Check if this is a pre-approved document part
-      const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
+      const isPreApproved = ["title_page", "appendix_a", "appendix_h"].includes(
         status.document_part,
       );
 

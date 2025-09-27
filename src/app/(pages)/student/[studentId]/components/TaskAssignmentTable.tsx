@@ -540,7 +540,7 @@ export const TaskAssignmentTable = ({
   // Check if user can Edit Document status
   const canEditTaskStatus = (task: Task) => {
     // Exclude special chapters that should always be completed and read-only
-    if (["title_page", "appendix_a", "appendix_d"].includes(task.chapter)) {
+    if (["title_page", "appendix_a", "appendix_h"].includes(task.chapter)) {
       return false;
     }
 
@@ -579,7 +579,7 @@ export const TaskAssignmentTable = ({
   // Get chapter status based on subparts completion
   const getChapterStatus = (chapter: string, chapterTasks: Task[]) => {
     // Special handling for chapters that don't have tasks
-    if (["title_page", "appendix_a", "appendix_d"].includes(chapter)) {
+    if (["title_page", "appendix_a", "appendix_h"].includes(chapter)) {
       return 1; // These chapters are automatically considered complete
     }
 
@@ -1534,7 +1534,7 @@ export const TaskAssignmentTable = ({
                                   {![
                                     "title_page",
                                     "appendix_a",
-                                    "appendix_d",
+                                    "appendix_h",
                                   ].includes(chapterTasks[0].chapter) &&
                                     (() => {
                                       const document = documents.find(
@@ -1629,7 +1629,7 @@ export const TaskAssignmentTable = ({
                                     ![
                                       "title_page",
                                       "appendix_a",
-                                      "appendix_d",
+                                      "appendix_h",
                                     ].includes(chapterTasks[0].chapter) &&
                                     getDocumentStatus(
                                       chapterTasks[0].chapter,
@@ -1823,7 +1823,7 @@ export const TaskAssignmentTable = ({
                                 {![
                                   "title_page",
                                   "appendix_a",
-                                  "appendix_d",
+                                  "appendix_h",
                                 ].includes(chapterTasks[0].chapter) &&
                                   (() => {
                                     const document = documents.find(
@@ -1909,7 +1909,7 @@ export const TaskAssignmentTable = ({
                                   ![
                                     "title_page",
                                     "appendix_a",
-                                    "appendix_d",
+                                    "appendix_h",
                                   ].includes(chapterTasks[0].chapter) &&
                                   (canSubmitDocument(
                                     chapterTasks[0].chapter,

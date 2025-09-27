@@ -166,7 +166,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
   ];
 
   // Documents that should be excluded from the table
-  const excludedDocuments = ["title_page", "appendix_a", "appendix_d"];
+  const excludedDocuments = ["title_page", "appendix_a", "appendix_h"];
 
   // Get all documents except excluded ones
   const getAllDocuments = (documents: Document[]) => {

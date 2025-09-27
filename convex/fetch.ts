@@ -1383,7 +1383,7 @@ export const getAdviserDocuments = query({
           }
         }
 
-        // Define the order of document chapters (excluding title_page, appendix_a, appendix_d)
+        // Define the order of document chapters (excluding title_page, appendix_a, appendix_h)
         const CHAPTER_ORDER = [
           "acknowledgment",
           "abstract",
@@ -1409,7 +1409,7 @@ export const getAdviserDocuments = query({
         )
           .filter(
             (doc) =>
-              !["title_page", "appendix_a", "appendix_d"].includes(doc.chapter),
+              !["title_page", "appendix_a", "appendix_h"].includes(doc.chapter),
           )
           .map((doc) => {
             const statusInfo = statusMap.get(doc.chapter);

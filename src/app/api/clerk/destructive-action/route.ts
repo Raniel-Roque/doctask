@@ -111,11 +111,14 @@ export async function POST(request: NextRequest) {
 
       case "delete_all_data":
         // First, get all Clerk users before deleting Convex data (with pagination)
-        let allUsers: Array<{ id: string; emailAddresses?: Array<{ emailAddress: string }> }> = [];
+        let allUsers: Array<{
+          id: string;
+          emailAddresses?: Array<{ emailAddress: string }>;
+        }> = [];
         let hasMore = true;
         let offset = 0;
         const limit = 100; // Clerk's default limit per page
-        
+
         while (hasMore) {
           const response = await client.users.getUserList({
             limit,
@@ -125,7 +128,7 @@ export async function POST(request: NextRequest) {
           hasMore = response.data.length === limit; // Check if we got a full page
           offset += limit;
         }
-        
+
         const usersToDelete = allUsers.filter(
           (clerkUser) => clerkUser.id !== clerkId, // Use the original clerkId parameter
         );
@@ -153,10 +156,10 @@ export async function POST(request: NextRequest) {
         // Then delete all users from Clerk except the current instructor
         // Use sequential deletion to avoid rate limiting issues
         deletionResults = [];
-        
+
         for (let i = 0; i < usersToDelete.length; i++) {
           const clerkUser = usersToDelete[i];
-          
+
           try {
             // For verified/active users, we might need to handle them differently
             // but Clerk's deleteUser should work for all user types
@@ -181,7 +184,7 @@ export async function POST(request: NextRequest) {
                 // Silent retry failure
               }
             }
-            
+
             if (!retrySuccess) {
               deletionResults.push({
                 id: clerkUser.id,

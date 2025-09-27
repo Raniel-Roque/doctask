@@ -505,7 +505,7 @@ export const createGroup = mutation({
 
     // Batch create all document status entries
     const statusPromises = documentParts.map((documentPart) => {
-      const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
+      const isPreApproved = ["title_page", "appendix_a", "appendix_h"].includes(
         documentPart,
       );
 

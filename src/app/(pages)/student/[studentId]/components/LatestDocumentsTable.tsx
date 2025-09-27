@@ -274,7 +274,7 @@ export const LatestDocumentsTable = ({
   const [showBulkDownloadPopup, setShowBulkDownloadPopup] = useState(false);
   const [bulkDownloading, setBulkDownloading] = useState(false);
 
-  const [downloadingAppendixD, setDownloadingAppendixD] =
+  const [downloadingAppendixH, setDownloadingAppendixH] =
     useState<boolean>(false);
 
   const handleToggleDetails = (detailType: "documents" | "tasks") => {
@@ -328,7 +328,7 @@ export const LatestDocumentsTable = ({
   // Helper to get task status for a document
   const getTaskStatus = (doc: Document) => {
     // Special chapters are always considered completed and cannot be changed
-    if (["title_page", "appendix_a", "appendix_d"].includes(doc.chapter))
+    if (["title_page", "appendix_a", "appendix_h"].includes(doc.chapter))
       return 1;
     const relatedTasks = tasks.filter((task) => task.chapter === doc.chapter);
     if (relatedTasks.length === 0) return 0;
@@ -393,7 +393,7 @@ export const LatestDocumentsTable = ({
     if (!group) return false;
 
     // Exclude special chapters that should always be completed and read-only
-    if (["title_page", "appendix_a", "appendix_d"].includes(task.chapter)) {
+    if (["title_page", "appendix_a", "appendix_h"].includes(task.chapter)) {
       return false;
     }
 
@@ -657,9 +657,9 @@ export const LatestDocumentsTable = ({
           templatePath: "/templates/Appendix A Template.docx",
         },
         {
-          chapter: "appendix_d",
-          title: "Appendix D",
-          templatePath: "/templates/Appendix D Template.docx",
+          chapter: "appendix_h",
+          title: "Appendix H",
+          templatePath: "/templates/Appendix H Template.docx",
         },
       ];
 
@@ -675,8 +675,8 @@ export const LatestDocumentsTable = ({
               docxBlob = await createTitlePageDocumentBlob();
             } else if (specialDoc.chapter === "appendix_a") {
               docxBlob = await createAppendixADocumentBlob();
-            } else if (specialDoc.chapter === "appendix_d") {
-              docxBlob = await createAppendixDDocumentBlob();
+            } else if (specialDoc.chapter === "appendix_h") {
+              docxBlob = await createAppendixHDocumentBlob();
             } else {
               continue;
             }
@@ -1072,9 +1072,9 @@ export const LatestDocumentsTable = ({
 
   // DOCX download function
   const handleDownloadDocx = async (doc: Document) => {
-    // Special handling for Appendix D - generate data from group members
-    if (doc.chapter === "appendix_d") {
-      await createAppendixDDocument();
+    // Special handling for Appendix H - generate data from group members
+    if (doc.chapter === "appendix_h") {
+      await createAppendixHDocument();
       return;
     }
 
@@ -1214,8 +1214,8 @@ export const LatestDocumentsTable = ({
     }
   };
 
-  // Helper function to create Appendix D document with group members' data
-  const createAppendixDDocument = async () => {
+  // Helper function to create Appendix H document with group members' data
+  const createAppendixHDocument = async () => {
     if (!group) {
       setNotification({
         message: "No group information available.",
@@ -1225,7 +1225,7 @@ export const LatestDocumentsTable = ({
     }
 
     try {
-      setDownloadingAppendixD(true);
+      setDownloadingAppendixH(true);
 
       const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } =
         await import("docx");
@@ -1275,7 +1275,7 @@ export const LatestDocumentsTable = ({
       const children = [
         // Title
         new Paragraph({
-          text: "APPENDIX D",
+          text: "APPENDIX H",
           heading: HeadingLevel.HEADING_1,
           alignment: AlignmentType.CENTER,
           spacing: {
@@ -1463,13 +1463,13 @@ export const LatestDocumentsTable = ({
         ],
       });
 
-      const appendixDBlob = await Packer.toBlob(docxDoc);
+      const appendixHBlob = await Packer.toBlob(docxDoc);
 
       // Create a zip file containing both the generated data and the template
       const zip = new JSZip.default();
 
-      // Add the generated Appendix D data
-      zip.file("Appendix D Data.docx", appendixDBlob);
+      // Add the generated Appendix H data
+      zip.file("Appendix H Data.docx", appendixHBlob);
 
       // Add profile images to the zip
       for (let index = 0; index < validMembers.length; index++) {
@@ -1489,11 +1489,11 @@ export const LatestDocumentsTable = ({
       // Add the template file
       try {
         const templateResponse = await fetch(
-          "/templates/Appendix D Template.docx",
+          "/templates/Appendix H Template.docx",
         );
         if (templateResponse.ok) {
           const templateBlob = await templateResponse.blob();
-          zip.file("Appendix D Template.docx", templateBlob);
+          zip.file("Appendix H Template.docx", templateBlob);
         }
       } catch {}
 
@@ -1502,21 +1502,21 @@ export const LatestDocumentsTable = ({
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "Appendix A.zip";
+      a.download = "Appendix H.zip";
       a.click();
       URL.revokeObjectURL(url);
 
       setNotification({
-        message: "Appendix A zip file downloaded successfully!",
+        message: "Appendix H zip file downloaded successfully!",
         type: "success",
       });
     } catch {
       setNotification({
-        message: "Failed to download Appendix A zip file. Please try again.",
+        message: "Failed to download Appendix H zip file. Please try again.",
         type: "error",
       });
     } finally {
-      setDownloadingAppendixD(false);
+      setDownloadingAppendixH(false);
     }
   };
 
@@ -2217,7 +2217,7 @@ export const LatestDocumentsTable = ({
     return await Packer.toBlob(docxDoc);
   };
 
-  const createAppendixDDocumentBlob = async (): Promise<Blob> => {
+  const createAppendixHDocumentBlob = async (): Promise<Blob> => {
     if (!group) {
       throw new Error("No group information available.");
     }
@@ -2461,7 +2461,7 @@ export const LatestDocumentsTable = ({
   };
 
   // Documents that are view/download only
-  const viewOnlyDocuments = ["title_page", "appendix_a", "appendix_d"];
+  const viewOnlyDocuments = ["title_page", "appendix_a", "appendix_h"];
 
   const displayCapstoneTitle =
     capstoneTitle && capstoneTitle.trim() !== ""
@@ -3083,7 +3083,7 @@ export const LatestDocumentsTable = ({
                                   [
                                     "title_page",
                                     "appendix_a",
-                                    "appendix_d",
+                                    "appendix_h",
                                   ].includes(chapter)
                                 ) {
                                   return (
@@ -3114,7 +3114,7 @@ export const LatestDocumentsTable = ({
                                 {![
                                   "title_page",
                                   "appendix_a",
-                                  "appendix_d",
+                                  "appendix_h",
                                 ].includes(chapter) && (
                                   <>
                                     <button
@@ -3159,14 +3159,14 @@ export const LatestDocumentsTable = ({
                                   disabled={
                                     downloadingDocx ===
                                       chapterDocuments[0]?._id ||
-                                    (chapter === "appendix_d" &&
-                                      downloadingAppendixD)
+                                    (chapter === "appendix_h" &&
+                                      downloadingAppendixH)
                                   }
                                 >
                                   {downloadingDocx ===
                                     chapterDocuments[0]?._id ||
-                                  (chapter === "appendix_d" &&
-                                    downloadingAppendixD) ? (
+                                  (chapter === "appendix_h" &&
+                                    downloadingAppendixH) ? (
                                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                   ) : (
                                     <FaDownload className="w-4 h-4" />
@@ -3176,7 +3176,7 @@ export const LatestDocumentsTable = ({
                                 {![
                                   "title_page",
                                   "appendix_a",
-                                  "appendix_d",
+                                  "appendix_h",
                                 ].includes(chapter) &&
                                   chapterDocuments[0]?.note_count > 0 && (
                                     <>
@@ -3242,7 +3242,7 @@ export const LatestDocumentsTable = ({
                                   ![
                                     "title_page",
                                     "appendix_a",
-                                    "appendix_d",
+                                    "appendix_h",
                                   ].includes(chapter) &&
                                   chapterDocuments[0]?.status !== 3 && // Hide for rejected documents
                                   (canSubmitDocument(chapterDocuments[0]) ||
@@ -3368,7 +3368,7 @@ export const LatestDocumentsTable = ({
                                 [
                                   "title_page",
                                   "appendix_a",
-                                  "appendix_d",
+                                  "appendix_h",
                                 ].includes(chapter)
                               ) {
                                 return (
@@ -3402,7 +3402,7 @@ export const LatestDocumentsTable = ({
                               {![
                                 "title_page",
                                 "appendix_a",
-                                "appendix_d",
+                                "appendix_h",
                               ].includes(chapter) && (
                                 <>
                                   <button
@@ -3444,13 +3444,13 @@ export const LatestDocumentsTable = ({
                                 }}
                                 disabled={
                                   downloadingDocx === chapterDocuments[0]._id ||
-                                  (chapter === "appendix_d" &&
-                                    downloadingAppendixD)
+                                  (chapter === "appendix_h" &&
+                                    downloadingAppendixH)
                                 }
                               >
                                 {downloadingDocx === chapterDocuments[0]._id ||
-                                (chapter === "appendix_d" &&
-                                  downloadingAppendixD) ? (
+                                (chapter === "appendix_h" &&
+                                  downloadingAppendixH) ? (
                                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                                 ) : (
                                   <FaDownload className="w-4 h-4" />
@@ -3460,7 +3460,7 @@ export const LatestDocumentsTable = ({
                               {![
                                 "title_page",
                                 "appendix_a",
-                                "appendix_d",
+                                "appendix_h",
                               ].includes(chapter) &&
                                 chapterDocuments[0].note_count > 0 && (
                                   <>
@@ -3525,7 +3525,7 @@ export const LatestDocumentsTable = ({
                                 ![
                                   "title_page",
                                   "appendix_a",
-                                  "appendix_d",
+                                  "appendix_h",
                                 ].includes(chapter) &&
                                 chapterDocuments[0].status !== 3 && // Hide for rejected documents
                                 (canSubmitDocument(chapterDocuments[0]) ||
