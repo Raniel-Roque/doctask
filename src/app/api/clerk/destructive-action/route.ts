@@ -110,8 +110,22 @@ export async function POST(request: NextRequest) {
         break;
 
       case "delete_all_data":
-        // First, get all Clerk users before deleting Convex data
-        const { data: allUsers } = await client.users.getUserList();
+        // First, get all Clerk users before deleting Convex data (with pagination)
+        let allUsers: Array<{ id: string; emailAddresses?: Array<{ emailAddress: string }> }> = [];
+        let hasMore = true;
+        let offset = 0;
+        const limit = 100; // Clerk's default limit per page
+        
+        while (hasMore) {
+          const response = await client.users.getUserList({
+            limit,
+            offset,
+          });
+          allUsers = allUsers.concat(response.data);
+          hasMore = response.data.length === limit; // Check if we got a full page
+          offset += limit;
+        }
+        
         const usersToDelete = allUsers.filter(
           (clerkUser) => clerkUser.id !== clerkId, // Use the original clerkId parameter
         );
@@ -139,45 +153,47 @@ export async function POST(request: NextRequest) {
         // Then delete all users from Clerk except the current instructor
         // Use sequential deletion to avoid rate limiting issues
         deletionResults = [];
+        
         for (let i = 0; i < usersToDelete.length; i++) {
           const clerkUser = usersToDelete[i];
+          
           try {
+            // For verified/active users, we might need to handle them differently
+            // but Clerk's deleteUser should work for all user types
             await client.users.deleteUser(clerkUser.id);
             deletionResults.push({ id: clerkUser.id, success: true });
 
             // Add a small delay between deletions to avoid rate limiting
             if (i < usersToDelete.length - 1) {
-              await new Promise((resolve) => setTimeout(resolve, 100));
+              await new Promise((resolve) => setTimeout(resolve, 200));
             }
           } catch (error) {
-            console.error(
-              `Failed to delete Clerk user ${clerkUser.id}:`,
-              error,
-            );
-            deletionResults.push({
-              id: clerkUser.id,
-              success: false,
-              error: error instanceof Error ? error.message : "Unknown error",
-            });
+            // Try retry for verified/active users (they might need multiple attempts)
+            let retrySuccess = false;
+            for (let retry = 0; retry < 2; retry++) {
+              try {
+                await new Promise((resolve) => setTimeout(resolve, 500)); // Wait before retry
+                await client.users.deleteUser(clerkUser.id);
+                deletionResults.push({ id: clerkUser.id, success: true });
+                retrySuccess = true;
+                break;
+              } catch {
+                // Silent retry failure
+              }
+            }
+            
+            if (!retrySuccess) {
+              deletionResults.push({
+                id: clerkUser.id,
+                success: false,
+                error: error instanceof Error ? error.message : "Unknown error",
+              });
+            }
           }
         }
 
-        // Log deletion results
-        const successfulDeletions = deletionResults.filter(
-          (r) => r.success,
-        ).length;
-        const failedDeletions = deletionResults.filter((r) => !r.success);
-
-        if (failedDeletions.length > 0) {
-          console.warn(
-            `Failed to delete ${failedDeletions.length} Clerk users:`,
-            failedDeletions,
-          );
-        }
-
-        console.log(
-          `Successfully deleted ${successfulDeletions}/${usersToDelete.length} Clerk users`,
-        );
+        // Track deletion results (for potential future use)
+        deletionResults.filter((r) => !r.success);
         break;
 
       default:
