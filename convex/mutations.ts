@@ -2103,8 +2103,8 @@ export const updateDocumentContent = mutation({
       validateRateLimit(args.userId, "student:update_document_content");
 
       // Security validation: Content size limit
-      if (args.content.length > 1000000) {
-        // 1MB limit
+      if (args.content.length > 5000000) {
+        // 5MB limit
         throw new Error("Document content too large");
       }
 
@@ -2112,7 +2112,7 @@ export const updateDocumentContent = mutation({
         trim: false,
         removeHtml: false, // Allow HTML for rich text
         escapeSpecialChars: false, // Do not escape, to preserve HTML tags
-        maxLength: 1000000,
+        maxLength: 5000000,
       });
 
       // Get the document

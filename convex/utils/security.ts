@@ -251,7 +251,7 @@ export function checkRateLimit(
 
 // Content validation helpers
 export function validateDocumentContent(content: string): string {
-  const validatedContent = validateString(content, "content", 1000000); // 1MB limit
+  const validatedContent = validateString(content, "content", 5000000); // 5MB limit
 
   // Check for potentially malicious content
   const suspiciousPatterns = [
