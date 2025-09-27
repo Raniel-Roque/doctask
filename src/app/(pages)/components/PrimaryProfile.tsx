@@ -57,7 +57,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="text"
                 value={userData?.first_name || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-md shadow-sm text-gray-700 cursor-not-allowed focus:border-gray-300"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border-2 border-gray-200 rounded-md shadow-sm text-gray-400 cursor-not-allowed focus:border-gray-300"
               />
             </div>
             <div>
@@ -68,7 +68,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="text"
                 value={userData?.middle_name || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-md shadow-sm text-gray-700 cursor-not-allowed focus:border-gray-300"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border-2 border-gray-200 rounded-md shadow-sm text-gray-400 cursor-not-allowed focus:border-gray-300"
               />
             </div>
             <div>
@@ -79,7 +79,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="text"
                 value={userData?.last_name || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-md shadow-sm text-gray-700 cursor-not-allowed focus:border-gray-300"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border-2 border-gray-200 rounded-md shadow-sm text-gray-400 cursor-not-allowed focus:border-gray-300"
               />
             </div>
           </div>
@@ -94,7 +94,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 type="email"
                 value={userData?.email || ""}
                 disabled
-                className="mt-1 block w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-md shadow-sm text-gray-700 cursor-not-allowed focus:border-gray-300"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border-2 border-gray-200 rounded-md shadow-sm text-gray-400 cursor-not-allowed focus:border-gray-300"
               />
             </div>
             <div className="col-span-2 flex items-end">
