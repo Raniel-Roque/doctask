@@ -4,7 +4,6 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
-import { decryptData, importKey } from "@/utils/encryption";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -26,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { clerkId, newPassword, encryptionKey } = body;
+    const { clerkId, newPassword } = body;
 
     // Validate required fields
     if (!clerkId || !newPassword) {
@@ -36,24 +35,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Decrypt password if encryption key is provided
-    let decryptedPassword = newPassword;
-    if (encryptionKey && Array.isArray(encryptionKey)) {
-      try {
-        const key = await importKey(
-          Buffer.from(encryptionKey).toString("base64"),
-        );
-        decryptedPassword = await decryptData(newPassword, key);
-      } catch {
-        return NextResponse.json(
-          { error: "Failed to decrypt password" },
-          { status: 400 },
-        );
-      }
-    }
-
     // Validate password strength using shared utility (NIST guidelines)
-    const passwordStrength = calculatePasswordStrength(decryptedPassword);
+    const passwordStrength = calculatePasswordStrength(newPassword);
     if (!passwordStrength.isAcceptable) {
       return NextResponse.json(
         { error: passwordStrength.feedback },
@@ -98,7 +81,7 @@ export async function POST(request: NextRequest) {
     try {
       // Update the user's password
       await client.users.updateUser(clerkId, {
-        password: decryptedPassword,
+        password: newPassword,
       });
 
       return NextResponse.json({
