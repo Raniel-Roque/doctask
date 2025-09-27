@@ -322,10 +322,17 @@ const LoginPage = () => {
             });
             if (result.status === "complete") {
               await setActive({ session: result.createdSessionId });
-              localStorage.setItem(
-                "lastActivityTimestamp",
-                Date.now().toString(),
-              );
+              // Update both localStorage and secure storage for session timeout
+              const now = Date.now();
+              localStorage.setItem("lastActivityTimestamp", now.toString());
+              // Also update secure storage to prevent immediate timeout
+              if (typeof window !== "undefined") {
+                const { secureStorage } = await import("@/lib/secure-storage");
+                secureStorage.set("lastActivityTimestamp", now);
+                // Clear any old session data that might interfere
+                secureStorage.remove("viewedNotesDocuments");
+                secureStorage.remove("viewedNoteCounts");
+              }
               return; // Success, user will be redirected
             } else {
               showNotification(
@@ -528,7 +535,17 @@ const LoginPage = () => {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        localStorage.setItem("lastActivityTimestamp", Date.now().toString());
+        // Update both localStorage and secure storage for session timeout
+        const now = Date.now();
+        localStorage.setItem("lastActivityTimestamp", now.toString());
+        // Also update secure storage to prevent immediate timeout
+        if (typeof window !== "undefined") {
+          const { secureStorage } = await import("@/lib/secure-storage");
+          secureStorage.set("lastActivityTimestamp", now);
+          // Clear any old session data that might interfere
+          secureStorage.remove("viewedNotesDocuments");
+          secureStorage.remove("viewedNoteCounts");
+        }
       } else {
         showNotification("Incorrect password. Please try again.", "error");
       }
