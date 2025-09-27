@@ -44,6 +44,18 @@ const nextConfig = {
         destination: "/doctask.ico",
         permanent: false,
       },
+      // Redirect non-www to www (or vice versa)
+      {
+        source: "/(.*)",
+        has: [
+          {
+            type: "host",
+            value: "(?<domain>.*)",
+          },
+        ],
+        destination: "https://www.:domain/:path*",
+        permanent: true,
+      },
     ];
   },
   images: {
