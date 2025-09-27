@@ -20,16 +20,8 @@ const VerifyCodeInput: React.FC<VerifyCodeInputProps> = ({
   email,
   onResendCode,
 }) => {
-  useEffect(() => {
-    // Check if we should send code automatically when component loads
-    const shouldSendCode = localStorage.getItem(`shouldSendCode_${email}`);
-    if (shouldSendCode === "true" && onResendCode) {
-      // Clear the flag so we don't send again
-      localStorage.removeItem(`shouldSendCode_${email}`);
-      // Send the code
-      onResendCode();
-    }
-  }, [email, onResendCode]);
+  // Removed automatic code sending to prevent double sending
+  // The main login flow already handles sending the initial code
 
   return (
     <div>

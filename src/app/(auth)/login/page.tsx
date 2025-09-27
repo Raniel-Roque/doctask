@@ -719,14 +719,55 @@ const LoginPage = () => {
       }
     }
 
-    // Store flag to indicate if we should send code when reset input loads
-    localStorage.setItem(
-      `shouldSendForgotPasswordCode_${email}`,
-      shouldSendCode.toString(),
-    );
+    if (shouldSendCode) {
+      // Send password reset code only if no active timer
+      try {
+        setSendingCode(true);
+        const result = await signIn.create({
+          strategy: "reset_password_email_code",
+          identifier: email,
+        });
 
-    // Don't send code immediately - let the ResetCodeInput component handle it
-    // This makes it consistent with the regular verification flow
+        if (result.status === "needs_first_factor") {
+          setForgotStepIndex(0);
+          showNotification(
+            "A new password reset code has been sent to your email. Please check your inbox and spam folder.",
+            "success",
+          );
+          setCode("");
+        } else {
+          showNotification(
+            "Failed to send password reset code. Please try again.",
+            "error",
+          );
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "";
+        
+        // Check for account locked error specifically
+        if (
+          errorMessage.includes("Your account is locked") ||
+          errorMessage.includes("account is locked")
+        ) {
+          showNotification(
+            "Your account is locked. Please try again later or contact your capstone instructor.",
+            "error",
+          );
+        } else {
+          const genericErrorMessage = getErrorMessage(
+            err,
+            ErrorContexts.fetchData("user"),
+          );
+          showNotification(genericErrorMessage, "error");
+        }
+      } finally {
+        setSendingCode(false);
+      }
+    } else {
+      // Just proceed to reset code step without sending code
+      setForgotStepIndex(0);
+      setCode("");
+    }
   };
 
   const handleBack = () => {
