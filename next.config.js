@@ -11,7 +11,7 @@ const nextConfig = {
           },
           {
             key: "Strict-Transport-Security",
-            value: "max-age=63072000; includeSubDomains; preload",
+            value: "max-age=63072000; includeSubDomains",
           },
           {
             key: "X-XSS-Protection",
@@ -44,9 +44,20 @@ const nextConfig = {
         destination: "/doctask.ico",
         permanent: false,
       },
-      // Redirect non-www to www
+      // Redirect non-www to www - multiple patterns
       {
-        source: "/(.*)",
+        source: "/",
+        has: [
+          {
+            type: "host",
+            value: "doctask.site",
+          },
+        ],
+        destination: "https://www.doctask.site/",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
         has: [
           {
             type: "host",
