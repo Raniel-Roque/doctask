@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
-import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
+import { createRateLimiter, RATE_LIMITS, resetRateLimit } from "@/lib/apiRateLimiter";
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,6 +57,11 @@ export async function POST(request: NextRequest) {
         userId: clerkId,
         password: passwordToVerify,
       });
+      
+      // Reset rate limit on successful verification
+      // This gives the user a fresh set of attempts since they proved their identity
+      resetRateLimit(RATE_LIMITS.PASSWORD_VERIFY.keyPrefix, clerkId);
+      
       return NextResponse.json({ success: true });
     } catch {
       return NextResponse.json(

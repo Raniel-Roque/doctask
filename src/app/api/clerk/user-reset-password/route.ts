@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
-import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
+import { createRateLimiter, RATE_LIMITS, resetRateLimit } from "@/lib/apiRateLimiter";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -83,6 +83,10 @@ export async function POST(request: NextRequest) {
       await client.users.updateUser(clerkId, {
         password: newPassword,
       });
+
+      // Reset rate limit on successful password change
+      // This gives the user a fresh set of attempts since they successfully changed their password
+      resetRateLimit(RATE_LIMITS.PASSWORD_CHANGE.keyPrefix, clerkId);
 
       return NextResponse.json({
         success: true,

@@ -145,6 +145,15 @@ export function createRateLimiter(config: RateLimitConfig) {
   };
 }
 
+/**
+ * Reset rate limit for a specific user and operation
+ * Used when successful verification should reset the rate limit counter
+ */
+export function resetRateLimit(keyPrefix: string, userId: string): void {
+  const key = `${keyPrefix}:${userId}`;
+  rateLimitStore.delete(key);
+}
+
 // Helper function to get rate limit config based on user role and operation
 export function getRateLimitConfig(userRole: number, operation: string) {
   if (userRole === 0) {

@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
-import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
+import { createRateLimiter, RATE_LIMITS, resetRateLimit } from "@/lib/apiRateLimiter";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -111,6 +111,10 @@ export async function POST(request: NextRequest) {
     await client.users.updateUserProfileImage(sanitizedClerkId, {
       file: blob,
     });
+
+    // Reset rate limit on successful profile picture update
+    // This gives the user a fresh set of attempts since they successfully updated their profile
+    resetRateLimit(RATE_LIMITS.PROFILE_PICTURE_UPDATE.keyPrefix, sanitizedClerkId);
 
     return NextResponse.json({
       success: true,
