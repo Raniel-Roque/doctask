@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { FaEnvelope } from "react-icons/fa";
 
 interface VerifyCodeInputProps {
@@ -7,8 +7,6 @@ interface VerifyCodeInputProps {
   disabled?: boolean;
   loading?: boolean;
   placeholder?: string;
-  email: string;
-  onResendCode?: () => void;
 }
 
 const VerifyCodeInput: React.FC<VerifyCodeInputProps> = ({
@@ -17,8 +15,6 @@ const VerifyCodeInput: React.FC<VerifyCodeInputProps> = ({
   disabled = false,
   loading = false,
   placeholder = "Enter verification code",
-  email,
-  onResendCode,
 }) => {
   // Removed automatic code sending to prevent double sending
   // The main login flow already handles sending the initial code

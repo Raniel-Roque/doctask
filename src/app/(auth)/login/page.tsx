@@ -905,8 +905,6 @@ const LoginPage = () => {
                   code={code}
                   setCode={setCode}
                   loading={loading}
-                  email={email}
-                  onResendCode={handleResendCode}
                 />
                 <div className="mt-6">
                   <button

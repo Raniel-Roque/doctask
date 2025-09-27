@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { FaEnvelope } from "react-icons/fa";
 import ForgotPasswordResendTimer from "./ForgotPasswordResendTimer";
 
