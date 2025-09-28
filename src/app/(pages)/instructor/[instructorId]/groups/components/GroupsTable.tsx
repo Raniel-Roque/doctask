@@ -25,6 +25,7 @@ declare module "jspdf" {
   }
 }
 import GroupMembersModal from "./GroupMembersModal";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 
 // =========================================
 // Performance Optimization: Limit Rendered Items
@@ -139,6 +140,8 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   onCapstoneSortApply,
   isModalOpen = false,
 }) => {
+  const { addBanner } = useBannerManager();
+  
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [gradeFilters, setGradeFilters] = useState<
@@ -326,7 +329,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
       doc.save(fileName);
     } catch (error) {
       console.error("Error generating Groups PDF:", error);
-      alert("Error generating PDF. Please try again.");
+      addBanner({
+        message: "Error generating PDF. Please try again.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
     }
   };
 

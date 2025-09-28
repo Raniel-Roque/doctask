@@ -28,6 +28,7 @@ declare module "jspdf" {
   }
 }
 import { api } from "../../../../../../../convex/_generated/api";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 
 // =========================================
 // Performance Optimization: Limit Rendered Items
@@ -113,6 +114,8 @@ export const UserTable = ({
   uploadProgress = 0,
   isModalOpen = false,
 }: UserTableProps) => {
+  const { addBanner } = useBannerManager();
+  
   // Per-column expansion state for collapsible content
   const [expandedColumns, setExpandedColumns] = useState<{
     email: boolean;
@@ -335,7 +338,12 @@ export const UserTable = ({
       doc.save(fileName);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Error generating PDF. Please try again.");
+      addBanner({
+        message: "Error generating PDF. Please try again.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
     }
   };
 
