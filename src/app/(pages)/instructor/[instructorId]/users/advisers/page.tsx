@@ -736,13 +736,13 @@ const UsersPage = ({ params }: UsersPageProps) => {
               // Skip empty rows
               if (!rowData || rowData.length <= 1) return;
 
-              // Extract data starting from index 1 (skip undefined first element)
-              const rowValues = rowData.slice(1);
-
               // Create object mapping based on header
               const userData: Record<string, string> = {};
               headerRow.forEach((header, index) => {
-                const value = rowValues[index]?.toString().trim() || "";
+                // Get the cell and extract its text content (works for both regular text and hyperlinks)
+                const cell = row.getCell(index + 1);
+                const value = cell.text?.toString().trim() || "";
+                
                 if (header.includes("first") && header.includes("name")) {
                   userData.first_name = value;
                 } else if (
