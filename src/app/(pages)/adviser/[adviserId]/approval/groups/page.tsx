@@ -20,9 +20,6 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const { adviserId } = use(params);
   const { addBanner } = useBannerManager();
   const [searchTerm, setSearchTerm] = useState("");
-  const [memberCountFilter, setMemberCountFilter] = useState<
-    "all" | "with_members" | "no_members"
-  >("all");
   const [sortField, setSortField] = useState<"name" | "capstoneTitle">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,7 +57,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const result = useQuery(api.fetch.getPendingGroupIdsForAdviser, {
     adviserId: adviserId as Id<"users">,
     searchTerm,
-    memberCountFilter,
+    memberCountFilter: "all", // Always fetch all groups since we removed the filter
     pageSize: 10000, // Get all groups for frontend pagination
     pageNumber: 1,
     sortField,
@@ -219,11 +216,6 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
           onSearchChange={(term) => {
             setSearchTerm(term);
             setCurrentPage(1); // Reset to first page when searching
-          }}
-          memberCountFilter={memberCountFilter}
-          onMemberCountFilterChange={(filter) => {
-            setMemberCountFilter(filter);
-            setCurrentPage(1); // Reset to first page when filtering
           }}
         />
 
