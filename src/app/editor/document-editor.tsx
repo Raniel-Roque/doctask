@@ -28,6 +28,7 @@ interface DocumentEditorProps {
   documentId?: Id<"documents">;
   isOffline?: boolean;
   isDataSynced?: boolean;
+  wasOffline?: boolean;
 }
 
 export const DocumentEditor = ({
@@ -44,6 +45,7 @@ export const DocumentEditor = ({
   documentId,
   isOffline = false,
   isDataSynced = true,
+  wasOffline = false,
 }: DocumentEditorProps) => {
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
 
@@ -81,6 +83,7 @@ export const DocumentEditor = ({
           chapter={chapter}
           isOffline={isOffline}
           isDataSynced={isDataSynced}
+          wasOffline={wasOffline}
         />
         {(isEditable ||
           toolbarMode === "adviserViewOnly" ||

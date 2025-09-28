@@ -28,6 +28,7 @@ interface RoomProps {
   backUrl?: string;
   isOffline?: boolean;
   isDataSynced?: boolean;
+  wasOffline?: boolean;
 }
 
 type User = { id: string; name: string; avatar: string; color: string };
@@ -159,6 +160,7 @@ export function Room(props: RoomProps) {
               documentId={props.documentId}
               isOffline={props.isOffline}
               isDataSynced={props.isDataSynced}
+              wasOffline={props.wasOffline}
             />
           ) : (
             props.children

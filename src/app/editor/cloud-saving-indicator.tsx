@@ -17,6 +17,7 @@ interface CloudSavingIndicatorProps {
   className?: string;
   isOffline?: boolean;
   isDataSynced?: boolean;
+  wasOffline?: boolean; // Add this to track if user was offline
 }
 
 export const CloudSavingIndicator = ({
@@ -24,6 +25,7 @@ export const CloudSavingIndicator = ({
   className = "",
   isOffline = false,
   isDataSynced = true,
+  wasOffline = false,
 }: CloudSavingIndicatorProps) => {
   const {
     isSaving,
@@ -38,12 +40,22 @@ export const CloudSavingIndicator = ({
   const [showSavedText, setShowSavedText] = useState(false);
 
   // Determine what to show based on various states
-  const showLoader =
-    isSaving || status === "connecting" || status === "reconnecting";
+  // Priority: Error > Loader > Success
+  // Only show sync error if this user was offline
   const showError =
-    saveError || status === "disconnected" || isOffline || !isDataSynced;
+    saveError ||
+    status === "disconnected" ||
+    isOffline ||
+    (!isDataSynced && wasOffline);
+  const showLoader =
+    !showError &&
+    (isSaving || status === "connecting" || status === "reconnecting");
   const showSuccess =
-    !showError && !showLoader && lastSaved && !isOffline && isDataSynced;
+    !showError &&
+    !showLoader &&
+    lastSaved &&
+    !isOffline &&
+    (isDataSynced || !wasOffline);
 
   // Show "Saved!" text for 3 seconds after successful save
   useEffect(() => {
@@ -60,7 +72,7 @@ export const CloudSavingIndicator = ({
     if (isOffline) {
       return "You are offline. Cannot save changes.";
     }
-    if (!isDataSynced) {
+    if (!isDataSynced && wasOffline) {
       return "Document data is not synchronized. Please wait for sync to complete.";
     }
     if (showError) {
@@ -76,7 +88,12 @@ export const CloudSavingIndicator = ({
   };
 
   const handleClick = async () => {
-    if (onManualSave && !showLoader && !isOffline && isDataSynced) {
+    if (
+      onManualSave &&
+      !showLoader &&
+      !isOffline &&
+      (isDataSynced || !wasOffline)
+    ) {
       try {
         setIsSaving(true);
         setSaveError(null);

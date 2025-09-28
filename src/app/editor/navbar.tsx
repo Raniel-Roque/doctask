@@ -52,6 +52,7 @@ interface NavbarProps {
   chapter?: string;
   isOffline?: boolean;
   isDataSynced?: boolean;
+  wasOffline?: boolean;
 }
 
 export const Navbar = ({
@@ -67,6 +68,7 @@ export const Navbar = ({
   chapter,
   isOffline = false,
   isDataSynced = true,
+  wasOffline = false,
 }: NavbarProps) => {
   const [selectedRows, setSelectedRows] = useState(1);
   const [selectedCols, setSelectedCols] = useState(1);
@@ -505,6 +507,7 @@ export const Navbar = ({
                   onManualSave={onManualSave}
                   isOffline={isOffline}
                   isDataSynced={isDataSynced}
+                  wasOffline={wasOffline}
                 />
               )}
             </div>

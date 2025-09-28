@@ -42,8 +42,8 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
 };
 
 const DEFAULT_CIRCUIT_BREAKER_CONFIG: CircuitBreakerConfig = {
-  failureThreshold: 5,
-  recoveryTimeout: 60000, // 1 minute
+  failureThreshold: 3, // Reduced from 5 to be less aggressive
+  recoveryTimeout: 30000, // 30 seconds instead of 1 minute
   monitoringPeriod: 300000, // 5 minutes
 };
 
@@ -310,4 +310,17 @@ export function resetCircuitBreaker(service: string): void {
  */
 export function resetAllCircuitBreakers(): void {
   circuitBreakers.clear();
+}
+
+/**
+ * Reset circuit breakers for a specific service when coming back online
+ */
+export function resetCircuitBreakerOnReconnect(service: string): void {
+  const breaker = circuitBreakers.get(service);
+  if (breaker) {
+    // Reset the breaker state to allow immediate retry
+    breaker["failures"] = 0;
+    breaker["state"] = "CLOSED";
+    breaker["lastFailureTime"] = 0;
+  }
 }

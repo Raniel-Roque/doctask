@@ -32,7 +32,12 @@ import { LineHeightExtension } from "@/extensions/line-height";
 import { CollaborativeHighlighting } from "@/extensions/collaborative-highlighting";
 import { useEditorStore } from "@/store/use-editor-store";
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
-import { useOthers, useSelf, useMyPresence } from "@liveblocks/react/suspense";
+import {
+  useOthers,
+  useSelf,
+  useMyPresence,
+  useStatus,
+} from "@liveblocks/react/suspense";
 import { Threads } from "./threads";
 import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { sanitizeInput } from "@/app/(pages)/components/SanitizeInput";
@@ -42,6 +47,7 @@ import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { Id } from "../../../convex/_generated/dataModel";
+import { resetAllCircuitBreakers } from "@/lib/utils";
 
 // Custom hook to handle room presence and trigger external save
 const useRoomPresence = (others: readonly unknown[], self: unknown) => {
@@ -119,6 +125,7 @@ export const Editor = ({
   const self = useSelf();
   const others = useOthers();
   const [, setMyPresence] = useMyPresence();
+  const status = useStatus();
 
   // Helper function to show notifications using the new banner system
   const showNotification = useCallback(
@@ -235,7 +242,7 @@ export const Editor = ({
       attributes: {
         style:
           "padding-left: 56px; padding-right:56px; font-family: 'Times New Roman', serif; font-size: 11px; line-height: 1.5; text-align: justify;",
-        class: `focus:outline-none bg-white border border-[#C7C7C7] print:border-none print:shadow-none print:m-0 print:p-0 flex flex-col min-h-[1054px] w-[816px] pt-10 pr-14 pb-10 ${isEditable ? "cursor-text" : "cursor-default"}`,
+        class: `focus:outline-none bg-white border border-[#C7C7C7] print:border-none print:shadow-none print:m-0 print:p-0 flex flex-col min-h-[1054px] w-[816px] pt-10 pr-14 pb-10 ${isEditable && !isOffline && isDataSynced ? "cursor-text" : "cursor-default"} ${isOffline ? "opacity-75" : ""}`,
       },
       handleDrop: (view, event, slice, moved) => {
         // Disable all drop operations in view-only mode
@@ -462,12 +469,20 @@ export const Editor = ({
     const normalizedLiveblocks = liveblocksContent.replace(/\s+/g, " ").trim();
     const normalizedConvex = convexContent.replace(/\s+/g, " ").trim();
 
-    return normalizedLiveblocks === normalizedConvex;
-  }, [editor, liveDocument]);
+    // If this user was offline, they should sync with the online users
+    // The offline user's content should match the online content
+    if (wasOffline) {
+      return normalizedLiveblocks === normalizedConvex;
+    }
+
+    // For users who were always online, they are considered synced
+    return true;
+  }, [editor, liveDocument, wasOffline]);
 
   // Check data synchronization when editor or document changes
+  // Only check sync if this user was offline (to prevent affecting other users)
   useEffect(() => {
-    if (editor && liveDocument) {
+    if (editor && liveDocument && wasOffline) {
       const synced = checkDataSync();
       setIsDataSynced(synced);
 
@@ -478,27 +493,36 @@ export const Editor = ({
         );
       }
     }
-  }, [editor, liveDocument, checkDataSync, showNotification]);
+  }, [editor, liveDocument, checkDataSync, showNotification, wasOffline]);
 
   // Offline detection and handling
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
       if (wasOffline) {
-        // Check data sync when coming back online
-        const synced = checkDataSync();
-        setIsDataSynced(synced);
+        // Reset circuit breakers when coming back online to prevent reconnection issues
+        resetAllCircuitBreakers();
 
-        if (synced) {
-          showNotification(
-            "Connection restored! You can now edit the document.",
-            "success",
-          );
-        } else {
-          showNotification(
-            "Connection restored, but document data is not synchronized. Please wait for sync to complete.",
-            "warning",
-          );
+        // Force sync: Update the editor content to match the online content
+        if (editor && liveDocument) {
+          const liveblocksContent = editor.getHTML();
+          const convexContent = liveDocument.content;
+
+          // If content is different, update the editor to match the online content
+          if (liveblocksContent !== convexContent) {
+            editor.commands.setContent(convexContent);
+            showNotification(
+              "Content synchronized with online version. You can now edit the document.",
+              "success",
+            );
+            setIsDataSynced(true);
+          } else {
+            showNotification(
+              "Connection restored! You can now edit the document.",
+              "success",
+            );
+            setIsDataSynced(true);
+          }
         }
         setWasOffline(false);
       }
@@ -526,7 +550,65 @@ export const Editor = ({
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [wasOffline, showNotification, checkDataSync]);
+  }, [wasOffline, showNotification, checkDataSync, editor, liveDocument]);
+
+  // Enhanced offline detection that considers both browser and Liveblocks status
+  useEffect(() => {
+    const isLiveblocksDisconnected =
+      status === "disconnected" || status === "reconnecting";
+    const isActuallyOffline = isOffline || isLiveblocksDisconnected;
+
+    if (isActuallyOffline !== isOffline) {
+      setIsOffline(isActuallyOffline);
+      if (isActuallyOffline && !wasOffline) {
+        setWasOffline(true);
+        showNotification(
+          "Connection lost. Editing has been disabled until connection is restored.",
+          "warning",
+        );
+      }
+    }
+  }, [status, isOffline, wasOffline, showNotification]);
+
+  // Prevent content changes when offline by blocking all input events
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleBeforeInput = (event: Event) => {
+      if (isOffline || !isDataSynced) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+    };
+
+    const handleInput = (event: Event) => {
+      if (isOffline || !isDataSynced) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+    };
+
+    const editorElement = editor.view.dom;
+    editorElement.addEventListener("beforeinput", handleBeforeInput, true);
+    editorElement.addEventListener("input", handleInput, true);
+
+    return () => {
+      editorElement.removeEventListener("beforeinput", handleBeforeInput, true);
+      editorElement.removeEventListener("input", handleInput, true);
+    };
+  }, [editor, isOffline, isDataSynced]);
+
+  // Force editor to be non-editable when offline or data not synced
+  useEffect(() => {
+    if (editor) {
+      const shouldBeEditable = isEditable && !isOffline && isDataSynced;
+      if (editor.isEditable !== shouldBeEditable) {
+        editor.setEditable(shouldBeEditable);
+      }
+    }
+  }, [editor, isEditable, isOffline, isDataSynced]);
 
   // Track selection changes for collaborative highlighting (only if editable)
   useEffect(() => {
@@ -770,6 +852,18 @@ export const Editor = ({
       {!isEditable && !suppressReadOnlyBanner && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center w-full">
           {getReadOnlyMessage()}
+        </div>
+      )}
+      {isOffline && (
+        <div className="bg-red-100 border border-red-400 text-red-800 px-4 py-2 text-sm text-center w-full">
+          You are offline. Editing has been disabled until connection is
+          restored.
+        </div>
+      )}
+      {!isDataSynced && !isOffline && wasOffline && (
+        <div className="bg-orange-100 border border-orange-400 text-orange-800 px-4 py-2 text-sm text-center w-full">
+          Document data is not synchronized. Please wait for sync to complete
+          before editing.
         </div>
       )}
       <div className="editor-container size-full overflow-x-auto bg-gray-50 px-4 print:p-0 print:bg-white print:overflow-visible">
