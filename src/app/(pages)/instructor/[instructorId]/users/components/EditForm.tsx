@@ -254,7 +254,7 @@ export default function EditForm({
         setShowRoleSearch(false);
       }
     } else {
-      // Normal role change - apply immediately
+      // Normal role change - apply immediately (including member to manager promotion)
       onFormDataChange({
         ...formData,
         subrole: role.value,
