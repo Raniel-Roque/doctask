@@ -668,35 +668,35 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   ): Promise<{ users: AddFormData[]; dataStartOffset: number }> => {
     return new Promise<{ users: AddFormData[]; dataStartOffset: number }>(
       (resolve, reject) => {
-        const reader = new FileReader();
+      const reader = new FileReader();
 
-        reader.onload = async (e) => {
-          try {
-            const data = e.target?.result;
-            if (!data) {
-              reject(new Error("Failed to read file"));
-              return;
-            }
+      reader.onload = async (e) => {
+        try {
+          const data = e.target?.result;
+          if (!data) {
+            reject(new Error("Failed to read file"));
+            return;
+          }
 
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(data as ArrayBuffer);
+          const workbook = new ExcelJS.Workbook();
+          await workbook.xlsx.load(data as ArrayBuffer);
 
-            const worksheet = workbook.getWorksheet(1); // Get first worksheet
-            if (!worksheet) {
-              reject(new Error("No worksheet found in the Excel file"));
-              return;
-            }
+          const worksheet = workbook.getWorksheet(1); // Get first worksheet
+          if (!worksheet) {
+            reject(new Error("No worksheet found in the Excel file"));
+            return;
+          }
 
-            const rows: AddFormData[] = [];
-            let headerRow: string[] = [];
-            let isFirstRow = true;
+          const rows: AddFormData[] = [];
+          let headerRow: string[] = [];
+          let isFirstRow = true;
             let headerRowFound = false;
             let dataStartOffset = 1; // Track how many rows to skip before data starts
 
-            worksheet.eachRow((row) => {
-              const rowData = row.values as (string | number | undefined)[];
+          worksheet.eachRow((row) => {
+            const rowData = row.values as (string | number | undefined)[];
 
-              if (isFirstRow) {
+            if (isFirstRow) {
                 // Check if first row contains headers (look for common header keywords)
                 const firstRowText = rowData
                   .slice(1)
@@ -710,12 +710,12 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
                 if (hasHeaderKeywords) {
                   // First row is headers (no title row)
-                  headerRow = rowData
-                    .slice(1)
-                    .map(
-                      (cell: string | number | undefined) =>
-                        cell?.toString().toLowerCase().trim() || "",
-                    );
+              headerRow = rowData
+                .slice(1)
+                .map(
+                  (cell: string | number | undefined) =>
+                    cell?.toString().toLowerCase().trim() || "",
+                );
                   headerRowFound = true;
                   dataStartOffset = 1; // Data starts at row 2
                   isFirstRow = false;
@@ -723,7 +723,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
                 } else {
                   // First row is title, skip it
                   dataStartOffset = 2; // Data starts at row 3
-                  isFirstRow = false;
+              isFirstRow = false;
                   return;
                 }
               }
@@ -737,88 +737,88 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
                       cell?.toString().toLowerCase().trim() || "",
                   );
                 headerRowFound = true;
-                return;
-              }
+              return;
+            }
 
-              // Skip empty rows
-              if (!rowData || rowData.length <= 1) return;
+            // Skip empty rows
+            if (!rowData || rowData.length <= 1) return;
 
-              // Create object mapping based on header
-              const userData: Record<string, string> = {};
-              headerRow.forEach((header, index) => {
+            // Create object mapping based on header
+            const userData: Record<string, string> = {};
+            headerRow.forEach((header, index) => {
                 // Get the cell and extract its text content (works for both regular text and hyperlinks)
                 const cell = row.getCell(index + 1);
                 const value = cell.text?.toString().trim() || "";
                 
-                if (header.includes("first") && header.includes("name")) {
-                  userData.first_name = value;
+              if (header.includes("first") && header.includes("name")) {
+                userData.first_name = value;
                 } else if (
                   header.includes("middle") &&
                   header.includes("name")
                 ) {
-                  userData.middle_name = value;
-                } else if (header.includes("last") && header.includes("name")) {
-                  userData.last_name = value;
-                } else if (header.includes("email")) {
-                  userData.email = value;
-                } else if (header.includes("role")) {
-                  userData.role = value;
-                }
-              });
-
-              // Only add if we have required fields
-              if (userData.first_name && userData.last_name && userData.email) {
-                // Parse role to subrole with validation
-                let subrole = 0; // Default to Project Member
-                let roleError = null;
-
-                if (userData.role) {
-                  const roleLower = userData.role.toLowerCase().trim();
-
-                  // Check for numeric values first
-                  if (roleLower === "1" || roleLower === "0") {
-                    subrole = parseInt(roleLower);
-                  } else if (
-                    roleLower.includes("manager") ||
-                    roleLower.includes("project manager")
-                  ) {
-                    subrole = 1; // Project Manager
-                  } else if (
-                    roleLower.includes("member") ||
-                    roleLower.includes("project member")
-                  ) {
-                    subrole = 0; // Project Member
-                  } else {
-                    // Invalid role value
-                    roleError = `Invalid role "${userData.role}".`;
-                  }
-                }
-
-                // Add role error to the row data for validation
-                const rowData = {
-                  first_name: userData.first_name,
-                  middle_name: userData.middle_name || "",
-                  last_name: userData.last_name,
-                  email: userData.email,
-                  subrole: subrole,
-                  roleError: roleError,
-                };
-
-                rows.push(rowData);
+                userData.middle_name = value;
+              } else if (header.includes("last") && header.includes("name")) {
+                userData.last_name = value;
+              } else if (header.includes("email")) {
+                userData.email = value;
+              } else if (header.includes("role")) {
+                userData.role = value;
               }
             });
 
+            // Only add if we have required fields
+            if (userData.first_name && userData.last_name && userData.email) {
+              // Parse role to subrole with validation
+              let subrole = 0; // Default to Project Member
+              let roleError = null;
+              
+              if (userData.role) {
+                const roleLower = userData.role.toLowerCase().trim();
+                
+                // Check for numeric values first
+                if (roleLower === "1" || roleLower === "0") {
+                  subrole = parseInt(roleLower);
+                } else if (
+                  roleLower.includes("manager") ||
+                  roleLower.includes("project manager")
+                ) {
+                  subrole = 1; // Project Manager
+                } else if (
+                  roleLower.includes("member") ||
+                  roleLower.includes("project member")
+                ) {
+                  subrole = 0; // Project Member
+                } else {
+                  // Invalid role value
+                  roleError = `Invalid role "${userData.role}".`;
+                }
+              }
+
+              // Add role error to the row data for validation
+              const rowData = {
+                first_name: userData.first_name,
+                middle_name: userData.middle_name || "",
+                last_name: userData.last_name,
+                email: userData.email,
+                subrole: subrole,
+                roleError: roleError,
+              };
+
+              rows.push(rowData);
+            }
+          });
+
             resolve({ users: rows, dataStartOffset });
-          } catch (error) {
-            reject(error);
-          }
-        };
+        } catch (error) {
+          reject(error);
+        }
+      };
 
-        reader.onerror = () => {
-          reject(new Error("Failed to read file"));
-        };
+      reader.onerror = () => {
+        reject(new Error("Failed to read file"));
+      };
 
-        reader.readAsArrayBuffer(file);
+      reader.readAsArrayBuffer(file);
       },
     );
   };
