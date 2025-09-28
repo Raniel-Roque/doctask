@@ -592,8 +592,8 @@ export const UserTable = ({
 
                 {/* Template Download */}
                 <a
-                  href={`/templates/${showRoleColumn ? "Students Template.xlsx" : "Adviser Template.xlsx"}`}
-                  download={`${showRoleColumn ? "Students" : "Adviser"} Template.xlsx`}
+                  href={`/templates/${showRoleColumn ? "Student Template.xlsx" : "Adviser Template.xlsx"}`}
+                  download={`${showRoleColumn ? "Student" : "Adviser"} Template.xlsx`}
                   className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors duration-150 flex items-center gap-2"
                 >
                   <svg
@@ -609,7 +609,7 @@ export const UserTable = ({
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  {showRoleColumn ? "Students" : "Adviser"} Template (.xlsx)
+                  {showRoleColumn ? "Student" : "Adviser"} Template (.xlsx)
                 </a>
 
                 {/* Report Download */}
