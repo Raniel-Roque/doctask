@@ -15,6 +15,7 @@ interface AdviserViewDocsPageProps {
 const AdviserViewDocsPage = ({ params }: AdviserViewDocsPageProps) => {
   const { adviserId, documentId } = use(params);
   const searchParams = useSearchParams();
+  const isViewOnly = searchParams.get("viewOnly") === "true";
   let backUrl = searchParams.get("from");
   if (!backUrl) {
     backUrl = `/adviser/${adviserId}/approval/documents`;
@@ -118,14 +119,14 @@ const AdviserViewDocsPage = ({ params }: AdviserViewDocsPageProps) => {
 
   return (
     <Room
-      isEditable={true}
+      isEditable={!isViewOnly}
       userType="adviser"
       title={document.title}
       capstoneTitle={group.capstone_title}
       groupId={group._id.toString()}
       chapter={document.chapter}
       liveDocumentId={liveDocumentResult?.documentId?.toString()}
-      toolbarMode="adviserEdit"
+      toolbarMode={isViewOnly ? "adviserViewOnly" : "adviserEdit"}
       backUrl={backUrl}
     />
   );
