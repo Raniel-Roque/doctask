@@ -656,109 +656,144 @@ const UsersPage = ({ params }: UsersPageProps) => {
   // =========================================
   // Excel Upload Functions
   // =========================================
-  const parseExcelFile = async (file: File): Promise<AddFormData[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+  const parseExcelFile = async (
+    file: File,
+  ): Promise<{ users: AddFormData[]; dataStartOffset: number }> => {
+    return new Promise<{ users: AddFormData[]; dataStartOffset: number }>(
+      (resolve, reject) => {
+        const reader = new FileReader();
 
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result;
-          if (!data) {
-            reject(new Error("Failed to read file"));
-            return;
-          }
-
-          const workbook = new XLSX.Workbook();
-          await workbook.xlsx.load(data as ArrayBuffer);
-
-          const worksheet = workbook.getWorksheet(1); // Get first worksheet
-          if (!worksheet) {
-            reject(new Error("No worksheet found in the Excel file"));
-            return;
-          }
-
-          const rows: AddFormData[] = [];
-          let headerRow: string[] = [];
-          let isFirstRow = true;
-          let isSecondRow = true;
-
-          worksheet.eachRow((row) => {
-            const rowData = row.values as (string | number | undefined)[];
-
-            if (isFirstRow) {
-              // Skip the first row (title row like "ADVISER TEMPLATE")
-              isFirstRow = false;
+        reader.onload = async (e) => {
+          try {
+            const data = e.target?.result;
+            if (!data) {
+              reject(new Error("Failed to read file"));
               return;
             }
 
-            if (isSecondRow) {
-              // Use the second row as header row
-              headerRow = rowData
-                .slice(1)
-                .map(
-                  (cell: string | number | undefined) =>
-                    cell?.toString().toLowerCase().trim() || "",
-                );
-              isSecondRow = false;
+            const workbook = new XLSX.Workbook();
+            await workbook.xlsx.load(data as ArrayBuffer);
+
+            const worksheet = workbook.getWorksheet(1); // Get first worksheet
+            if (!worksheet) {
+              reject(new Error("No worksheet found in the Excel file"));
               return;
             }
 
-            // Skip empty rows
-            if (!rowData || rowData.length <= 1) return;
+            const rows: AddFormData[] = [];
+            let headerRow: string[] = [];
+            let isFirstRow = true;
+            let headerRowFound = false;
+            let dataStartOffset = 1; // Track how many rows to skip before data starts
 
-            // Extract data starting from index 1 (skip undefined first element)
-            const rowValues = rowData.slice(1);
+            worksheet.eachRow((row) => {
+              const rowData = row.values as (string | number | undefined)[];
 
-            // Create object mapping based on header
-            const userData: Record<string, string> = {};
-            headerRow.forEach((header, index) => {
-              const value = rowValues[index]?.toString().trim() || "";
-              if (header.includes("first") && header.includes("name")) {
-                userData.first_name = value;
-              } else if (header.includes("middle") && header.includes("name")) {
-                userData.middle_name = value;
-              } else if (header.includes("last") && header.includes("name")) {
-                userData.last_name = value;
-              } else if (header.includes("email")) {
-                userData.email = value;
+              if (isFirstRow) {
+                // Check if first row contains headers (look for common header keywords)
+                const firstRowText = rowData
+                  .slice(1)
+                  .map((cell) => cell?.toString().toLowerCase().trim() || "")
+                  .join(" ");
+
+                const hasHeaderKeywords =
+                  firstRowText.includes("first") &&
+                  firstRowText.includes("name") &&
+                  firstRowText.includes("email");
+
+                if (hasHeaderKeywords) {
+                  // First row is headers (no title row)
+                  headerRow = rowData
+                    .slice(1)
+                    .map(
+                      (cell: string | number | undefined) =>
+                        cell?.toString().toLowerCase().trim() || "",
+                    );
+                  headerRowFound = true;
+                  dataStartOffset = 1; // Data starts at row 2
+                  isFirstRow = false;
+                  return;
+                } else {
+                  // First row is title, skip it
+                  dataStartOffset = 2; // Data starts at row 3
+                  isFirstRow = false;
+                  return;
+                }
+              }
+
+              if (!headerRowFound) {
+                // Use second row as headers (after title row)
+                headerRow = rowData
+                  .slice(1)
+                  .map(
+                    (cell: string | number | undefined) =>
+                      cell?.toString().toLowerCase().trim() || "",
+                  );
+                headerRowFound = true;
+                return;
+              }
+
+              // Skip empty rows
+              if (!rowData || rowData.length <= 1) return;
+
+              // Extract data starting from index 1 (skip undefined first element)
+              const rowValues = rowData.slice(1);
+
+              // Create object mapping based on header
+              const userData: Record<string, string> = {};
+              headerRow.forEach((header, index) => {
+                const value = rowValues[index]?.toString().trim() || "";
+                if (header.includes("first") && header.includes("name")) {
+                  userData.first_name = value;
+                } else if (
+                  header.includes("middle") &&
+                  header.includes("name")
+                ) {
+                  userData.middle_name = value;
+                } else if (header.includes("last") && header.includes("name")) {
+                  userData.last_name = value;
+                } else if (header.includes("email")) {
+                  userData.email = value;
+                }
+              });
+
+              // Only add if we have required fields
+              if (userData.first_name && userData.last_name && userData.email) {
+                rows.push({
+                  first_name: userData.first_name,
+                  middle_name: userData.middle_name || "",
+                  last_name: userData.last_name,
+                  email: userData.email,
+                  subrole: 0, // Default subrole for advisers
+                });
               }
             });
 
-            // Only add if we have required fields
-            if (userData.first_name && userData.last_name && userData.email) {
-              rows.push({
-                first_name: userData.first_name,
-                middle_name: userData.middle_name || "",
-                last_name: userData.last_name,
-                email: userData.email,
-                subrole: 0, // Default subrole for advisers
-              });
-            }
-          });
+            resolve({ users: rows, dataStartOffset });
+          } catch (error) {
+            reject(error);
+          }
+        };
 
-          resolve(rows);
-        } catch (error) {
-          reject(error);
-        }
-      };
+        reader.onerror = () => {
+          reject(new Error("Failed to read file"));
+        };
 
-      reader.onerror = () => {
-        reject(new Error("Failed to read file"));
-      };
-
-      reader.readAsArrayBuffer(file);
-    });
+        reader.readAsArrayBuffer(file);
+      },
+    );
   };
 
   const validateBulkUsers = (
     users: AddFormData[],
+    dataStartOffset: number = 2,
   ): { valid: AddFormData[]; errors: string[] } => {
     const validUsers: AddFormData[] = [];
     const errors: string[] = [];
     const emailSet = new Set<string>();
 
     users.forEach((user, index) => {
-      const rowNumber = index + 2; // +2 because we skip header row and arrays are 0-indexed
+      const rowNumber = index + dataStartOffset + 1; // Dynamic: +dataStartOffset + 1 for 1-based row numbering
 
       // Use the same validation logic as AddForm and EditForm
       const validationErrors = validateUserForm(user);
@@ -844,12 +879,13 @@ const UsersPage = ({ params }: UsersPageProps) => {
 
     try {
       // Parse Excel file
-      const users = await parseExcelFile(file);
+      const parseResult = await parseExcelFile(file);
+      const users = parseResult.users;
+      const dataStartOffset = parseResult.dataStartOffset;
 
       if (users.length === 0) {
         addBanner({
-          message:
-            "The Excel sheet is empty. Please add user data.",
+          message: "The Excel sheet is empty. Please add user data.",
           type: "error",
           onClose: () => {},
           autoClose: true,
@@ -858,8 +894,10 @@ const UsersPage = ({ params }: UsersPageProps) => {
       }
 
       // Validate users
-      const { valid: validUsers, errors: validationErrors } =
-        validateBulkUsers(users);
+      const { valid: validUsers, errors: validationErrors } = validateBulkUsers(
+        users,
+        dataStartOffset,
+      );
 
       if (validationErrors.length > 0) {
         const errorMessage =

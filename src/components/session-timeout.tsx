@@ -42,11 +42,11 @@ export function SessionTimeout() {
         defaultValue: currentTime,
       });
 
-      // If there's no stored time or it's very recent (within last 5 minutes), 
+      // If there's no stored time or it's very recent (within last 5 minutes),
       // assume this is a fresh login and don't timeout
       const timeSinceLastActivity = currentTime - (storedTime || currentTime);
       const isRecentLogin = timeSinceLastActivity < 5 * 60 * 1000; // 5 minutes
-      
+
       if (!isRecentLogin && timeSinceLastActivity >= TIMEOUT_DURATION) {
         secureStorage.remove(LAST_ACTIVITY_KEY);
         secureStorage.remove("viewedNotesDocuments");

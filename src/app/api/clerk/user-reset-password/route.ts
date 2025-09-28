@@ -2,7 +2,11 @@ import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
-import { createRateLimiter, RATE_LIMITS, resetRateLimit } from "@/lib/apiRateLimiter";
+import {
+  createRateLimiter,
+  RATE_LIMITS,
+  resetRateLimit,
+} from "@/lib/apiRateLimiter";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);

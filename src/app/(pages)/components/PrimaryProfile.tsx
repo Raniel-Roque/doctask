@@ -58,7 +58,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 value={userData?.first_name || ""}
                 disabled
                 className="mt-1 block w-full px-3 py-2 !bg-gray-100 border-2 border-gray-200 rounded-md shadow-sm !text-gray-400 cursor-not-allowed focus:border-gray-300"
-                style={{ backgroundColor: '#f3f4f6', color: '#9ca3af' }}
+                style={{ backgroundColor: "#f3f4f6", color: "#9ca3af" }}
               />
             </div>
             <div>
@@ -70,7 +70,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 value={userData?.middle_name || ""}
                 disabled
                 className="mt-1 block w-full px-3 py-2 !bg-gray-100 border-2 border-gray-200 rounded-md shadow-sm !text-gray-400 cursor-not-allowed focus:border-gray-300"
-                style={{ backgroundColor: '#f3f4f6', color: '#9ca3af' }}
+                style={{ backgroundColor: "#f3f4f6", color: "#9ca3af" }}
               />
             </div>
             <div>
@@ -82,7 +82,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 value={userData?.last_name || ""}
                 disabled
                 className="mt-1 block w-full px-3 py-2 !bg-gray-100 border-2 border-gray-200 rounded-md shadow-sm !text-gray-400 cursor-not-allowed focus:border-gray-300"
-                style={{ backgroundColor: '#f3f4f6', color: '#9ca3af' }}
+                style={{ backgroundColor: "#f3f4f6", color: "#9ca3af" }}
               />
             </div>
           </div>
@@ -98,7 +98,7 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                 value={userData?.email || ""}
                 disabled
                 className="mt-1 block w-full px-3 py-2 !bg-gray-100 border-2 border-gray-200 rounded-md shadow-sm !text-gray-400 cursor-not-allowed focus:border-gray-300"
-                style={{ backgroundColor: '#f3f4f6', color: '#9ca3af' }}
+                style={{ backgroundColor: "#f3f4f6", color: "#9ca3af" }}
               />
             </div>
             <div className="col-span-2 flex items-end">
