@@ -15,11 +15,15 @@ import {
 interface CloudSavingIndicatorProps {
   onManualSave?: (isManualSave?: boolean) => Promise<void>;
   className?: string;
+  isOffline?: boolean;
+  isDataSynced?: boolean;
 }
 
 export const CloudSavingIndicator = ({
   onManualSave,
   className = "",
+  isOffline = false,
+  isDataSynced = true,
 }: CloudSavingIndicatorProps) => {
   const {
     isSaving,
@@ -36,8 +40,10 @@ export const CloudSavingIndicator = ({
   // Determine what to show based on various states
   const showLoader =
     isSaving || status === "connecting" || status === "reconnecting";
-  const showError = saveError || status === "disconnected";
-  const showSuccess = !showError && !showLoader && lastSaved;
+  const showError =
+    saveError || status === "disconnected" || isOffline || !isDataSynced;
+  const showSuccess =
+    !showError && !showLoader && lastSaved && !isOffline && isDataSynced;
 
   // Show "Saved!" text for 3 seconds after successful save
   useEffect(() => {
@@ -51,6 +57,12 @@ export const CloudSavingIndicator = ({
   }, [lastSaved, isSaving]);
 
   const getTooltipText = () => {
+    if (isOffline) {
+      return "You are offline. Cannot save changes.";
+    }
+    if (!isDataSynced) {
+      return "Document data is not synchronized. Please wait for sync to complete.";
+    }
     if (showError) {
       return saveError || "Connection lost. Changes may not be saved.";
     }
@@ -64,7 +76,7 @@ export const CloudSavingIndicator = ({
   };
 
   const handleClick = async () => {
-    if (onManualSave && !showLoader) {
+    if (onManualSave && !showLoader && !isOffline && isDataSynced) {
       try {
         setIsSaving(true);
         setSaveError(null);
@@ -85,7 +97,7 @@ export const CloudSavingIndicator = ({
           <TooltipTrigger asChild>
             <button
               onClick={handleClick}
-              disabled={showLoader}
+              disabled={showLoader || isOffline}
               className={`flex items-center justify-center w-6 h-6 rounded-sm hover:bg-neutral-200/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
@@ -101,7 +113,7 @@ export const CloudSavingIndicator = ({
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs">
             <p className="text-sm">{getTooltipText()}</p>
-            {onManualSave && !showLoader && (
+            {onManualSave && !showLoader && !isOffline && (
               <p className="text-xs text-muted-foreground mt-1">
                 Click to save manually
               </p>

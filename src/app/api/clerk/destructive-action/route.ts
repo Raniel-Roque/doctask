@@ -28,7 +28,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-
     const client = await clerkClient();
 
     // Get the user to verify it exists and is an instructor

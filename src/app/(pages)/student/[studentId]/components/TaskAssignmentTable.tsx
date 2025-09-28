@@ -90,6 +90,7 @@ interface TaskAssignmentTableProps {
   };
   adviser?: AdviserObj;
   onStatusChange?: (taskId: string, newStatus: number) => void;
+  isOffline?: boolean;
 }
 
 // Status color mapping for task_status (member/manager communication)
@@ -158,6 +159,7 @@ export const TaskAssignmentTable = ({
   group,
   adviser,
   onStatusChange,
+  isOffline = false,
 }: TaskAssignmentTableProps) => {
   const router = useRouter();
   const { addBanner } = useBannerManager();
@@ -459,6 +461,17 @@ export const TaskAssignmentTable = ({
     taskId: Id<"taskAssignments">,
     memberId: Id<"users">,
   ) => {
+    if (isOffline) {
+      addBanner({
+        message:
+          "Cannot add member to task while offline. Please check your internet connection.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
     try {
       setUpdatingAssignment(taskId);
 
@@ -488,6 +501,17 @@ export const TaskAssignmentTable = ({
     taskId: Id<"taskAssignments">,
     memberId: Id<"users">,
   ) => {
+    if (isOffline) {
+      addBanner({
+        message:
+          "Cannot remove member from task while offline. Please check your internet connection.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
     try {
       setUpdatingAssignment(taskId);
 
@@ -626,6 +650,17 @@ export const TaskAssignmentTable = ({
 
   // Handle status change
   const handleStatusChange = async (taskId: string, newStatus: number) => {
+    if (isOffline) {
+      addBanner({
+        message:
+          "Cannot change task status while offline. Please check your internet connection.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
     try {
       setUpdatingStatus(taskId);
 
@@ -647,10 +682,20 @@ export const TaskAssignmentTable = ({
 
   // Handle submit document for review
   const handleSubmitDocument = async (chapter: string) => {
+    if (isOffline) {
+      setNotification({
+        message:
+          "Cannot submit document while offline. Please check your internet connection.",
+        type: "error",
+      });
+      return;
+    }
+
     // Check if adviser is assigned and not pending before allowing submission
     if (!adviser || !adviser.first_name || adviser.pending) {
       setNotification({
-        message: "Cannot submit document. Please wait for adviser approval or assign an adviser first.",
+        message:
+          "Cannot submit document. Please wait for adviser approval or assign an adviser first.",
         type: "error",
       });
       return;
@@ -688,6 +733,15 @@ export const TaskAssignmentTable = ({
 
   // Handle cancel document submission
   const handleCancelSubmission = async (chapter: string) => {
+    if (isOffline) {
+      setNotification({
+        message:
+          "Cannot cancel document submission while offline. Please check your internet connection.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setCancelingSubmission(chapter);
 

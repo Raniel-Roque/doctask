@@ -25,6 +25,7 @@ interface VersionHistoryPanelProps {
   groupId?: string;
   chapter?: string;
   saveToDatabase?: () => Promise<void>;
+  isOffline?: boolean;
 }
 
 export const VersionHistoryPanel = ({
@@ -33,6 +34,7 @@ export const VersionHistoryPanel = ({
   groupId,
   chapter,
   saveToDatabase,
+  isOffline = false,
 }: VersionHistoryPanelProps) => {
   const { user } = useUser();
   const { editor } = useEditorStore();
@@ -110,6 +112,11 @@ export const VersionHistoryPanel = ({
   }, [versionsData]);
 
   const handleCreateVersion = async () => {
+    if (isOffline) {
+      showNotification("Failed to create version - You are offline", "error");
+      return;
+    }
+
     if (!groupId || !chapter || !currentUser?._id || !editor) {
       showNotification("Missing required data to create version", "error");
       return;
@@ -147,6 +154,11 @@ export const VersionHistoryPanel = ({
   };
 
   const handleApproveVersion = async (versionId: string) => {
+    if (isOffline) {
+      showNotification("Failed to revert version - You are offline", "error");
+      return;
+    }
+
     if (!currentUser?._id || !editor) {
       showNotification("Cannot revert version - missing data", "error");
       return;
@@ -180,6 +192,11 @@ export const VersionHistoryPanel = ({
   };
 
   const handleDeleteVersion = async (versionId: string) => {
+    if (isOffline) {
+      showNotification("Failed to delete version - You are offline", "error");
+      return;
+    }
+
     if (!currentUser?._id) {
       showNotification("Cannot delete version - missing data", "error");
       return;

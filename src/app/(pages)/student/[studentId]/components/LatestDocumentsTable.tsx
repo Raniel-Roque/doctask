@@ -81,6 +81,7 @@ interface LatestDocumentsTableProps {
     project_manager_id: Id<"users">;
     member_ids: Id<"users">[];
   };
+  isOffline?: boolean;
 }
 
 // Grade mapping
@@ -145,6 +146,7 @@ export const LatestDocumentsTable = ({
   mode,
   tasks = [],
   group,
+  isOffline = false,
 }: LatestDocumentsTableProps) => {
   const router = useRouter();
   const convex = useConvex();
@@ -501,10 +503,21 @@ export const LatestDocumentsTable = ({
 
   // Handle submit document for review
   const handleSubmitDocument = async (doc: Document) => {
+    // Check if offline
+    if (isOffline) {
+      setNotification({
+        message:
+          "Cannot submit document while offline. Please check your internet connection.",
+        type: "error",
+      });
+      return;
+    }
+
     // Check if adviser is assigned and not pending before allowing submission
     if (!adviser || !adviser.first_name || adviser.pending) {
       setNotification({
-        message: "Cannot submit document. Please wait for adviser approval or assign an adviser first.",
+        message:
+          "Cannot submit document. Please wait for adviser approval or assign an adviser first.",
         type: "error",
       });
       return;
@@ -539,6 +552,15 @@ export const LatestDocumentsTable = ({
 
   // Handle cancel document submission
   const handleCancelSubmission = async (doc: Document) => {
+    if (isOffline) {
+      setNotification({
+        message:
+          "Cannot cancel document submission while offline. Please check your internet connection.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setCancelingSubmission(doc._id);
 
@@ -2647,9 +2669,14 @@ export const LatestDocumentsTable = ({
                             Adviser:
                           </span>
                           <button
-                            className="px-2.5 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
+                            className="px-2.5 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={onShowAdviserPopup}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isOffline}
+                            title={
+                              isOffline
+                                ? "Cannot enter adviser code while offline"
+                                : "Enter adviser code"
+                            }
                           >
                             <FaPlus className="w-3 h-3" /> Enter adviser code
                           </button>

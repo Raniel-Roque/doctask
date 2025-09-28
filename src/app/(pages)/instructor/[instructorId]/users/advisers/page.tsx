@@ -742,7 +742,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
                 // Get the cell and extract its text content (works for both regular text and hyperlinks)
                 const cell = row.getCell(index + 1);
                 const value = cell.text?.toString().trim() || "";
-                
+
                 if (header.includes("first") && header.includes("name")) {
                   userData.first_name = value;
                 } else if (

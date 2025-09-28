@@ -375,6 +375,27 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
     handleUpdateLastModified,
   ]);
 
+  // Offline detection - moved before conditional returns
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    // Check initial connection status
+    if (!navigator.onLine) {
+      setIsOffline(true);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   // Show unauthorized access screen if needed
   if (unauthorizedReason) {
     return <UnauthorizedAccess reason={unauthorizedReason} />;
@@ -407,6 +428,7 @@ const MemberDocumentEditor = ({ params }: MemberDocumentEditorProps) => {
       saveToDatabase={saveToDatabase}
       liveDocumentId={liveDocumentData?.documentId || undefined}
       documentId={liveDocumentData?.documentId || undefined}
+      isOffline={isOffline}
     />
   );
 };

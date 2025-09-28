@@ -1,7 +1,7 @@
 "use client";
 
 import { Navbar } from "../components/navbar";
-import { use, useEffect, useCallback } from "react";
+import { use, useEffect, useCallback, useState } from "react";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../../../../../convex/_generated/api";
@@ -15,6 +15,27 @@ interface MemberHomeProps {
 const MemberHomePage = ({ params }: MemberHomeProps) => {
   const { studentId } = use(params);
   const router = useRouter();
+
+  // Offline detection
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    // Check initial connection status
+    if (!navigator.onLine) {
+      setIsOffline(true);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // Fetch data
   const user = useQuery(api.fetch.getUserById, {
@@ -149,6 +170,7 @@ const MemberHomePage = ({ params }: MemberHomeProps) => {
                   }
                 : undefined
             }
+            isOffline={isOffline}
           />
         </div>
       </div>

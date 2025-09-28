@@ -26,6 +26,8 @@ interface RoomProps {
   documentId?: Id<"documents">; // Add document ID for tracking edits
   toolbarMode?: "default" | "adviserViewOnly" | "adviserEdit";
   backUrl?: string;
+  isOffline?: boolean;
+  isDataSynced?: boolean;
 }
 
 type User = { id: string; name: string; avatar: string; color: string };
@@ -152,7 +154,12 @@ export function Room(props: RoomProps) {
           fallback={<FullscreenLoader label="Loading document editor..." />}
         >
           {props.title && props.isEditable !== undefined && props.userType ? (
-            <DocumentEditor {...props} documentId={props.documentId} />
+            <DocumentEditor
+              {...props}
+              documentId={props.documentId}
+              isOffline={props.isOffline}
+              isDataSynced={props.isDataSynced}
+            />
           ) : (
             props.children
           )}

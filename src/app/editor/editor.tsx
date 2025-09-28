@@ -4,7 +4,7 @@ import "@liveblocks/react-ui/styles.css";
 import "@liveblocks/react-tiptap/styles.css";
 import "./editor.css";
 import { useEditor, EditorContent } from "@tiptap/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { apiRequest } from "@/lib/utils";
 import TaskItem from "@tiptap/extension-task-item";
 
@@ -97,11 +97,20 @@ export const Editor = ({
   const { addBanner } = useBannerManager();
   const trackEditMutation = useMutation(api.mutations.trackDocumentEdit);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [wasOffline, setWasOffline] = useState(false);
+  const [isDataSynced, setIsDataSynced] = useState(true);
 
   // Get current user's Convex ID
   const currentUser = useQuery(api.fetch.getUserByClerkId, {
     clerkId: user?.id || "",
   });
+
+  // Get the live document content to compare with Liveblocks
+  const liveDocument = useQuery(
+    api.fetch.getDocument,
+    documentId ? { documentId } : "skip",
+  );
 
   const liveblocks = useLiveblocksExtension({
     initialContent,
@@ -112,17 +121,17 @@ export const Editor = ({
   const [, setMyPresence] = useMyPresence();
 
   // Helper function to show notifications using the new banner system
-  const showNotification = (
-    message: string,
-    type: "error" | "success" | "warning" | "info",
-  ) => {
-    addBanner({
-      message,
-      type,
-      onClose: () => {}, // Banner will auto-close
-      autoClose: true,
-    });
-  };
+  const showNotification = useCallback(
+    (message: string, type: "error" | "success" | "warning" | "info") => {
+      addBanner({
+        message,
+        type,
+        onClose: () => {}, // Banner will auto-close
+        autoClose: true,
+      });
+    },
+    [addBanner],
+  );
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
@@ -192,7 +201,7 @@ export const Editor = ({
 
   const editor = useEditor({
     immediatelyRender: false,
-    editable: isEditable, // Disable editing when isEditable is false
+    editable: isEditable && !isOffline && isDataSynced, // Disable editing when offline, not editable, or data not synced
     onCreate: () => {
       // Mark editor as initialized after creation to prevent false edit tracking
       // Add a small delay to ensure editor is fully ready
@@ -203,8 +212,11 @@ export const Editor = ({
     onUpdate: () => {
       // Track document edits for contributor system
       // Only track after the editor has fully initialized to prevent false positives
+      // Don't track edits when offline or data not synced
       if (
         isEditable &&
+        !isOffline &&
+        isDataSynced &&
         self?.info?.name &&
         currentUser?._id &&
         documentId &&
@@ -438,6 +450,83 @@ export const Editor = ({
       }),
     ],
   });
+
+  // Function to check if Liveblocks and Convex data are synchronized
+  const checkDataSync = useCallback(() => {
+    if (!editor || !liveDocument) return true;
+
+    const liveblocksContent = editor.getHTML();
+    const convexContent = liveDocument.content;
+
+    // Compare content (normalize whitespace for comparison)
+    const normalizedLiveblocks = liveblocksContent.replace(/\s+/g, " ").trim();
+    const normalizedConvex = convexContent.replace(/\s+/g, " ").trim();
+
+    return normalizedLiveblocks === normalizedConvex;
+  }, [editor, liveDocument]);
+
+  // Check data synchronization when editor or document changes
+  useEffect(() => {
+    if (editor && liveDocument) {
+      const synced = checkDataSync();
+      setIsDataSynced(synced);
+
+      if (!synced) {
+        showNotification(
+          "Document data is not synchronized. Please wait for sync to complete before editing.",
+          "warning",
+        );
+      }
+    }
+  }, [editor, liveDocument, checkDataSync, showNotification]);
+
+  // Offline detection and handling
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      if (wasOffline) {
+        // Check data sync when coming back online
+        const synced = checkDataSync();
+        setIsDataSynced(synced);
+
+        if (synced) {
+          showNotification(
+            "Connection restored! You can now edit the document.",
+            "success",
+          );
+        } else {
+          showNotification(
+            "Connection restored, but document data is not synchronized. Please wait for sync to complete.",
+            "warning",
+          );
+        }
+        setWasOffline(false);
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+      setWasOffline(true);
+      showNotification(
+        "You are offline. Editing has been disabled until connection is restored.",
+        "warning",
+      );
+    };
+
+    // Check initial connection status
+    if (!navigator.onLine) {
+      setIsOffline(true);
+      setWasOffline(true);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [wasOffline, showNotification, checkDataSync]);
 
   // Track selection changes for collaborative highlighting (only if editable)
   useEffect(() => {

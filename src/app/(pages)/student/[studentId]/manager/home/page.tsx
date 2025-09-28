@@ -38,6 +38,27 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
   const adviserCodeInputRef = useRef<() => void>(() => {});
   const [showCancelPopup, setShowCancelPopup] = useState(false);
 
+  // Offline detection
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    // Check initial connection status
+    if (!navigator.onLine) {
+      setIsOffline(true);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   // Convex
   const user = useQuery(api.fetch.getUserById, {
     id: studentId as Id<"users">,
@@ -206,6 +227,17 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
     pendingAdviserCode || pendingAdviserCodeObj?.code;
 
   const handleConfirmCancelAdviserRequest = async () => {
+    if (isOffline) {
+      addBanner({
+        message:
+          "Cannot cancel adviser request while offline. Please check your internet connection.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
     if (!effectivePendingAdviserCode || !studentGroup?.group_id) return;
     setIsSubmitting(true);
     try {
@@ -286,6 +318,7 @@ const ManagerHomePage = ({ params }: ManagerHomeProps) => {
                   }
                 : undefined
             }
+            isOffline={isOffline}
           />
         </div>
         <CancelAdviserRequestPopup

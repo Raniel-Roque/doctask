@@ -50,6 +50,8 @@ interface NavbarProps {
   documentId?: Id<"documents">;
   groupId?: string;
   chapter?: string;
+  isOffline?: boolean;
+  isDataSynced?: boolean;
 }
 
 export const Navbar = ({
@@ -63,6 +65,8 @@ export const Navbar = ({
   documentId,
   groupId,
   chapter,
+  isOffline = false,
+  isDataSynced = true,
 }: NavbarProps) => {
   const [selectedRows, setSelectedRows] = useState(1);
   const [selectedCols, setSelectedCols] = useState(1);
@@ -497,7 +501,11 @@ export const Navbar = ({
             <div className="flex items-center gap-2">
               <div className="text-lg font-semibold">{title}</div>
               {!viewOnly && (
-                <CloudSavingIndicator onManualSave={onManualSave} />
+                <CloudSavingIndicator
+                  onManualSave={onManualSave}
+                  isOffline={isOffline}
+                  isDataSynced={isDataSynced}
+                />
               )}
             </div>
             <Menubar className="border-none bg-transparent shadow-none h-auto p-0">

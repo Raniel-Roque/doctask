@@ -16,6 +16,27 @@ const ManagerTasksPage = ({ params }: ManagerTasksPageProps) => {
   const { studentId } = use(params);
   const [groupId, setGroupId] = useState<string | null>(null);
 
+  // Offline detection
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    // Check initial connection status
+    if (!navigator.onLine) {
+      setIsOffline(true);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   // Get the user's group using studentId directly (it's already a Convex user ID)
   const studentGroup = useQuery(api.fetch.getStudentGroup, {
     userId: studentId as Id<"users">,
@@ -136,6 +157,7 @@ const ManagerTasksPage = ({ params }: ManagerTasksPageProps) => {
           documents={documents?.documents || []}
           group={constructGroup()}
           adviser={constructAdviser()}
+          isOffline={isOffline}
         />
       </div>
     </div>

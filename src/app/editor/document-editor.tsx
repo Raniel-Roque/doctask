@@ -26,6 +26,8 @@ interface DocumentEditorProps {
   toolbarMode?: "default" | "adviserViewOnly" | "adviserEdit";
   backUrl?: string;
   documentId?: Id<"documents">;
+  isOffline?: boolean;
+  isDataSynced?: boolean;
 }
 
 export const DocumentEditor = ({
@@ -40,6 +42,8 @@ export const DocumentEditor = ({
   toolbarMode = "default",
   backUrl,
   documentId,
+  isOffline = false,
+  isDataSynced = true,
 }: DocumentEditorProps) => {
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
 
@@ -75,6 +79,8 @@ export const DocumentEditor = ({
           documentId={documentId}
           groupId={groupId}
           chapter={chapter}
+          isOffline={isOffline}
+          isDataSynced={isDataSynced}
         />
         {(isEditable ||
           toolbarMode === "adviserViewOnly" ||
@@ -113,6 +119,7 @@ export const DocumentEditor = ({
         groupId={groupId}
         chapter={chapter}
         saveToDatabase={saveToDatabase}
+        isOffline={isOffline}
       />
     </div>
   );
