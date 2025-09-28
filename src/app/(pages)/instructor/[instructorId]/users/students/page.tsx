@@ -687,19 +687,26 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           const rows: AddFormData[] = [];
           let headerRow: string[] = [];
           let isFirstRow = true;
+          let isSecondRow = true;
 
           worksheet.eachRow((row) => {
             const rowData = row.values as (string | number | undefined)[];
 
             if (isFirstRow) {
-              // Skip the first element (undefined) and get header row
+              // Skip the first row (title row like "STUDENT TEMPLATE")
+              isFirstRow = false;
+              return;
+            }
+
+            if (isSecondRow) {
+              // Use the second row as header row
               headerRow = rowData
                 .slice(1)
                 .map(
                   (cell: string | number | undefined) =>
                     cell?.toString().toLowerCase().trim() || "",
                 );
-              isFirstRow = false;
+              isSecondRow = false;
               return;
             }
 
