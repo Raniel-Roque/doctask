@@ -390,7 +390,7 @@ export const createGroup = mutation({
       { chapter: "appendix_e", section: "appendix_e", title: "Appendix E" },
       { chapter: "appendix_f", section: "appendix_f", title: "Appendix F" },
       { chapter: "appendix_g", section: "appendix_g", title: "Appendix G" },
-      { chapter: "appendix_h", section: "appendix_h", title: "Appendix H" },
+      { chapter: "appendix_d", section: "appendix_d", title: "Appendix D" },
       { chapter: "appendix_i", section: "appendix_i", title: "Appendix I" },
 
       // Chapter 1 subparts
@@ -505,7 +505,7 @@ export const createGroup = mutation({
 
     // Batch create all document status entries
     const statusPromises = documentParts.map((documentPart) => {
-      const isPreApproved = ["title_page", "appendix_a", "appendix_h"].includes(
+      const isPreApproved = ["title_page", "appendix_a", "appendix_d"].includes(
         documentPart,
       );
 
