@@ -842,7 +842,7 @@ const UsersPage = ({ params }: UsersPageProps) => {
       if (users.length === 0) {
         addBanner({
           message:
-            "The Excel sheet is empty. Please add user data with required columns: First Name, Last Name, Email. Optional: Middle Name",
+            "The Excel sheet is empty. Please add user data.",
           type: "error",
           onClose: () => {},
           autoClose: true,
