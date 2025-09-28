@@ -487,7 +487,7 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
                                   ? "text-green-600 hover:text-green-800"
                                   : "text-gray-400 cursor-not-allowed"
                               }`}
-                              title="Save Changes"
+                              title={hasChanges(note) ? "Save Changes" : "No changes to save"}
                               disabled={!hasChanges(note)}
                             >
                               <FaSave className="w-4 h-4" />
