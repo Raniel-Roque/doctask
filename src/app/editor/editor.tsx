@@ -508,17 +508,23 @@ export const Editor = ({
         setIsDataSynced(true);
         setWasOffline(false);
         
-        // Always replace content with online version
-        if (editor && liveDocument) {
-          const convexContent = liveDocument.content;
-          
-          // Replace offline content with online content immediately
-          editor.commands.setContent(convexContent);
-          showNotification(
-            "Content synchronized with online version. You can now edit the document.",
-            "success",
-          );
-        }
+        // Small delay to ensure state updates are processed
+        setTimeout(() => {
+          if (editor && liveDocument) {
+            const convexContent = liveDocument.content;
+            
+            // Replace offline content with online content
+            editor.commands.setContent(convexContent);
+            
+            // Force enable editing after content sync
+            editor.setEditable(true);
+            
+            showNotification(
+              "Content synchronized with online version. You can now edit the document.",
+              "success",
+            );
+          }
+        }, 100);
       }
     };
 
@@ -598,13 +604,10 @@ export const Editor = ({
   useEffect(() => {
     if (editor) {
       const shouldBeEditable = isEditable && !isOffline && isDataSynced;
+      
+      // Only update if the state has actually changed
       if (editor.isEditable !== shouldBeEditable) {
         editor.setEditable(shouldBeEditable);
-      }
-      
-      // Additional check: if offline, ensure editor is completely disabled
-      if (isOffline) {
-        editor.setEditable(false);
       }
     }
   }, [editor, isEditable, isOffline, isDataSynced]);
