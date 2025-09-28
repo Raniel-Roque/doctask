@@ -8,7 +8,6 @@ import {
   FaTimes,
   FaUser,
   FaSearch,
-  FaFilter,
 } from "react-icons/fa";
 import { Group } from "./types";
 import GroupMembersModal from "./GroupMembersModal";
@@ -36,10 +35,6 @@ interface GroupsTableProps {
   hasResults: boolean;
   searchTerm: string;
   onSearchChange: (term: string) => void;
-  memberCountFilter: "all" | "with_members" | "no_members";
-  onMemberCountFilterChange: (
-    filter: "all" | "with_members" | "no_members",
-  ) => void;
 }
 
 const GroupsTable: React.FC<GroupsTableProps> = ({
@@ -58,8 +53,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   hasResults,
   searchTerm,
   onSearchChange,
-  memberCountFilter,
-  onMemberCountFilterChange,
 }) => {
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -118,10 +111,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
 
   return (
     <div>
-      {/* Search and Filter Controls */}
-      <div className="mb-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+      {/* Search Controls */}
+      <div className="mb-4">
         {/* Search Bar */}
-        <div className="flex-1 relative">
+        <div className="relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
             <FaSearch />
           </div>
@@ -135,25 +128,6 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               onPageChange(1); // Reset to first page when searching
             }}
           />
-        </div>
-
-        {/* Member Count Filter */}
-        <div className="flex items-center gap-2">
-          <FaFilter className="text-gray-500" />
-          <select
-            value={memberCountFilter}
-            onChange={(e) => {
-              onMemberCountFilterChange(
-                e.target.value as "all" | "with_members" | "no_members",
-              );
-              onPageChange(1); // Reset to first page when filtering
-            }}
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
-            <option value="all">All Groups</option>
-            <option value="with_members">With Members</option>
-            <option value="no_members">No Members</option>
-          </select>
         </div>
       </div>
 
@@ -223,7 +197,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     colSpan={4}
                     className="px-6 py-4 text-center text-gray-500"
                   >
-                    {searchTerm || memberCountFilter !== "all"
+                    {searchTerm
                       ? "No groups found matching your search criteria."
                       : "No group requests available at this time."}
                   </td>
