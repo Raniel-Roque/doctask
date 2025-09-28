@@ -503,28 +503,28 @@ export const Editor = ({
         // Reset circuit breakers when coming back online to prevent reconnection issues
         resetAllCircuitBreakers();
 
-        // When reconnecting, always replace offline content with online content
-        // Enable editing and sync content immediately
+        // When reconnecting, replace offline content with online content
+        if (editor && liveDocument) {
+          const convexContent = liveDocument.content;
+          
+          // Replace offline content with online content
+          editor.commands.setContent(convexContent);
+        }
+        
+        // Update states to enable editing
         setIsDataSynced(true);
         setWasOffline(false);
+        setIsOffline(false);
         
-        // Small delay to ensure state updates are processed
-        setTimeout(() => {
-          if (editor && liveDocument) {
-            const convexContent = liveDocument.content;
-            
-            // Replace offline content with online content
-            editor.commands.setContent(convexContent);
-            
-            // Force enable editing after content sync
-            editor.setEditable(true);
-            
-            showNotification(
-              "Content synchronized with online version. You can now edit the document.",
-              "success",
-            );
-          }
-        }, 100);
+        // Force enable editing immediately
+        if (editor) {
+          editor.setEditable(true);
+        }
+        
+        showNotification(
+          "Content synchronized with online version. You can now edit the document.",
+          "success",
+        );
       }
     };
 
