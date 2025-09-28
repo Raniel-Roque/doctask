@@ -728,8 +728,10 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
             // Only add if we have required fields
             if (userData.first_name && userData.last_name && userData.email) {
-              // Parse role to subrole
+              // Parse role to subrole with validation
               let subrole = 0; // Default to Project Member
+              let roleError = null;
+              
               if (userData.role) {
                 const roleLower = userData.role.toLowerCase().trim();
                 if (
@@ -742,16 +744,23 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
                   roleLower.includes("project member")
                 ) {
                   subrole = 0; // Project Member
+                } else {
+                  // Invalid role value
+                  roleError = `Invalid role "${userData.role}".`;
                 }
               }
 
-              rows.push({
+              // Add role error to the row data for validation
+              const rowData = {
                 first_name: userData.first_name,
                 middle_name: userData.middle_name || "",
                 last_name: userData.last_name,
                 email: userData.email,
                 subrole: subrole,
-              });
+                roleError: roleError,
+              };
+
+              rows.push(rowData);
             }
           });
 
@@ -778,6 +787,12 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
     users.forEach((user, index) => {
       const rowNumber = index + 2; // +2 because we skip header row and arrays are 0-indexed
+
+      // Check for role errors first
+      if ('roleError' in user && (user as AddFormData & { roleError?: string }).roleError) {
+        errors.push(`Row ${rowNumber}: ${(user as AddFormData & { roleError?: string }).roleError}`);
+        return;
+      }
 
       // Use the same validation logic as AddForm and EditForm
       const validationErrors = validateUserForm(user);
