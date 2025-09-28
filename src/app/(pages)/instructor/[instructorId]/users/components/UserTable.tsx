@@ -115,7 +115,7 @@ export const UserTable = ({
   isModalOpen = false,
 }: UserTableProps) => {
   const { addBanner } = useBannerManager();
-  
+
   // Per-column expansion state for collapsible content
   const [expandedColumns, setExpandedColumns] = useState<{
     email: boolean;

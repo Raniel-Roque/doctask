@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import { Group } from "./types";
 import GroupMembersModal from "./GroupMembersModal";
+import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 
 // =========================================
 // Performance Optimization: Limit Rendered Items
@@ -54,6 +55,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   searchTerm,
   onSearchChange,
 }) => {
+  const { addBanner } = useBannerManager();
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
 
@@ -72,6 +74,36 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   const handleCloseMembersModal = () => {
     setShowMembersModal(false);
     setSelectedGroup(null);
+  };
+
+  const handleAccept = (group: Group) => {
+    // Check if offline
+    if (!navigator.onLine) {
+      addBanner({
+        message:
+          "Cannot approve group while offline. Please check your internet connection.",
+        type: "error",
+        onClose: () => {},
+        autoClose: false,
+      });
+      return;
+    }
+    onAccept(group);
+  };
+
+  const handleReject = (group: Group) => {
+    // Check if offline
+    if (!navigator.onLine) {
+      addBanner({
+        message:
+          "Cannot reject group while offline. Please check your internet connection.",
+        type: "error",
+        onClose: () => {},
+        autoClose: false,
+      });
+      return;
+    }
+    onReject(group);
   };
 
   // =========================================
@@ -235,14 +267,14 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => onAccept(group)}
+                          onClick={() => handleAccept(group)}
                           className="p-2 text-green-600 hover:text-green-800 transition-colors"
                           title="Accept"
                         >
                           <FaCheck />
                         </button>
                         <button
-                          onClick={() => onReject(group)}
+                          onClick={() => handleReject(group)}
                           className="p-2 text-red-600 hover:text-red-800 transition-colors"
                           title="Reject"
                         >

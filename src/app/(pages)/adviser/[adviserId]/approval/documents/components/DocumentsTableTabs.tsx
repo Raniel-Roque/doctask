@@ -139,6 +139,16 @@ const DocumentsTableTabs: React.FC<DocumentsTableTabsProps> = ({
       return;
     }
 
+    // Check if offline
+    if (!navigator.onLine) {
+      setNotification({
+        message:
+          "Cannot download document while offline. Please check your internet connection.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setDownloadingDocx(doc._id);
 

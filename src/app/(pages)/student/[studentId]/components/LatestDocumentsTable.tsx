@@ -613,6 +613,16 @@ export const LatestDocumentsTable = ({
 
   // Bulk download function
   const handleBulkDownload = async (format: "docx" | "pdf") => {
+    // Check if offline
+    if (!navigator.onLine) {
+      setNotification({
+        message:
+          "Cannot download documents while offline. Please check your internet connection.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!documents || documents.length === 0) {
       setNotification({
         message: "No documents available for download.",
@@ -1094,6 +1104,16 @@ export const LatestDocumentsTable = ({
 
   // DOCX download function
   const handleDownloadDocx = async (doc: Document) => {
+    // Check if offline
+    if (!navigator.onLine) {
+      setNotification({
+        message:
+          "Cannot download document while offline. Please check your internet connection.",
+        type: "error",
+      });
+      return;
+    }
+
     // Special handling for Appendix H - generate data from group members
     if (doc.chapter === "appendix_h") {
       await createAppendixHDocument();

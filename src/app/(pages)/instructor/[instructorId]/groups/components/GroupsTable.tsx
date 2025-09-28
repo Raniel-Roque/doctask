@@ -141,7 +141,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   isModalOpen = false,
 }) => {
   const { addBanner } = useBannerManager();
-  
+
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [gradeFilters, setGradeFilters] = useState<

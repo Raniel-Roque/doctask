@@ -224,6 +224,16 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
     targetDoc: Document,
     targetGroup: Group,
   ) => {
+    // Check if offline
+    if (!navigator.onLine) {
+      setNotification({
+        message:
+          "Cannot change document status while offline. Please check your internet connection.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setUpdatingStatus(documentId);
 
@@ -313,6 +323,16 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 
   // DOCX download function
   const handleDownloadDocx = async (doc: Document) => {
+    // Check if offline
+    if (!navigator.onLine) {
+      setNotification({
+        message:
+          "Cannot download document while offline. Please check your internet connection.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!doc.content) {
       setNotification({
         message: "Document content is empty.",

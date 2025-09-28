@@ -219,6 +219,15 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
       return;
     }
 
+    // Check if offline
+    if (!navigator.onLine) {
+      showNotification(
+        "Cannot add note while offline. Please check your internet connection.",
+        "error",
+      );
+      return;
+    }
+
     try {
       setIsAddingNote(true);
       await createNote({
@@ -258,6 +267,15 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
       return;
     }
 
+    // Check if offline
+    if (!navigator.onLine) {
+      showNotification(
+        "Cannot edit note while offline. Please check your internet connection.",
+        "error",
+      );
+      return;
+    }
+
     try {
       await updateNote({
         noteId,
@@ -278,6 +296,17 @@ const NotesPopup: React.FC<NotesPopupProps> = ({
 
   const handleDeleteNote = async () => {
     if (!pendingDeleteNoteId) return;
+
+    // Check if offline
+    if (!navigator.onLine) {
+      showNotification(
+        "Cannot delete note while offline. Please check your internet connection.",
+        "error",
+      );
+      setPendingDeleteNoteId(null);
+      return;
+    }
+
     try {
       await deleteNote({
         noteId: pendingDeleteNoteId,
