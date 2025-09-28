@@ -503,13 +503,15 @@ export const Editor = ({
         // Reset circuit breakers when coming back online to prevent reconnection issues
         resetAllCircuitBreakers();
 
-        // Force sync: Update the editor content to match the online content
+        // When reconnecting, replace offline content with online content
+        // The online content should take precedence over the offline user's changes
         if (editor && liveDocument) {
           const liveblocksContent = editor.getHTML();
           const convexContent = liveDocument.content;
 
-          // If content is different, update the editor to match the online content
+          // If content is different, replace offline content with online content
           if (liveblocksContent !== convexContent) {
+            // Replace the offline user's content with the online content
             editor.commands.setContent(convexContent);
             showNotification(
               "Content synchronized with online version. You can now edit the document.",
