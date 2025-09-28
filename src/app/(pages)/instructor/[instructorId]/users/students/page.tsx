@@ -868,7 +868,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       if (users.length === 0) {
         addBanner({
           message:
-            "Invalid Excel format. Required: First Name, Last Name, Email. Optional: Middle Name, Role (Manager/Member)",
+            "The Excel sheet is empty. Please add user data with required columns: First Name, Last Name, Email. Optional: Middle Name, Role (Manager/Member)",
           type: "error",
           onClose: () => {},
           autoClose: true,
