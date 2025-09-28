@@ -734,7 +734,11 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
               
               if (userData.role) {
                 const roleLower = userData.role.toLowerCase().trim();
-                if (
+                
+                // Check for numeric values first
+                if (roleLower === "1" || roleLower === "0") {
+                  subrole = parseInt(roleLower);
+                } else if (
                   roleLower.includes("manager") ||
                   roleLower.includes("project manager")
                 ) {
