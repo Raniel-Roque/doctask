@@ -2,7 +2,6 @@ import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
-import { createRateLimiter, RATE_LIMITS } from "@/lib/apiRateLimiter";
 import { Liveblocks } from "@liveblocks/node";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -29,20 +28,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Apply rate limiting
-    const rateLimit = createRateLimiter(RATE_LIMITS.DESTRUCTIVE_ACTION);
-    const rateLimitResult = rateLimit(request, clerkId);
-
-    if (!rateLimitResult.success) {
-      const headers: Record<string, string> = {};
-      if (rateLimitResult.retryAfter) {
-        headers["Retry-After"] = rateLimitResult.retryAfter.toString();
-      }
-      return NextResponse.json(
-        { error: rateLimitResult.message },
-        { status: 429, headers },
-      );
-    }
 
     const client = await clerkClient();
 
