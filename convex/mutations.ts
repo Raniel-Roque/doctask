@@ -387,10 +387,10 @@ export const createGroup = mutation({
       { chapter: "references", section: "references", title: "References" },
       { chapter: "appendix_b", section: "appendix_b", title: "Appendix B" },
       { chapter: "appendix_c", section: "appendix_c", title: "Appendix C" },
+      { chapter: "appendix_d", section: "appendix_d", title: "Appendix D" },
       { chapter: "appendix_e", section: "appendix_e", title: "Appendix E" },
       { chapter: "appendix_f", section: "appendix_f", title: "Appendix F" },
       { chapter: "appendix_g", section: "appendix_g", title: "Appendix G" },
-      { chapter: "appendix_d", section: "appendix_d", title: "Appendix D" },
       { chapter: "appendix_i", section: "appendix_i", title: "Appendix I" },
 
       // Chapter 1 subparts

@@ -647,10 +647,10 @@ export const TaskAssignmentTable = ({
 
   // Handle submit document for review
   const handleSubmitDocument = async (chapter: string) => {
-    // Check if adviser is assigned before allowing submission
-    if (!adviser || !adviser.first_name) {
+    // Check if adviser is assigned and not pending before allowing submission
+    if (!adviser || !adviser.first_name || adviser.pending) {
       setNotification({
-        message: "Cannot submit document. Please assign an adviser first.",
+        message: "Cannot submit document. Please wait for adviser approval or assign an adviser first.",
         type: "error",
       });
       return;
