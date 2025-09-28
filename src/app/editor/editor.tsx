@@ -120,7 +120,7 @@ export const Editor = ({
 
   const liveblocks = useLiveblocksExtension({
     initialContent,
-    offlineSupport_experimental: true,
+    offlineSupport_experimental: false, // Disable offline support to prevent offline editing
   });
   const self = useSelf();
   const others = useOthers();
@@ -503,30 +503,22 @@ export const Editor = ({
         // Reset circuit breakers when coming back online to prevent reconnection issues
         resetAllCircuitBreakers();
 
-        // When reconnecting, replace offline content with online content
-        // The online content should take precedence over the offline user's changes
-        if (editor && liveDocument) {
-          const liveblocksContent = editor.getHTML();
-          const convexContent = liveDocument.content;
-
-          // If content is different, replace offline content with online content
-          if (liveblocksContent !== convexContent) {
-            // Replace the offline user's content with the online content
-            editor.commands.setContent(convexContent);
-            showNotification(
-              "Content synchronized with online version. You can now edit the document.",
-              "success",
-            );
-            setIsDataSynced(true);
-          } else {
-            showNotification(
-              "Connection restored! You can now edit the document.",
-              "success",
-            );
-            setIsDataSynced(true);
-          }
-        }
+        // When reconnecting, always replace offline content with online content
+        // Enable editing and sync content immediately
+        setIsDataSynced(true);
         setWasOffline(false);
+        
+        // Always replace content with online version
+        if (editor && liveDocument) {
+          const convexContent = liveDocument.content;
+          
+          // Replace offline content with online content immediately
+          editor.commands.setContent(convexContent);
+          showNotification(
+            "Content synchronized with online version. You can now edit the document.",
+            "success",
+          );
+        }
       }
     };
 
@@ -534,7 +526,7 @@ export const Editor = ({
       setIsOffline(true);
       setWasOffline(true);
       showNotification(
-        "You are offline. Editing has been disabled until connection is restored.",
+        "You are offline. You can only view the document until connection is restored.",
         "warning",
       );
     };
@@ -608,6 +600,11 @@ export const Editor = ({
       const shouldBeEditable = isEditable && !isOffline && isDataSynced;
       if (editor.isEditable !== shouldBeEditable) {
         editor.setEditable(shouldBeEditable);
+      }
+      
+      // Additional check: if offline, ensure editor is completely disabled
+      if (isOffline) {
+        editor.setEditable(false);
       }
     }
   }, [editor, isEditable, isOffline, isDataSynced]);
