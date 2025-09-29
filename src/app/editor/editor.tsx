@@ -616,11 +616,8 @@ export const Editor = ({
       );
     };
 
-    // Check initial connection status
-    if (!navigator.onLine) {
-      setIsOffline(true);
-      setWasOffline(true);
-    }
+    // Note: Initial offline check removed - we now rely primarily on Liveblocks status
+    // Browser navigator.onLine can be unreliable with tab switching
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
@@ -631,20 +628,30 @@ export const Editor = ({
     };
   }, [wasOffline, showNotification, checkDataSync, editor, liveDocument]);
 
-  // Enhanced offline detection that considers both browser and Liveblocks status
+  // Enhanced offline detection that primarily relies on Liveblocks status
   useEffect(() => {
     const isLiveblocksDisconnected =
       status === "disconnected" || status === "reconnecting";
-    const isActuallyOffline = isOffline || isLiveblocksDisconnected;
-
-    if (isActuallyOffline !== isOffline) {
-      setIsOffline(isActuallyOffline);
-      if (isActuallyOffline && !wasOffline) {
-        setWasOffline(true);
+    
+    // Only consider offline if Liveblocks is actually disconnected
+    // Don't rely on browser navigator.onLine as it's unreliable with tab switching
+    if (isLiveblocksDisconnected && !isOffline) {
+      setIsOffline(true);
+      setWasOffline(true);
+      showNotification(
+        "Connection lost. Editing has been disabled until connection is restored.",
+        "warning",
+      );
+    } else if (!isLiveblocksDisconnected && isOffline) {
+      // Connection restored
+      setIsOffline(false);
+      if (wasOffline) {
         showNotification(
-          "Connection lost. Editing has been disabled until connection is restored.",
-          "warning",
+          "Connection restored! You can now edit the document.",
+          "success",
         );
+        setWasOffline(false);
+        setIsDataSynced(true);
       }
     }
   }, [status, isOffline, wasOffline, showNotification]);
