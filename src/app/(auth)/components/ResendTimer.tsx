@@ -78,9 +78,10 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
       // Only start timer and update rate limit if resend was successful
       // The onResend function should return a boolean or throw an error on failure
       if (resendResult !== false) {
-        // Only start timer if this is not the first resend
-        if (hasResentBefore) {
-          // 2 minute timer
+        // Start timer on first resend attempt
+        if (!hasResentBefore) {
+          // First resend - start timer immediately
+          setHasResentBefore(true);
           const resetTime = Date.now() + 120000;
           setTimeLeft(120);
           setCanResend(false);
@@ -89,8 +90,14 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
             JSON.stringify({ resetTime }),
           );
         } else {
-          // First resend - mark that we've resent before but don't start timer
-          setHasResentBefore(true);
+          // Subsequent resends - start timer
+          const resetTime = Date.now() + 120000;
+          setTimeLeft(120);
+          setCanResend(false);
+          localStorage.setItem(
+            `resendTimer_${email}`,
+            JSON.stringify({ resetTime }),
+          );
         }
 
         // Update rate limit
