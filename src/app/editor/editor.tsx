@@ -498,11 +498,15 @@ export const Editor = ({
   // Offline detection and handling
   useEffect(() => {
     const handleOnline = () => {
-      setIsOffline(false);
-      if (wasOffline) {
-        // Reset circuit breakers when coming back online to prevent reconnection issues
-        resetAllCircuitBreakers();
+      // Reset circuit breakers when coming back online to prevent reconnection issues
+      resetAllCircuitBreakers();
 
+      // Update all states immediately to enable editing
+      setIsOffline(false);
+      setIsDataSynced(true);
+      setWasOffline(false);
+      
+      if (wasOffline) {
         // When reconnecting, replace offline content with online content
         if (editor && liveDocument) {
           const convexContent = liveDocument.content;
@@ -511,21 +515,23 @@ export const Editor = ({
           editor.commands.setContent(convexContent);
         }
         
-        // Update states to enable editing
-        setIsDataSynced(true);
-        setWasOffline(false);
-        setIsOffline(false);
-        
-        // Force enable editing immediately
-        if (editor) {
-          editor.setEditable(true);
-        }
-        
         showNotification(
           "Content synchronized with online version. You can now edit the document.",
           "success",
         );
+      } else {
+        showNotification(
+          "Connection restored! You can now edit the document.",
+          "success",
+        );
       }
+      
+      // Force enable editing after a brief delay to ensure state updates
+      setTimeout(() => {
+        if (editor) {
+          editor.setEditable(true);
+        }
+      }, 50);
     };
 
     const handleOffline = () => {
