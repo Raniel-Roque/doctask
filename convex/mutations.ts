@@ -890,6 +890,23 @@ export const updateGroup = mutation({
       }
     }
 
+    // Handle pending adviser requests when instructor manually assigns adviser
+    if (group.requested_adviser && args.adviser_id) {
+      // Remove from the requested adviser's requests_group_ids
+      const requestedAdviserCode = await ctx.db
+        .query("advisersTable")
+        .withIndex("by_adviser", (q) => q.eq("adviser_id", group.requested_adviser!))
+        .first();
+      
+      if (requestedAdviserCode) {
+        await ctx.db.patch(requestedAdviserCode._id, {
+          requests_group_ids: (requestedAdviserCode.requests_group_ids || []).filter(
+            (id) => id !== args.groupId,
+          ),
+        });
+      }
+    }
+
     // Update the group
     await ctx.db.patch(args.groupId, {
       project_manager_id: args.project_manager_id,
@@ -897,6 +914,8 @@ export const updateGroup = mutation({
       adviser_id: args.adviser_id ? args.adviser_id : undefined,
       capstone_title: args.capstone_title,
       grade: args.grade,
+      // Clear requested_adviser when instructor manually assigns adviser
+      requested_adviser: args.adviser_id ? undefined : group.requested_adviser,
     });
 
     // Create human-readable details for edited fields
@@ -927,9 +946,15 @@ export const updateGroup = mutation({
     if (!group.adviser_id && args.adviser_id) {
       const newAdviser = await ctx.db.get(args.adviser_id);
       if (newAdviser) {
-        changes.push(
-          `Adviser: None -> ${newAdviser.first_name} ${newAdviser.last_name}`,
-        );
+        if (group.requested_adviser) {
+          changes.push(
+            `Adviser: Pending Request -> ${newAdviser.first_name} ${newAdviser.last_name} (Manually Assigned)`,
+          );
+        } else {
+          changes.push(
+            `Adviser: None -> ${newAdviser.first_name} ${newAdviser.last_name}`,
+          );
+        }
       }
     } else if (group.adviser_id && !args.adviser_id) {
       if (group.adviser_id !== undefined) {
