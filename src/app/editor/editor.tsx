@@ -644,37 +644,33 @@ export const Editor = ({
         "warning",
       );
     } else if (status === "connected" && isOffline && wasOffline) {
-      // Connection restored - but don't replace content immediately
-      // Only replace content if user was offline for a significant time
-      setIsOffline(false);
-      // Check if we should replace content (only if user was offline for > 5 seconds)
-      const offlineTime =
-        Date.now() -
-        ((window as { offlineStartTime?: number }).offlineStartTime || 0);
-      if (offlineTime > 5000) {
-        // 5 seconds
-        showNotification(
-          "Connection restored! Content synchronized with online version.",
-          "success",
-        );
-        // Replace content with online version
-        if (editor && liveDocument) {
-          const convexContent = liveDocument.content;
-          editor.commands.setContent(convexContent);
+      // Add a small delay to prevent rapid state changes
+      const timeoutId = setTimeout(() => {
+        // Double-check that we're still connected and offline
+        if (status === "connected" && isOffline && wasOffline) {
+          // Connection restored - ALWAYS replace offline content with online content
+          setIsOffline(false);
+          // Always replace offline user's content with online content
+          showNotification(
+            "Connection restored! Content synchronized with online version.",
+            "success",
+          );
+          // Replace content with online version
+          if (editor && liveDocument) {
+            const convexContent = liveDocument.content;
+            editor.commands.setContent(convexContent);
+          }
+          setWasOffline(false);
+          setIsDataSynced(true);
         }
-      } else {
-        showNotification(
-          "Connection restored! You can continue editing.",
-          "success",
-        );
-      }
-      setWasOffline(false);
-      setIsDataSynced(true);
+      }, 1000); // 1 second delay to prevent rapid changes
+
+      return () => clearTimeout(timeoutId);
     }
     // Note: We don't handle "reconnecting" status to avoid rapid state changes
   }, [status, isOffline, wasOffline, showNotification, editor, liveDocument]);
 
-  // Prevent content changes when offline by blocking all input events
+  // Prevent content changes when offline by blocking ALL input events
   useEffect(() => {
     if (!editor) return;
 
@@ -694,13 +690,61 @@ export const Editor = ({
       }
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isOffline || !isDataSynced) {
+        // Allow only navigation keys (arrows, home, end, page up/down)
+        const allowedKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'];
+        if (!allowedKeys.includes(event.key)) {
+          event.preventDefault();
+          event.stopPropagation();
+          return false;
+        }
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (isOffline || !isDataSynced) {
+        // Block all key up events except navigation
+        const allowedKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'];
+        if (!allowedKeys.includes(event.key)) {
+          event.preventDefault();
+          event.stopPropagation();
+          return false;
+        }
+      }
+    };
+
+    const handlePaste = (event: ClipboardEvent) => {
+      if (isOffline || !isDataSynced) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+    };
+
+    const handleDrop = (event: DragEvent) => {
+      if (isOffline || !isDataSynced) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+    };
+
     const editorElement = editor.view.dom;
     editorElement.addEventListener("beforeinput", handleBeforeInput, true);
     editorElement.addEventListener("input", handleInput, true);
+    editorElement.addEventListener("keydown", handleKeyDown, true);
+    editorElement.addEventListener("keyup", handleKeyUp, true);
+    editorElement.addEventListener("paste", handlePaste, true);
+    editorElement.addEventListener("drop", handleDrop, true);
 
     return () => {
       editorElement.removeEventListener("beforeinput", handleBeforeInput, true);
       editorElement.removeEventListener("input", handleInput, true);
+      editorElement.removeEventListener("keydown", handleKeyDown, true);
+      editorElement.removeEventListener("keyup", handleKeyUp, true);
+      editorElement.removeEventListener("paste", handlePaste, true);
+      editorElement.removeEventListener("drop", handleDrop, true);
     };
   }, [editor, isOffline, isDataSynced]);
 
@@ -712,6 +756,22 @@ export const Editor = ({
       // Only update if the state has actually changed
       if (editor.isEditable !== shouldBeEditable) {
         editor.setEditable(shouldBeEditable);
+      }
+
+      // Additional safety: Force disable if offline
+      if (isOffline) {
+        editor.setEditable(false);
+        // Make the editor element completely non-interactive
+        const editorElement = editor.view.dom;
+        editorElement.style.pointerEvents = 'none';
+        editorElement.style.userSelect = 'none';
+        editorElement.setAttribute('contenteditable', 'false');
+      } else {
+        // Restore interactivity when online
+        const editorElement = editor.view.dom;
+        editorElement.style.pointerEvents = 'auto';
+        editorElement.style.userSelect = 'text';
+        editorElement.setAttribute('contenteditable', 'true');
       }
     }
   }, [editor, isEditable, isOffline, isDataSynced]);
