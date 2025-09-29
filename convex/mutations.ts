@@ -624,70 +624,83 @@ export const updateUser = mutation({
           )
           .collect();
 
-        for (const group of managedGroups) {
-          // If we have a replacement project manager from the edit form
-          if (args.newProjectManagerId) {
-            // Update the group with the new project manager
-            await ctx.db.patch(group._id, {
-              project_manager_id: args.newProjectManagerId,
-              member_ids: group.member_ids.filter(
-                (id) => id !== args.newProjectManagerId,
-              ),
-            });
-
-            // Update the new project manager's role to manager (subrole 1)
-            await ctx.db.patch(args.newProjectManagerId, { subrole: 1 });
-
-            // Update the new project manager's studentsTable entry to have this group_id
-            const newManagerMembership = await ctx.db
-              .query("studentsTable")
-              .withIndex("by_user", (q) =>
-                q.eq("user_id", args.newProjectManagerId!),
-              )
-              .first();
-
-            if (newManagerMembership) {
-              await ctx.db.patch(newManagerMembership._id, {
-                group_id: group._id,
+        // If the user is managing groups, handle the demotion
+        if (managedGroups.length > 0) {
+          for (const group of managedGroups) {
+            // If we have a replacement project manager from the edit form
+            if (args.newProjectManagerId) {
+              // Update the group with the new project manager
+              await ctx.db.patch(group._id, {
+                project_manager_id: args.newProjectManagerId,
+                member_ids: group.member_ids.filter(
+                  (id) => id !== args.newProjectManagerId,
+                ),
               });
-            }
 
-            // KICK OUT THE OLD MANAGER: Remove old manager from group's member_ids
-            const updatedMemberIds = group.member_ids.filter((id) => id !== args.userId);
-            await ctx.db.patch(group._id, {
-              member_ids: updatedMemberIds,
-            });
+              // Update the new project manager's role to manager (subrole 1)
+              await ctx.db.patch(args.newProjectManagerId, { subrole: 1 });
 
-            // Set the old manager's group_id to null in studentsTable
-            const oldManagerMembership = await ctx.db
-              .query("studentsTable")
-              .withIndex("by_user", (q) => q.eq("user_id", args.userId))
-              .first();
+              // Update the new project manager's studentsTable entry to have this group_id
+              const newManagerMembership = await ctx.db
+                .query("studentsTable")
+                .withIndex("by_user", (q) =>
+                  q.eq("user_id", args.newProjectManagerId!),
+                )
+                .first();
 
-            if (oldManagerMembership) {
-              await ctx.db.patch(oldManagerMembership._id, { group_id: null });
-            }
-
-            // Remove old manager from any task assignments in that group
-            const tasks = await ctx.db
-              .query("taskAssignments")
-              .withIndex("by_group", (q) => q.eq("group_id", group._id))
-              .collect();
-            for (const task of tasks) {
-              const newAssignments = task.assigned_student_ids.filter(
-                (id) => id !== args.userId,
-              );
-              if (newAssignments.length !== task.assigned_student_ids.length) {
-                await ctx.db.patch(task._id, {
-                  assigned_student_ids: newAssignments,
+              if (newManagerMembership) {
+                await ctx.db.patch(newManagerMembership._id, {
+                  group_id: group._id,
                 });
               }
+
+              // KICK OUT THE OLD MANAGER: Remove old manager from group's member_ids
+              const updatedMemberIds = group.member_ids.filter(
+                (id) => id !== args.userId,
+              );
+              await ctx.db.patch(group._id, {
+                member_ids: updatedMemberIds,
+              });
+
+              // Set the old manager's group_id to null in studentsTable
+              const oldManagerMembership = await ctx.db
+                .query("studentsTable")
+                .withIndex("by_user", (q) => q.eq("user_id", args.userId))
+                .first();
+
+              if (oldManagerMembership) {
+                await ctx.db.patch(oldManagerMembership._id, {
+                  group_id: null,
+                });
+              }
+
+              // Remove old manager from any task assignments in that group
+              const tasks = await ctx.db
+                .query("taskAssignments")
+                .withIndex("by_group", (q) => q.eq("group_id", group._id))
+                .collect();
+              for (const task of tasks) {
+                const newAssignments = task.assigned_student_ids.filter(
+                  (id) => id !== args.userId,
+                );
+                if (
+                  newAssignments.length !== task.assigned_student_ids.length
+                ) {
+                  await ctx.db.patch(task._id, {
+                    assigned_student_ids: newAssignments,
+                  });
+                }
+              }
+            } else {
+              // No replacement provided - this should not be allowed
+              throw new Error(
+                "Cannot demote a project manager without providing a replacement manager. The group must have a project manager.",
+              );
             }
-          } else {
-            // No replacement provided - this should not be allowed
-            throw new Error("Cannot demote a project manager without providing a replacement manager. The group must have a project manager.");
           }
         }
+        // If the user is not managing any groups, we can simply allow the subrole change
+        // No additional processing needed
       }
     }
 

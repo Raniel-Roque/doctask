@@ -33,7 +33,8 @@ export const ExcelUploadConfirmation = ({
         </div>
 
         <p className="text-gray-600 mb-6">
-          Are you sure you want to upload <strong>{fileName}</strong>? This will create new accounts based on the data in the file.
+          Are you sure you want to upload <strong>{fileName}</strong>? This will
+          create new accounts based on the data in the file.
         </p>
 
         <div className="flex gap-3">

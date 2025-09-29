@@ -184,13 +184,13 @@ const LoginPage = () => {
       const sessionRateLimitKey = `sessionEmailRateLimit_${emailToCheck}`;
       const sessionData = localStorage.getItem(sessionRateLimitKey);
       const now = Date.now();
-      
+
       if (sessionData) {
         const { count, resetTime } = JSON.parse(sessionData);
         if (now < resetTime && count >= 5) {
           showNotification(
             "Too many email submission attempts. Please wait before trying again.",
-            "error"
+            "error",
           );
           return;
         }
@@ -261,14 +261,15 @@ const LoginPage = () => {
               "success",
             );
             setCode("");
-            
+
             // Update session-based rate limit after successful email submission
             const sessionRateLimitKey = `sessionEmailRateLimit_${emailToCheck}`;
             const storedSessionData = localStorage.getItem(sessionRateLimitKey);
             const now = Date.now();
-            
+
             if (storedSessionData) {
-              const { count, resetTime: oldResetTime } = JSON.parse(storedSessionData);
+              const { count, resetTime: oldResetTime } =
+                JSON.parse(storedSessionData);
               if (now < oldResetTime) {
                 localStorage.setItem(
                   sessionRateLimitKey,

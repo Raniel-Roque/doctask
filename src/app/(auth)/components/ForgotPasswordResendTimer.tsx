@@ -84,11 +84,11 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
       const rateLimitKey = `forgotPasswordRateLimit_${email}`;
       const sessionKey = `sessionForgotPasswordRateLimit_${email}`;
       const now = Date.now();
-      
+
       // Check both regular rate limit and session-based rate limit
       const rateLimitData = localStorage.getItem(rateLimitKey);
       const sessionData = localStorage.getItem(sessionKey);
-      
+
       // Check regular rate limit (3 attempts per 5 minutes)
       if (rateLimitData) {
         const { count, resetTime } = JSON.parse(rateLimitData);
@@ -100,7 +100,7 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
           return;
         }
       }
-      
+
       // Check session-based rate limit (prevents navigation bypass)
       if (sessionData) {
         const { count, resetTime: sessionResetTime } = JSON.parse(sessionData);
@@ -112,7 +112,7 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
           return;
         }
       }
-      
+
       const resendResult = await onResend();
 
       // Only start timer and update rate limit if resend was successful
@@ -144,7 +144,7 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
         const storedRateLimitData = localStorage.getItem(rateLimitKey);
         const storedSessionData = localStorage.getItem(sessionKey);
         const now = Date.now();
-        
+
         // Update regular rate limit
         if (storedRateLimitData) {
           const { count, resetTime: oldResetTime } =
@@ -166,7 +166,7 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
             JSON.stringify({ count: 1, resetTime: now + 300000 }),
           );
         }
-        
+
         // Update session-based rate limit (longer duration to prevent navigation bypass)
         if (storedSessionData) {
           const { count, resetTime: oldSessionResetTime } =
@@ -174,7 +174,10 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
           if (now < oldSessionResetTime) {
             localStorage.setItem(
               sessionKey,
-              JSON.stringify({ count: count + 1, resetTime: oldSessionResetTime }),
+              JSON.stringify({
+                count: count + 1,
+                resetTime: oldSessionResetTime,
+              }),
             );
           } else {
             localStorage.setItem(

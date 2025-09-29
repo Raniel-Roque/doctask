@@ -650,16 +650,19 @@ export const Editor = ({
         // Triple-check that we're still connected and were actually offline
         if (status === "connected" && isOffline && wasOffline) {
           // Only proceed if we were offline for more than 2 seconds
-          const offlineTime = Date.now() - ((window as { offlineStartTime?: number }).offlineStartTime || 0);
-          if (offlineTime > 2000) { // 2 seconds minimum
+          const offlineTime =
+            Date.now() -
+            ((window as { offlineStartTime?: number }).offlineStartTime || 0);
+          if (offlineTime > 2000) {
+            // 2 seconds minimum
             // Connection restored - ALWAYS replace offline content with online content
             setIsOffline(false); // Set offline to false first
-            
+
             // Replace content with online version FIRST
             if (editor && liveDocument) {
               const convexContent = liveDocument.content;
               editor.commands.setContent(convexContent);
-              
+
               // Only show notification AFTER content has been replaced
               showNotification(
                 "Connection restored! Content synchronized with online version.",
@@ -705,7 +708,16 @@ export const Editor = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isOffline || !isDataSynced) {
         // Allow only navigation keys (arrows, home, end, page up/down)
-        const allowedKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'];
+        const allowedKeys = [
+          "ArrowUp",
+          "ArrowDown",
+          "ArrowLeft",
+          "ArrowRight",
+          "Home",
+          "End",
+          "PageUp",
+          "PageDown",
+        ];
         if (!allowedKeys.includes(event.key)) {
           event.preventDefault();
           event.stopPropagation();
@@ -717,7 +729,16 @@ export const Editor = ({
     const handleKeyUp = (event: KeyboardEvent) => {
       if (isOffline || !isDataSynced) {
         // Block all key up events except navigation
-        const allowedKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'];
+        const allowedKeys = [
+          "ArrowUp",
+          "ArrowDown",
+          "ArrowLeft",
+          "ArrowRight",
+          "Home",
+          "End",
+          "PageUp",
+          "PageDown",
+        ];
         if (!allowedKeys.includes(event.key)) {
           event.preventDefault();
           event.stopPropagation();
@@ -775,15 +796,15 @@ export const Editor = ({
         editor.setEditable(false);
         // Make the editor element completely non-interactive
         const editorElement = editor.view.dom;
-        editorElement.style.pointerEvents = 'none';
-        editorElement.style.userSelect = 'none';
-        editorElement.setAttribute('contenteditable', 'false');
+        editorElement.style.pointerEvents = "none";
+        editorElement.style.userSelect = "none";
+        editorElement.setAttribute("contenteditable", "false");
       } else {
         // Restore interactivity when online
         const editorElement = editor.view.dom;
-        editorElement.style.pointerEvents = 'auto';
-        editorElement.style.userSelect = 'text';
-        editorElement.setAttribute('contenteditable', 'true');
+        editorElement.style.pointerEvents = "auto";
+        editorElement.style.userSelect = "text";
+        editorElement.setAttribute("contenteditable", "true");
       }
     }
   }, [editor, isEditable, isOffline, isDataSynced]);
@@ -810,9 +831,9 @@ export const Editor = ({
       // Force disable editor when offline
       editor.setEditable(false);
       const editorElement = editor.view.dom;
-      editorElement.style.pointerEvents = 'none';
-      editorElement.style.userSelect = 'none';
-      editorElement.setAttribute('contenteditable', 'false');
+      editorElement.style.pointerEvents = "none";
+      editorElement.style.userSelect = "none";
+      editorElement.setAttribute("contenteditable", "false");
     }
   }, [editor, isOffline]);
 

@@ -63,11 +63,11 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
       const rateLimitKey = `rateLimit_${email}`;
       const sessionKey = `sessionRateLimit_${email}`;
       const now = Date.now();
-      
+
       // Check both regular rate limit and session-based rate limit
       const rateLimitData = localStorage.getItem(rateLimitKey);
       const sessionData = localStorage.getItem(sessionKey);
-      
+
       // Check regular rate limit (3 attempts per 5 minutes)
       if (rateLimitData) {
         const { count, resetTime } = JSON.parse(rateLimitData);
@@ -79,7 +79,7 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
           return;
         }
       }
-      
+
       // Check session-based rate limit (prevents navigation bypass)
       if (sessionData) {
         const { count, resetTime: sessionResetTime } = JSON.parse(sessionData);
@@ -91,7 +91,7 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
           return;
         }
       }
-      
+
       const resendResult = await onResend();
 
       // Only start timer and update rate limit if resend was successful
@@ -123,7 +123,7 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
         const storedRateLimitData = localStorage.getItem(rateLimitKey);
         const storedSessionData = localStorage.getItem(sessionKey);
         const now = Date.now();
-        
+
         // Update regular rate limit
         if (storedRateLimitData) {
           const { count, resetTime: oldResetTime } =
@@ -145,7 +145,7 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
             JSON.stringify({ count: 1, resetTime: now + 300000 }),
           );
         }
-        
+
         // Update session-based rate limit (longer duration to prevent navigation bypass)
         if (storedSessionData) {
           const { count, resetTime: oldSessionResetTime } =
@@ -153,7 +153,10 @@ const ResendTimer: React.FC<ResendTimerProps> = ({
           if (now < oldSessionResetTime) {
             localStorage.setItem(
               sessionKey,
-              JSON.stringify({ count: count + 1, resetTime: oldSessionResetTime }),
+              JSON.stringify({
+                count: count + 1,
+                resetTime: oldSessionResetTime,
+              }),
             );
           } else {
             localStorage.setItem(

@@ -707,9 +707,12 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
                   .join(" ");
 
                 const hasHeaderKeywords =
-                  (firstRowText.includes("first") && firstRowText.includes("name")) ||
-                  (firstRowText.includes("middle") && firstRowText.includes("name")) ||
-                  (firstRowText.includes("last") && firstRowText.includes("name")) ||
+                  (firstRowText.includes("first") &&
+                    firstRowText.includes("name")) ||
+                  (firstRowText.includes("middle") &&
+                    firstRowText.includes("name")) ||
+                  (firstRowText.includes("last") &&
+                    firstRowText.includes("name")) ||
                   firstRowText.includes("email") ||
                   firstRowText.includes("role");
 
@@ -755,14 +758,20 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
                 const cell = row.getCell(index + 1);
                 const value = cell.text?.toString().trim() || "";
 
-                if ((header.includes("first") && header.includes("name")) || header.includes("firstname")) {
+                if (
+                  (header.includes("first") && header.includes("name")) ||
+                  header.includes("firstname")
+                ) {
                   userData.first_name = value;
                 } else if (
                   (header.includes("middle") && header.includes("name")) ||
                   header.includes("middlename")
                 ) {
                   userData.middle_name = value;
-                } else if (header.includes("last") && header.includes("name") || header.includes("lastname")) {
+                } else if (
+                  (header.includes("last") && header.includes("name")) ||
+                  header.includes("lastname")
+                ) {
                   userData.last_name = value;
                 } else if (header.includes("email")) {
                   userData.email = value;
