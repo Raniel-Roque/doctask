@@ -537,10 +537,8 @@ export const Editor = ({
       // Reset circuit breakers when coming back online to prevent reconnection issues
       resetAllCircuitBreakers();
 
-      // Update all states immediately to enable editing
+      // Update offline state immediately
       setIsOffline(false);
-      setIsDataSynced(true);
-      setWasOffline(false);
       
       // Force enable editing immediately
       if (editor) {
@@ -554,6 +552,12 @@ export const Editor = ({
           
           // Replace offline content with online content
           editor.commands.setContent(convexContent);
+          
+          // Force a small delay to ensure content is updated before clearing wasOffline
+          setTimeout(() => {
+            setWasOffline(false);
+            setIsDataSynced(true);
+          }, 100);
         }
         
         showNotification(
