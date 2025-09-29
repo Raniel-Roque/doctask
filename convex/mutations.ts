@@ -895,14 +895,16 @@ export const updateGroup = mutation({
       // Remove from the requested adviser's requests_group_ids
       const requestedAdviserCode = await ctx.db
         .query("advisersTable")
-        .withIndex("by_adviser", (q) => q.eq("adviser_id", group.requested_adviser!))
+        .withIndex("by_adviser", (q) =>
+          q.eq("adviser_id", group.requested_adviser!),
+        )
         .first();
-      
+
       if (requestedAdviserCode) {
         await ctx.db.patch(requestedAdviserCode._id, {
-          requests_group_ids: (requestedAdviserCode.requests_group_ids || []).filter(
-            (id) => id !== args.groupId,
-          ),
+          requests_group_ids: (
+            requestedAdviserCode.requests_group_ids || []
+          ).filter((id) => id !== args.groupId),
         });
       }
     }

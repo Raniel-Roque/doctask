@@ -75,49 +75,49 @@ const useRoomPresence = (others: readonly unknown[], self: unknown) => {
   return { isLastUserInRoom, hasOtherUsers };
 };
 
-  // Helper function to convert hex color to rgba with transparency
-  const hexToRgba = (hex: string, alpha: number): string => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
+// Helper function to convert hex color to rgba with transparency
+const hexToRgba = (hex: string, alpha: number): string => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
-  // Helper function to convert HSL to hex for collaborative highlighting
-  const hslToHex = (hsl: string): string => {
-    try {
-      const match = hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
-      if (!match) return '#3B82F6'; // Default blue
-      
-      const h = parseInt(match[1]) / 360;
-      const s = parseInt(match[2]) / 100;
-      const l = parseInt(match[3]) / 100;
-      
-      const hue2rgb = (p: number, q: number, t: number) => {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1/6) return p + (q - p) * 6 * t;
-        if (t < 1/2) return q;
-        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-        return p;
-      };
-      
-      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-      const r = hue2rgb(p, q, h + 1/3);
-      const g = hue2rgb(p, q, h);
-      const b = hue2rgb(p, q, h - 1/3);
-      
-      const toHex = (c: number) => {
-        const hex = Math.round(c * 255).toString(16);
-        return hex.length === 1 ? '0' + hex : hex;
-      };
-      
-      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-    } catch {
-      return '#3B82F6'; // Default blue on error
-    }
-  };
+// Helper function to convert HSL to hex for collaborative highlighting
+const hslToHex = (hsl: string): string => {
+  try {
+    const match = hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+    if (!match) return "#3B82F6"; // Default blue
+
+    const h = parseInt(match[1]) / 360;
+    const s = parseInt(match[2]) / 100;
+    const l = parseInt(match[3]) / 100;
+
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    const r = hue2rgb(p, q, h + 1 / 3);
+    const g = hue2rgb(p, q, h);
+    const b = hue2rgb(p, q, h - 1 / 3);
+
+    const toHex = (c: number) => {
+      const hex = Math.round(c * 255).toString(16);
+      return hex.length === 1 ? "0" + hex : hex;
+    };
+
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  } catch {
+    return "#3B82F6"; // Default blue on error
+  }
+};
 
 interface EditorProps {
   initialContent?: string;
@@ -539,27 +539,27 @@ export const Editor = ({
 
       // Update offline state immediately
       setIsOffline(false);
-      
+
       // Force enable editing immediately
       if (editor) {
         editor.setEditable(true);
       }
-      
+
       if (wasOffline) {
         // When reconnecting, replace offline content with online content
         if (editor && liveDocument) {
           const convexContent = liveDocument.content;
-          
+
           // Replace offline content with online content
           editor.commands.setContent(convexContent);
-          
+
           // Force a small delay to ensure content is updated before clearing wasOffline
           setTimeout(() => {
             setWasOffline(false);
             setIsDataSynced(true);
           }, 100);
         }
-        
+
         showNotification(
           "Content synchronized with online version. You can now edit the document.",
           "success",
@@ -570,7 +570,7 @@ export const Editor = ({
           "success",
         );
       }
-      
+
       // Force enable editing after a brief delay to ensure state updates
       setTimeout(() => {
         if (editor) {
@@ -579,14 +579,14 @@ export const Editor = ({
           editor.view.dispatch(editor.state.tr);
         }
       }, 50);
-      
+
       // Additional force update after a longer delay
       setTimeout(() => {
         if (editor) {
           editor.setEditable(true);
         }
       }, 200);
-      
+
       // Force clear offline state one more time
       setTimeout(() => {
         setIsOffline(false);
@@ -597,7 +597,7 @@ export const Editor = ({
           editor.commands.focus();
         }
       }, 500);
-      
+
       // Final attempt to enable editing
       setTimeout(() => {
         if (editor) {
@@ -630,10 +630,9 @@ export const Editor = ({
 
   // Enhanced offline detection that primarily relies on Liveblocks status
   useEffect(() => {
-    const isLiveblocksDisconnected =
-      status === "disconnected" || status === "reconnecting";
-    
-    // Only consider offline if Liveblocks is actually disconnected
+    const isLiveblocksDisconnected = status === "disconnected";
+
+    // Only consider offline if Liveblocks is actually disconnected (not reconnecting)
     // Don't rely on browser navigator.onLine as it's unreliable with tab switching
     if (isLiveblocksDisconnected && !isOffline) {
       setIsOffline(true);
@@ -641,36 +640,38 @@ export const Editor = ({
       // Track when user went offline
       (window as { offlineStartTime?: number }).offlineStartTime = Date.now();
       showNotification(
-        "Connection lost. Editing has been disabled until connection is restored.",
+        "You are offline. Editing has been disabled until connection is restored.",
         "warning",
       );
-    } else if (!isLiveblocksDisconnected && isOffline) {
+    } else if (status === "connected" && isOffline && wasOffline) {
       // Connection restored - but don't replace content immediately
       // Only replace content if user was offline for a significant time
       setIsOffline(false);
-      if (wasOffline) {
-        // Check if we should replace content (only if user was offline for > 5 seconds)
-        const offlineTime = Date.now() - ((window as { offlineStartTime?: number }).offlineStartTime || 0);
-        if (offlineTime > 5000) { // 5 seconds
-          showNotification(
-            "Connection restored! Content synchronized with online version.",
-            "success",
-          );
-          // Replace content with online version
-          if (editor && liveDocument) {
-            const convexContent = liveDocument.content;
-            editor.commands.setContent(convexContent);
-          }
-        } else {
-          showNotification(
-            "Connection restored! You can continue editing.",
-            "success",
-          );
+      // Check if we should replace content (only if user was offline for > 5 seconds)
+      const offlineTime =
+        Date.now() -
+        ((window as { offlineStartTime?: number }).offlineStartTime || 0);
+      if (offlineTime > 5000) {
+        // 5 seconds
+        showNotification(
+          "Connection restored! Content synchronized with online version.",
+          "success",
+        );
+        // Replace content with online version
+        if (editor && liveDocument) {
+          const convexContent = liveDocument.content;
+          editor.commands.setContent(convexContent);
         }
-        setWasOffline(false);
-        setIsDataSynced(true);
+      } else {
+        showNotification(
+          "Connection restored! You can continue editing.",
+          "success",
+        );
       }
+      setWasOffline(false);
+      setIsDataSynced(true);
     }
+    // Note: We don't handle "reconnecting" status to avoid rapid state changes
   }, [status, isOffline, wasOffline, showNotification, editor, liveDocument]);
 
   // Prevent content changes when offline by blocking all input events
@@ -707,14 +708,14 @@ export const Editor = ({
   useEffect(() => {
     if (editor) {
       const shouldBeEditable = isEditable && !isOffline && isDataSynced;
-      
+
       // Only update if the state has actually changed
       if (editor.isEditable !== shouldBeEditable) {
         editor.setEditable(shouldBeEditable);
       }
     }
   }, [editor, isEditable, isOffline, isDataSynced]);
-  
+
   // Additional effect to force enable editing when coming back online
   useEffect(() => {
     if (editor && !isOffline && isDataSynced && isEditable) {
@@ -723,7 +724,7 @@ export const Editor = ({
         editor.setEditable(true);
         editor.commands.focus();
       }, 100);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [editor, isOffline, isDataSynced, isEditable]);
@@ -745,8 +746,10 @@ export const Editor = ({
       if (from !== to) {
         // Convert color to hex if it's HSL format
         const userColor = self?.info?.color || "#3B82F6";
-        const hexColor = userColor.startsWith('hsl(') ? hslToHex(userColor) : userColor;
-        
+        const hexColor = userColor.startsWith("hsl(")
+          ? hslToHex(userColor)
+          : userColor;
+
         setMyPresence({
           selection: {
             from,
@@ -974,11 +977,13 @@ export const Editor = ({
       {/* Show banners in priority order - only one at a time */}
       {isOffline ? (
         <div className="bg-red-100 border border-red-400 text-red-800 px-4 py-2 text-sm text-center w-full">
-          You are offline. Editing has been disabled until connection is restored.
+          You are offline. Editing has been disabled until connection is
+          restored.
         </div>
       ) : !isDataSynced && wasOffline ? (
         <div className="bg-orange-100 border border-orange-400 text-orange-800 px-4 py-2 text-sm text-center w-full">
-          Document data is not synchronized. Please wait for sync to complete before editing.
+          Document data is not synchronized. Please wait for sync to complete
+          before editing.
         </div>
       ) : !isEditable && !suppressReadOnlyBanner ? (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center w-full">
