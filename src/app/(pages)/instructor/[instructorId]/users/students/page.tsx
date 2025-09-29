@@ -898,6 +898,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const handleExcelUploadCancel = () => {
     setShowExcelConfirmation(false);
     setPendingFile(null);
+    setIsUploading(false);
+    setUploadProgress(0);
   };
 
   const handleExcelUploadConfirm = async () => {
@@ -1202,6 +1204,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
             isResettingPassword ||
             showUnsavedConfirm
           }
+          onCancelUpload={handleExcelUploadCancel}
         />
 
         {/* Add Form */}

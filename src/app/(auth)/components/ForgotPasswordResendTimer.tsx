@@ -80,12 +80,18 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
   const handleResend = async () => {
     if (!canResend || loading || disabled) return;
     try {
-      // Rate limit logic
+      // Enhanced rate limit logic with session-based tracking
       const rateLimitKey = `forgotPasswordRateLimit_${email}`;
+      const sessionKey = `sessionForgotPasswordRateLimit_${email}`;
+      const now = Date.now();
+      
+      // Check both regular rate limit and session-based rate limit
       const rateLimitData = localStorage.getItem(rateLimitKey);
+      const sessionData = localStorage.getItem(sessionKey);
+      
+      // Check regular rate limit (3 attempts per 5 minutes)
       if (rateLimitData) {
         const { count, resetTime } = JSON.parse(rateLimitData);
-        const now = Date.now();
         if (now < resetTime && count >= 3) {
           setRateLimited(true);
           const remainingTime = Math.ceil((resetTime - now) / 1000);
@@ -94,6 +100,19 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
           return;
         }
       }
+      
+      // Check session-based rate limit (prevents navigation bypass)
+      if (sessionData) {
+        const { count, resetTime: sessionResetTime } = JSON.parse(sessionData);
+        if (now < sessionResetTime && count >= 3) {
+          setRateLimited(true);
+          const remainingTime = Math.ceil((sessionResetTime - now) / 1000);
+          setTimeLeft(remainingTime);
+          setCanResend(false);
+          return;
+        }
+      }
+      
       const resendResult = await onResend();
 
       // Only start timer and update rate limit if resend was successful
@@ -121,9 +140,12 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
           );
         }
 
-        // Update rate limit
+        // Update both regular and session-based rate limits
         const storedRateLimitData = localStorage.getItem(rateLimitKey);
+        const storedSessionData = localStorage.getItem(sessionKey);
         const now = Date.now();
+        
+        // Update regular rate limit
         if (storedRateLimitData) {
           const { count, resetTime: oldResetTime } =
             JSON.parse(storedRateLimitData);
@@ -142,6 +164,28 @@ const ForgotPasswordResendTimer: React.FC<ForgotPasswordResendTimerProps> = ({
           localStorage.setItem(
             rateLimitKey,
             JSON.stringify({ count: 1, resetTime: now + 300000 }),
+          );
+        }
+        
+        // Update session-based rate limit (longer duration to prevent navigation bypass)
+        if (storedSessionData) {
+          const { count, resetTime: oldSessionResetTime } =
+            JSON.parse(storedSessionData);
+          if (now < oldSessionResetTime) {
+            localStorage.setItem(
+              sessionKey,
+              JSON.stringify({ count: count + 1, resetTime: oldSessionResetTime }),
+            );
+          } else {
+            localStorage.setItem(
+              sessionKey,
+              JSON.stringify({ count: 1, resetTime: now + 600000 }), // 10 minutes
+            );
+          }
+        } else {
+          localStorage.setItem(
+            sessionKey,
+            JSON.stringify({ count: 1, resetTime: now + 600000 }), // 10 minutes
           );
         }
         setRateLimited(false);

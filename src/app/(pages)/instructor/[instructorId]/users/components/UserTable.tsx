@@ -75,6 +75,7 @@ interface UserTableProps {
   isUploading?: boolean;
   uploadProgress?: number;
   isModalOpen?: boolean; // New prop to indicate if any modal is open
+  onCancelUpload?: () => void; // New prop for cancel upload functionality
 }
 
 // =========================================
@@ -113,6 +114,7 @@ export const UserTable = ({
   isUploading = false,
   uploadProgress = 0,
   isModalOpen = false,
+  onCancelUpload,
 }: UserTableProps) => {
   const { addBanner } = useBannerManager();
 
@@ -651,13 +653,37 @@ export const UserTable = ({
       {/* Upload Progress Bar */}
       {isUploading && (
         <div className="mb-4">
-          <div className="bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-green-600 h-2 rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex-1 mr-4">
+              <div className="bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-green-600 h-2 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            </div>
+            <button
+              onClick={onCancelUpload}
+              className="px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors duration-200 flex items-center gap-1"
+              title="Cancel upload"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              Cancel
+            </button>
           </div>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-600">
             Processing Excel file... {uploadProgress}%
           </p>
         </div>

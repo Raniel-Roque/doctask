@@ -180,6 +180,22 @@ const LoginPage = () => {
     try {
       setLoading(true);
 
+      // Check session-based rate limiting to prevent navigation bypass
+      const sessionRateLimitKey = `sessionEmailRateLimit_${emailToCheck}`;
+      const sessionData = localStorage.getItem(sessionRateLimitKey);
+      const now = Date.now();
+      
+      if (sessionData) {
+        const { count, resetTime } = JSON.parse(sessionData);
+        if (now < resetTime && count >= 5) {
+          showNotification(
+            "Too many email submission attempts. Please wait before trying again.",
+            "error"
+          );
+          return;
+        }
+      }
+
       // Check if email exists in our database with enhanced retry logic
       const data = await apiRequest<EmailCheckResponse>(
         "/api/convex/get-user-by-email",
@@ -245,6 +261,31 @@ const LoginPage = () => {
               "success",
             );
             setCode("");
+            
+            // Update session-based rate limit after successful email submission
+            const sessionRateLimitKey = `sessionEmailRateLimit_${emailToCheck}`;
+            const storedSessionData = localStorage.getItem(sessionRateLimitKey);
+            const now = Date.now();
+            
+            if (storedSessionData) {
+              const { count, resetTime: oldResetTime } = JSON.parse(storedSessionData);
+              if (now < oldResetTime) {
+                localStorage.setItem(
+                  sessionRateLimitKey,
+                  JSON.stringify({ count: count + 1, resetTime: oldResetTime }),
+                );
+              } else {
+                localStorage.setItem(
+                  sessionRateLimitKey,
+                  JSON.stringify({ count: 1, resetTime: now + 600000 }), // 10 minutes
+                );
+              }
+            } else {
+              localStorage.setItem(
+                sessionRateLimitKey,
+                JSON.stringify({ count: 1, resetTime: now + 600000 }), // 10 minutes
+              );
+            }
           } else {
             showNotification(
               "Failed to send verification code. Please try again.",
