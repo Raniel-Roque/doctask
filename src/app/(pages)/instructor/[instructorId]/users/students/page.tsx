@@ -26,6 +26,7 @@ import { apiRequest } from "@/lib/utils";
 import { useMutationWithRetry } from "@/lib/convex-retry";
 import { getErrorMessage, ErrorContexts } from "@/lib/error-messages";
 import { LockAccountConfirmation } from "../components/LockAccountConfirmation";
+import { ExcelUploadConfirmation } from "../components/ExcelUploadConfirmation";
 import { validateUserForm } from "../../utils/validation";
 import * as XLSX from "exceljs";
 
@@ -113,6 +114,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showExcelConfirmation, setShowExcelConfirmation] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   // Removed networkError state - using notification banner instead
 
   // =========================================
@@ -887,6 +890,21 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Store the file and show confirmation modal
+    setPendingFile(file);
+    setShowExcelConfirmation(true);
+  };
+
+  const handleExcelUploadCancel = () => {
+    setShowExcelConfirmation(false);
+    setPendingFile(null);
+  };
+
+  const handleExcelUploadConfirm = async () => {
+    if (!pendingFile) return;
+
+    setShowExcelConfirmation(false);
+
     // Check if user is online
     if (!navigator.onLine) {
       addBanner({
@@ -896,6 +914,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
         onClose: () => {},
         autoClose: true,
       });
+      setPendingFile(null);
       return;
     }
 
@@ -905,24 +924,26 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       "application/vnd.ms-excel", // .xls
     ];
 
-    if (!validTypes.includes(file.type)) {
+    if (!validTypes.includes(pendingFile.type)) {
       addBanner({
         message: "Please upload a valid Excel file (.xlsx or .xls)",
         type: "error",
         onClose: () => {},
         autoClose: true,
       });
+      setPendingFile(null);
       return;
     }
 
     // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    if (pendingFile.size > 5 * 1024 * 1024) {
       addBanner({
         message: "File size must be less than 5MB",
         type: "error",
         onClose: () => {},
         autoClose: true,
       });
+      setPendingFile(null);
       return;
     }
 
@@ -931,7 +952,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
     try {
       // Parse Excel file
-      const parseResult = await parseExcelFile(file);
+      const parseResult = await parseExcelFile(pendingFile);
       const users = parseResult.users;
       const dataStartOffset = parseResult.dataStartOffset;
 
@@ -1124,8 +1145,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
-      // Reset file input
-      event.target.value = "";
+      setPendingFile(null);
     }
   };
 
@@ -1298,6 +1318,15 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           isSubmitting={isSubmitting}
           networkError={null} // Removed networkError prop
         />
+
+        {showExcelConfirmation && (
+          <ExcelUploadConfirmation
+            fileName={pendingFile?.name || ""}
+            onCancel={handleExcelUploadCancel}
+            onConfirm={handleExcelUploadConfirm}
+            isSubmitting={isUploading}
+          />
+        )}
       </div>
     </div>
   );

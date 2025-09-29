@@ -835,6 +835,17 @@ const UsersPage = ({ params }: UsersPageProps) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "Are you sure you want to upload this Excel sheet? This will create new adviser accounts based on the data in the file."
+    );
+    
+    if (!confirmed) {
+      // Reset the file input
+      event.target.value = "";
+      return;
+    }
+
     // Check if user is online
     if (!navigator.onLine) {
       addBanner({
