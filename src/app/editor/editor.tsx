@@ -644,24 +644,27 @@ export const Editor = ({
         "warning",
       );
     } else if (status === "connected" && isOffline && wasOffline) {
+      // Only show "Connection restored" if we're actually connected AND were offline
       // Add a longer delay to prevent rapid state changes and false positives
       const timeoutId = setTimeout(() => {
         // Triple-check that we're still connected and were actually offline
         if (status === "connected" && isOffline && wasOffline) {
-          // Only show "Content restored" if we were offline for more than 2 seconds
+          // Only proceed if we were offline for more than 2 seconds
           const offlineTime = Date.now() - ((window as { offlineStartTime?: number }).offlineStartTime || 0);
           if (offlineTime > 2000) { // 2 seconds minimum
             // Connection restored - ALWAYS replace offline content with online content
-            setIsOffline(false);
-            // Always replace offline user's content with online content
-            showNotification(
-              "Connection restored! Content synchronized with online version.",
-              "success",
-            );
-            // Replace content with online version
+            setIsOffline(false); // Set offline to false first
+            
+            // Replace content with online version FIRST
             if (editor && liveDocument) {
               const convexContent = liveDocument.content;
               editor.commands.setContent(convexContent);
+              
+              // Only show notification AFTER content has been replaced
+              showNotification(
+                "Connection restored! Content synchronized with online version.",
+                "success",
+              );
             }
             setWasOffline(false);
             setIsDataSynced(true);
