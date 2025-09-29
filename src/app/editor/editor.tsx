@@ -638,23 +638,40 @@ export const Editor = ({
     if (isLiveblocksDisconnected && !isOffline) {
       setIsOffline(true);
       setWasOffline(true);
+      // Track when user went offline
+      (window as { offlineStartTime?: number }).offlineStartTime = Date.now();
       showNotification(
         "Connection lost. Editing has been disabled until connection is restored.",
         "warning",
       );
     } else if (!isLiveblocksDisconnected && isOffline) {
-      // Connection restored
+      // Connection restored - but don't replace content immediately
+      // Only replace content if user was offline for a significant time
       setIsOffline(false);
       if (wasOffline) {
-        showNotification(
-          "Connection restored! You can now edit the document.",
-          "success",
-        );
+        // Check if we should replace content (only if user was offline for > 5 seconds)
+        const offlineTime = Date.now() - ((window as { offlineStartTime?: number }).offlineStartTime || 0);
+        if (offlineTime > 5000) { // 5 seconds
+          showNotification(
+            "Connection restored! Content synchronized with online version.",
+            "success",
+          );
+          // Replace content with online version
+          if (editor && liveDocument) {
+            const convexContent = liveDocument.content;
+            editor.commands.setContent(convexContent);
+          }
+        } else {
+          showNotification(
+            "Connection restored! You can continue editing.",
+            "success",
+          );
+        }
         setWasOffline(false);
         setIsDataSynced(true);
       }
     }
-  }, [status, isOffline, wasOffline, showNotification]);
+  }, [status, isOffline, wasOffline, showNotification, editor, liveDocument]);
 
   // Prevent content changes when offline by blocking all input events
   useEffect(() => {
@@ -954,23 +971,20 @@ export const Editor = ({
 
   return (
     <>
-      {!isEditable && !suppressReadOnlyBanner && (
+      {/* Show banners in priority order - only one at a time */}
+      {isOffline ? (
+        <div className="bg-red-100 border border-red-400 text-red-800 px-4 py-2 text-sm text-center w-full">
+          You are offline. Editing has been disabled until connection is restored.
+        </div>
+      ) : !isDataSynced && wasOffline ? (
+        <div className="bg-orange-100 border border-orange-400 text-orange-800 px-4 py-2 text-sm text-center w-full">
+          Document data is not synchronized. Please wait for sync to complete before editing.
+        </div>
+      ) : !isEditable && !suppressReadOnlyBanner ? (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 text-sm text-center w-full">
           {getReadOnlyMessage()}
         </div>
-      )}
-      {isOffline && (
-        <div className="bg-red-100 border border-red-400 text-red-800 px-4 py-2 text-sm text-center w-full">
-          You are offline. Editing has been disabled until connection is
-          restored.
-        </div>
-      )}
-      {!isDataSynced && !isOffline && wasOffline && (
-        <div className="bg-orange-100 border border-orange-400 text-orange-800 px-4 py-2 text-sm text-center w-full">
-          Document data is not synchronized. Please wait for sync to complete
-          before editing.
-        </div>
-      )}
+      ) : null}
       <div className="editor-container size-full overflow-x-auto bg-gray-50 px-4 print:p-0 print:bg-white print:overflow-visible">
         <div className="min-w-max flex justify-center w-[816px] py-4 print:py-0 mx-auto print:w-full print:min-w-0 print:flex-none print:block">
           <EditorContent editor={editor} />
