@@ -234,18 +234,14 @@ export default function EditForm({
     // Check if we're demoting a project manager (subrole 1 -> 0)
     if (user?.subrole === 1 && role.value === 0) {
       // Check if the project manager has a group
-      if (
-        groupInfo &&
-        groupInfo.member_ids &&
-        groupInfo.member_ids.length > 0
-      ) {
-        // Project manager has a group with members - need to select a new project manager
+      if (groupInfo) {
+        // Project manager has a group - need to select a new project manager
         setPendingRoleChange({ from: user.subrole, to: role.value });
         setShowProjectManagerSelection(true);
         setRoleSearch("");
         setShowRoleSearch(false);
       } else {
-        // Project manager doesn't have a group or has no members - can demote directly
+        // Project manager doesn't have a group - can demote directly
         onFormDataChange({
           ...formData,
           subrole: role.value,

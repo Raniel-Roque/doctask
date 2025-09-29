@@ -116,6 +116,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showExcelConfirmation, setShowExcelConfirmation] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploadAbortController, setUploadAbortController] = useState<AbortController | null>(null);
+  const [isUploadCancelled, setIsUploadCancelled] = useState(false);
   // Removed networkError state - using notification banner instead
 
   // =========================================
@@ -905,10 +907,24 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   };
 
   const handleExcelUploadCancel = () => {
+    // If upload is in progress, abort it
+    if (isUploading && uploadAbortController) {
+      uploadAbortController.abort();
+      setIsUploadCancelled(true);
+      addBanner({
+        message: "Upload cancelled. Any partially created users may have been saved.",
+        type: "warning",
+        onClose: () => {},
+        autoClose: true,
+      });
+    }
+    
     setShowExcelConfirmation(false);
     setPendingFile(null);
     setIsUploading(false);
     setUploadProgress(0);
+    setUploadAbortController(null);
+    setIsUploadCancelled(false);
   };
 
   const handleExcelUploadConfirm = async () => {
@@ -960,6 +976,11 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
     setIsUploading(true);
     setUploadProgress(0);
+    setIsUploadCancelled(false);
+    
+    // Create AbortController for cancellation
+    const abortController = new AbortController();
+    setUploadAbortController(abortController);
 
     try {
       // Parse Excel file
@@ -1013,6 +1034,17 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       const creationErrors: string[] = [];
 
       for (let i = 0; i < validUsers.length; i++) {
+        // Check if upload was cancelled
+        if (abortController.signal.aborted || isUploadCancelled) {
+          addBanner({
+            message: `Upload cancelled. ${successCount} users were successfully imported before cancellation.`,
+            type: "warning",
+            onClose: () => {},
+            autoClose: true,
+          });
+          return;
+        }
+
         const user = validUsers[i];
         setUploadProgress(Math.round(((i + 1) / validUsers.length) * 100));
 
@@ -1038,6 +1070,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
               headers: {
                 "Content-Type": "application/json",
               },
+              signal: abortController.signal,
               body: JSON.stringify({
                 email: sanitizeInput(user.email, {
                   maxLength: 100,
@@ -1107,6 +1140,12 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
 
           successCount++;
         } catch (error) {
+          // Check if the error is due to cancellation
+          if (error instanceof Error && error.name === 'AbortError') {
+            // Upload was cancelled, break out of the loop
+            break;
+          }
+          
           errorCount++;
           creationErrors.push(
             `${user.email}: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -1157,6 +1196,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       setIsUploading(false);
       setUploadProgress(0);
       setPendingFile(null);
+      setUploadAbortController(null);
+      setIsUploadCancelled(false);
     }
   };
 
