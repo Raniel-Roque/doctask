@@ -644,26 +644,35 @@ export const Editor = ({
         "warning",
       );
     } else if (status === "connected" && isOffline && wasOffline) {
-      // Add a small delay to prevent rapid state changes
+      // Add a longer delay to prevent rapid state changes and false positives
       const timeoutId = setTimeout(() => {
-        // Double-check that we're still connected and offline
+        // Triple-check that we're still connected and were actually offline
         if (status === "connected" && isOffline && wasOffline) {
-          // Connection restored - ALWAYS replace offline content with online content
-          setIsOffline(false);
-          // Always replace offline user's content with online content
-          showNotification(
-            "Connection restored! Content synchronized with online version.",
-            "success",
-          );
-          // Replace content with online version
-          if (editor && liveDocument) {
-            const convexContent = liveDocument.content;
-            editor.commands.setContent(convexContent);
+          // Only show "Content restored" if we were offline for more than 2 seconds
+          const offlineTime = Date.now() - ((window as { offlineStartTime?: number }).offlineStartTime || 0);
+          if (offlineTime > 2000) { // 2 seconds minimum
+            // Connection restored - ALWAYS replace offline content with online content
+            setIsOffline(false);
+            // Always replace offline user's content with online content
+            showNotification(
+              "Connection restored! Content synchronized with online version.",
+              "success",
+            );
+            // Replace content with online version
+            if (editor && liveDocument) {
+              const convexContent = liveDocument.content;
+              editor.commands.setContent(convexContent);
+            }
+            setWasOffline(false);
+            setIsDataSynced(true);
+          } else {
+            // Brief disconnection - just restore without notification
+            setIsOffline(false);
+            setWasOffline(false);
+            setIsDataSynced(true);
           }
-          setWasOffline(false);
-          setIsDataSynced(true);
         }
-      }, 1000); // 1 second delay to prevent rapid changes
+      }, 2000); // 2 second delay to prevent rapid changes
 
       return () => clearTimeout(timeoutId);
     }
@@ -781,13 +790,28 @@ export const Editor = ({
     if (editor && !isOffline && isDataSynced && isEditable) {
       // Small delay to ensure all states are properly set
       const timeoutId = setTimeout(() => {
-        editor.setEditable(true);
-        editor.commands.focus();
+        // Double-check we're still online before enabling
+        if (!isOffline && isDataSynced) {
+          editor.setEditable(true);
+          editor.commands.focus();
+        }
       }, 100);
 
       return () => clearTimeout(timeoutId);
     }
   }, [editor, isOffline, isDataSynced, isEditable]);
+
+  // Safety check: Never allow editing when offline
+  useEffect(() => {
+    if (editor && isOffline) {
+      // Force disable editor when offline
+      editor.setEditable(false);
+      const editorElement = editor.view.dom;
+      editorElement.style.pointerEvents = 'none';
+      editorElement.style.userSelect = 'none';
+      editorElement.setAttribute('contenteditable', 'false');
+    }
+  }, [editor, isOffline]);
 
   // Track selection changes for collaborative highlighting (only if editable)
   useEffect(() => {
