@@ -75,13 +75,49 @@ const useRoomPresence = (others: readonly unknown[], self: unknown) => {
   return { isLastUserInRoom, hasOtherUsers };
 };
 
-// Helper function to convert hex color to rgba with transparency
-const hexToRgba = (hex: string, alpha: number): string => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
+  // Helper function to convert hex color to rgba with transparency
+  const hexToRgba = (hex: string, alpha: number): string => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  // Helper function to convert HSL to hex for collaborative highlighting
+  const hslToHex = (hsl: string): string => {
+    try {
+      const match = hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+      if (!match) return '#3B82F6'; // Default blue
+      
+      const h = parseInt(match[1]) / 360;
+      const s = parseInt(match[2]) / 100;
+      const l = parseInt(match[3]) / 100;
+      
+      const hue2rgb = (p: number, q: number, t: number) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      const r = hue2rgb(p, q, h + 1/3);
+      const g = hue2rgb(p, q, h);
+      const b = hue2rgb(p, q, h - 1/3);
+      
+      const toHex = (c: number) => {
+        const hex = Math.round(c * 255).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      };
+      
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    } catch {
+      return '#3B82F6'; // Default blue on error
+    }
+  };
 
 interface EditorProps {
   initialContent?: string;
@@ -506,6 +542,11 @@ export const Editor = ({
       setIsDataSynced(true);
       setWasOffline(false);
       
+      // Force enable editing immediately
+      if (editor) {
+        editor.setEditable(true);
+      }
+      
       if (wasOffline) {
         // When reconnecting, replace offline content with online content
         if (editor && liveDocument) {
@@ -530,8 +571,36 @@ export const Editor = ({
       setTimeout(() => {
         if (editor) {
           editor.setEditable(true);
+          // Force trigger a re-render by updating the editor state
+          editor.view.dispatch(editor.state.tr);
         }
       }, 50);
+      
+      // Additional force update after a longer delay
+      setTimeout(() => {
+        if (editor) {
+          editor.setEditable(true);
+        }
+      }, 200);
+      
+      // Force clear offline state one more time
+      setTimeout(() => {
+        setIsOffline(false);
+        setIsDataSynced(true);
+        if (editor) {
+          editor.setEditable(true);
+          // Force focus to ensure editor is interactive
+          editor.commands.focus();
+        }
+      }, 500);
+      
+      // Final attempt to enable editing
+      setTimeout(() => {
+        if (editor) {
+          editor.setEditable(true);
+          editor.commands.focus();
+        }
+      }, 1000);
     };
 
     const handleOffline = () => {
@@ -617,6 +686,19 @@ export const Editor = ({
       }
     }
   }, [editor, isEditable, isOffline, isDataSynced]);
+  
+  // Additional effect to force enable editing when coming back online
+  useEffect(() => {
+    if (editor && !isOffline && isDataSynced && isEditable) {
+      // Small delay to ensure all states are properly set
+      const timeoutId = setTimeout(() => {
+        editor.setEditable(true);
+        editor.commands.focus();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [editor, isOffline, isDataSynced, isEditable]);
 
   // Track selection changes for collaborative highlighting (only if editable)
   useEffect(() => {
@@ -633,11 +715,15 @@ export const Editor = ({
 
       // Only update presence if selection is not empty
       if (from !== to) {
+        // Convert color to hex if it's HSL format
+        const userColor = self?.info?.color || "#3B82F6";
+        const hexColor = userColor.startsWith('hsl(') ? hslToHex(userColor) : userColor;
+        
         setMyPresence({
           selection: {
             from,
             to,
-            color: hexToRgba(self?.info?.color || "#3B82F6", 0.15),
+            color: hexToRgba(hexColor, 0.15),
           },
         });
       } else {
