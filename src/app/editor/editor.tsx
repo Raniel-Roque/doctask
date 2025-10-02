@@ -523,13 +523,20 @@ export const Editor = ({
       setIsDataSynced(synced);
 
       if (!synced) {
-        showNotification(
-          "Document data is not synchronized. Please wait for sync to complete before editing.",
-          "warning",
-        );
+        if (isEditable) {
+          showNotification(
+            "Document data is not synchronized. Please wait for sync to complete before editing.",
+            "warning",
+          );
+        } else {
+          showNotification(
+            "Document data is not synchronized. Please wait for sync to complete.",
+            "warning",
+          );
+        }
       }
     }
-  }, [editor, liveDocument, checkDataSync, showNotification, wasOffline]);
+  }, [editor, liveDocument, checkDataSync, showNotification, wasOffline, isEditable]);
 
   // Offline detection and handling
   useEffect(() => {
@@ -540,8 +547,8 @@ export const Editor = ({
       // Update offline state immediately
       setIsOffline(false);
 
-      // Force enable editing immediately
-      if (editor) {
+      // Force enable editing immediately (only if editable)
+      if (editor && isEditable) {
         editor.setEditable(true);
       }
 
@@ -560,29 +567,43 @@ export const Editor = ({
           }, 100);
         }
 
-        showNotification(
-          "Content synchronized with online version. You can now edit the document.",
-          "success",
-        );
+        if (isEditable) {
+          showNotification(
+            "Content synchronized with online version. You can now edit the document.",
+            "success",
+          );
+        } else {
+          showNotification(
+            "Content synchronized with online version.",
+            "success",
+          );
+        }
       } else {
-        showNotification(
-          "Connection restored! You can now edit the document.",
-          "success",
-        );
+        if (isEditable) {
+          showNotification(
+            "Connection restored! You can now edit the document.",
+            "success",
+          );
+        } else {
+          showNotification(
+            "Connection restored!",
+            "success",
+          );
+        }
       }
 
-      // Force enable editing after a brief delay to ensure state updates
+      // Force enable editing after a brief delay to ensure state updates (only if editable)
       setTimeout(() => {
-        if (editor) {
+        if (editor && isEditable) {
           editor.setEditable(true);
           // Force trigger a re-render by updating the editor state
           editor.view.dispatch(editor.state.tr);
         }
       }, 50);
 
-      // Additional force update after a longer delay
+      // Additional force update after a longer delay (only if editable)
       setTimeout(() => {
-        if (editor) {
+        if (editor && isEditable) {
           editor.setEditable(true);
         }
       }, 200);
@@ -591,16 +612,16 @@ export const Editor = ({
       setTimeout(() => {
         setIsOffline(false);
         setIsDataSynced(true);
-        if (editor) {
+        if (editor && isEditable) {
           editor.setEditable(true);
           // Force focus to ensure editor is interactive
           editor.commands.focus();
         }
       }, 500);
 
-      // Final attempt to enable editing
+      // Final attempt to enable editing (only if editable)
       setTimeout(() => {
-        if (editor) {
+        if (editor && isEditable) {
           editor.setEditable(true);
           editor.commands.focus();
         }
@@ -611,7 +632,7 @@ export const Editor = ({
       setIsOffline(true);
       setWasOffline(true);
       showNotification(
-        "You are offline. You can only view the document until connection is restored.",
+        "You are offline.",
         "warning",
       );
     };
@@ -626,7 +647,7 @@ export const Editor = ({
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [wasOffline, showNotification, checkDataSync, editor, liveDocument]);
+  }, [wasOffline, showNotification, checkDataSync, editor, liveDocument, isEditable]);
 
   // Enhanced offline detection that primarily relies on Liveblocks status
   useEffect(() => {
@@ -640,7 +661,7 @@ export const Editor = ({
       // Track when user went offline
       (window as { offlineStartTime?: number }).offlineStartTime = Date.now();
       showNotification(
-        "You are offline. Editing has been disabled until connection is restored.",
+        "You are offline.",
         "warning",
       );
     } else if (status === "connected" && isOffline && wasOffline) {
@@ -664,10 +685,17 @@ export const Editor = ({
               editor.commands.setContent(convexContent);
 
               // Only show notification AFTER content has been replaced
-              showNotification(
-                "Connection restored! Content synchronized with online version.",
-                "success",
-              );
+              if (isEditable) {
+                showNotification(
+                  "Connection restored! Content synchronized with online version. You can now edit the document.",
+                  "success",
+                );
+              } else {
+                showNotification(
+                  "Connection restored! Content synchronized with online version.",
+                  "success",
+                );
+              }
             }
             setWasOffline(false);
             setIsDataSynced(true);
@@ -683,7 +711,7 @@ export const Editor = ({
       return () => clearTimeout(timeoutId);
     }
     // Note: We don't handle "reconnecting" status to avoid rapid state changes
-  }, [status, isOffline, wasOffline, showNotification, editor, liveDocument]);
+  }, [status, isOffline, wasOffline, showNotification, editor, liveDocument, isEditable]);
 
   // Prevent content changes when offline by blocking ALL input events
   useEffect(() => {
@@ -814,8 +842,8 @@ export const Editor = ({
     if (editor && !isOffline && isDataSynced && isEditable) {
       // Small delay to ensure all states are properly set
       const timeoutId = setTimeout(() => {
-        // Double-check we're still online before enabling
-        if (!isOffline && isDataSynced) {
+        // Double-check we're still online before enabling (only if editable)
+        if (!isOffline && isDataSynced && isEditable) {
           editor.setEditable(true);
           editor.commands.focus();
         }
