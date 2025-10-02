@@ -718,7 +718,7 @@ export const Editor = ({
     if (!editor) return;
 
     const handleBeforeInput = (event: Event) => {
-      if (isOffline || !isDataSynced) {
+      if (!isEditable || isOffline || !isDataSynced) {
         event.preventDefault();
         event.stopPropagation();
         return false;
@@ -726,7 +726,7 @@ export const Editor = ({
     };
 
     const handleInput = (event: Event) => {
-      if (isOffline || !isDataSynced) {
+      if (!isEditable || isOffline || !isDataSynced) {
         event.preventDefault();
         event.stopPropagation();
         return false;
@@ -734,7 +734,7 @@ export const Editor = ({
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isOffline || !isDataSynced) {
+      if (!isEditable || isOffline || !isDataSynced) {
         // Allow only navigation keys (arrows, home, end, page up/down)
         const allowedKeys = [
           "ArrowUp",
@@ -755,7 +755,7 @@ export const Editor = ({
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (isOffline || !isDataSynced) {
+      if (!isEditable || isOffline || !isDataSynced) {
         // Block all key up events except navigation
         const allowedKeys = [
           "ArrowUp",
@@ -776,7 +776,7 @@ export const Editor = ({
     };
 
     const handlePaste = (event: ClipboardEvent) => {
-      if (isOffline || !isDataSynced) {
+      if (!isEditable || isOffline || !isDataSynced) {
         event.preventDefault();
         event.stopPropagation();
         return false;
@@ -784,7 +784,7 @@ export const Editor = ({
     };
 
     const handleDrop = (event: DragEvent) => {
-      if (isOffline || !isDataSynced) {
+      if (!isEditable || isOffline || !isDataSynced) {
         event.preventDefault();
         event.stopPropagation();
         return false;
@@ -807,7 +807,7 @@ export const Editor = ({
       editorElement.removeEventListener("paste", handlePaste, true);
       editorElement.removeEventListener("drop", handleDrop, true);
     };
-  }, [editor, isOffline, isDataSynced]);
+  }, [editor, isOffline, isDataSynced, isEditable]);
 
   // Force editor to be non-editable when offline or data not synced
   useEffect(() => {
