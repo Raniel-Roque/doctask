@@ -142,10 +142,10 @@ const CHAPTER_ORDER = [
   "references",
   "appendix_b",
   "appendix_c",
+  "appendix_d",
   "appendix_e",
   "appendix_f",
   "appendix_g",
-  "appendix_h",
   "appendix_i",
 ];
 
@@ -472,14 +472,26 @@ export const TaskAssignmentTable = ({
       return;
     }
 
+    // Find the task
+    const task = tasks.find((t) => t._id === taskId);
+    if (!task) {
+      return;
+    }
+
+    // Check if member assignment is allowed
+    if (!canEditTaskAssignment(task)) {
+      addBanner({
+        message:
+          "Cannot modify member assignments for approved documents.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
     try {
       setUpdatingAssignment(taskId);
-
-      // Find the task
-      const task = tasks.find((t) => t._id === taskId);
-      if (!task) {
-        return;
-      }
 
       // Get current assignments and add the new member
       const currentAssignments = task.assigned_student_ids || [];
@@ -512,14 +524,26 @@ export const TaskAssignmentTable = ({
       return;
     }
 
+    // Find the task
+    const task = tasks.find((t) => t._id === taskId);
+    if (!task) {
+      return;
+    }
+
+    // Check if member assignment is allowed
+    if (!canEditTaskAssignment(task)) {
+      addBanner({
+        message:
+          "Cannot modify member assignments for approved documents.",
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
     try {
       setUpdatingAssignment(taskId);
-
-      // Find the task
-      const task = tasks.find((t) => t._id === taskId);
-      if (!task) {
-        return;
-      }
 
       // Get current assignments and remove the member
       const currentAssignments = task.assigned_student_ids || [];
@@ -590,6 +614,26 @@ export const TaskAssignmentTable = ({
     // Check if user is assigned to the task
     const isAssigned = task.assigned_student_ids.includes(currentUserId);
     if (!isAssigned) return false;
+
+    return true;
+  };
+
+  // Check if member assignment is allowed for a task
+  const canEditTaskAssignment = (task: Task) => {
+    // Exclude special chapters that should always be completed and read-only
+    if (["title_page", "appendix_a", "appendix_h"].includes(task.chapter)) {
+      return false;
+    }
+
+    // Check if document is approved - if so, no one can edit member assignments
+    const documentStatus = getDocumentStatus(task.chapter);
+    if (documentStatus === 2) {
+      // Document is approved
+      return false; // No one can edit member assignments when document is approved
+    }
+
+    // Only project managers can edit member assignments
+    if (mode !== "manager") return false;
 
     return true;
   };
@@ -957,6 +1001,7 @@ export const TaskAssignmentTable = ({
         .includes(searchValue.toLowerCase()),
     );
     const isLoading = updatingAssignment === task._id;
+    const canEditAssignment = canEditTaskAssignment(task);
 
     return (
       <div className="flex justify-center w-full">
@@ -978,7 +1023,7 @@ export const TaskAssignmentTable = ({
                     className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${pillColor}`}
                   >
                     {member.first_name} {member.last_name}
-                    {mode === "manager" && (
+                    {mode === "manager" && canEditAssignment && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -999,7 +1044,7 @@ export const TaskAssignmentTable = ({
                   No members assigned
                 </span>
               )}
-          {mode === "manager" && !allAssigned && (
+          {mode === "manager" && !allAssigned && canEditAssignment && (
             <div className="relative">
               {availableMembers.length > 0 ? (
                 <>
