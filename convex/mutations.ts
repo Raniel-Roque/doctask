@@ -1893,6 +1893,19 @@ export const updateTaskStatus = mutation({
       throw new Error("You don't have permission to update this task");
     }
 
+    // CRITICAL: Check if the document for this task's chapter is approved
+    // This prevents modification of task status for approved documents
+    const documentStatus = await ctx.db
+      .query("documentStatus")
+      .withIndex("by_group_document", (q) =>
+        q.eq("group_id", task.group_id).eq("document_part", task.chapter),
+      )
+      .first();
+
+    if (documentStatus && documentStatus.review_status === 2) {
+      throw new Error("Cannot modify task status for approved documents");
+    }
+
     // Update the task status
     await ctx.db.patch(args.taskId, {
       task_status: args.newStatus,
@@ -1923,6 +1936,19 @@ export const updateTaskAssignment = mutation({
     // Only managers can assign tasks
     if (user.subrole !== 1) {
       throw new Error("Only managers can assign tasks");
+    }
+
+    // CRITICAL: Check if the document for this task's chapter is approved
+    // This prevents modification of assignments for approved documents
+    const documentStatus = await ctx.db
+      .query("documentStatus")
+      .withIndex("by_group_document", (q) =>
+        q.eq("group_id", task.group_id).eq("document_part", task.chapter),
+      )
+      .first();
+
+    if (documentStatus && documentStatus.review_status === 2) {
+      throw new Error("Cannot modify task assignments for approved documents");
     }
 
     // Verify all assigned students are valid
@@ -2217,13 +2243,9 @@ export const updateDocumentContent = mutation({
         throw new Error("You don't have permission to edit this document");
       }
 
-      // Update the document content with sanitized content
-      await ctx.db.patch(args.documentId, {
-        content: sanitizedContent,
-      });
-
-      // Update the documentStatus last_modified field and status
-      const documentStatus = await ctx.db
+      // CRITICAL: Check if the document is approved
+      // This prevents editing of approved documents
+      const docStatus = await ctx.db
         .query("documentStatus")
         .withIndex("by_group_document", (q) =>
           q
@@ -2232,11 +2254,21 @@ export const updateDocumentContent = mutation({
         )
         .first();
 
-      if (documentStatus) {
-        const newStatus =
-          documentStatus.review_status === 3 ? 0 : documentStatus.review_status;
+      if (docStatus && docStatus.review_status === 2) {
+        throw new Error("Cannot edit approved documents");
+      }
 
-        await ctx.db.patch(documentStatus._id, {
+      // Update the document content with sanitized content
+      await ctx.db.patch(args.documentId, {
+        content: sanitizedContent,
+      });
+
+      // Update the documentStatus last_modified field and status
+      if (docStatus) {
+        const newStatus =
+          docStatus.review_status === 3 ? 0 : docStatus.review_status;
+
+        await ctx.db.patch(docStatus._id, {
           last_modified: Date.now(),
           review_status: newStatus,
         });
@@ -2268,6 +2300,19 @@ export const createDocumentVersion = mutation({
         throw new Error(
           "Only the project manager can create document versions",
         );
+      }
+
+      // CRITICAL: Check if the document is approved
+      // This prevents creating versions of approved documents
+      const docStatusForVersion = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) =>
+          q.eq("group_id", args.groupId).eq("document_part", args.chapter),
+        )
+        .first();
+
+      if (docStatusForVersion && docStatusForVersion.review_status === 2) {
+        throw new Error("Cannot create versions of approved documents");
       }
 
       // Get the live document (oldest by creation time - the one with room ID)
@@ -2371,6 +2416,21 @@ export const approveDocumentVersion = mutation({
         );
       }
 
+      // CRITICAL: Check if the document is already approved
+      // This prevents reverting to previous versions of approved documents
+      const docStatus = await ctx.db
+        .query("documentStatus")
+        .withIndex("by_group_document", (q) =>
+          q
+            .eq("group_id", versionDocument.group_id)
+            .eq("document_part", versionDocument.chapter),
+        )
+        .first();
+
+      if (docStatus && docStatus.review_status === 2) {
+        throw new Error("Cannot revert to previous versions of approved documents");
+      }
+
       // Find the live document (original/first document by creation time ASC)
       const liveDocument = await ctx.db
         .query("documents")
@@ -2431,6 +2491,19 @@ export const deleteDocumentVersion = mutation({
     if (!group) throw new Error("Group not found");
     if (group.project_manager_id !== args.userId) {
       throw new Error("Only the project manager can delete document versions");
+    }
+
+    // CRITICAL: Check if the document is approved
+    // This prevents deleting versions of approved documents
+    const docStatus = await ctx.db
+      .query("documentStatus")
+      .withIndex("by_group_document", (q) =>
+        q.eq("group_id", document.group_id).eq("document_part", document.chapter),
+      )
+      .first();
+
+    if (docStatus && docStatus.review_status === 2) {
+      throw new Error("Cannot delete versions of approved documents");
     }
 
     // Get the live document (earliest document for this group/chapter)
