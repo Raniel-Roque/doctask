@@ -126,10 +126,8 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   const handleWipeData = async () => {
     if (!user || !userData) return;
 
-    const expectedName = `${userData.first_name} ${userData.last_name}`
-      .toLowerCase()
-      .trim();
-    const enteredName = confirmName.toLowerCase().trim();
+    const expectedName = `${userData.first_name} ${userData.last_name}`.trim();
+    const enteredName = confirmName.trim();
 
     if (enteredName !== expectedName) {
       addBanner({
