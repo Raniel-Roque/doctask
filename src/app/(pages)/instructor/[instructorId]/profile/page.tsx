@@ -482,7 +482,11 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
                 </button>
                 <button
                   onClick={handleWipeData}
-                  disabled={isLoading || !confirmName.trim()}
+                  disabled={
+                    isLoading || 
+                    !confirmName.trim() || 
+                    confirmName.trim() !== `${userData?.first_name} ${userData?.last_name}`.trim()
+                  }
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Wiping Data..." : "Yes, Wipe All Data"}
