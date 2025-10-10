@@ -134,9 +134,6 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   const handleSaveProfile = async () => {
     if (!user || !userData) return;
 
-    // Debug: Log the current form data and user data
-    console.log("Current profileFormData:", profileFormData);
-    console.log("Current userData:", userData);
 
     // Check if there are any changes to save
     const hasChanges = 
@@ -163,12 +160,8 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
       email: profileFormData.email.trim(),
     };
 
-    // Debug: Log the data being validated
-    console.log("Validating form data:", trimmedFormData);
-    
     // Use the same validation as EditForm.tsx
     const validationErrors = validateUserForm(trimmedFormData);
-    console.log("Validation errors:", validationErrors);
     
     if (validationErrors) {
       // Show the first validation error
@@ -191,11 +184,11 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: userData._id,
+          clerkId: user.id, // Use Clerk user ID
           instructorId: userData._id, // Self-update for capstone instructor
-          first_name: trimmedFormData.first_name,
-          middle_name: trimmedFormData.middle_name || undefined,
-          last_name: trimmedFormData.last_name,
+          firstName: trimmedFormData.first_name,
+          middleName: trimmedFormData.middle_name || undefined,
+          lastName: trimmedFormData.last_name,
           email: trimmedFormData.email.toLowerCase(),
         }),
       });

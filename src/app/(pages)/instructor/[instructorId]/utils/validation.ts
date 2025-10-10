@@ -96,27 +96,20 @@ export const validateUserForm = (formData: {
 }): { [key: string]: string } | null => {
   const errors: { [key: string]: string } = {};
 
-  console.log("validateUserForm called with:", formData);
-
   // Validate each field
   const firstNameError = validateField(formData.first_name, "firstName");
-  console.log("firstName validation:", formData.first_name, "->", firstNameError);
   if (firstNameError) errors.first_name = firstNameError;
 
   if (formData.middle_name) {
     const middleNameError = validateField(formData.middle_name, "middleName");
-    console.log("middleName validation:", formData.middle_name, "->", middleNameError);
     if (middleNameError) errors.middle_name = middleNameError;
   }
 
   const lastNameError = validateField(formData.last_name, "lastName");
-  console.log("lastName validation:", formData.last_name, "->", lastNameError);
   if (lastNameError) errors.last_name = lastNameError;
 
   const emailError = validateField(formData.email, "email");
-  console.log("email validation:", formData.email, "->", emailError);
   if (emailError) errors.email = emailError;
 
-  console.log("Final validation errors:", errors);
   return Object.keys(errors).length > 0 ? errors : null;
 };
