@@ -5,6 +5,7 @@ import type { Doc } from "../../../../convex/_generated/dataModel";
 import ChangePassword from "./ChangePassword";
 import { PrivacyPolicy } from "./PrivacyPolicy";
 import { TermsOfService } from "./TermsOfService";
+import { FaEdit, FaSave, FaTimes, FaSpinner } from "react-icons/fa";
 
 interface PrimaryProfileProps {
   user: UserResource | null | undefined;
@@ -48,11 +49,69 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
   const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
   const [isTermsOfServiceOpen, setIsTermsOfServiceOpen] = useState(false);
 
+  // Change detection logic
+  const isFieldChanged = (field: keyof Doc<"users">, formValue: string): boolean => {
+    if (!userData) return false;
+    
+    const backendValue = userData[field];
+    const normalizedBackendValue = backendValue?.toString().trim() || "";
+    const normalizedFormValue = formValue?.toString().trim() || "";
+    
+    return normalizedFormValue !== normalizedBackendValue;
+  };
+
+  // Detect unsaved changes
+  const hasUnsavedChanges = profileFormData ? [
+    "first_name",
+    "middle_name", 
+    "last_name",
+    "email"
+  ].some((key) => isFieldChanged(key as keyof Doc<"users">, profileFormData[key as keyof typeof profileFormData])) : false;
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 mt-4">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        Primary Information
-      </h2>
+      <div className="flex items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 mr-2">
+          Primary Information
+        </h2>
+        {isCapstoneInstructor && !isEditingProfile && (
+          <button
+            onClick={onEditProfile}
+            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+            title="Edit Profile"
+          >
+            <FaEdit className="h-4 w-4" />
+          </button>
+        )}
+        {isCapstoneInstructor && isEditingProfile && hasUnsavedChanges && (
+          <button
+            type="button"
+            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center transition-colors"
+            aria-label="Save"
+            disabled={isSavingProfile}
+            onClick={onSaveProfile}
+          >
+            {isSavingProfile ? (
+              <FaSpinner className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <FaSave className="h-4 w-4 mr-2" />
+            )}
+            <span className="text-sm font-medium">
+              {isSavingProfile ? "Saving..." : "Save Changes"}
+            </span>
+          </button>
+        )}
+        {isCapstoneInstructor && isEditingProfile && (
+          <button
+            onClick={onCancelEdit}
+            disabled={isSavingProfile}
+            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 ml-2"
+            title="Cancel"
+          >
+            <FaTimes className="h-4 w-4" />
+          </button>
+        )}
+      </div>
       <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
         {/* Profile Picture Section */}
         {user && (
@@ -70,17 +129,6 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
 
         {/* User Information Section */}
         <div className="flex-1 space-y-6">
-          {/* Edit Button for Capstone Instructors */}
-          {isCapstoneInstructor && !isEditingProfile && (
-            <div className="flex justify-end">
-              <button
-                onClick={onEditProfile}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-              >
-                Edit Profile
-              </button>
-            </div>
-          )}
 
           {/* Names Row */}
           <div className="grid grid-cols-3 gap-4">
@@ -166,25 +214,6 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
             </div>
           </div>
 
-          {/* Save/Cancel Buttons for Capstone Instructors */}
-          {isCapstoneInstructor && isEditingProfile && (
-            <div className="flex justify-end gap-3 pt-4">
-              <button
-                onClick={onCancelEdit}
-                disabled={isSavingProfile}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={onSaveProfile}
-                disabled={isSavingProfile}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
-              >
-                {isSavingProfile ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-          )}
 
           {/* Privacy and Terms */}
           <div className="text-sm text-gray-500 flex justify-center items-center mt-2">

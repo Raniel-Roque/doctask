@@ -134,6 +134,23 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   const handleSaveProfile = async () => {
     if (!user || !userData) return;
 
+    // Check if there are any changes to save
+    const hasChanges = 
+      profileFormData.first_name.trim() !== (userData.first_name || "").trim() ||
+      profileFormData.middle_name.trim() !== (userData.middle_name || "").trim() ||
+      profileFormData.last_name.trim() !== (userData.last_name || "").trim() ||
+      profileFormData.email.trim() !== (userData.email || "").trim();
+
+    if (!hasChanges) {
+      addBanner({
+        message: "No changes to save",
+        type: "info",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
     // Trim data before validation (same as EditForm.tsx)
     const trimmedFormData = {
       first_name: profileFormData.first_name.trim(),
@@ -272,6 +289,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         type: "success",
         onClose: () => {},
         autoClose: true,
+        priority: "high",
       });
 
       // Only close modal on success
@@ -441,6 +459,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         type: "success",
         onClose: () => {},
         autoClose: true,
+        priority: "high",
       });
 
       // Only close modal on success
