@@ -134,6 +134,10 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   const handleSaveProfile = async () => {
     if (!user || !userData) return;
 
+    // Debug: Log the current form data and user data
+    console.log("Current profileFormData:", profileFormData);
+    console.log("Current userData:", userData);
+
     // Check if there are any changes to save
     const hasChanges = 
       profileFormData.first_name.trim() !== (userData.first_name || "").trim() ||
@@ -159,8 +163,13 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
       email: profileFormData.email.trim(),
     };
 
+    // Debug: Log the data being validated
+    console.log("Validating form data:", trimmedFormData);
+    
     // Use the same validation as EditForm.tsx
     const validationErrors = validateUserForm(trimmedFormData);
+    console.log("Validation errors:", validationErrors);
+    
     if (validationErrors) {
       // Show the first validation error
       const firstError = Object.values(validationErrors)[0];

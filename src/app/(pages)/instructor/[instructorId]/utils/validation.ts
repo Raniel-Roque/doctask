@@ -53,31 +53,32 @@ export const validateField = (
   const rules = VALIDATION_RULES[fieldName];
   const fieldLabel = FIELD_LABELS[fieldName];
 
-  // Check if required
-  if (rules.required && !value) {
+  // Check if required - trim the value to handle whitespace-only strings
+  const trimmedValue = value?.trim() || "";
+  if (rules.required && !trimmedValue) {
     return `${fieldLabel} is required`;
   }
 
   // Skip validation if not required and empty
-  if (!rules.required && !value) {
+  if (!rules.required && !trimmedValue) {
     return null;
   }
 
   // Check max length
-  if (value.length > rules.maxLength) {
+  if (trimmedValue.length > rules.maxLength) {
     return `${fieldLabel} must be less than ${rules.maxLength} characters`;
   }
 
   // Check email local part length (Clerk limit is 64 characters)
   if (fieldName === "email") {
-    const localPart = value.split("@")[0];
+    const localPart = trimmedValue.split("@")[0];
     if (localPart && localPart.length > 64) {
       return "Email username (before @) must be less than 64 characters";
     }
   }
 
   // Check pattern
-  if (!rules.pattern.test(value)) {
+  if (!rules.pattern.test(trimmedValue)) {
     return rules.message;
   }
 
@@ -95,20 +96,27 @@ export const validateUserForm = (formData: {
 }): { [key: string]: string } | null => {
   const errors: { [key: string]: string } = {};
 
+  console.log("validateUserForm called with:", formData);
+
   // Validate each field
   const firstNameError = validateField(formData.first_name, "firstName");
+  console.log("firstName validation:", formData.first_name, "->", firstNameError);
   if (firstNameError) errors.first_name = firstNameError;
 
   if (formData.middle_name) {
     const middleNameError = validateField(formData.middle_name, "middleName");
+    console.log("middleName validation:", formData.middle_name, "->", middleNameError);
     if (middleNameError) errors.middle_name = middleNameError;
   }
 
   const lastNameError = validateField(formData.last_name, "lastName");
+  console.log("lastName validation:", formData.last_name, "->", lastNameError);
   if (lastNameError) errors.last_name = lastNameError;
 
   const emailError = validateField(formData.email, "email");
+  console.log("email validation:", formData.email, "->", emailError);
   if (emailError) errors.email = emailError;
 
+  console.log("Final validation errors:", errors);
   return Object.keys(errors).length > 0 ? errors : null;
 };
