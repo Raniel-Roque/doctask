@@ -53,6 +53,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   // Profile editing state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [showProfilePasswordVerify, setShowProfilePasswordVerify] = useState(false);
   const [profileFormData, setProfileFormData] = useState({
     first_name: "",
     middle_name: "",
@@ -131,18 +132,17 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     }));
   };
 
+  // Change detection logic
+  const hasUnsavedChanges = userData ? 
+    profileFormData.first_name.trim() !== (userData.first_name || "").trim() ||
+    profileFormData.middle_name.trim() !== (userData.middle_name || "").trim() ||
+    profileFormData.last_name.trim() !== (userData.last_name || "").trim() ||
+    profileFormData.email.trim() !== (userData.email || "").trim() : false;
+
   const handleSaveProfile = async () => {
     if (!user || !userData) return;
 
-
-    // Check if there are any changes to save
-    const hasChanges = 
-      profileFormData.first_name.trim() !== (userData.first_name || "").trim() ||
-      profileFormData.middle_name.trim() !== (userData.middle_name || "").trim() ||
-      profileFormData.last_name.trim() !== (userData.last_name || "").trim() ||
-      profileFormData.email.trim() !== (userData.email || "").trim();
-
-    if (!hasChanges) {
+    if (!hasUnsavedChanges) {
       addBanner({
         message: "No changes to save",
         type: "info",
@@ -151,6 +151,16 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
       });
       return;
     }
+
+    // Show password verification first
+    setShowProfilePasswordVerify(true);
+  };
+
+  const handleProfilePasswordVerified = async () => {
+    if (!user || !userData) return;
+
+    // Close password verification modal
+    setShowProfilePasswordVerify(false);
 
     // Trim data before validation (same as EditForm.tsx)
     const trimmedFormData = {
@@ -516,6 +526,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             onCancelEdit={handleCancelEdit}
             onSaveProfile={handleSaveProfile}
             onProfileFieldChange={handleProfileFieldChange}
+            hasUnsavedChanges={hasUnsavedChanges}
           />
 
           {/* Backup & Restore Section */}
@@ -654,6 +665,17 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
             : "Please enter your password to restore the backup."
         }
         buttonText="Verify Password"
+        userEmail={user?.emailAddresses?.[0]?.emailAddress}
+      />
+
+      {/* Profile Password Verification Modal */}
+      <PasswordVerification
+        isOpen={showProfilePasswordVerify}
+        onClose={() => setShowProfilePasswordVerify(false)}
+        onVerify={handleProfilePasswordVerified}
+        title="Verify Password"
+        description="Please enter your current password to save profile changes."
+        buttonText="Save Changes"
         userEmail={user?.emailAddresses?.[0]?.emailAddress}
       />
 

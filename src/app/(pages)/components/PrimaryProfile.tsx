@@ -27,6 +27,7 @@ interface PrimaryProfileProps {
   onCancelEdit?: () => void;
   onSaveProfile?: () => void;
   onProfileFieldChange?: (field: string, value: string) => void;
+  hasUnsavedChanges?: boolean;
 }
 
 export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
@@ -44,29 +45,12 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
   onCancelEdit,
   onSaveProfile,
   onProfileFieldChange,
+  hasUnsavedChanges = false,
 }) => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
   const [isTermsOfServiceOpen, setIsTermsOfServiceOpen] = useState(false);
 
-  // Change detection logic
-  const isFieldChanged = (field: keyof Doc<"users">, formValue: string): boolean => {
-    if (!userData) return false;
-    
-    const backendValue = userData[field];
-    const normalizedBackendValue = backendValue?.toString().trim() || "";
-    const normalizedFormValue = formValue?.toString().trim() || "";
-    
-    return normalizedFormValue !== normalizedBackendValue;
-  };
-
-  // Detect unsaved changes
-  const hasUnsavedChanges = profileFormData ? [
-    "first_name",
-    "middle_name", 
-    "last_name",
-    "email"
-  ].some((key) => isFieldChanged(key as keyof Doc<"users">, profileFormData[key as keyof typeof profileFormData])) : false;
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 mt-4">
@@ -81,34 +65,6 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
             title="Edit Profile"
           >
             <FaEdit className="h-4 w-4" />
-          </button>
-        )}
-        {isCapstoneInstructor && isEditingProfile && hasUnsavedChanges && (
-          <button
-            type="button"
-            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center transition-colors"
-            aria-label="Save"
-            disabled={isSavingProfile}
-            onClick={onSaveProfile}
-          >
-            {isSavingProfile ? (
-              <FaSpinner className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <FaSave className="h-4 w-4 mr-2" />
-            )}
-            <span className="text-sm font-medium">
-              {isSavingProfile ? "Saving..." : "Save Changes"}
-            </span>
-          </button>
-        )}
-        {isCapstoneInstructor && isEditingProfile && (
-          <button
-            onClick={onCancelEdit}
-            disabled={isSavingProfile}
-            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 ml-2"
-            title="Cancel"
-          >
-            <FaTimes className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -205,12 +161,41 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
               />
             </div>
             <div className="col-span-2 flex items-end">
-              <button
-                onClick={() => setIsChangePasswordOpen(true)}
-                className="w-full px-4 py-2 bg-[#B54A4A] text-white rounded-md hover:bg-[#A43A3A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B54A4A]"
-              >
-                Change Password
-              </button>
+              {isCapstoneInstructor && isEditingProfile && hasUnsavedChanges ? (
+                <button
+                  onClick={onSaveProfile}
+                  disabled={isSavingProfile}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 disabled:opacity-50 flex items-center justify-center"
+                >
+                  {isSavingProfile ? (
+                    <>
+                      <FaSpinner className="h-4 w-4 animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FaSave className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              ) : isCapstoneInstructor && isEditingProfile ? (
+                <button
+                  onClick={onCancelEdit}
+                  disabled={isSavingProfile}
+                  className="w-full px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 flex items-center justify-center"
+                >
+                  <FaTimes className="h-4 w-4 mr-2" />
+                  Cancel
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsChangePasswordOpen(true)}
+                  className="w-full px-4 py-2 bg-[#B54A4A] text-white rounded-md hover:bg-[#A43A3A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B54A4A]"
+                >
+                  Change Password
+                </button>
+              )}
             </div>
           </div>
 
