@@ -5,7 +5,6 @@ import {
   logCreateUser,
   logUpdateUser,
   logDeleteUser,
-  logResetPassword,
   logCreateGroup,
   logUpdateGroup,
   logDeleteGroup,
@@ -1489,28 +1488,6 @@ export const deleteGroup = mutation({
 // MISCELLANEOUS OPERATIONS
 // =========================================
 
-export const resetPassword = mutation({
-  args: {
-    userId: v.id("users"),
-    instructorId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error("User not found");
-    const instructor = await ctx.db.get(args.instructorId);
-    if (!instructor) throw new Error("Instructor not found");
-
-    // Log the password reset
-    await logResetPassword(
-      ctx,
-      args.instructorId,
-      0, // instructor role
-      args.userId,
-    );
-    return { success: true };
-  },
-});
-
 // =========================================
 // BACKUP OPERATIONS
 // =========================================
@@ -2428,7 +2405,9 @@ export const approveDocumentVersion = mutation({
         .first();
 
       if (docStatus && docStatus.review_status === 2) {
-        throw new Error("Cannot revert to previous versions of approved documents");
+        throw new Error(
+          "Cannot revert to previous versions of approved documents",
+        );
       }
 
       // Find the live document (original/first document by creation time ASC)
@@ -2498,7 +2477,9 @@ export const deleteDocumentVersion = mutation({
     const docStatus = await ctx.db
       .query("documentStatus")
       .withIndex("by_group_document", (q) =>
-        q.eq("group_id", document.group_id).eq("document_part", document.chapter),
+        q
+          .eq("group_id", document.group_id)
+          .eq("document_part", document.chapter),
       )
       .first();
 

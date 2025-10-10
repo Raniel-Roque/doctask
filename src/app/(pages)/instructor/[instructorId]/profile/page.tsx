@@ -53,7 +53,8 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   // Profile editing state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [showProfilePasswordVerify, setShowProfilePasswordVerify] = useState(false);
+  const [showProfilePasswordVerify, setShowProfilePasswordVerify] =
+    useState(false);
   const [profileFormData, setProfileFormData] = useState({
     first_name: "",
     middle_name: "",
@@ -126,18 +127,21 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   };
 
   const handleProfileFieldChange = (field: string, value: string) => {
-    setProfileFormData(prev => ({
+    setProfileFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   // Change detection logic
-  const hasUnsavedChanges = userData ? 
-    profileFormData.first_name.trim() !== (userData.first_name || "").trim() ||
-    profileFormData.middle_name.trim() !== (userData.middle_name || "").trim() ||
-    profileFormData.last_name.trim() !== (userData.last_name || "").trim() ||
-    profileFormData.email.trim() !== (userData.email || "").trim() : false;
+  const hasUnsavedChanges = userData
+    ? profileFormData.first_name.trim() !==
+        (userData.first_name || "").trim() ||
+      profileFormData.middle_name.trim() !==
+        (userData.middle_name || "").trim() ||
+      profileFormData.last_name.trim() !== (userData.last_name || "").trim() ||
+      profileFormData.email.trim() !== (userData.email || "").trim()
+    : false;
 
   const handleSaveProfile = async () => {
     if (!user || !userData) return;
@@ -172,7 +176,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
 
     // Use the same validation as EditForm.tsx
     const validationErrors = validateUserForm(trimmedFormData);
-    
+
     if (validationErrors) {
       // Show the first validation error
       const firstError = Object.values(validationErrors)[0];
@@ -212,7 +216,10 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
 
       setIsEditingProfile(false);
     } catch (error: unknown) {
-      const errorMessage = getErrorMessage(error, ErrorContexts.editUser("adviser"));
+      const errorMessage = getErrorMessage(
+        error,
+        ErrorContexts.editUser("adviser"),
+      );
       addBanner({
         message: errorMessage,
         type: "error",
@@ -636,9 +643,10 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
                 <button
                   onClick={handleWipeData}
                   disabled={
-                    isLoading || 
-                    !confirmName.trim() || 
-                    confirmName.trim() !== `${userData?.first_name} ${userData?.last_name}`.trim()
+                    isLoading ||
+                    !confirmName.trim() ||
+                    confirmName.trim() !==
+                      `${userData?.first_name} ${userData?.last_name}`.trim()
                   }
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

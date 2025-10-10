@@ -20,10 +20,6 @@ export const resendConfig = {
       subject: "Welcome to DocTask",
       from: "DocTask <noreply@doctask.site>",
     },
-    resetPassword: {
-      subject: "DocTask - Your Password Has Been Reset",
-      from: "DocTask <noreply@doctask.site>",
-    },
     updateEmail: {
       subject: "Welcome to DocTask - Your Account Details",
       from: "DocTask <noreply@doctask.site>",

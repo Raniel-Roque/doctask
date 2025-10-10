@@ -5,7 +5,6 @@ const LOG_ACTIONS = {
   CREATE: "Create",
   EDIT: "Edit",
   DELETE: "Delete",
-  RESET_PASSWORD: "Reset Password",
   LOCK_ACCOUNT: "Lock Account",
   UNLOCK_ACCOUNT: "Unlock Account",
   BACKUP: "Backup",
@@ -58,22 +57,6 @@ export async function logDeleteUser(
     affected_entity_id: affectedEntityId,
     action: LOG_ACTIONS.DELETE,
     details: "Deleted User",
-  });
-}
-
-export async function logResetPassword(
-  ctx: MutationCtx,
-  userId: Id<"users">,
-  userRole: number, // 0 = instructor, 1 = adviser
-  affectedEntityId: Id<"users">,
-) {
-  await ctx.db.insert("LogsTable", {
-    user_id: userId,
-    user_role: userRole,
-    affected_entity_type: "user",
-    affected_entity_id: affectedEntityId,
-    action: LOG_ACTIONS.RESET_PASSWORD,
-    details: "Reset Password",
   });
 }
 

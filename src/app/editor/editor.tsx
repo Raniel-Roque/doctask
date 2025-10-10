@@ -536,7 +536,14 @@ export const Editor = ({
         }
       }
     }
-  }, [editor, liveDocument, checkDataSync, showNotification, wasOffline, isEditable]);
+  }, [
+    editor,
+    liveDocument,
+    checkDataSync,
+    showNotification,
+    wasOffline,
+    isEditable,
+  ]);
 
   // Offline detection and handling
   useEffect(() => {
@@ -585,10 +592,7 @@ export const Editor = ({
             "success",
           );
         } else {
-          showNotification(
-            "Connection restored!",
-            "success",
-          );
+          showNotification("Connection restored!", "success");
         }
       }
 
@@ -631,10 +635,7 @@ export const Editor = ({
     const handleOffline = () => {
       setIsOffline(true);
       setWasOffline(true);
-      showNotification(
-        "You are offline.",
-        "warning",
-      );
+      showNotification("You are offline.", "warning");
     };
 
     // Note: Initial offline check removed - we now rely primarily on Liveblocks status
@@ -647,7 +648,14 @@ export const Editor = ({
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [wasOffline, showNotification, checkDataSync, editor, liveDocument, isEditable]);
+  }, [
+    wasOffline,
+    showNotification,
+    checkDataSync,
+    editor,
+    liveDocument,
+    isEditable,
+  ]);
 
   // Enhanced offline detection that primarily relies on Liveblocks status
   useEffect(() => {
@@ -660,10 +668,7 @@ export const Editor = ({
       setWasOffline(true);
       // Track when user went offline
       (window as { offlineStartTime?: number }).offlineStartTime = Date.now();
-      showNotification(
-        "You are offline.",
-        "warning",
-      );
+      showNotification("You are offline.", "warning");
     } else if (status === "connected" && isOffline && wasOffline) {
       // Only show "Connection restored" if we're actually connected AND were offline
       // Add a longer delay to prevent rapid state changes and false positives
@@ -711,7 +716,15 @@ export const Editor = ({
       return () => clearTimeout(timeoutId);
     }
     // Note: We don't handle "reconnecting" status to avoid rapid state changes
-  }, [status, isOffline, wasOffline, showNotification, editor, liveDocument, isEditable]);
+  }, [
+    status,
+    isOffline,
+    wasOffline,
+    showNotification,
+    editor,
+    liveDocument,
+    isEditable,
+  ]);
 
   // Prevent content changes when offline by blocking ALL input events
   useEffect(() => {

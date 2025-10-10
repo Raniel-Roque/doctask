@@ -11,7 +11,6 @@ import EditForm from "../components/EditForm";
 import { DeleteConfirmation } from "../components/DeleteConfirmation";
 import { ValidationError } from "../components/ValidationError";
 import { useBannerManager } from "../../../../components/BannerManager";
-import { ResetPasswordConfirmation } from "../components/ResetPasswordConfirmation";
 import {
   User,
   EditFormData,
@@ -44,13 +43,6 @@ interface CreateUserResponse {
     last_name: string;
     password: string;
   };
-}
-
-interface ResetPasswordResponse {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
 }
 
 // =========================================
@@ -105,8 +97,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     email: "",
     subrole: 0,
   });
-  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [pendingCloseAction, setPendingCloseAction] = useState<
     (() => void) | null
@@ -116,7 +106,8 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showExcelConfirmation, setShowExcelConfirmation] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [uploadAbortController, setUploadAbortController] = useState<AbortController | null>(null);
+  const [uploadAbortController, setUploadAbortController] =
+    useState<AbortController | null>(null);
   const [isUploadCancelled, setIsUploadCancelled] = useState(false);
   // Removed networkError state - using notification banner instead
 
@@ -124,7 +115,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
   // Mutations
   // =========================================
   // Enhanced Convex mutations with retry logic
-  const resetPassword = useMutationWithRetry(api.mutations.resetPassword);
   const logLockAccount = useMutationWithRetry(
     api.mutations.logLockAccountMutation,
   );
@@ -591,69 +581,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!resetPasswordUser) return;
-
-    setIsResettingPassword(true);
-
-    try {
-      logUserAction();
-
-      // Step 1: Call Clerk API to reset password with enhanced retry logic
-      const data = await apiRequest<ResetPasswordResponse>(
-        "/api/clerk/reset-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            clerkId: resetPasswordUser.clerk_id,
-            instructorId: instructorId,
-          }),
-        },
-      );
-
-      // Step 2: Call Convex mutation to log the action with retry logic
-      await resetPassword.mutate({
-        userId: resetPasswordUser._id,
-        instructorId: instructorId as Id<"users">,
-      });
-
-      // Step 3: Send reset password email with retry logic
-      await apiRequest("/api/resend/reset-password-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          password: data.password,
-        }),
-      });
-      addBanner({
-        message: "Password reset and email sent successfully.",
-        type: "success",
-        onClose: () => {},
-        autoClose: true,
-      });
-      setResetPasswordUser(null);
-    } catch (error) {
-      const errorMessage = getErrorMessage(
-        error,
-        ErrorContexts.resetPassword(),
-      );
-      addBanner({
-        message: errorMessage,
-        type: "error",
-        onClose: () => {},
-        autoClose: true,
-      });
-    } finally {
-      setIsResettingPassword(false);
-    }
-  };
-
   const handleCloseAddForm = () => {
     if (isSubmitting) {
       setShowUnsavedConfirm(true);
@@ -912,13 +839,14 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
       uploadAbortController.abort();
       setIsUploadCancelled(true);
       addBanner({
-        message: "Upload cancelled. Any partially created users may have been saved.",
+        message:
+          "Upload cancelled. Any partially created users may have been saved.",
         type: "warning",
         onClose: () => {},
         autoClose: true,
       });
     }
-    
+
     setShowExcelConfirmation(false);
     setPendingFile(null);
     setIsUploading(false);
@@ -977,7 +905,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
     setIsUploading(true);
     setUploadProgress(0);
     setIsUploadCancelled(false);
-    
+
     // Create AbortController for cancellation
     const abortController = new AbortController();
     setUploadAbortController(abortController);
@@ -1141,11 +1069,11 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           successCount++;
         } catch (error) {
           // Check if the error is due to cancellation
-          if (error instanceof Error && error.name === 'AbortError') {
+          if (error instanceof Error && error.name === "AbortError") {
             // Upload was cancelled, break out of the loop
             break;
           }
-          
+
           errorCount++;
           creationErrors.push(
             `${user.email}: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -1232,7 +1160,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           onEdit={handleEdit}
           onDelete={setDeleteUser}
           onAdd={() => setIsAddingUser(true)}
-          onResetPassword={setResetPasswordUser}
           onLockAccount={handleLockAccount}
           showRoleColumn={true}
           totalPages={searchResult.totalPages}
@@ -1247,12 +1174,7 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           isUploading={isUploading}
           uploadProgress={uploadProgress}
           isModalOpen={
-            isAddingUser ||
-            !!editingUser ||
-            !!deleteUser ||
-            !!resetPasswordUser ||
-            isResettingPassword ||
-            showUnsavedConfirm
+            isAddingUser || !!editingUser || !!deleteUser || showUnsavedConfirm
           }
           onCancelUpload={handleExcelUploadCancel}
         />
@@ -1328,15 +1250,6 @@ const UsersStudentsPage = ({ params }: UsersStudentsPageProps) => {
           onCancel={() => setDeleteUser(null)}
           onConfirm={handleDeleteSubmit}
           isSubmitting={isDeleting}
-          networkError={null} // Removed networkError prop
-        />
-
-        {/* Reset Password Confirmation */}
-        <ResetPasswordConfirmation
-          user={resetPasswordUser}
-          onCancel={() => setResetPasswordUser(null)}
-          onConfirm={handleResetPassword}
-          isSubmitting={isResettingPassword}
           networkError={null} // Removed networkError prop
         />
 

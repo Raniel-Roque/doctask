@@ -51,7 +51,6 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
   const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
   const [isTermsOfServiceOpen, setIsTermsOfServiceOpen] = useState(false);
 
-
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 mt-4">
       <div className="flex items-center mb-6">
@@ -85,7 +84,6 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
 
         {/* User Information Section */}
         <div className="flex-1 space-y-6">
-
           {/* Names Row */}
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -94,15 +92,27 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
               </label>
               <input
                 type="text"
-                value={isEditingProfile && profileFormData ? profileFormData.first_name : (userData?.first_name || "")}
+                value={
+                  isEditingProfile && profileFormData
+                    ? profileFormData.first_name
+                    : userData?.first_name || ""
+                }
                 disabled={!isEditingProfile}
-                onChange={isEditingProfile && onProfileFieldChange ? (e) => onProfileFieldChange("first_name", e.target.value) : undefined}
+                onChange={
+                  isEditingProfile && onProfileFieldChange
+                    ? (e) => onProfileFieldChange("first_name", e.target.value)
+                    : undefined
+                }
                 className={`mt-1 block w-full px-3 py-2 border-2 rounded-md shadow-sm focus:outline-none transition-colors ${
                   isEditingProfile
                     ? "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
                     : "!bg-gray-100 border-gray-200 !text-gray-400 cursor-not-allowed focus:border-gray-300"
                 }`}
-                style={!isEditingProfile ? { backgroundColor: "#f3f4f6", color: "#9ca3af" } : {}}
+                style={
+                  !isEditingProfile
+                    ? { backgroundColor: "#f3f4f6", color: "#9ca3af" }
+                    : {}
+                }
               />
             </div>
             <div>
@@ -111,15 +121,27 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
               </label>
               <input
                 type="text"
-                value={isEditingProfile && profileFormData ? profileFormData.middle_name : (userData?.middle_name || "")}
+                value={
+                  isEditingProfile && profileFormData
+                    ? profileFormData.middle_name
+                    : userData?.middle_name || ""
+                }
                 disabled={!isEditingProfile}
-                onChange={isEditingProfile && onProfileFieldChange ? (e) => onProfileFieldChange("middle_name", e.target.value) : undefined}
+                onChange={
+                  isEditingProfile && onProfileFieldChange
+                    ? (e) => onProfileFieldChange("middle_name", e.target.value)
+                    : undefined
+                }
                 className={`mt-1 block w-full px-3 py-2 border-2 rounded-md shadow-sm focus:outline-none transition-colors ${
                   isEditingProfile
                     ? "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
                     : "!bg-gray-100 border-gray-200 !text-gray-400 cursor-not-allowed focus:border-gray-300"
                 }`}
-                style={!isEditingProfile ? { backgroundColor: "#f3f4f6", color: "#9ca3af" } : {}}
+                style={
+                  !isEditingProfile
+                    ? { backgroundColor: "#f3f4f6", color: "#9ca3af" }
+                    : {}
+                }
               />
             </div>
             <div>
@@ -128,15 +150,27 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
               </label>
               <input
                 type="text"
-                value={isEditingProfile && profileFormData ? profileFormData.last_name : (userData?.last_name || "")}
+                value={
+                  isEditingProfile && profileFormData
+                    ? profileFormData.last_name
+                    : userData?.last_name || ""
+                }
                 disabled={!isEditingProfile}
-                onChange={isEditingProfile && onProfileFieldChange ? (e) => onProfileFieldChange("last_name", e.target.value) : undefined}
+                onChange={
+                  isEditingProfile && onProfileFieldChange
+                    ? (e) => onProfileFieldChange("last_name", e.target.value)
+                    : undefined
+                }
                 className={`mt-1 block w-full px-3 py-2 border-2 rounded-md shadow-sm focus:outline-none transition-colors ${
                   isEditingProfile
                     ? "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
                     : "!bg-gray-100 border-gray-200 !text-gray-400 cursor-not-allowed focus:border-gray-300"
                 }`}
-                style={!isEditingProfile ? { backgroundColor: "#f3f4f6", color: "#9ca3af" } : {}}
+                style={
+                  !isEditingProfile
+                    ? { backgroundColor: "#f3f4f6", color: "#9ca3af" }
+                    : {}
+                }
               />
             </div>
           </div>
@@ -149,15 +183,27 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
               </label>
               <input
                 type="email"
-                value={isEditingProfile && profileFormData ? profileFormData.email : (userData?.email || "")}
+                value={
+                  isEditingProfile && profileFormData
+                    ? profileFormData.email
+                    : userData?.email || ""
+                }
                 disabled={!isEditingProfile}
-                onChange={isEditingProfile && onProfileFieldChange ? (e) => onProfileFieldChange("email", e.target.value) : undefined}
+                onChange={
+                  isEditingProfile && onProfileFieldChange
+                    ? (e) => onProfileFieldChange("email", e.target.value)
+                    : undefined
+                }
                 className={`mt-1 block w-full px-3 py-2 border-2 rounded-md shadow-sm focus:outline-none transition-colors ${
                   isEditingProfile
                     ? "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
                     : "!bg-gray-100 border-gray-200 !text-gray-400 cursor-not-allowed focus:border-gray-300"
                 }`}
-                style={!isEditingProfile ? { backgroundColor: "#f3f4f6", color: "#9ca3af" } : {}}
+                style={
+                  !isEditingProfile
+                    ? { backgroundColor: "#f3f4f6", color: "#9ca3af" }
+                    : {}
+                }
               />
             </div>
             <div className="col-span-2 flex items-end">
@@ -198,7 +244,6 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
               )}
             </div>
           </div>
-
 
           {/* Privacy and Terms */}
           <div className="text-sm text-gray-500 flex justify-center items-center mt-2">

@@ -4,7 +4,6 @@ import {
   FaPlus,
   FaEdit,
   FaTrash,
-  FaKey,
   FaSearch,
   FaSort,
   FaSortUp,
@@ -58,7 +57,6 @@ interface UserTableProps {
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
   onAdd: () => void;
-  onResetPassword: (user: User) => void;
   onLockAccount: (user: User) => void;
   onResetCode?: (user: User) => void;
   showRoleColumn?: boolean;
@@ -97,7 +95,6 @@ export const UserTable = ({
   onEdit,
   onDelete,
   onAdd,
-  onResetPassword,
   onLockAccount,
   onResetCode,
   showRoleColumn = false,
@@ -953,14 +950,6 @@ export const UserTable = ({
                         title="Edit"
                       >
                         <FaEdit />
-                      </button>
-                      <span className="mx-1 text-gray-300 select-none">|</span>
-                      <button
-                        onClick={() => onResetPassword(user)}
-                        className="p-2 text-yellow-600 hover:text-yellow-800"
-                        title="Reset Password"
-                      >
-                        <FaKey />
                       </button>
                       <span className="mx-1 text-gray-300 select-none">|</span>
                       <button

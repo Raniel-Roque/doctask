@@ -481,8 +481,7 @@ export const TaskAssignmentTable = ({
     // Check if member assignment is allowed
     if (!canEditTaskAssignment(task)) {
       addBanner({
-        message:
-          "Cannot modify member assignments for approved documents.",
+        message: "Cannot modify member assignments for approved documents.",
         type: "error",
         onClose: () => {},
         autoClose: true,
@@ -533,8 +532,7 @@ export const TaskAssignmentTable = ({
     // Check if member assignment is allowed
     if (!canEditTaskAssignment(task)) {
       addBanner({
-        message:
-          "Cannot modify member assignments for approved documents.",
+        message: "Cannot modify member assignments for approved documents.",
         type: "error",
         onClose: () => {},
         autoClose: true,

@@ -70,7 +70,6 @@ const LOG_ACTIONS = {
   CREATE: "Create",
   EDIT: "Edit",
   DELETE: "Delete",
-  RESET_PASSWORD: "Reset password",
   LOCK_ACCOUNT: "Lock account",
   UNLOCK_ACCOUNT: "Unlock account",
   ACCEPT_GROUP: "Accept Group Request",
@@ -91,10 +90,6 @@ const ACTION_COLORS = {
   [LOG_ACTIONS.DELETE]: {
     bg: "bg-red-100",
     text: "text-red-800",
-  },
-  [LOG_ACTIONS.RESET_PASSWORD]: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-800",
   },
   [LOG_ACTIONS.LOCK_ACCOUNT]: {
     bg: "bg-red-100",
