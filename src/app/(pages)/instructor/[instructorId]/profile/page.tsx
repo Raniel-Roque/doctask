@@ -14,6 +14,7 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 import { FaExclamationTriangle, FaTrash, FaDatabase } from "react-icons/fa";
 import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
 import { apiRequest } from "@/lib/utils";
+import { validateUserForm } from "../utils/validation";
 import {
   generateEncryptionKey,
   exportKey,
@@ -49,6 +50,16 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     "download" | "restore" | null
   >(null);
 
+  // Profile editing state
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileFormData, setProfileFormData] = useState({
+    first_name: "",
+    middle_name: "",
+    last_name: "",
+    email: "",
+  });
+
   // Fetch user data from Convex
   const userData = useQuery(api.fetch.getUserById, {
     id: instructorId as Id<"users">,
@@ -78,9 +89,110 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     }
   }, [isUploading, addBanner]);
 
+  // Initialize profile form data when userData is available
+  useEffect(() => {
+    if (userData) {
+      setProfileFormData({
+        first_name: userData.first_name || "",
+        middle_name: userData.middle_name || "",
+        last_name: userData.last_name || "",
+        email: userData.email || "",
+      });
+    }
+  }, [userData]);
+
   const resetForm = () => {
     setIsVerified(false);
     setConfirmName("");
+  };
+
+  // Profile editing functions
+  const handleEditProfile = () => {
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEdit = () => {
+    // Reset form data to original values
+    if (userData) {
+      setProfileFormData({
+        first_name: userData.first_name || "",
+        middle_name: userData.middle_name || "",
+        last_name: userData.last_name || "",
+        email: userData.email || "",
+      });
+    }
+    setIsEditingProfile(false);
+  };
+
+  const handleProfileFieldChange = (field: string, value: string) => {
+    setProfileFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user || !userData) return;
+
+    // Trim data before validation (same as EditForm.tsx)
+    const trimmedFormData = {
+      first_name: profileFormData.first_name.trim(),
+      middle_name: profileFormData.middle_name.trim(),
+      last_name: profileFormData.last_name.trim(),
+      email: profileFormData.email.trim(),
+    };
+
+    // Use the same validation as EditForm.tsx
+    const validationErrors = validateUserForm(trimmedFormData);
+    if (validationErrors) {
+      // Show the first validation error
+      const firstError = Object.values(validationErrors)[0];
+      addBanner({
+        message: firstError,
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+      return;
+    }
+
+    setIsSavingProfile(true);
+
+    try {
+      await apiRequest("/api/clerk/update-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: userData._id,
+          instructorId: userData._id, // Self-update for capstone instructor
+          first_name: trimmedFormData.first_name,
+          middle_name: trimmedFormData.middle_name || undefined,
+          last_name: trimmedFormData.last_name,
+          email: trimmedFormData.email.toLowerCase(),
+        }),
+      });
+
+      addBanner({
+        message: "Profile updated successfully!",
+        type: "success",
+        onClose: () => {},
+        autoClose: true,
+      });
+
+      setIsEditingProfile(false);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error, ErrorContexts.editUser("adviser"));
+      addBanner({
+        message: errorMessage,
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleClose = () => {
@@ -374,6 +486,15 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
               })
             }
             onUploading={setIsUploading}
+            // Profile editing props for capstone instructors
+            isCapstoneInstructor={userData?.role === 2}
+            isEditingProfile={isEditingProfile}
+            isSavingProfile={isSavingProfile}
+            profileFormData={profileFormData}
+            onEditProfile={handleEditProfile}
+            onCancelEdit={handleCancelEdit}
+            onSaveProfile={handleSaveProfile}
+            onProfileFieldChange={handleProfileFieldChange}
           />
 
           {/* Backup & Restore Section */}
