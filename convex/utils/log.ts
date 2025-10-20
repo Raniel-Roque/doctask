@@ -269,7 +269,7 @@ export async function logDeleteAdviserLogs(
     user_role: userRole,
     affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
-    action: LOG_ACTIONS.DELETE_LOGS,
+    action: LOG_ACTIONS.DELETE,
     details: `Deleted ${deletedCount} adviser logs`,
   });
 }
@@ -285,7 +285,7 @@ export async function logDeleteGeneralLogs(
     user_role: userRole,
     affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
-    action: LOG_ACTIONS.DELETE_LOGS,
+    action: LOG_ACTIONS.DELETE,
     details: `Deleted ${deletedCount} general logs`,
   });
 }

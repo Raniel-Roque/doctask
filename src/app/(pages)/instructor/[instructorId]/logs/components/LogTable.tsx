@@ -76,7 +76,6 @@ const LOG_ACTIONS = {
   REJECT_GROUP: "Reject Group Request",
   BACKUP: "Backup",
   RESTORE: "Restore",
-  DELETE_LOGS: "Delete Logs",
 } as const;
 
 const ACTION_COLORS = {
@@ -115,10 +114,6 @@ const ACTION_COLORS = {
   [LOG_ACTIONS.RESTORE]: {
     bg: "bg-orange-100",
     text: "text-orange-800",
-  },
-  [LOG_ACTIONS.DELETE_LOGS]: {
-    bg: "bg-red-100",
-    text: "text-red-800",
   },
   // Default colors for any new actions
   default: {

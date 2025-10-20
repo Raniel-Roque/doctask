@@ -781,7 +781,7 @@ export const deleteGeneralLogs = mutation({
       const generalLogs = logs.filter((log) => 
         log.user_role !== 1 && 
         !log.action?.includes("adviser") &&
-        log.action !== "Delete Logs" // Exclude the log we just created
+        !log.details?.includes("logs") // Exclude logs deletion entries
       );
 
       // Log the deletion operation BEFORE deleting the logs
