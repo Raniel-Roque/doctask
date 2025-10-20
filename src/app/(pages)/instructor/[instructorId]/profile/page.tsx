@@ -727,11 +727,11 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
                   onClick={() => {
                     setShowDeleteNameConfirm(false);
                     setConfirmName("");
-                    setSelectedTablesForDeletion([]);
+                    setShowDeletePanel(true);
                   }}
                   className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
                 >
-                  Cancel
+                  Back
                 </button>
                 <button
                   onClick={handleDeleteNameConfirmed}
@@ -812,8 +812,8 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
                 <button
                   onClick={handleWipeData}
                   disabled={
-                    isLoading ||
-                    !confirmName.trim() ||
+                    isLoading || 
+                    !confirmName.trim() || 
                     confirmName.trim() !==
                       `${userData?.first_name} ${userData?.last_name}`.trim()
                   }

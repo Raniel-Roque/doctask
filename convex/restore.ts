@@ -295,6 +295,9 @@ export const deleteStudentsWithDependencies = mutation({
         );
       });
 
+      // Log the deletion operation BEFORE any deletions
+      await logDeleteStudents(ctx, args.currentUserId as Id<"users">, 2, results);
+
       // Delete all data in parallel
       const deletePromises = [
         // Users (actual user records)
@@ -375,9 +378,6 @@ export const deleteStudentsWithDependencies = mutation({
       ];
 
       await Promise.all(deletePromises);
-
-      // Log the deletion operation
-      await logDeleteStudents(ctx, args.currentUserId as Id<"users">, 2, results);
 
       return {
         success: true,
@@ -588,10 +588,10 @@ export const deleteAdvisersWithDependencies = mutation({
         }),
       ];
 
-      await Promise.all(deletePromises);
-
-      // Log the deletion operation
+      // Log the deletion operation BEFORE any deletions
       await logDeleteAdvisers(ctx, args.currentUserId as Id<"users">, 2, results);
+
+      await Promise.all(deletePromises);
 
       return {
         success: true,
@@ -721,10 +721,10 @@ export const deleteGroupsWithDependencies = mutation({
         }),
       ];
 
-      await Promise.all(deletePromises);
-
-      // Log the deletion operation
+      // Log the deletion operation BEFORE any deletions
       await logDeleteGroups(ctx, args.currentUserId as Id<"users">, 2, results);
+
+      await Promise.all(deletePromises);
 
       return {
         success: true,
@@ -752,11 +752,11 @@ export const deleteAdviserLogs = mutation({
         log.user_role === 1 || log.action?.includes("adviser")
       );
 
+      // Log the deletion operation BEFORE deleting the logs
+      await logDeleteAdviserLogs(ctx, args.currentUserId as Id<"users">, 2, adviserLogs.length);
+
       const deletePromises = adviserLogs.map((log) => ctx.db.delete(log._id));
       await Promise.all(deletePromises);
-
-      // Log the deletion operation
-      await logDeleteAdviserLogs(ctx, args.currentUserId as Id<"users">, 2, adviserLogs.length);
 
       return {
         success: true,
@@ -777,14 +777,16 @@ export const deleteGeneralLogs = mutation({
     try {
       const logs = await ctx.db.query("LogsTable").collect();
       const generalLogs = logs.filter((log) => 
-        log.user_role !== 1 && !log.action?.includes("adviser")
+        log.user_role !== 1 && 
+        !log.action?.includes("adviser") &&
+        log.action !== "Delete Logs" // Exclude the log we just created
       );
+
+      // Log the deletion operation BEFORE deleting the logs
+      await logDeleteGeneralLogs(ctx, args.currentUserId as Id<"users">, 2, generalLogs.length);
 
       const deletePromises = generalLogs.map((log) => ctx.db.delete(log._id));
       await Promise.all(deletePromises);
-
-      // Log the deletion operation
-      await logDeleteGeneralLogs(ctx, args.currentUserId as Id<"users">, 2, generalLogs.length);
 
       return {
         success: true,
