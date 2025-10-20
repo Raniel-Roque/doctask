@@ -209,35 +209,35 @@ export async function POST(request: NextRequest) {
             case "students":
               deletionPromises.push(
                 convex.mutation(api.restore.deleteStudentsWithDependencies, {
-                  currentUserId: convexUser._id,
+                  currentUserId: convexUser._id.toString(),
                 })
               );
               break;
             case "advisers":
               deletionPromises.push(
                 convex.mutation(api.restore.deleteAdvisersWithDependencies, {
-                  currentUserId: convexUser._id,
+                  currentUserId: convexUser._id.toString(),
                 })
               );
               break;
             case "groups":
               deletionPromises.push(
                 convex.mutation(api.restore.deleteGroupsWithDependencies, {
-                  currentUserId: convexUser._id,
+                  currentUserId: convexUser._id.toString(),
                 })
               );
               break;
             case "adviser_logs":
               deletionPromises.push(
                 convex.mutation(api.restore.deleteAdviserLogs, {
-                  currentUserId: convexUser._id,
+                  currentUserId: convexUser._id.toString(),
                 })
               );
               break;
             case "general_logs":
               deletionPromises.push(
                 convex.mutation(api.restore.deleteGeneralLogs, {
-                  currentUserId: convexUser._id,
+                  currentUserId: convexUser._id.toString(),
                 })
               );
               break;
