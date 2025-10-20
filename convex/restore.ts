@@ -755,14 +755,17 @@ export const deleteAdviserLogs = mutation({
       );
 
       // Log the deletion operation BEFORE deleting the logs
-      await logDeleteAdviserLogs(ctx, args.currentUserId as Id<"users">, 2, adviserLogs.length);
+      const logEntryId = await logDeleteAdviserLogs(ctx, args.currentUserId as Id<"users">, 2, adviserLogs.length);
+      
+      // Now filter out the log entry we just created
+      const logsToDelete = adviserLogs.filter((log) => log._id !== logEntryId);
 
-      const deletePromises = adviserLogs.map((log) => ctx.db.delete(log._id));
+      const deletePromises = logsToDelete.map((log) => ctx.db.delete(log._id));
       await Promise.all(deletePromises);
 
       return {
         success: true,
-        deletedCount: adviserLogs.length,
+        deletedCount: logsToDelete.length,
       };
     } catch (error) {
       return {
@@ -780,19 +783,21 @@ export const deleteGeneralLogs = mutation({
       const logs = await ctx.db.query("LogsTable").collect();
       const generalLogs = logs.filter((log) => 
         log.user_role !== 1 && 
-        !log.action?.includes("adviser") &&
-        !log.details?.includes("logs") // Exclude logs deletion entries
+        !log.action?.includes("adviser")
       );
 
       // Log the deletion operation BEFORE deleting the logs
-      await logDeleteGeneralLogs(ctx, args.currentUserId as Id<"users">, 2, generalLogs.length);
+      const logEntryId = await logDeleteGeneralLogs(ctx, args.currentUserId as Id<"users">, 2, generalLogs.length);
+      
+      // Now filter out the log entry we just created
+      const logsToDelete = generalLogs.filter((log) => log._id !== logEntryId);
 
-      const deletePromises = generalLogs.map((log) => ctx.db.delete(log._id));
+      const deletePromises = logsToDelete.map((log) => ctx.db.delete(log._id));
       await Promise.all(deletePromises);
 
       return {
         success: true,
-        deletedCount: generalLogs.length,
+        deletedCount: logsToDelete.length,
       };
     } catch (error) {
       return {

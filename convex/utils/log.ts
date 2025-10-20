@@ -221,7 +221,7 @@ export async function logDeleteStudents(
     user_role: userRole,
     affected_entity_type: "students",
     affected_entity_id: userId, // Use userId as placeholder
-    action: LOG_ACTIONS.DELETE_STUDENTS,
+    action: LOG_ACTIONS.DELETE,
     details: `Deleted students and dependencies: ${JSON.stringify(deletedCounts)}`,
   });
 }
@@ -237,7 +237,7 @@ export async function logDeleteAdvisers(
     user_role: userRole,
     affected_entity_type: "advisers",
     affected_entity_id: userId, // Use userId as placeholder
-    action: LOG_ACTIONS.DELETE_ADVISERS,
+    action: LOG_ACTIONS.DELETE,
     details: `Deleted advisers and dependencies: ${JSON.stringify(deletedCounts)}`,
   });
 }
@@ -253,7 +253,7 @@ export async function logDeleteGroups(
     user_role: userRole,
     affected_entity_type: "groups",
     affected_entity_id: userId, // Use userId as placeholder
-    action: LOG_ACTIONS.DELETE_GROUPS,
+    action: LOG_ACTIONS.DELETE,
     details: `Deleted groups and dependencies: ${JSON.stringify(deletedCounts)}`,
   });
 }
@@ -264,7 +264,7 @@ export async function logDeleteAdviserLogs(
   userRole: number,
   deletedCount: number,
 ) {
-  await ctx.db.insert("LogsTable", {
+  const logId = await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
     affected_entity_type: "database",
@@ -272,6 +272,7 @@ export async function logDeleteAdviserLogs(
     action: LOG_ACTIONS.DELETE,
     details: `Deleted ${deletedCount} adviser logs`,
   });
+  return logId;
 }
 
 export async function logDeleteGeneralLogs(
@@ -280,7 +281,7 @@ export async function logDeleteGeneralLogs(
   userRole: number,
   deletedCount: number,
 ) {
-  await ctx.db.insert("LogsTable", {
+  const logId = await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
     affected_entity_type: "database",
@@ -288,6 +289,7 @@ export async function logDeleteGeneralLogs(
     action: LOG_ACTIONS.DELETE,
     details: `Deleted ${deletedCount} general logs`,
   });
+  return logId;
 }
 
 export async function logDeleteAllData(
