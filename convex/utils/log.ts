@@ -214,7 +214,7 @@ export async function logDeleteStudents(
   ctx: MutationCtx,
   userId: Id<"users">,
   userRole: number,
-  deletedCounts: any,
+  deletedCounts: Record<string, number>,
 ) {
   await ctx.db.insert("LogsTable", {
     user_id: userId,
@@ -230,7 +230,7 @@ export async function logDeleteAdvisers(
   ctx: MutationCtx,
   userId: Id<"users">,
   userRole: number,
-  deletedCounts: any,
+  deletedCounts: Record<string, number>,
 ) {
   await ctx.db.insert("LogsTable", {
     user_id: userId,
@@ -246,7 +246,7 @@ export async function logDeleteGroups(
   ctx: MutationCtx,
   userId: Id<"users">,
   userRole: number,
-  deletedCounts: any,
+  deletedCounts: Record<string, number>,
 ) {
   await ctx.db.insert("LogsTable", {
     user_id: userId,
@@ -267,7 +267,7 @@ export async function logDeleteAdviserLogs(
   await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
-    affected_entity_type: "logs",
+    affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE_LOGS,
     details: `Deleted ${deletedCount} adviser logs`,
@@ -283,7 +283,7 @@ export async function logDeleteGeneralLogs(
   await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
-    affected_entity_type: "logs",
+    affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE_LOGS,
     details: `Deleted ${deletedCount} general logs`,
@@ -294,7 +294,7 @@ export async function logDeleteAllData(
   ctx: MutationCtx,
   userId: Id<"users">,
   userRole: number,
-  deletedCounts: any,
+  deletedCounts: Record<string, number>,
 ) {
   await ctx.db.insert("LogsTable", {
     user_id: userId,

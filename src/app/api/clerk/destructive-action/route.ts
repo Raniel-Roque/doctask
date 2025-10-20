@@ -2,9 +2,33 @@ import { NextResponse, NextRequest } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
 import { Liveblocks } from "@liveblocks/node";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+// Helper function to delete a user from Clerk
+async function deleteClerkUser(userId: string) {
+  try {
+    // Get the user's Clerk ID from Convex
+    const user = await convex.query(api.fetch.getUserById, {
+      id: userId as Id<"users">,
+    });
+    
+    if (!user || !user.clerk_id) {
+      throw new Error(`User ${userId} not found or has no Clerk ID`);
+    }
+    
+    // Delete from Clerk
+    const client = await clerkClient();
+    await client.users.deleteUser(user.clerk_id);
+    
+    return { success: true, userId, clerkId: user.clerk_id };
+  } catch (error) {
+    console.error(`Failed to delete Clerk user ${userId}:`, error);
+    return { success: false, userId, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -246,6 +270,33 @@ export async function POST(request: NextRequest) {
 
         // Execute all selected deletions in parallel
         const results = await Promise.all(deletionPromises);
+        
+        // Delete Clerk accounts for students and advisers
+        const clerkDeletionPromises = [];
+        for (const table of selectedTables) {
+          if (table === "students" || table === "advisers") {
+            // Get the deleted users from the Convex result
+            const resultIndex = selectedTables.indexOf(table);
+            const convexResult = results[resultIndex];
+            
+            if (convexResult.success && 'deletedUserIds' in convexResult && Array.isArray(convexResult.deletedUserIds)) {
+              // Delete each user from Clerk
+              const deletedUserIds = convexResult.deletedUserIds as string[];
+              for (const userId of deletedUserIds) {
+                clerkDeletionPromises.push(
+                  deleteClerkUser(userId)
+                );
+              }
+            }
+          }
+        }
+        
+        // Execute Clerk deletions
+        if (clerkDeletionPromises.length > 0) {
+          const clerkResults = await Promise.allSettled(clerkDeletionPromises);
+          console.log("Clerk deletion results:", clerkResults);
+        }
+        
         selectiveDeletionResults = {
           selectedTables,
           results: results.map((result, index) => ({

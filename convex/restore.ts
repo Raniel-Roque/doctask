@@ -386,6 +386,7 @@ export const deleteStudentsWithDependencies = mutation({
           (sum, count) => sum + count,
           0,
         ),
+        deletedUserIds: studentUserIds,
       };
     } catch (error) {
       return {
@@ -600,6 +601,7 @@ export const deleteAdvisersWithDependencies = mutation({
           (sum, count) => sum + count,
           0,
         ),
+        deletedUserIds: adviserUserIds,
       };
     } catch (error) {
       return {
