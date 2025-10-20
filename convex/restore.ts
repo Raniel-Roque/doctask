@@ -191,9 +191,16 @@ export const deleteStudentsWithDependencies = mutation({
       // Get all students except current user
       const students = await ctx.db.query("studentsTable").collect();
       const studentsToDelete = students.filter(
-        (student) => student.user_id !== args.currentUserId,
+        (student) => student.user_id !== args.currentUserId as Id<"users">,
       );
       results.students = studentsToDelete.length;
+
+      // Get the actual user records to delete
+      const studentUserIds = studentsToDelete.map(student => student.user_id);
+      const usersToDelete = await Promise.all(
+        studentUserIds.map(userId => ctx.db.get(userId))
+      );
+      const validUsersToDelete = usersToDelete.filter(user => user !== null);
 
       // Get all groups associated with students
       const groups = await ctx.db.query("groupsTable").collect();
@@ -267,12 +274,8 @@ export const deleteStudentsWithDependencies = mutation({
         const hasDeletedMembers = group.member_ids.some(memberId => 
           studentsToDelete.some(student => student.user_id === memberId)
         );
-        const hasDeletedAdviser = group.adviser_id && studentsToDelete.some(student => 
-          student.user_id === group.adviser_id
-        );
-        const hasDeletedRequestedAdviser = group.requested_adviser && studentsToDelete.some(student => 
-          student.user_id === group.requested_adviser
-        );
+        const hasDeletedAdviser = group.adviser_id && studentUserIds.includes(group.adviser_id);
+        const hasDeletedRequestedAdviser = group.requested_adviser && studentUserIds.includes(group.requested_adviser);
         return hasDeletedProjectManager || hasDeletedMembers || hasDeletedAdviser || hasDeletedRequestedAdviser;
       });
 
@@ -294,7 +297,9 @@ export const deleteStudentsWithDependencies = mutation({
 
       // Delete all data in parallel
       const deletePromises = [
-        // Students
+        // Users (actual user records)
+        ...validUsersToDelete.map((user) => ctx.db.delete(user!._id)),
+        // Students (relationship records)
         ...studentsToDelete.map((student) => ctx.db.delete(student._id)),
         // Groups
         ...groupsToDelete.map((group) => ctx.db.delete(group._id)),
@@ -333,17 +338,14 @@ export const deleteStudentsWithDependencies = mutation({
         // Update remaining groups to remove user references
         ...groupsToUpdate.map((group) => {
           const updatedMemberIds = group.member_ids.filter(memberId => 
-            !studentsToDelete.some(student => student.user_id === memberId)
+            !studentUserIds.includes(memberId)
           );
-          const updatedProjectManagerId = studentsToDelete.some(student => 
-            student.user_id === group.project_manager_id
-          ) ? undefined : group.project_manager_id;
-          const updatedAdviserId = group.adviser_id && studentsToDelete.some(student => 
-            student.user_id === group.adviser_id
-          ) ? undefined : group.adviser_id;
-          const updatedRequestedAdviser = group.requested_adviser && studentsToDelete.some(student => 
-            student.user_id === group.requested_adviser
-          ) ? undefined : group.requested_adviser;
+          const updatedProjectManagerId = studentUserIds.includes(group.project_manager_id) 
+            ? undefined : group.project_manager_id;
+          const updatedAdviserId = group.adviser_id && studentUserIds.includes(group.adviser_id) 
+            ? undefined : group.adviser_id;
+          const updatedRequestedAdviser = group.requested_adviser && studentUserIds.includes(group.requested_adviser) 
+            ? undefined : group.requested_adviser;
           
           return ctx.db.patch(group._id, {
             member_ids: updatedMemberIds,
@@ -355,7 +357,7 @@ export const deleteStudentsWithDependencies = mutation({
         // Update documents to remove user references from contributors
         ...documentsToUpdate.map((doc) => {
           const updatedContributors = doc.contributors?.filter(contributorId => 
-            !studentsToDelete.some(student => student.user_id === contributorId)
+            !studentUserIds.includes(contributorId)
           );
           return ctx.db.patch(doc._id, {
             contributors: updatedContributors,
@@ -364,7 +366,7 @@ export const deleteStudentsWithDependencies = mutation({
         // Update task assignments to remove user references
         ...taskAssignmentsToUpdate.map((task) => {
           const updatedAssignedStudentIds = task.assigned_student_ids.filter(studentId => 
-            !studentsToDelete.some(student => student.user_id === studentId)
+            !studentUserIds.includes(studentId)
           );
           return ctx.db.patch(task._id, {
             assigned_student_ids: updatedAssignedStudentIds,
@@ -412,9 +414,16 @@ export const deleteAdvisersWithDependencies = mutation({
       // Get all advisers except current user
       const advisers = await ctx.db.query("advisersTable").collect();
       const advisersToDelete = advisers.filter(
-        (adviser) => adviser._id !== args.currentUserId,
+        (adviser) => adviser.adviser_id !== args.currentUserId as Id<"users">,
       );
       results.advisers = advisersToDelete.length;
+
+      // Get the actual user records to delete
+      const adviserUserIds = advisersToDelete.map(adviser => adviser.adviser_id);
+      const usersToDelete = await Promise.all(
+        adviserUserIds.map(userId => ctx.db.get(userId))
+      );
+      const validUsersToDelete = usersToDelete.filter(user => user !== null);
 
       // Get all groups associated with advisers
       const groups = await ctx.db.query("groupsTable").collect();
@@ -507,7 +516,9 @@ export const deleteAdvisersWithDependencies = mutation({
 
       // Delete all data in parallel
       const deletePromises = [
-        // Advisers
+        // Users (actual user records)
+        ...validUsersToDelete.map((user) => ctx.db.delete(user!._id)),
+        // Advisers (relationship records)
         ...advisersToDelete.map((adviser) => ctx.db.delete(adviser._id)),
         // Groups
         ...groupsToDelete.map((group) => ctx.db.delete(group._id)),
