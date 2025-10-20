@@ -43,7 +43,9 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   // New delete panel state
   const [showDeletePanel, setShowDeletePanel] = useState(false);
   const [showDeletePasswordVerify, setShowDeletePasswordVerify] = useState(false);
+  const [showDeleteNameConfirm, setShowDeleteNameConfirm] = useState(false);
   const [isDeletingData, setIsDeletingData] = useState(false);
+  const [selectedTablesForDeletion, setSelectedTablesForDeletion] = useState<string[]>([]);
 
   // Backup-related state
   const [isDownloading, setIsDownloading] = useState(false);
@@ -346,6 +348,12 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   };
 
   const handleDeleteDataConfirm = async (tables: string[]) => {
+    setSelectedTablesForDeletion(tables);
+    setShowDeletePanel(false);
+    setShowDeleteNameConfirm(true);
+  };
+
+  const handleDeleteNameConfirmed = async () => {
     if (!user || !userData) return;
 
     setIsDeletingData(true);
@@ -359,7 +367,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         body: JSON.stringify({
           clerkId: user.id,
           action: "selective_delete",
-          selectedTables: tables,
+          selectedTables: selectedTablesForDeletion,
         }),
       }) as { success: boolean; message?: string; error?: string };
 
@@ -371,6 +379,9 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
           autoClose: true,
           priority: "high",
         });
+        setShowDeleteNameConfirm(false);
+        setConfirmName("");
+        setSelectedTablesForDeletion([]);
       } else {
         addBanner({
           message: response.error || "Failed to delete selected data",
@@ -379,11 +390,6 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
           autoClose: true,
         });
       }
-
-      // Close panel on success
-      setTimeout(() => {
-        setShowDeletePanel(false);
-      }, 2000);
     } catch (err) {
       const errorMessage = getErrorMessage(err, ErrorContexts.deleteAllData());
       addBanner({
@@ -396,6 +402,7 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
       setIsDeletingData(false);
     }
   };
+
 
   const handleDeletePanelClose = () => {
     if (!isDeletingData) {
@@ -674,6 +681,75 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
         onConfirm={handleDeleteDataConfirm}
         isSubmitting={isDeletingData}
       />
+
+      {/* Name Confirmation Modal for Delete Data */}
+      {showDeleteNameConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <FaExclamationTriangle className="text-red-500 text-xl" />
+              <h2 className="text-xl font-semibold text-gray-900">
+                Confirm Deletion
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-red-600 text-center">
+                Are you absolutely sure you want to delete the selected data? This action
+                cannot be undone.
+              </p>
+
+              <div>
+                <label
+                  htmlFor="confirmDeleteName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Type your full name to confirm:{" "}
+                  <span className="font-semibold">
+                    {userData?.first_name} {userData?.last_name}
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  id="confirmDeleteName"
+                  value={confirmName}
+                  onChange={(e) => setConfirmName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="Enter your full name"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowDeleteNameConfirm(false);
+                    setConfirmName("");
+                    setSelectedTablesForDeletion([]);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteNameConfirmed}
+                  disabled={
+                    isDeletingData ||
+                    !confirmName.trim() ||
+                    confirmName.trim() !==
+                      `${userData?.first_name} ${userData?.last_name}`.trim()
+                  }
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeletingData ? "Deleting..." : "Yes, Delete Data"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Password Verification Modal for Wipe All Data */}
       <PasswordVerification

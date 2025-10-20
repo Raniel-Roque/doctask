@@ -55,8 +55,8 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
     <div className="bg-white rounded-lg shadow-lg p-8 mt-4">
       <div className="flex items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mr-2">
-          Primary Information
-        </h2>
+        Primary Information
+      </h2>
         {isCapstoneInstructor && !isEditingProfile && (
           <button
             onClick={onEditProfile}
@@ -235,12 +235,12 @@ export const PrimaryProfile: React.FC<PrimaryProfileProps> = ({
                   Cancel
                 </button>
               ) : (
-                <button
-                  onClick={() => setIsChangePasswordOpen(true)}
-                  className="w-full px-4 py-2 bg-[#B54A4A] text-white rounded-md hover:bg-[#A43A3A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B54A4A]"
-                >
-                  Change Password
-                </button>
+              <button
+                onClick={() => setIsChangePasswordOpen(true)}
+                className="w-full px-4 py-2 bg-[#B54A4A] text-white rounded-md hover:bg-[#A43A3A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#B54A4A]"
+              >
+                Change Password
+              </button>
               )}
             </div>
           </div>

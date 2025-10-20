@@ -334,9 +334,13 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(responseData);
-  } catch {
+  } catch (error) {
+    console.error("Destructive action error:", error);
     return NextResponse.json(
-      { error: "Failed to execute destructive action" },
+      { 
+        error: "Failed to execute destructive action",
+        details: error instanceof Error ? error.message : "Unknown error"
+      },
       { status: 500 },
     );
   }
