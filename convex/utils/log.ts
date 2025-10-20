@@ -216,13 +216,14 @@ export async function logDeleteStudents(
   userRole: number,
   deletedCounts: Record<string, number>,
 ) {
+  const totalDeleted = Object.values(deletedCounts).reduce((sum, count) => sum + count, 0);
   await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
     affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE,
-    details: `Deleted students and dependencies: ${JSON.stringify(deletedCounts)}`,
+    details: `Deleted students and dependencies: ${totalDeleted} entries`,
   });
 }
 
@@ -232,13 +233,14 @@ export async function logDeleteAdvisers(
   userRole: number,
   deletedCounts: Record<string, number>,
 ) {
+  const totalDeleted = Object.values(deletedCounts).reduce((sum, count) => sum + count, 0);
   await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
     affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE,
-    details: `Deleted advisers and dependencies: ${JSON.stringify(deletedCounts)}`,
+    details: `Deleted advisers and dependencies: ${totalDeleted} entries`,
   });
 }
 
@@ -248,13 +250,14 @@ export async function logDeleteGroups(
   userRole: number,
   deletedCounts: Record<string, number>,
 ) {
+  const totalDeleted = Object.values(deletedCounts).reduce((sum, count) => sum + count, 0);
   await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
     affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE,
-    details: `Deleted groups and dependencies: ${JSON.stringify(deletedCounts)}`,
+    details: `Deleted groups and dependencies: ${totalDeleted} entries`,
   });
 }
 
@@ -270,7 +273,7 @@ export async function logDeleteAdviserLogs(
     affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE,
-    details: `Deleted ${deletedCount} adviser logs`,
+    details: `Deleted adviser logs: ${deletedCount} entries`,
   });
   return logId;
 }
@@ -287,7 +290,7 @@ export async function logDeleteGeneralLogs(
     affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE,
-    details: `Deleted ${deletedCount} general logs`,
+    details: `Deleted general logs: ${deletedCount} entries`,
   });
   return logId;
 }
@@ -298,12 +301,13 @@ export async function logDeleteAllData(
   userRole: number,
   deletedCounts: Record<string, number>,
 ) {
+  const totalDeleted = Object.values(deletedCounts).reduce((sum, count) => sum + count, 0);
   await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
     affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE_ALL_DATA,
-    details: `Deleted all data: ${JSON.stringify(deletedCounts)}`,
+    details: `Deleted all data: ${totalDeleted} entries`,
   });
 }
