@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { clerkId, action } = body;
+    const { clerkId, action, selectedTables } = body;
 
     // Validate required fields
     if (!clerkId || !action) {
@@ -63,6 +63,16 @@ export async function POST(request: NextRequest) {
     let deletionResults:
       | Array<{ id: string; success: boolean; error?: string }>
       | undefined;
+    let selectiveDeletionResults: {
+      selectedTables: string[];
+      results: Array<{
+        table: string;
+        success: boolean;
+        deletedCounts?: Record<string, number>;
+        deletedCount?: number;
+        error?: string;
+      }>;
+    } | undefined = undefined;
 
     switch (action) {
       case "delete_all_users":
@@ -183,6 +193,68 @@ export async function POST(request: NextRequest) {
         deletionResults.filter((r) => !r.success);
         break;
 
+      case "selective_delete":
+        if (!selectedTables || !Array.isArray(selectedTables) || selectedTables.length === 0) {
+          return NextResponse.json(
+            { error: "selectedTables array is required for selective deletion" },
+            { status: 400 },
+          );
+        }
+
+        // Execute selective deletions based on selected tables
+        const deletionPromises = [];
+        
+        for (const table of selectedTables) {
+          switch (table) {
+            case "students":
+              deletionPromises.push(
+                convex.mutation(api.restore.deleteStudentsWithDependencies, {
+                  currentUserId: convexUser._id,
+                })
+              );
+              break;
+            case "advisers":
+              deletionPromises.push(
+                convex.mutation(api.restore.deleteAdvisersWithDependencies, {
+                  currentUserId: convexUser._id,
+                })
+              );
+              break;
+            case "groups":
+              deletionPromises.push(
+                convex.mutation(api.restore.deleteGroupsWithDependencies, {
+                  currentUserId: convexUser._id,
+                })
+              );
+              break;
+            case "adviser_logs":
+              deletionPromises.push(
+                convex.mutation(api.restore.deleteAdviserLogs, {
+                  currentUserId: convexUser._id,
+                })
+              );
+              break;
+            case "general_logs":
+              deletionPromises.push(
+                convex.mutation(api.restore.deleteGeneralLogs, {
+                  currentUserId: convexUser._id,
+                })
+              );
+              break;
+          }
+        }
+
+        // Execute all selected deletions in parallel
+        const results = await Promise.all(deletionPromises);
+        selectiveDeletionResults = {
+          selectedTables,
+          results: results.map((result, index) => ({
+            table: selectedTables[index],
+            ...result,
+          })),
+        };
+        break;
+
       default:
         return NextResponse.json(
           { error: "Invalid action specified" },
@@ -200,6 +272,16 @@ export async function POST(request: NextRequest) {
         successfulDeletions: number;
         failedDeletions: number;
         details: Array<{ id: string; success: boolean; error?: string }>;
+      };
+      selectiveDeletionResults?: {
+        selectedTables: string[];
+        results: Array<{
+          table: string;
+          success: boolean;
+          deletedCounts?: Record<string, number>;
+          deletedCount?: number;
+          error?: string;
+        }>;
       };
     } = { success: true, message: responseMessage };
 
@@ -229,6 +311,25 @@ export async function POST(request: NextRequest) {
           failedDeletions: totalDeletions - successfulDeletions,
           details: deletionResults,
         },
+      };
+    }
+
+    // Add selective deletion results
+    if (action === "selective_delete" && selectiveDeletionResults) {
+      const totalDeleted = selectiveDeletionResults.results.reduce((sum: number, result) => {
+        if (result.success && result.deletedCounts) {
+          return sum + Object.values(result.deletedCounts).reduce((countSum: number, count: unknown) => countSum + (typeof count === 'number' ? count : 0), 0);
+        } else if (result.success && result.deletedCount) {
+          return sum + result.deletedCount;
+        }
+        return sum;
+      }, 0);
+
+      responseMessage = `Selective deletion completed successfully. Deleted ${totalDeleted} total records across ${selectedTables.length} table(s).`;
+      responseData = {
+        success: true,
+        message: responseMessage,
+        selectiveDeletionResults,
       };
     }
 

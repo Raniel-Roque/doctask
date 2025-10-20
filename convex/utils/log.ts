@@ -9,6 +9,11 @@ const LOG_ACTIONS = {
   UNLOCK_ACCOUNT: "Unlock Account",
   BACKUP: "Backup",
   RESTORE: "Restore",
+  DELETE_STUDENTS: "Delete Students",
+  DELETE_ADVISERS: "Delete Advisers", 
+  DELETE_GROUPS: "Delete Groups",
+  DELETE_LOGS: "Delete Logs",
+  DELETE_ALL_DATA: "Delete All Data",
 } as const;
 
 export async function logCreateUser(
@@ -201,5 +206,102 @@ export async function logRestore(
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.RESTORE,
     details: "Restored database",
+  });
+}
+
+// New logging functions for selective deletion operations
+export async function logDeleteStudents(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  userRole: number,
+  deletedCounts: any,
+) {
+  await ctx.db.insert("LogsTable", {
+    user_id: userId,
+    user_role: userRole,
+    affected_entity_type: "students",
+    affected_entity_id: userId, // Use userId as placeholder
+    action: LOG_ACTIONS.DELETE_STUDENTS,
+    details: `Deleted students and dependencies: ${JSON.stringify(deletedCounts)}`,
+  });
+}
+
+export async function logDeleteAdvisers(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  userRole: number,
+  deletedCounts: any,
+) {
+  await ctx.db.insert("LogsTable", {
+    user_id: userId,
+    user_role: userRole,
+    affected_entity_type: "advisers",
+    affected_entity_id: userId, // Use userId as placeholder
+    action: LOG_ACTIONS.DELETE_ADVISERS,
+    details: `Deleted advisers and dependencies: ${JSON.stringify(deletedCounts)}`,
+  });
+}
+
+export async function logDeleteGroups(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  userRole: number,
+  deletedCounts: any,
+) {
+  await ctx.db.insert("LogsTable", {
+    user_id: userId,
+    user_role: userRole,
+    affected_entity_type: "groups",
+    affected_entity_id: userId, // Use userId as placeholder
+    action: LOG_ACTIONS.DELETE_GROUPS,
+    details: `Deleted groups and dependencies: ${JSON.stringify(deletedCounts)}`,
+  });
+}
+
+export async function logDeleteAdviserLogs(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  userRole: number,
+  deletedCount: number,
+) {
+  await ctx.db.insert("LogsTable", {
+    user_id: userId,
+    user_role: userRole,
+    affected_entity_type: "logs",
+    affected_entity_id: userId, // Use userId as placeholder
+    action: LOG_ACTIONS.DELETE_LOGS,
+    details: `Deleted ${deletedCount} adviser logs`,
+  });
+}
+
+export async function logDeleteGeneralLogs(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  userRole: number,
+  deletedCount: number,
+) {
+  await ctx.db.insert("LogsTable", {
+    user_id: userId,
+    user_role: userRole,
+    affected_entity_type: "logs",
+    affected_entity_id: userId, // Use userId as placeholder
+    action: LOG_ACTIONS.DELETE_LOGS,
+    details: `Deleted ${deletedCount} general logs`,
+  });
+}
+
+export async function logDeleteAllData(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  userRole: number,
+  deletedCounts: any,
+) {
+  await ctx.db.insert("LogsTable", {
+    user_id: userId,
+    user_role: userRole,
+    affected_entity_type: "database",
+    affected_entity_id: userId, // Use userId as placeholder
+    action: LOG_ACTIONS.DELETE_ALL_DATA,
+    details: `Deleted all data: ${JSON.stringify(deletedCounts)}`,
   });
 }

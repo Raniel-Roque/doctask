@@ -1,6 +1,14 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { 
+  logDeleteStudents, 
+  logDeleteAdvisers, 
+  logDeleteGroups, 
+  logDeleteAdviserLogs, 
+  logDeleteGeneralLogs,
+  logDeleteAllData 
+} from "./utils/log";
 
 // =========================================
 // DELETE OPERATIONS
@@ -164,6 +172,622 @@ export const deleteInstructor = mutation({
   },
 });
 
+// Selective deletion mutations
+export const deleteStudentsWithDependencies = mutation({
+  args: { currentUserId: v.string() },
+  handler: async (ctx, args) => {
+    const results = {
+      students: 0,
+      groups: 0,
+      documents: 0,
+      documentEdits: 0,
+      taskAssignments: 0,
+      documentStatus: 0,
+      notes: 0,
+      images: 0,
+    };
+
+    try {
+      // Get all students except current user
+      const students = await ctx.db.query("studentsTable").collect();
+      const studentsToDelete = students.filter(
+        (student) => student.user_id !== args.currentUserId,
+      );
+      results.students = studentsToDelete.length;
+
+      // Get all groups associated with students
+      const groups = await ctx.db.query("groupsTable").collect();
+      const groupsToDelete = groups.filter((group) =>
+        studentsToDelete.some((student) => 
+          group.member_ids.includes(student.user_id) || group.project_manager_id === student.user_id
+        ),
+      );
+      results.groups = groupsToDelete.length;
+
+      // Get all documents associated with these groups
+      const documents = await ctx.db.query("documents").collect();
+      const documentsToDelete = documents.filter((doc) =>
+        groupsToDelete.some((group) => group._id === doc.group_id),
+      );
+      results.documents = documentsToDelete.length;
+
+      // Get all document edits
+      const documentEdits = await ctx.db.query("documentEdits").collect();
+      const documentEditsToDelete = documentEdits.filter((edit) =>
+        documentsToDelete.some((doc) => doc._id === edit.documentId),
+      );
+      results.documentEdits = documentEditsToDelete.length;
+
+      // Get all task assignments
+      const taskAssignments = await ctx.db.query("taskAssignments").collect();
+      const taskAssignmentsToDelete = taskAssignments.filter((task) =>
+        groupsToDelete.some((group) => group._id === task.group_id),
+      );
+      results.taskAssignments = taskAssignmentsToDelete.length;
+
+      // Get all document status
+      const documentStatus = await ctx.db.query("documentStatus").collect();
+      const documentStatusToDelete = documentStatus.filter((status) =>
+        groupsToDelete.some((group) => group._id === status.group_id),
+      );
+      results.documentStatus = documentStatusToDelete.length;
+
+      // Get all notes
+      const notes = await ctx.db.query("notes").collect();
+      const notesToDelete = notes.filter((note) =>
+        groupsToDelete.some((group) => group._id === note.group_id),
+      );
+      results.notes = notesToDelete.length;
+
+      // Get all images
+      const images = await ctx.db.query("images").collect();
+      const imagesToDelete = images.filter((image) =>
+        groupsToDelete.some((group) => group._id === image.group_id),
+      );
+      results.images = imagesToDelete.length;
+
+      // Get advisers that need to be updated (remove group references)
+      const advisers = await ctx.db.query("advisersTable").collect();
+      const advisersToUpdate = advisers.filter((adviser) => {
+        const hasGroupIds = adviser.group_ids?.some(groupId => 
+          groupsToDelete.some(group => group._id === groupId)
+        );
+        const hasRequestGroupIds = adviser.requests_group_ids?.some(groupId => 
+          groupsToDelete.some(group => group._id === groupId)
+        );
+        return hasGroupIds || hasRequestGroupIds;
+      });
+
+      // Get remaining groups that need to be updated (remove user references)
+      const remainingGroups = await ctx.db.query("groupsTable").collect();
+      const groupsToUpdate = remainingGroups.filter((group) => {
+        const hasDeletedProjectManager = studentsToDelete.some(student => 
+          student.user_id === group.project_manager_id
+        );
+        const hasDeletedMembers = group.member_ids.some(memberId => 
+          studentsToDelete.some(student => student.user_id === memberId)
+        );
+        const hasDeletedAdviser = group.adviser_id && studentsToDelete.some(student => 
+          student.user_id === group.adviser_id
+        );
+        const hasDeletedRequestedAdviser = group.requested_adviser && studentsToDelete.some(student => 
+          student.user_id === group.requested_adviser
+        );
+        return hasDeletedProjectManager || hasDeletedMembers || hasDeletedAdviser || hasDeletedRequestedAdviser;
+      });
+
+      // Get documents that need to be updated (remove user references from contributors)
+      const remainingDocuments = await ctx.db.query("documents").collect();
+      const documentsToUpdate = remainingDocuments.filter((doc) => {
+        return doc.contributors?.some(contributorId => 
+          studentsToDelete.some(student => student.user_id === contributorId)
+        );
+      });
+
+      // Get task assignments that need to be updated (remove user references)
+      const remainingTaskAssignments = await ctx.db.query("taskAssignments").collect();
+      const taskAssignmentsToUpdate = remainingTaskAssignments.filter((task) => {
+        return task.assigned_student_ids.some(studentId => 
+          studentsToDelete.some(student => student.user_id === studentId)
+        );
+      });
+
+      // Delete all data in parallel
+      const deletePromises = [
+        // Students
+        ...studentsToDelete.map((student) => ctx.db.delete(student._id)),
+        // Groups
+        ...groupsToDelete.map((group) => ctx.db.delete(group._id)),
+        // Documents
+        ...documentsToDelete.map((doc) => ctx.db.delete(doc._id)),
+        // Document Edits
+        ...documentEditsToDelete.map((edit) => ctx.db.delete(edit._id)),
+        // Task Assignments
+        ...taskAssignmentsToDelete.map((task) => ctx.db.delete(task._id)),
+        // Document Status
+        ...documentStatusToDelete.map((status) => ctx.db.delete(status._id)),
+        // Notes
+        ...notesToDelete.map((note) => ctx.db.delete(note._id)),
+        // Images (with storage cleanup)
+        ...imagesToDelete.map(async (image) => {
+          try {
+            await ctx.storage.delete(image.file_id);
+          } catch {
+            // Continue even if storage deletion fails
+          }
+          return ctx.db.delete(image._id);
+        }),
+        // Update advisers to remove group references
+        ...advisersToUpdate.map((adviser) => {
+          const updatedGroupIds = adviser.group_ids?.filter(groupId => 
+            !groupsToDelete.some(group => group._id === groupId)
+          );
+          const updatedRequestGroupIds = adviser.requests_group_ids?.filter(groupId => 
+            !groupsToDelete.some(group => group._id === groupId)
+          );
+          return ctx.db.patch(adviser._id, {
+            group_ids: updatedGroupIds,
+            requests_group_ids: updatedRequestGroupIds,
+          });
+        }),
+        // Update remaining groups to remove user references
+        ...groupsToUpdate.map((group) => {
+          const updatedMemberIds = group.member_ids.filter(memberId => 
+            !studentsToDelete.some(student => student.user_id === memberId)
+          );
+          const updatedProjectManagerId = studentsToDelete.some(student => 
+            student.user_id === group.project_manager_id
+          ) ? undefined : group.project_manager_id;
+          const updatedAdviserId = group.adviser_id && studentsToDelete.some(student => 
+            student.user_id === group.adviser_id
+          ) ? undefined : group.adviser_id;
+          const updatedRequestedAdviser = group.requested_adviser && studentsToDelete.some(student => 
+            student.user_id === group.requested_adviser
+          ) ? undefined : group.requested_adviser;
+          
+          return ctx.db.patch(group._id, {
+            member_ids: updatedMemberIds,
+            project_manager_id: updatedProjectManagerId,
+            adviser_id: updatedAdviserId,
+            requested_adviser: updatedRequestedAdviser,
+          });
+        }),
+        // Update documents to remove user references from contributors
+        ...documentsToUpdate.map((doc) => {
+          const updatedContributors = doc.contributors?.filter(contributorId => 
+            !studentsToDelete.some(student => student.user_id === contributorId)
+          );
+          return ctx.db.patch(doc._id, {
+            contributors: updatedContributors,
+          });
+        }),
+        // Update task assignments to remove user references
+        ...taskAssignmentsToUpdate.map((task) => {
+          const updatedAssignedStudentIds = task.assigned_student_ids.filter(studentId => 
+            !studentsToDelete.some(student => student.user_id === studentId)
+          );
+          return ctx.db.patch(task._id, {
+            assigned_student_ids: updatedAssignedStudentIds,
+          });
+        }),
+      ];
+
+      await Promise.all(deletePromises);
+
+      // Log the deletion operation
+      await logDeleteStudents(ctx, args.currentUserId as Id<"users">, 2, results);
+
+      return {
+        success: true,
+        deletedCounts: results,
+        totalDeleted: Object.values(results).reduce(
+          (sum, count) => sum + count,
+          0,
+        ),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
+export const deleteAdvisersWithDependencies = mutation({
+  args: { currentUserId: v.string() },
+  handler: async (ctx, args) => {
+    const results = {
+      advisers: 0,
+      groups: 0,
+      documents: 0,
+      documentEdits: 0,
+      taskAssignments: 0,
+      documentStatus: 0,
+      notes: 0,
+      images: 0,
+    };
+
+    try {
+      // Get all advisers except current user
+      const advisers = await ctx.db.query("advisersTable").collect();
+      const advisersToDelete = advisers.filter(
+        (adviser) => adviser._id !== args.currentUserId,
+      );
+      results.advisers = advisersToDelete.length;
+
+      // Get all groups associated with advisers
+      const groups = await ctx.db.query("groupsTable").collect();
+      const groupsToDelete = groups.filter((group) =>
+        advisersToDelete.some((adviser) => adviser.adviser_id === group.adviser_id),
+      );
+      results.groups = groupsToDelete.length;
+
+      // Get all documents associated with these groups
+      const documents = await ctx.db.query("documents").collect();
+      const documentsToDelete = documents.filter((doc) =>
+        groupsToDelete.some((group) => group._id === doc.group_id),
+      );
+      results.documents = documentsToDelete.length;
+
+      // Get all document edits
+      const documentEdits = await ctx.db.query("documentEdits").collect();
+      const documentEditsToDelete = documentEdits.filter((edit) =>
+        documentsToDelete.some((doc) => doc._id === edit.documentId),
+      );
+      results.documentEdits = documentEditsToDelete.length;
+
+      // Get all task assignments
+      const taskAssignments = await ctx.db.query("taskAssignments").collect();
+      const taskAssignmentsToDelete = taskAssignments.filter((task) =>
+        groupsToDelete.some((group) => group._id === task.group_id),
+      );
+      results.taskAssignments = taskAssignmentsToDelete.length;
+
+      // Get all document status
+      const documentStatus = await ctx.db.query("documentStatus").collect();
+      const documentStatusToDelete = documentStatus.filter((status) =>
+        groupsToDelete.some((group) => group._id === status.group_id),
+      );
+      results.documentStatus = documentStatusToDelete.length;
+
+      // Get all notes
+      const notes = await ctx.db.query("notes").collect();
+      const notesToDelete = notes.filter((note) =>
+        groupsToDelete.some((group) => group._id === note.group_id),
+      );
+      results.notes = notesToDelete.length;
+
+      // Get all images
+      const images = await ctx.db.query("images").collect();
+      const imagesToDelete = images.filter((image) =>
+        groupsToDelete.some((group) => group._id === image.group_id),
+      );
+      results.images = imagesToDelete.length;
+
+      // Get remaining advisers that need to be updated (remove group references)
+      const remainingAdvisers = await ctx.db.query("advisersTable").collect();
+      const remainingAdvisersToUpdate = remainingAdvisers.filter((adviser) => {
+        const hasGroupIds = adviser.group_ids?.some(groupId => 
+          groupsToDelete.some(group => group._id === groupId)
+        );
+        const hasRequestGroupIds = adviser.requests_group_ids?.some(groupId => 
+          groupsToDelete.some(group => group._id === groupId)
+        );
+        return hasGroupIds || hasRequestGroupIds;
+      });
+
+      // Get remaining groups that need to be updated (remove adviser references)
+      const remainingGroups = await ctx.db.query("groupsTable").collect();
+      const groupsToUpdate = remainingGroups.filter((group) => {
+        const hasDeletedAdviser = group.adviser_id && advisersToDelete.some(adviser => 
+          adviser.adviser_id === group.adviser_id
+        );
+        const hasDeletedRequestedAdviser = group.requested_adviser && advisersToDelete.some(adviser => 
+          adviser.adviser_id === group.requested_adviser
+        );
+        return hasDeletedAdviser || hasDeletedRequestedAdviser;
+      });
+
+      // Get documents that need to be updated (remove adviser references from contributors)
+      const remainingDocuments = await ctx.db.query("documents").collect();
+      const documentsToUpdate = remainingDocuments.filter((doc) => {
+        return doc.contributors?.some(contributorId => 
+          advisersToDelete.some(adviser => adviser.adviser_id === contributorId)
+        );
+      });
+
+      // Get task assignments that need to be updated (remove adviser references)
+      const remainingTaskAssignments = await ctx.db.query("taskAssignments").collect();
+      const taskAssignmentsToUpdate = remainingTaskAssignments.filter((task) => {
+        return task.assigned_student_ids.some(studentId => 
+          advisersToDelete.some(adviser => adviser.adviser_id === studentId)
+        );
+      });
+
+      // Delete all data in parallel
+      const deletePromises = [
+        // Advisers
+        ...advisersToDelete.map((adviser) => ctx.db.delete(adviser._id)),
+        // Groups
+        ...groupsToDelete.map((group) => ctx.db.delete(group._id)),
+        // Documents
+        ...documentsToDelete.map((doc) => ctx.db.delete(doc._id)),
+        // Document Edits
+        ...documentEditsToDelete.map((edit) => ctx.db.delete(edit._id)),
+        // Task Assignments
+        ...taskAssignmentsToDelete.map((task) => ctx.db.delete(task._id)),
+        // Document Status
+        ...documentStatusToDelete.map((status) => ctx.db.delete(status._id)),
+        // Notes
+        ...notesToDelete.map((note) => ctx.db.delete(note._id)),
+        // Images (with storage cleanup)
+        ...imagesToDelete.map(async (image) => {
+          try {
+            await ctx.storage.delete(image.file_id);
+          } catch {
+            // Continue even if storage deletion fails
+          }
+          return ctx.db.delete(image._id);
+        }),
+        // Update remaining advisers to remove group references
+        ...remainingAdvisersToUpdate.map((adviser) => {
+          const updatedGroupIds = adviser.group_ids?.filter(groupId => 
+            !groupsToDelete.some(group => group._id === groupId)
+          );
+          const updatedRequestGroupIds = adviser.requests_group_ids?.filter(groupId => 
+            !groupsToDelete.some(group => group._id === groupId)
+          );
+          return ctx.db.patch(adviser._id, {
+            group_ids: updatedGroupIds,
+            requests_group_ids: updatedRequestGroupIds,
+          });
+        }),
+        // Update remaining groups to remove adviser references
+        ...groupsToUpdate.map((group) => {
+          const updatedAdviserId = group.adviser_id && advisersToDelete.some(adviser => 
+            adviser.adviser_id === group.adviser_id
+          ) ? undefined : group.adviser_id;
+          const updatedRequestedAdviser = group.requested_adviser && advisersToDelete.some(adviser => 
+            adviser.adviser_id === group.requested_adviser
+          ) ? undefined : group.requested_adviser;
+          
+          return ctx.db.patch(group._id, {
+            adviser_id: updatedAdviserId,
+            requested_adviser: updatedRequestedAdviser,
+          });
+        }),
+        // Update documents to remove adviser references from contributors
+        ...documentsToUpdate.map((doc) => {
+          const updatedContributors = doc.contributors?.filter(contributorId => 
+            !advisersToDelete.some(adviser => adviser.adviser_id === contributorId)
+          );
+          return ctx.db.patch(doc._id, {
+            contributors: updatedContributors,
+          });
+        }),
+        // Update task assignments to remove adviser references
+        ...taskAssignmentsToUpdate.map((task) => {
+          const updatedAssignedStudentIds = task.assigned_student_ids.filter(studentId => 
+            !advisersToDelete.some(adviser => adviser.adviser_id === studentId)
+          );
+          return ctx.db.patch(task._id, {
+            assigned_student_ids: updatedAssignedStudentIds,
+          });
+        }),
+      ];
+
+      await Promise.all(deletePromises);
+
+      // Log the deletion operation
+      await logDeleteAdvisers(ctx, args.currentUserId as Id<"users">, 2, results);
+
+      return {
+        success: true,
+        deletedCounts: results,
+        totalDeleted: Object.values(results).reduce(
+          (sum, count) => sum + count,
+          0,
+        ),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
+export const deleteGroupsWithDependencies = mutation({
+  args: { currentUserId: v.string() },
+  handler: async (ctx, args) => {
+    const results = {
+      groups: 0,
+      documents: 0,
+      documentEdits: 0,
+      taskAssignments: 0,
+      documentStatus: 0,
+      notes: 0,
+      images: 0,
+    };
+
+    try {
+      // Get all groups
+      const groups = await ctx.db.query("groupsTable").collect();
+      results.groups = groups.length;
+
+      // Get all documents associated with these groups
+      const documents = await ctx.db.query("documents").collect();
+      const documentsToDelete = documents.filter((doc) =>
+        groups.some((group) => group._id === doc.group_id),
+      );
+      results.documents = documentsToDelete.length;
+
+      // Get all document edits
+      const documentEdits = await ctx.db.query("documentEdits").collect();
+      const documentEditsToDelete = documentEdits.filter((edit) =>
+        documentsToDelete.some((doc) => doc._id === edit.documentId),
+      );
+      results.documentEdits = documentEditsToDelete.length;
+
+      // Get all task assignments
+      const taskAssignments = await ctx.db.query("taskAssignments").collect();
+      const taskAssignmentsToDelete = taskAssignments.filter((task) =>
+        groups.some((group) => group._id === task.group_id),
+      );
+      results.taskAssignments = taskAssignmentsToDelete.length;
+
+      // Get all document status
+      const documentStatus = await ctx.db.query("documentStatus").collect();
+      const documentStatusToDelete = documentStatus.filter((status) =>
+        groups.some((group) => group._id === status.group_id),
+      );
+      results.documentStatus = documentStatusToDelete.length;
+
+      // Get all notes
+      const notes = await ctx.db.query("notes").collect();
+      const notesToDelete = notes.filter((note) =>
+        groups.some((group) => group._id === note.group_id),
+      );
+      results.notes = notesToDelete.length;
+
+      // Get all images
+      const images = await ctx.db.query("images").collect();
+      const imagesToDelete = images.filter((image) =>
+        groups.some((group) => group._id === image.group_id),
+      );
+      results.images = imagesToDelete.length;
+
+      // Get advisers that need to be updated (remove group references)
+      const advisers = await ctx.db.query("advisersTable").collect();
+      const advisersToUpdate = advisers.filter((adviser) => {
+        const hasGroupIds = adviser.group_ids?.some(groupId => 
+          groups.some(group => group._id === groupId)
+        );
+        const hasRequestGroupIds = adviser.requests_group_ids?.some(groupId => 
+          groups.some(group => group._id === groupId)
+        );
+        return hasGroupIds || hasRequestGroupIds;
+      });
+
+
+      // Delete all data in parallel
+      const deletePromises = [
+        // Groups
+        ...groups.map((group) => ctx.db.delete(group._id)),
+        // Documents
+        ...documentsToDelete.map((doc) => ctx.db.delete(doc._id)),
+        // Document Edits
+        ...documentEditsToDelete.map((edit) => ctx.db.delete(edit._id)),
+        // Task Assignments
+        ...taskAssignmentsToDelete.map((task) => ctx.db.delete(task._id)),
+        // Document Status
+        ...documentStatusToDelete.map((status) => ctx.db.delete(status._id)),
+        // Notes
+        ...notesToDelete.map((note) => ctx.db.delete(note._id)),
+        // Images (with storage cleanup)
+        ...imagesToDelete.map(async (image) => {
+          try {
+            await ctx.storage.delete(image.file_id);
+          } catch {
+            // Continue even if storage deletion fails
+          }
+          return ctx.db.delete(image._id);
+        }),
+        // Update advisers to remove group references
+        ...advisersToUpdate.map((adviser) => {
+          const updatedGroupIds = adviser.group_ids?.filter(groupId => 
+            !groups.some(group => group._id === groupId)
+          );
+          const updatedRequestGroupIds = adviser.requests_group_ids?.filter(groupId => 
+            !groups.some(group => group._id === groupId)
+          );
+          return ctx.db.patch(adviser._id, {
+            group_ids: updatedGroupIds,
+            requests_group_ids: updatedRequestGroupIds,
+          });
+        }),
+      ];
+
+      await Promise.all(deletePromises);
+
+      // Log the deletion operation
+      await logDeleteGroups(ctx, args.currentUserId as Id<"users">, 2, results);
+
+      return {
+        success: true,
+        deletedCounts: results,
+        totalDeleted: Object.values(results).reduce(
+          (sum, count) => sum + count,
+          0,
+        ),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
+export const deleteAdviserLogs = mutation({
+  args: { currentUserId: v.string() },
+  handler: async (ctx, args) => {
+    try {
+      const logs = await ctx.db.query("LogsTable").collect();
+      const adviserLogs = logs.filter((log) => 
+        log.user_role === 1 || log.action?.includes("adviser")
+      );
+
+      const deletePromises = adviserLogs.map((log) => ctx.db.delete(log._id));
+      await Promise.all(deletePromises);
+
+      // Log the deletion operation
+      await logDeleteAdviserLogs(ctx, args.currentUserId as Id<"users">, 2, adviserLogs.length);
+
+      return {
+        success: true,
+        deletedCount: adviserLogs.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
+export const deleteGeneralLogs = mutation({
+  args: { currentUserId: v.string() },
+  handler: async (ctx, args) => {
+    try {
+      const logs = await ctx.db.query("LogsTable").collect();
+      const generalLogs = logs.filter((log) => 
+        log.user_role !== 1 && !log.action?.includes("adviser")
+      );
+
+      const deletePromises = generalLogs.map((log) => ctx.db.delete(log._id));
+      await Promise.all(deletePromises);
+
+      // Log the deletion operation
+      await logDeleteGeneralLogs(ctx, args.currentUserId as Id<"users">, 2, generalLogs.length);
+
+      return {
+        success: true,
+        deletedCount: generalLogs.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
 // Comprehensive bulk delete function
 export const deleteAllData = mutation({
   args: {
@@ -271,6 +895,9 @@ export const deleteAllData = mutation({
 
       // Execute all deletions in parallel
       await Promise.all(deletePromises);
+
+      // Log the deletion operation
+      await logDeleteAllData(ctx, args.currentUserId as Id<"users">, 2, results);
 
       return {
         success: true,

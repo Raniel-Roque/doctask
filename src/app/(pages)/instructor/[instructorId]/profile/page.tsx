@@ -13,6 +13,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { FaExclamationTriangle, FaTrash, FaDatabase } from "react-icons/fa";
 import PasswordVerification from "@/app/(pages)/components/PasswordVerification";
+import DeleteDataPanel from "@/app/(pages)/components/DeleteDataPanel";
 import { apiRequest } from "@/lib/utils";
 import { validateUserForm } from "../utils/validation";
 import {
@@ -38,6 +39,11 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [confirmName, setConfirmName] = useState("");
+
+  // New delete panel state
+  const [showDeletePanel, setShowDeletePanel] = useState(false);
+  const [showDeletePasswordVerify, setShowDeletePasswordVerify] = useState(false);
+  const [isDeletingData, setIsDeletingData] = useState(false);
 
   // Backup-related state
   const [isDownloading, setIsDownloading] = useState(false);
@@ -329,6 +335,74 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
     }
   };
 
+  // New delete panel handlers
+  const handleDeleteDataClick = () => {
+    setShowDeletePasswordVerify(true);
+  };
+
+  const handleDeletePasswordVerified = async () => {
+    setShowDeletePasswordVerify(false);
+    setShowDeletePanel(true);
+  };
+
+  const handleDeleteDataConfirm = async (tables: string[]) => {
+    if (!user || !userData) return;
+
+    setIsDeletingData(true);
+
+    try {
+      const response = await apiRequest("/api/clerk/destructive-action", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clerkId: user.id,
+          action: "selective_delete",
+          selectedTables: tables,
+        }),
+      }) as { success: boolean; message?: string; error?: string };
+
+      if (response.success) {
+        addBanner({
+          message: response.message || "Data deleted successfully",
+          type: "success",
+          onClose: () => {},
+          autoClose: true,
+          priority: "high",
+        });
+      } else {
+        addBanner({
+          message: response.error || "Failed to delete selected data",
+          type: "error",
+          onClose: () => {},
+          autoClose: true,
+        });
+      }
+
+      // Close panel on success
+      setTimeout(() => {
+        setShowDeletePanel(false);
+      }, 2000);
+    } catch (err) {
+      const errorMessage = getErrorMessage(err, ErrorContexts.deleteAllData());
+      addBanner({
+        message: errorMessage,
+        type: "error",
+        onClose: () => {},
+        autoClose: true,
+      });
+    } finally {
+      setIsDeletingData(false);
+    }
+  };
+
+  const handleDeletePanelClose = () => {
+    if (!isDeletingData) {
+      setShowDeletePanel(false);
+    }
+  };
+
   // Backup functions
   const verifyBackupPassword = async (
     password: string,
@@ -570,19 +644,38 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
                 <span className="text-sm text-gray-600">Delete Data</span>
               </div>
               <button
-                onClick={() => setShowWipeModal(true)}
-                disabled={isLoading}
+                onClick={handleDeleteDataClick}
+                disabled={isLoading || isDeletingData}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
               >
                 <FaTrash className="text-xs" />
-                Wipe all data
+                Delete Data
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Password Verification Modal */}
+      {/* Password Verification Modal for Delete Data */}
+      <PasswordVerification
+        isOpen={showDeletePasswordVerify}
+        onClose={() => setShowDeletePasswordVerify(false)}
+        onVerify={handleDeletePasswordVerified}
+        title="Delete Data"
+        description="Enter your current password to continue with this destructive action."
+        buttonText="Verify Password"
+        userEmail={user?.emailAddresses?.[0]?.emailAddress}
+      />
+
+      {/* Delete Data Panel */}
+      <DeleteDataPanel
+        isOpen={showDeletePanel}
+        onClose={handleDeletePanelClose}
+        onConfirm={handleDeleteDataConfirm}
+        isSubmitting={isDeletingData}
+      />
+
+      {/* Password Verification Modal for Wipe All Data */}
       <PasswordVerification
         isOpen={showWipeModal && !isVerified}
         onClose={handleClose}
