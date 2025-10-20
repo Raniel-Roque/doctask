@@ -219,7 +219,7 @@ export async function logDeleteStudents(
   await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
-    affected_entity_type: "students",
+    affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE,
     details: `Deleted students and dependencies: ${JSON.stringify(deletedCounts)}`,
@@ -235,7 +235,7 @@ export async function logDeleteAdvisers(
   await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
-    affected_entity_type: "advisers",
+    affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE,
     details: `Deleted advisers and dependencies: ${JSON.stringify(deletedCounts)}`,
@@ -251,7 +251,7 @@ export async function logDeleteGroups(
   await ctx.db.insert("LogsTable", {
     user_id: userId,
     user_role: userRole,
-    affected_entity_type: "groups",
+    affected_entity_type: "database",
     affected_entity_id: userId, // Use userId as placeholder
     action: LOG_ACTIONS.DELETE,
     details: `Deleted groups and dependencies: ${JSON.stringify(deletedCounts)}`,
