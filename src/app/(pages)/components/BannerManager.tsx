@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   ReactNode,
+  useEffect,
 } from "react";
 
 interface Banner {
@@ -63,6 +64,25 @@ export const BannerProvider: React.FC<BannerProviderProps> = ({ children }) => {
   const removeBanner = useCallback((id: string) => {
     setBanners((prev) => prev.filter((banner) => banner.id !== id));
   }, []);
+
+  // Auto-dismiss banners
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    
+    banners.forEach((banner) => {
+      if (banner.autoClose) {
+        const duration = banner.duration || 5000; // Default 5 seconds
+        const timer = setTimeout(() => {
+          removeBanner(banner.id);
+        }, duration);
+        timers.push(timer);
+      }
+    });
+
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, [banners, removeBanner]);
 
   const clearAllBanners = useCallback(() => {
     setBanners([]);
