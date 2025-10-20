@@ -23,7 +23,7 @@ const InstructorLogsPage = ({ params }: InstructorLogsPageProps) => {
             View all system activities and changes by capstone instructors
           </p>
         </div>
-        <LogTable userRole={0} />
+        <LogTable userRole={2} />
       </div>
     </div>
   );

@@ -134,10 +134,10 @@ const ENTITY_TYPES = {
 // Component
 // =========================================
 interface LogTableProps {
-  userRole?: number; // 0 = instructor, 1 = adviser
+  userRole?: number; // 2 = instructor, 1 = adviser
 }
 
-export const LogTable = ({ userRole = 0 }: LogTableProps) => {
+export const LogTable = ({ userRole = 2 }: LogTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<SortField>("_creationTime");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -266,7 +266,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       };
     }
     return {
-      display: userRole === 0 ? "Unknown Instructor" : "Unknown Adviser",
+      display: userRole === 2 ? "Unknown Instructor" : "Unknown Adviser",
       email: "",
       id: null,
     };
@@ -362,7 +362,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
 
   // Get available actions based on user role
   const getAvailableActions = () => {
-    if (userRole === 0) {
+    if (userRole === 2) {
       // Instructor actions
       return Object.values(LOG_ACTIONS).filter(
         (action) =>
@@ -549,7 +549,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       const doc = new jsPDF('landscape', 'mm', 'a4');
       
       // Add title
-      const role = userRole === 0 ? "Instructor" : "Adviser";
+      const role = userRole === 2 ? "Instructor" : "Adviser";
       doc.setFontSize(16);
       doc.text(`Capstone ${role} System Logs`, 14, 20);
       
@@ -584,7 +584,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
       });
       
       // Build headers based on user role
-      const headers = userRole === 0 
+      const headers = userRole === 2 
         ? ['Date & Time', 'Instructor', 'Action', 'Entity', 'Details']
         : ['Date & Time', 'Adviser', 'Action', 'Entity', 'Details'];
       
@@ -753,11 +753,11 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
               <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider min-w-[10rem]">
                 <div className="flex items-center justify-center gap-2">
                   <span className="font-medium uppercase">
-                    {userRole === 0 ? "INSTRUCTOR" : "ADVISER"}
+                    {userRole === 2 ? "INSTRUCTOR" : "ADVISER"}
                   </span>
                 </div>
               </th>
-              {userRole === 0 && (
+              {userRole === 2 && (
                 <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider min-w-[6rem]">
                   <div className="flex items-center justify-center gap-2">
                     <span className="font-medium uppercase">ACTION</span>
@@ -907,7 +907,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
                   )}
                 </th>
               )}
-              {userRole === 0 && (
+              {userRole === 2 && (
                 <th className="relative px-6 py-3 border-b text-center text-xs font-medium text-white uppercase tracking-wider min-w-[10rem]">
                   <div className="flex items-center justify-center gap-2">
                     <span className="font-medium uppercase">ENTITY</span>
@@ -1021,7 +1021,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             {!logsQuery ? (
               <tr>
                 <td
-                  colSpan={userRole === 0 ? 5 : 4}
+                  colSpan={userRole === 2 ? 5 : 4}
                   className="px-6 py-4 text-center text-gray-500"
                 >
                   Loading...
@@ -1030,7 +1030,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             ) : logs.length === 0 ? (
               <tr>
                 <td
-                  colSpan={userRole === 0 ? 5 : 4}
+                  colSpan={userRole === 2 ? 5 : 4}
                   className="px-6 py-4 text-center text-gray-500"
                 >
                   No logs available
@@ -1039,7 +1039,7 @@ export const LogTable = ({ userRole = 0 }: LogTableProps) => {
             ) : visibleLogs.length === 0 ? (
               <tr>
                 <td
-                  colSpan={userRole === 0 ? 5 : 4}
+                  colSpan={userRole === 2 ? 5 : 4}
                   className="px-6 py-4 text-center text-gray-500"
                 >
                   {searchTerm || startDate || endDate || appliedActionFilters.length > 0 || appliedEntityTypeFilters.length > 0 
