@@ -22,35 +22,35 @@ const TABLE_OPTIONS: TableOption[] = [
   {
     id: "students",
     label: "Students",
-    description: "Delete all students and their associated groups, documents, notes, tasks, and other connected entities",
-    warning: "This will permanently delete all student accounts and all their associated data",
-    dependencies: ["groups", "documents", "notes", "taskAssignments", "documentStatus", "documentEdits"]
+    description: "Remove all student accounts and their project data",
+    warning: "This will permanently delete all student accounts and their associated projects, documents, and submissions",
+    dependencies: ["Project groups", "Documents", "Submissions", "Task assignments", "Review notes"]
   },
   {
     id: "advisers", 
     label: "Advisers",
-    description: "Delete all advisers and their associated entities",
-    warning: "This will permanently delete all adviser accounts and all their associated data",
-    dependencies: ["groups", "documents", "notes", "taskAssignments", "documentStatus", "documentEdits"]
+    description: "Remove all adviser accounts and their project data",
+    warning: "This will permanently delete all adviser accounts and their associated projects, reviews, and feedback",
+    dependencies: ["Project groups", "Documents", "Submissions", "Task assignments", "Review notes"]
   },
   {
     id: "groups",
-    label: "Groups", 
-    description: "Delete all groups and their associations with advisers and members, which will also delete connected entities like documents, notes, tasks, etc.",
-    warning: "This will permanently delete all groups and all associated data. Users will not be deleted.",
-    dependencies: ["documents", "notes", "taskAssignments", "documentStatus", "documentEdits"]
+    label: "Project Groups", 
+    description: "Remove all project groups and their work",
+    warning: "This will permanently delete all project groups and their documents, submissions, and progress. Student and adviser accounts will remain.",
+    dependencies: ["Documents", "Submissions", "Task assignments", "Review notes"]
   },
   {
     id: "adviser_logs",
-    label: "Adviser Logs",
-    description: "Delete all adviser-specific logs and audit trails",
-    warning: "This will permanently delete all adviser activity logs"
+    label: "Adviser Activity Logs",
+    description: "Clear all adviser activity history",
+    warning: "This will permanently delete all records of adviser actions and activities"
   },
   {
     id: "general_logs",
-    label: "General Logs", 
-    description: "Delete all general system logs and audit trails",
-    warning: "This will permanently delete all general system activity logs"
+    label: "System Activity Logs", 
+    description: "Clear all system activity history",
+    warning: "This will permanently delete all records of system activities and user actions"
   }
 ];
 
@@ -94,7 +94,7 @@ const DeleteDataPanel: React.FC<DeleteDataPanelProps> = ({
           <div className="flex items-center gap-3">
             <FaExclamationTriangle className="text-red-500 text-xl" />
             <h2 className="text-xl font-semibold text-gray-900">
-              Delete Data
+              Delete System Data
             </h2>
           </div>
           <button
@@ -109,21 +109,23 @@ const DeleteDataPanel: React.FC<DeleteDataPanelProps> = ({
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           <div className="mb-6">
-            <p className="text-gray-600 mb-4">
-              Select which data you want to delete. You can choose multiple options. 
-              <span className="text-red-600 font-semibold"> This action cannot be undone.</span>
+            <p className="text-gray-600 mb-2">
+              Choose what you want to delete. You can select multiple options.
+            </p>
+            <p className="text-red-600 font-medium text-sm">
+              ⚠️ This action cannot be undone
             </p>
           </div>
 
           {/* Table Options */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {TABLE_OPTIONS.map((option) => (
               <div
                 key={option.id}
-                className={`border-2 rounded-lg p-4 transition-all cursor-pointer ${
+                className={`border rounded-lg p-4 transition-all cursor-pointer ${
                   selectedTables.includes(option.id)
                     ? "border-red-500 bg-red-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                 }`}
                 onClick={() => handleTableToggle(option.id)}
               >
@@ -146,18 +148,18 @@ const DeleteDataPanel: React.FC<DeleteDataPanelProps> = ({
                     <p className="text-gray-600 text-sm mb-2">
                       {option.description}
                     </p>
-                    {option.warning && (
-                      <div className="bg-red-100 border border-red-200 rounded p-2">
-                        <p className="text-red-700 text-xs font-medium">
-                          ⚠️ {option.warning}
+                    {option.dependencies && option.dependencies.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-xs text-gray-500">
+                          <span className="font-medium">Also removes:</span>{" "}
+                          {option.dependencies.join(", ")}
                         </p>
                       </div>
                     )}
-                    {option.dependencies && option.dependencies.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-gray-500">
-                          <span className="font-medium">Also deletes:</span>{" "}
-                          {option.dependencies.join(", ")}
+                    {option.warning && (
+                      <div className="bg-red-100 border border-red-200 rounded p-2">
+                        <p className="text-red-700 text-xs">
+                          {option.warning}
                         </p>
                       </div>
                     )}
@@ -171,7 +173,7 @@ const DeleteDataPanel: React.FC<DeleteDataPanelProps> = ({
           {selectedTables.length > 0 && (
             <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <h4 className="font-semibold text-yellow-800 mb-2">
-                Selected for deletion:
+                Ready to delete:
               </h4>
               <ul className="text-sm text-yellow-700 space-y-1">
                 {selectedTables.map(tableId => {
@@ -210,7 +212,7 @@ const DeleteDataPanel: React.FC<DeleteDataPanelProps> = ({
             ) : (
               <>
                 <FaTrash className="text-sm" />
-                Delete Selected Data
+                Delete Selected
               </>
             )}
           </button>
