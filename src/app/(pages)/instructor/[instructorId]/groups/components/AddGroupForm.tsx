@@ -474,8 +474,8 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Capstone Title and Type Row */}
             <div className="flex gap-4">
-              {/* Capstone Title - 80% */}
-              <div className="flex-[4]">
+              {/* Capstone Title - 70% */}
+              <div className="flex-[3]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <div className="flex items-center gap-2">
                     <FaBook color="#4B5563" />
@@ -497,8 +497,8 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                 />
               </div>
 
-              {/* Capstone Type - 20% */}
-              <div className="flex-[1]">
+              {/* Capstone Type - 30% */}
+              <div className="flex-[2]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <div className="flex items-center gap-2">
                     <FaBook color="#4B5563" />
