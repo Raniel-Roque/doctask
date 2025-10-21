@@ -401,7 +401,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           status={getStatus()}
-          hasResults={searchResult?.hasResults || false}
+          hasResults={filteredGroups.length > 0}
           onGradeFilterChange={handleGradeFilterChange}
           isDeleting={isDeleting}
           capstoneFilter={appliedCapstoneFilter}

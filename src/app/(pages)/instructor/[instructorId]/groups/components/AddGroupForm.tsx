@@ -505,20 +505,31 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                     Capstone <span className="text-red-500">*</span>
                   </div>
                 </label>
-                <select
-                  name="capstoneType"
-                  value={formData.capstoneType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, capstoneType: Number(e.target.value) }))}
-                  className={`w-full px-4 py-2 rounded-lg border-2 ${
-                    validationErrors.capstoneType
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
-                  disabled={isSubmitting}
-                >
-                <option value={0}>Capstone 1</option>
-                <option value={1}>Capstone 2</option>
-                </select>
+                <div className="relative">
+                  <select
+                    name="capstoneType"
+                    value={formData.capstoneType}
+                    onChange={(e) => setFormData(prev => ({ ...prev, capstoneType: Number(e.target.value) }))}
+                    className={`w-full px-4 py-2 rounded-lg border-2 ${
+                      validationErrors.capstoneType
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white`}
+                    disabled={isSubmitting}
+                  >
+                  <option value={0}>Capstone 1</option>
+                  <option value={1}>Capstone 2</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <FaChevronDown color="#6B7280" />
+                  </div>
+                  {/* Custom display overlay */}
+                  <div className="absolute inset-0 pointer-events-none flex items-center px-4 py-2">
+                    <span className="text-gray-900">
+                      {formData.capstoneType === 0 ? "CP1" : "CP2"}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 

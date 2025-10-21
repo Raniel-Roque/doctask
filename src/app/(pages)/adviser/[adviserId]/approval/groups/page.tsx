@@ -26,7 +26,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const [pageSize, setPageSize] = useState(5);
   
   // Capstone type filters
-  const [capstoneTypeFilters, setCapstoneTypeFilters] = useState<string[]>([]);
+  const [capstoneTypeFilter, setCapstoneTypeFilter] = useState<string>("All Capstone Types");
 
   // State for confirmation dialog
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -96,16 +96,13 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
     : [];
 
   // Apply capstone type filtering
-  const filteredGroups = capstoneTypeFilters.length === 0 
+  const filteredGroups = capstoneTypeFilter === "All Capstone Types" 
     ? allGroups 
     : allGroups.filter((group) => {
         const capstoneType = group.capstone_type ?? 0; // Default to CP1 if not set
-        return capstoneTypeFilters.some(filter => {
-          if (filter === "All Capstone Types") return true;
-          if (filter === "Capstone 1") return capstoneType === 0;
-          if (filter === "Capstone 2") return capstoneType === 1;
-          return false;
-        });
+        if (capstoneTypeFilter === "Capstone 1") return capstoneType === 0;
+        if (capstoneTypeFilter === "Capstone 2") return capstoneType === 1;
+        return false;
       });
 
   // Apply frontend pagination
@@ -235,7 +232,7 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
             setCurrentPage(1); // Reset to first page when searching
           }}
           onCapstoneTypeFilterChange={(filters) => {
-            setCapstoneTypeFilters(filters);
+            setCapstoneTypeFilter(filters[0] || "All Capstone Types");
             setCurrentPage(1); // Reset to first page when filtering
           }}
         />
