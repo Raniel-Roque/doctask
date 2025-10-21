@@ -466,7 +466,7 @@ export default function EditGroupForm({
                     <FaChevronDown color="#6B7280" />
                   </div>
                   {/* Custom display overlay */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center px-4 py-2 bg-white rounded-lg">
+                  <div className="absolute inset-0 pointer-events-none flex items-center px-4 py-2">
                     <span className="text-gray-900 font-medium">
                       {formData.capstoneType === 0 ? "CP1" : "CP2"}
                     </span>
