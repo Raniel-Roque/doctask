@@ -171,6 +171,16 @@ export async function POST(request: Request) {
           body.newProjectManagerId as Id<"users">;
       }
       await convex.mutation(api.mutations.updateUser, updateArgs);
+      // Ensure instructors remain verified
+      if (instructor.role === 2) {
+        try {
+          await convex.mutation(api.mutations.updateEmailStatus, {
+            userId: convexUser._id as Id<"users">,
+          });
+        } catch {
+          // non-fatal
+        }
+      }
       return NextResponse.json({ success: true });
     }
 
@@ -220,6 +230,16 @@ export async function POST(request: Request) {
           body.newProjectManagerId as Id<"users">;
       }
       await convex.mutation(api.mutations.updateUser, updateArgs);
+      // Ensure instructors remain verified after email change
+      if (instructor.role === 2) {
+        try {
+          await convex.mutation(api.mutations.updateEmailStatus, {
+            userId: convexUser._id as Id<"users">,
+          });
+        } catch {
+          // non-fatal
+        }
+      }
     } catch {
       // 3. Rollback: delete new Clerk user
       try {

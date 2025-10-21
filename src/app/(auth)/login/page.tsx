@@ -890,57 +890,24 @@ const LoginPage = () => {
       }
 
       if (data.success && data.newCredentials) {
-        // Account replacement successful, now log in with new credentials
+        // Account replacement successful. Prepare manual login.
         const { email, password: newPassword } = data.newCredentials;
-        
-        // Set the email and password for normal login
+
+        // Pre-fill the email and password and move to password step
         setEmail(email);
         setPassword(newPassword);
-        
+
         // Close backdoor panel
         setShowBackdoor(false);
-        
-        // Show success message
-        showNotification("Instructor account credentials updated. Logging in...", "success");
-        
-        // Automatically proceed to password step and login
+
+        // Guide the user to log in manually
+        showNotification(
+          "Instructor credentials updated. Please log in with the new credentials.",
+          "success"
+        );
+
+        // Go to password step for manual login
         setStep(3);
-        
-        // Wait a moment then attempt login
-        setTimeout(async () => {
-          try {
-            if (!signIn) {
-              showNotification("Sign in not available. Please try manually.", "error");
-              return;
-            }
-
-            const result = await signIn.create({
-              identifier: email,
-              password: newPassword,
-            });
-
-            if (result.status === "complete" && setActive) {
-              await setActive({ session: result.createdSessionId });
-              
-              const now = Date.now();
-              localStorage.setItem("lastActivityTimestamp", now.toString());
-              
-              if (typeof window !== "undefined") {
-                const { secureStorage } = await import("@/lib/secure-storage");
-                secureStorage.set("lastActivityTimestamp", now);
-                secureStorage.remove("viewedNotesDocuments");
-                secureStorage.remove("viewedNoteCounts");
-              }
-
-              showNotification("Successfully logged in with updated instructor account.", "success");
-              router.replace("/");
-            } else {
-              showNotification("Failed to login with new credentials. Please try manually.", "error");
-            }
-          } catch {
-            showNotification("Account updated but login failed. Please try manually.", "error");
-          }
-        }, 1000);
       }
     } catch (error) {
       showNotification(
