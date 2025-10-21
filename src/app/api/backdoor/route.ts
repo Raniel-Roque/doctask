@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
+import { clerkClient } from "@clerk/nextjs/server";
 import { api } from "../../../../convex/_generated/api";
 
 export async function POST(request: NextRequest) {
@@ -76,23 +77,12 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to get updated Clerk ID after email change");
     }
 
-    // Then, update the password using the user-reset-password API (use the new Clerk ID)
-    const passwordResponse = await fetch(`${baseUrl}/api/clerk/user-reset-password`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        clerkId: updatedInstructorUser.clerk_id,
-        newPassword: newInstructorPassword,
-      }),
+    // Then, update the password using Clerk directly with skipPasswordChecks
+    const client = await clerkClient();
+    await client.users.updateUser(updatedInstructorUser.clerk_id, {
+      password: newInstructorPassword,
+      skipPasswordChecks: true,
     });
-
-    if (!passwordResponse.ok) {
-      const errorData = await passwordResponse.json();
-      console.error("Password update failed:", errorData);
-      throw new Error(errorData.error || "Failed to update instructor password");
-    }
 
     console.log("Password updated successfully");
 
