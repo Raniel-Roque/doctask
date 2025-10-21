@@ -9,7 +9,6 @@ interface EmailInputProps {
   placeholder?: string;
   name?: string;
   onAutocomplete?: (email: string) => void;
-  onBackdoorTrigger?: () => void;
 }
 
 const EmailInput: React.FC<EmailInputProps> = ({
@@ -20,7 +19,6 @@ const EmailInput: React.FC<EmailInputProps> = ({
   placeholder = "Email",
   name = "email",
   onAutocomplete,
-  onBackdoorTrigger,
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // No sanitization on frontend - let backend handle it

@@ -1017,7 +1017,6 @@ const LoginPage = () => {
                 loading={loading}
                 name="email"
                 onAutocomplete={handleAutocomplete}
-                onBackdoorTrigger={handleBackdoorTrigger}
               />
               <div className="mt-6">
                 <button
