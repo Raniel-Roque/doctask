@@ -474,8 +474,8 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Capstone Title and Type Row */}
             <div className="flex gap-4">
-              {/* Capstone Title - 80% */}
-              <div className="flex-[4]">
+              {/* Capstone Title - 70% */}
+              <div className="flex-[3]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <div className="flex items-center gap-2">
                     <FaBook color="#4B5563" />
@@ -497,39 +497,28 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                 />
               </div>
 
-              {/* Capstone Type - 20% */}
-              <div className="flex-[1]">
+              {/* Capstone Type - 30% */}
+              <div className="flex-[2]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <div className="flex items-center gap-2">
                     <FaBook color="#4B5563" />
                     Capstone <span className="text-red-500">*</span>
                   </div>
                 </label>
-                <div className="relative">
-                  <select
-                    name="capstoneType"
-                    value={formData.capstoneType}
-                    onChange={(e) => setFormData(prev => ({ ...prev, capstoneType: Number(e.target.value) }))}
-                    className={`w-full px-4 py-2 rounded-lg border-2 ${
-                      validationErrors.capstoneType
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white text-transparent`}
-                    disabled={isSubmitting}
-                  >
-                  <option value={0}>Capstone 1</option>
-                  <option value={1}>Capstone 2</option>
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <FaChevronDown color="#6B7280" />
-                  </div>
-                  {/* Custom display overlay */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center px-4 py-2">
-                    <span className="text-gray-900 font-medium">
-                      {formData.capstoneType === 0 ? "CP1" : "CP2"}
-                    </span>
-                  </div>
-                </div>
+                <select
+                  name="capstoneType"
+                  value={formData.capstoneType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, capstoneType: Number(e.target.value) }))}
+                  className={`w-full px-4 py-2 rounded-lg border-2 ${
+                    validationErrors.capstoneType
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
+                  disabled={isSubmitting}
+                >
+                <option value={0}>Capstone 1</option>
+                <option value={1}>Capstone 2</option>
+                </select>
               </div>
             </div>
 
