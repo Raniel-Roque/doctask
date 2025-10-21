@@ -49,6 +49,13 @@ export const GRADE_FILTERS = {
   NOT_ACCEPTED: "NOT ACCEPTED",
 } as const;
 
+// Capstone Type filter options
+const CAPSTONE_TYPE_FILTERS = {
+  ALL: "All Capstone Types",
+  CP1: "CP1",
+  CP2: "CP2",
+} as const;
+
 const getGradeDisplay = (grade?: number): { text: string; color: string } => {
   if (grade === undefined || grade === null)
     return { text: "No remark", color: "bg-gray-100 text-gray-800" };
@@ -99,6 +106,9 @@ interface GroupsTableProps {
   onGradeFilterChange: (
     filters: (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][],
   ) => void;
+  onCapstoneTypeFilterChange: (
+    filters: (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS][],
+  ) => void;
   isDeleting?: boolean;
   capstoneFilter: (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS];
   setCapstoneFilter: React.Dispatch<
@@ -133,6 +143,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   status,
   hasResults,
   onGradeFilterChange,
+  onCapstoneTypeFilterChange,
   isDeleting = false,
   capstoneFilter,
   setCapstoneFilter,
@@ -160,6 +171,16 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
   const capstoneDropdownRef = useRef<HTMLDivElement>(null);
   const [tempCapstoneFilter, setTempCapstoneFilter] = useState(capstoneFilter);
+  const [capstoneTypeFilters, setCapstoneTypeFilters] = useState<
+    (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS][]
+  >([]);
+  const [tempCapstoneTypeFilters, setTempCapstoneTypeFilters] = useState<
+    (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS][]
+  >([]);
+  const [showCapstoneTypeDropdown, setShowCapstoneTypeDropdown] = useState(false);
+  const capstoneTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const capstoneTypeThRef = useRef<HTMLTableCellElement>(null);
+  const capstoneTypeButtonRef = useRef<HTMLButtonElement>(null);
 
   // Per-column expansion state for collapsible content
   const [expandedColumns, setExpandedColumns] = useState<{
@@ -211,6 +232,28 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
       setTempCapstoneFilter(capstoneFilter);
     }
   }, [showCapstoneDropdown, capstoneFilter]);
+
+  useEffect(() => {
+    if (showCapstoneTypeDropdown) {
+      setTempCapstoneTypeFilters(capstoneTypeFilters);
+    }
+  }, [showCapstoneTypeDropdown, capstoneTypeFilters]);
+
+  useEffect(() => {
+    if (!showCapstoneTypeDropdown) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        capstoneTypeDropdownRef.current &&
+        !capstoneTypeDropdownRef.current.contains(event.target as Node) &&
+        capstoneTypeButtonRef.current &&
+        !capstoneTypeButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowCapstoneTypeDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showCapstoneTypeDropdown]);
 
   const handleViewMembers = (group: Group) => {
     setSelectedGroup(group);
@@ -414,6 +457,29 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     setTempGradeFilters([]);
   };
 
+  const handleCapstoneTypeFilter = (
+    filter: (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS],
+  ) => {
+    let newFilters;
+    if (tempCapstoneTypeFilters.includes(filter)) {
+      newFilters = tempCapstoneTypeFilters.filter((f) => f !== filter);
+    } else {
+      newFilters = [...tempCapstoneTypeFilters, filter];
+    }
+    setTempCapstoneTypeFilters(newFilters);
+  };
+
+  const handleSaveCapstoneTypeFilters = () => {
+    setCapstoneTypeFilters(tempCapstoneTypeFilters);
+    onCapstoneTypeFilterChange(tempCapstoneTypeFilters);
+    setShowCapstoneTypeDropdown(false);
+    onPageChange(1);
+  };
+
+  const handleResetCapstoneTypeFilters = () => {
+    setTempCapstoneTypeFilters([]);
+  };
+
   return (
     <>
       {/* Search and Add Button */}
@@ -598,6 +664,84 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 )}
               </th>
               <th
+                ref={capstoneTypeThRef}
+                scope="col"
+                className="relative px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-medium uppercase">CAPSTONE TYPE</span>
+                  <button
+                    type="button"
+                    className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCapstoneTypeDropdown(!showCapstoneTypeDropdown);
+                      setShowGradeDropdown(false);
+                      setShowCapstoneDropdown(false);
+                    }}
+                    title="Filter capstone types"
+                    ref={capstoneTypeButtonRef}
+                    style={{ boxShadow: "none" }}
+                  >
+                    <FaFilter
+                      className={
+                        `w-4 h-4 transition-colors ` +
+                        (showCapstoneTypeDropdown || capstoneTypeFilters.length > 0
+                          ? "text-blue-500"
+                          : "text-white")
+                      }
+                    />
+                  </button>
+                </div>
+                {showCapstoneTypeDropdown && (
+                  <div
+                    ref={capstoneTypeDropdownRef}
+                    className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                    style={{
+                      minWidth: 220,
+                      left:
+                        capstoneTypeButtonRef.current?.getBoundingClientRect()
+                          .left || 0,
+                      top:
+                        (capstoneTypeButtonRef.current?.getBoundingClientRect()
+                          .bottom || 0) + 8,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="max-h-52 overflow-y-auto px-3 py-2 flex flex-col gap-1">
+                      {Object.values(CAPSTONE_TYPE_FILTERS).map((filter) => (
+                        <label
+                          key={filter}
+                          className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={tempCapstoneTypeFilters.includes(filter)}
+                            onChange={() => handleCapstoneTypeFilter(filter)}
+                            className="accent-blue-600"
+                          />
+                          <span className="text-left">{filter}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
+                      <button
+                        onClick={handleSaveCapstoneTypeFilters}
+                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                      >
+                        Apply
+                      </button>
+                      <button
+                        onClick={handleResetCapstoneTypeFilters}
+                        className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </th>
+              <th
                 scope="col"
                 className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
               >
@@ -702,21 +846,21 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {status === "loading" && (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                   Loading...
                 </td>
               </tr>
             )}
             {status === "error" && (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-red-500">
+                <td colSpan={6} className="px-6 py-4 text-center text-red-500">
                   An error occurred while loading groups. Please try again.
                 </td>
               </tr>
             )}
             {status === "idle" && !hasResults && (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                   {searchTerm
                     ? "No groups found matching your search criteria."
                     : 'No groups available. Click "Add Group" to create a new group.'}
@@ -734,6 +878,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900 max-w-xs text-left">
                     <CollapsibleText text={group.capstone_title} />
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      group.capstone_type === 0 
+                        ? "bg-blue-100 text-blue-800" 
+                        : "bg-green-100 text-green-800"
+                    }`}>
+                      {group.capstone_type === 0 ? "CP1" : "CP2"}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-center">
                     <button

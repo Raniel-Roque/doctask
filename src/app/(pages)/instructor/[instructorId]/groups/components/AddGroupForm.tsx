@@ -31,6 +31,7 @@ interface AddGroupFormProps {
     members: string[];
     adviser: string | null;
     capstoneTitle: string;
+    capstoneType: number;
     grade: number;
   }) => void;
   isSubmitting?: boolean;
@@ -71,6 +72,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
     members: [] as string[],
     adviser: "",
     capstoneTitle: "",
+    capstoneType: 0, // 0 = CP1, 1 = CP2
     grade: 0,
   });
 
@@ -154,6 +156,7 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
         members: [],
         adviser: "",
         capstoneTitle: "",
+        capstoneType: 0, // Default to CP1
         grade: 0,
       };
       setFormData(emptyForm);
@@ -370,6 +373,10 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
       errors.projectManager = "Project Manager is required";
     }
 
+    if (formData.capstoneType === undefined || formData.capstoneType === null) {
+      errors.capstoneType = "Capstone type is required";
+    }
+
     // Sanitize and validate capstone title if provided
     if (formData.capstoneTitle) {
       const sanitizedTitle = sanitizeInput(formData.capstoneTitle, {
@@ -465,27 +472,54 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Capstone Title */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <div className="flex items-center gap-2">
-                  <FaBook color="#4B5563" />
-                  Capstone Title
-                </div>
-              </label>
-              <input
-                type="text"
-                name="capstoneTitle"
-                value={formData.capstoneTitle}
-                onChange={handleChange}
-                placeholder="Enter Capstone Title (Optional)"
-                className={`w-full px-4 py-2 rounded-lg border-2 ${
-                  validationErrors.capstoneTitle
-                    ? "border-red-500"
-                    : "border-gray-300"
-                } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
-                disabled={isSubmitting}
-              />
+            {/* Capstone Title and Type Row */}
+            <div className="flex gap-4">
+              {/* Capstone Title - 80% */}
+              <div className="flex-[4]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="flex items-center gap-2">
+                    <FaBook color="#4B5563" />
+                    Capstone Title
+                  </div>
+                </label>
+                <input
+                  type="text"
+                  name="capstoneTitle"
+                  value={formData.capstoneTitle}
+                  onChange={handleChange}
+                  placeholder="Enter Capstone Title (Optional)"
+                  className={`w-full px-4 py-2 rounded-lg border-2 ${
+                    validationErrors.capstoneTitle
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Capstone Type - 20% */}
+              <div className="flex-[1]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="flex items-center gap-2">
+                    <FaBook color="#4B5563" />
+                    Capstone <span className="text-red-500">*</span>
+                  </div>
+                </label>
+                <select
+                  name="capstoneType"
+                  value={formData.capstoneType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, capstoneType: Number(e.target.value) }))}
+                  className={`w-full px-4 py-2 rounded-lg border-2 ${
+                    validationErrors.capstoneType
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
+                  disabled={isSubmitting}
+                >
+                  <option value={0}>CP1</option>
+                  <option value={1}>CP2</option>
+                </select>
+              </div>
             </div>
 
             {/* Project Manager and Adviser Row */}

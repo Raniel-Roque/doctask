@@ -41,6 +41,7 @@ interface EditGroupFormProps {
     members: string[];
     adviser: string | null;
     capstoneTitle: string;
+    capstoneType: number;
     grade: number;
   }) => void;
   members: User[];
@@ -63,6 +64,7 @@ export default function EditGroupForm({
     members: [] as string[],
     adviser: null as string | null,
     capstoneTitle: "",
+    capstoneType: 0, // 0 = CP1, 1 = CP2
     grade: 0,
   });
 
@@ -116,6 +118,7 @@ export default function EditGroupForm({
         members: group.member_ids || [],
         adviser: group.adviser_id || null,
         capstoneTitle: group.capstone_title || "",
+        capstoneType: group.capstone_type || 0, // Default to CP1 if not set
         grade: group.grade || 0,
       };
       setFormData(newFormData);
@@ -407,26 +410,51 @@ export default function EditGroupForm({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Capstone Title */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaBook color="#6B7280" />
-                Capstone Title
-              </label>
-              <input
-                type="text"
-                id="capstoneTitle"
-                name="capstoneTitle"
-                value={formData.capstoneTitle}
-                onChange={handleInputChange}
-                placeholder="Enter Capstone Title"
-                className={`w-full px-4 py-2 rounded-lg border-2 ${
-                  validationErrors.capstoneTitle
-                    ? "border-red-500"
-                    : "border-gray-300"
-                } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
-                disabled={isSubmitting}
-              />
+            {/* Capstone Title and Type Row */}
+            <div className="flex gap-4">
+              {/* Capstone Title - 80% */}
+              <div className="flex-[4]">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <FaBook color="#6B7280" />
+                  Capstone Title
+                </label>
+                <input
+                  type="text"
+                  id="capstoneTitle"
+                  name="capstoneTitle"
+                  value={formData.capstoneTitle}
+                  onChange={handleInputChange}
+                  placeholder="Enter Capstone Title"
+                  className={`w-full px-4 py-2 rounded-lg border-2 ${
+                    validationErrors.capstoneTitle
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Capstone Type - 20% */}
+              <div className="flex-[1]">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <FaBook color="#6B7280" />
+                  Capstone <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="capstoneType"
+                  value={formData.capstoneType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, capstoneType: Number(e.target.value) }))}
+                  className={`w-full px-4 py-2 rounded-lg border-2 ${
+                    validationErrors.capstoneType
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
+                  disabled={isSubmitting}
+                >
+                  <option value={0}>CP1</option>
+                  <option value={1}>CP2</option>
+                </select>
+              </div>
             </div>
 
             {/* Adviser and Grade */}
@@ -563,12 +591,21 @@ export default function EditGroupForm({
                     disabled={isSubmitting}
                   >
                     <option value={0}>No remark</option>
-                    <option value={1}>Approved</option>
-                    <option value={2}>Approved With Revisions</option>
-                    <option value={3}>Disapproved</option>
-                    <option value={4}>Accepted With Revisions</option>
-                    <option value={5}>Reoral Defense</option>
-                    <option value={6}>Not Accepted</option>
+                    {formData.capstoneType === 0 ? (
+                      // CP1 options
+                      <>
+                        <option value={1}>Approved</option>
+                        <option value={2}>Approved With Revisions</option>
+                        <option value={3}>Disapproved</option>
+                      </>
+                    ) : (
+                      // CP2 options
+                      <>
+                        <option value={4}>Accepted With Revisions</option>
+                        <option value={5}>Reoral Defense</option>
+                        <option value={6}>Not Accepted</option>
+                      </>
+                    )}
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                     <FaChevronDown color="#6B7280" />

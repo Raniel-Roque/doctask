@@ -32,6 +32,7 @@ interface BackupGroup {
   adviser_id?: string;
   requested_adviser?: string;
   capstone_title?: string;
+  capstone_type?: number;
   grade?: number;
   isDeleted?: boolean;
 }
@@ -386,6 +387,7 @@ export async function POST(request: Request) {
         member_ids: newMemberIds,
         adviser_id: newAdviserId,
         capstone_title: group.capstone_title,
+        capstone_type: group.capstone_type ?? 0, // Default to CP1 if not set
         isDeleted: group.isDeleted ?? false,
       });
       oldGroupIdToNewGroupId.set(group._id, result.groupId);

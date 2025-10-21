@@ -273,6 +273,7 @@ export const createGroup = mutation({
     member_ids: v.array(v.id("users")),
     adviser_id: v.optional(v.id("users")),
     capstone_title: v.string(),
+    capstone_type: v.number(), // 0 = CP1, 1 = CP2
     instructorId: v.id("users"),
   },
   handler: async (ctx, args) => {
@@ -290,6 +291,7 @@ export const createGroup = mutation({
       member_ids: args.member_ids,
       adviser_id: args.adviser_id,
       capstone_title: args.capstone_title,
+      capstone_type: args.capstone_type,
       isDeleted: false,
     });
 
@@ -787,6 +789,7 @@ export const updateGroup = mutation({
     member_ids: v.array(v.id("users")),
     adviser_id: v.optional(v.id("users")),
     capstone_title: v.string(),
+    capstone_type: v.number(), // 0 = CP1, 1 = CP2
     grade: v.number(),
     instructorId: v.id("users"),
   },
@@ -951,6 +954,7 @@ export const updateGroup = mutation({
       member_ids: args.member_ids,
       adviser_id: args.adviser_id ? args.adviser_id : undefined,
       capstone_title: args.capstone_title,
+      capstone_type: args.capstone_type,
       grade: args.grade,
       // Clear requested_adviser when instructor manually assigns adviser
       requested_adviser: args.adviser_id ? undefined : group.requested_adviser,
@@ -964,6 +968,13 @@ export const updateGroup = mutation({
       changes.push(
         `Capstone Title: ${group.capstone_title || "None"} → ${args.capstone_title}`,
       );
+    }
+
+    // Check capstone type changes
+    if (args.capstone_type !== group.capstone_type) {
+      const oldType = group.capstone_type === 0 ? "CP1" : "CP2";
+      const newType = args.capstone_type === 0 ? "CP1" : "CP2";
+      changes.push(`Capstone Type: ${oldType} → ${newType}`);
     }
 
     // Check member changes

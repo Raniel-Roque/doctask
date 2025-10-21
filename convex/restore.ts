@@ -985,6 +985,7 @@ export const restoreGroup = mutation({
     adviser_id: v.optional(v.id("users")),
     requested_adviser: v.optional(v.id("users")),
     capstone_title: v.optional(v.string()),
+    capstone_type: v.number(),
     isDeleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -995,6 +996,7 @@ export const restoreGroup = mutation({
       adviser_id: args.adviser_id,
       requested_adviser: args.requested_adviser,
       capstone_title: args.capstone_title,
+      capstone_type: args.capstone_type,
       isDeleted: args.isDeleted ?? false,
     });
 
@@ -1335,6 +1337,7 @@ export const restoreGroups = mutation({
         adviser_id: v.optional(v.id("users")),
         requested_adviser: v.optional(v.id("users")),
         capstone_title: v.optional(v.string()),
+        capstone_type: v.number(),
         isDeleted: v.optional(v.boolean()),
       }),
     ),
@@ -1347,6 +1350,7 @@ export const restoreGroups = mutation({
         adviser_id: group.adviser_id,
         requested_adviser: group.requested_adviser,
         capstone_title: group.capstone_title,
+        capstone_type: group.capstone_type,
         isDeleted: group.isDeleted ?? false,
       }),
     );

@@ -217,6 +217,10 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
             setSearchTerm(term);
             setCurrentPage(1); // Reset to first page when searching
           }}
+          onCapstoneTypeFilterChange={(filters) => {
+            // Handle capstone type filter changes
+            console.log("Capstone type filters changed:", filters);
+          }}
         />
 
         {/* Confirmation Dialog */}

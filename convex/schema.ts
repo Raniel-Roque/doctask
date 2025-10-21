@@ -46,6 +46,7 @@ export default defineSchema({
   groupsTable: defineTable({
     // Group Information
     capstone_title: v.optional(v.string()),
+    capstone_type: v.number(), // 0 = CP1, 1 = CP2
     grade: v.optional(v.number()),
     isDeleted: v.boolean(),
 

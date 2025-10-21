@@ -19,6 +19,7 @@ export interface Group {
   _id: string;
   name?: string;
   capstone_title?: string;
+  capstone_type?: number; // 0 = CP1, 1 = CP2
   projectManager?: User;
   members?: User[];
   adviser?: User;

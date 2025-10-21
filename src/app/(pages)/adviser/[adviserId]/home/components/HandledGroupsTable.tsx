@@ -18,6 +18,7 @@ interface Group {
   project_manager_id: Id<"users">;
   member_ids?: Id<"users">[];
   capstone_title?: string;
+  capstone_type?: number; // 0 = CP1, 1 = CP2
   documentStatuses: Doc<"documentStatus">[];
 }
 

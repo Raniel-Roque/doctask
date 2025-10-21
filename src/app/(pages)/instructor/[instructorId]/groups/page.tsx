@@ -235,6 +235,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     members: string[];
     adviser: string | null;
     capstoneTitle: string;
+    capstoneType: number;
   }) => {
     try {
       setIsSubmitting(true);
@@ -246,6 +247,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           ? (formData.adviser as Id<"users">)
           : undefined,
         capstone_title: formData.capstoneTitle,
+        capstone_type: formData.capstoneType,
         instructorId: instructorId as Id<"users">,
       });
       setIsAddingGroup(false);
@@ -267,6 +269,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     members: string[];
     adviser: string | null;
     capstoneTitle: string;
+    capstoneType: number;
     grade: number;
   }) => {
     if (!isEditingGroup) return;
@@ -281,6 +284,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           ? (formData.adviser as Id<"users">)
           : undefined,
         capstone_title: formData.capstoneTitle,
+        capstone_type: formData.capstoneType,
         grade: formData.grade,
         instructorId: instructorId as Id<"users">,
       });
@@ -387,6 +391,10 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           capstoneFilter={appliedCapstoneFilter}
           setCapstoneFilter={setAppliedCapstoneFilter}
           capstoneSortDirection={capstoneSortDirection}
+          onCapstoneTypeFilterChange={(filters) => {
+            // Handle capstone type filter changes
+            console.log("Capstone type filters changed:", filters);
+          }}
           setCapstoneSortDirection={setCapstoneSortDirection}
           onCapstoneSortApply={handleCapstoneSortApply}
           isModalOpen={isAddingGroup || !!isEditingGroup}

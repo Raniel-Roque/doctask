@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -8,6 +8,7 @@ import {
   FaTimes,
   FaUser,
   FaSearch,
+  FaFilter,
 } from "react-icons/fa";
 import { Group } from "./types";
 import GroupMembersModal from "./GroupMembersModal";
@@ -17,6 +18,13 @@ import { useBannerManager } from "@/app/(pages)/components/BannerManager";
 // Performance Optimization: Limit Rendered Items
 // =========================================
 const MAX_VISIBLE_ITEMS = 50; // Only render 50 items at a time for better performance
+
+// Capstone Type filter options
+const CAPSTONE_TYPE_FILTERS = {
+  ALL: "All Capstone Types",
+  CP1: "CP1",
+  CP2: "CP2",
+} as const;
 
 interface GroupsTableProps {
   groups: Group[];
@@ -36,6 +44,9 @@ interface GroupsTableProps {
   hasResults: boolean;
   searchTerm: string;
   onSearchChange: (term: string) => void;
+  onCapstoneTypeFilterChange: (
+    filters: (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS][],
+  ) => void;
 }
 
 const GroupsTable: React.FC<GroupsTableProps> = ({
@@ -54,10 +65,20 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   hasResults,
   searchTerm,
   onSearchChange,
+  onCapstoneTypeFilterChange,
 }) => {
   const { addBanner } = useBannerManager();
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [capstoneTypeFilters, setCapstoneTypeFilters] = useState<
+    (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS][]
+  >([]);
+  const [tempCapstoneTypeFilters, setTempCapstoneTypeFilters] = useState<
+    (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS][]
+  >([]);
+  const [showCapstoneTypeDropdown, setShowCapstoneTypeDropdown] = useState(false);
+  const capstoneTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const capstoneTypeButtonRef = useRef<HTMLButtonElement>(null);
 
   // Per-column expansion state for collapsible content
   const [expandedColumns, setExpandedColumns] = useState<{
@@ -104,6 +125,29 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
       return;
     }
     onReject(group);
+  };
+
+  const handleCapstoneTypeFilter = (
+    filter: (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS],
+  ) => {
+    let newFilters;
+    if (tempCapstoneTypeFilters.includes(filter)) {
+      newFilters = tempCapstoneTypeFilters.filter((f) => f !== filter);
+    } else {
+      newFilters = [...tempCapstoneTypeFilters, filter];
+    }
+    setTempCapstoneTypeFilters(newFilters);
+  };
+
+  const handleSaveCapstoneTypeFilters = () => {
+    setCapstoneTypeFilters(tempCapstoneTypeFilters);
+    onCapstoneTypeFilterChange(tempCapstoneTypeFilters);
+    setShowCapstoneTypeDropdown(false);
+    onPageChange(1);
+  };
+
+  const handleResetCapstoneTypeFilters = () => {
+    setTempCapstoneTypeFilters([]);
   };
 
   // =========================================
@@ -190,6 +234,81 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                 </th>
                 <th
                   scope="col"
+                  className="relative px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="font-medium uppercase">CAPSTONE TYPE</span>
+                    <button
+                      type="button"
+                      className="ml-1 p-1 bg-transparent border-none outline-none focus:outline-none"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCapstoneTypeDropdown(!showCapstoneTypeDropdown);
+                      }}
+                      title="Filter capstone types"
+                      ref={capstoneTypeButtonRef}
+                      style={{ boxShadow: "none" }}
+                    >
+                      <FaFilter
+                        className={
+                          `w-4 h-4 transition-colors ` +
+                          (showCapstoneTypeDropdown || capstoneTypeFilters.length > 0
+                            ? "text-blue-500"
+                            : "text-white")
+                        }
+                      />
+                    </button>
+                  </div>
+                  {showCapstoneTypeDropdown && (
+                    <div
+                      ref={capstoneTypeDropdownRef}
+                      className="fixed z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 text-black"
+                      style={{
+                        minWidth: 220,
+                        left:
+                          capstoneTypeButtonRef.current?.getBoundingClientRect()
+                            .left || 0,
+                        top:
+                          (capstoneTypeButtonRef.current?.getBoundingClientRect()
+                            .bottom || 0) + 8,
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="max-h-52 overflow-y-auto px-3 py-2 flex flex-col gap-1">
+                        {Object.values(CAPSTONE_TYPE_FILTERS).map((filter) => (
+                          <label
+                            key={filter}
+                            className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={tempCapstoneTypeFilters.includes(filter)}
+                              onChange={() => handleCapstoneTypeFilter(filter)}
+                              className="accent-blue-600"
+                            />
+                            <span className="text-left">{filter}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
+                        <button
+                          onClick={handleSaveCapstoneTypeFilters}
+                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          onClick={handleResetCapstoneTypeFilters}
+                          className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </th>
+                <th
+                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider"
                 >
                   Group Members
@@ -206,7 +325,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               {status === "loading" && (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     Loading...
@@ -216,7 +335,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               {status === "error" && (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-6 py-4 text-center text-red-500"
                   >
                     An error occurred while loading groups. Please try again.
@@ -226,7 +345,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
               {status === "idle" && !hasResults && (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-6 py-4 text-center text-gray-500"
                   >
                     {searchTerm
@@ -246,6 +365,15 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       <CollapsibleText text={group.capstone_title} />
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        group.capstone_type === 0 
+                          ? "bg-blue-100 text-blue-800" 
+                          : "bg-green-100 text-green-800"
+                      }`}>
+                        {group.capstone_type === 0 ? "CP1" : "CP2"}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button
