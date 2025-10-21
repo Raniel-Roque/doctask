@@ -90,7 +90,33 @@ export async function POST(request: NextRequest) {
 
     if (!passwordResponse.ok) {
       const errorData = await passwordResponse.json();
+      console.error("Password update failed:", errorData);
       throw new Error(errorData.error || "Failed to update instructor password");
+    }
+
+    console.log("Password updated successfully");
+
+    // Finally, ensure the instructor's email is marked as verified in Convex
+    try {
+      const verifyResponse = await fetch(`${baseUrl}/api/convex/mark-email-verified`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: updatedInstructorUser._id }),
+      });
+
+      if (!verifyResponse.ok) {
+        const errorData = await verifyResponse.json();
+        console.error("Email verification failed:", errorData);
+        throw new Error(errorData.error || "Failed to mark email as verified");
+      }
+      
+      console.log("Email marked as verified successfully");
+    } catch (verifyError) {
+      console.error("Error in email verification step:", verifyError);
+      // Don't throw here - the main operation (email + password update) succeeded
+      // Just log the warning and continue
     }
 
     return NextResponse.json({
