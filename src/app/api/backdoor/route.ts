@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
 
     const instructorUser = instructorUsers[0];
     
-    // Use the same update-user API that PrimaryProfile uses
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/clerk/update-user`, {
+    // First, update the user's email and name using update-user API
+    const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/clerk/update-user`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -51,16 +51,32 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         clerkId: instructorUser.clerk_id,
         instructorId: instructorUser._id,
-        firstName: "Admin",
-        lastName: "Instructor", 
+        firstName: instructorUser.first_name,
+        lastName: instructorUser.last_name,
         email: newInstructorEmail.toLowerCase(),
-        newPassword: newInstructorPassword, // Add password update
       }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
+    if (!updateResponse.ok) {
+      const errorData = await updateResponse.json();
       throw new Error(errorData.error || "Failed to update instructor account");
+    }
+
+    // Then, update the password using the user-reset-password API
+    const passwordResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/clerk/user-reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        clerkId: instructorUser.clerk_id,
+        newPassword: newInstructorPassword,
+      }),
+    });
+
+    if (!passwordResponse.ok) {
+      const errorData = await passwordResponse.json();
+      throw new Error(errorData.error || "Failed to update instructor password");
     }
 
     return NextResponse.json({
