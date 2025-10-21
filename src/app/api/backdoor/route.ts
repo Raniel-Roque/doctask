@@ -41,9 +41,12 @@ export async function POST(request: NextRequest) {
     }
 
     const instructorUser = instructorUsers[0];
-    
+
+    // Resolve base URL from the current request (works in all environments)
+    const baseUrl = request.nextUrl.origin;
+
     // First, update the user's email and name using update-user API
-    const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/clerk/update-user`, {
+    const updateResponse = await fetch(`${baseUrl}/api/clerk/update-user`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -62,14 +65,25 @@ export async function POST(request: NextRequest) {
       throw new Error(errorData.error || "Failed to update instructor account");
     }
 
-    // Then, update the password using the user-reset-password API
-    const passwordResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/clerk/user-reset-password`, {
+    // Wait a moment for Convex to be updated, then get the new Clerk ID
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const updatedInstructorUser = await convex.query(api.fetch.getUserById, {
+      id: instructorUser._id,
+    });
+
+    if (!updatedInstructorUser?.clerk_id) {
+      throw new Error("Failed to get updated Clerk ID after email change");
+    }
+
+    // Then, update the password using the user-reset-password API (use the new Clerk ID)
+    const passwordResponse = await fetch(`${baseUrl}/api/clerk/user-reset-password`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        clerkId: instructorUser.clerk_id,
+        clerkId: updatedInstructorUser.clerk_id,
         newPassword: newInstructorPassword,
       }),
     });
