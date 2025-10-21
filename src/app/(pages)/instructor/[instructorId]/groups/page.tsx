@@ -51,8 +51,8 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
     (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS]
   >(CAPSTONE_FILTERS.ALL);
   
-  // Capstone type filters
-  const [capstoneTypeFilters, setCapstoneTypeFilters] = useState<string[]>([]);
+  // Capstone type filter
+  const [capstoneTypeFilter, setCapstoneTypeFilter] = useState<string>("All Capstone Types");
   const [appliedGradeFilters, setAppliedGradeFilters] = useState<
     (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]
   >([]);
@@ -358,18 +358,15 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
   // Apply capstone type filtering
   const filteredGroups = useMemo(() => {
-    if (capstoneTypeFilters.length === 0) return processedGroups;
+    if (capstoneTypeFilter === "All Capstone Types") return processedGroups;
     
     return processedGroups.filter((group) => {
       const capstoneType = group.capstone_type ?? 0; // Default to CP1 if not set
-      return capstoneTypeFilters.some(filter => {
-        if (filter === "All Capstone Types") return true;
-        if (filter === "Capstone 1") return capstoneType === 0;
-        if (filter === "Capstone 2") return capstoneType === 1;
-        return false;
-      });
+      if (capstoneTypeFilter === "Capstone 1") return capstoneType === 0;
+      if (capstoneTypeFilter === "Capstone 2") return capstoneType === 1;
+      return false;
     });
-  }, [processedGroups, capstoneTypeFilters]);
+  }, [processedGroups, capstoneTypeFilter]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -411,7 +408,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           setCapstoneFilter={setAppliedCapstoneFilter}
           capstoneSortDirection={capstoneSortDirection}
           onCapstoneTypeFilterChange={(filters) => {
-            setCapstoneTypeFilters(filters);
+            setCapstoneTypeFilter(filters[0] || "All Capstone Types");
             setCurrentPage(1); // Reset to first page when filtering
           }}
           setCapstoneSortDirection={setCapstoneSortDirection}

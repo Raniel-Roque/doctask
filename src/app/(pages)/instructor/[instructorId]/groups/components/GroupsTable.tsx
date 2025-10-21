@@ -171,12 +171,12 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
   const [showCapstoneDropdown, setShowCapstoneDropdown] = useState(false);
   const capstoneDropdownRef = useRef<HTMLDivElement>(null);
   const [tempCapstoneFilter, setTempCapstoneFilter] = useState(capstoneFilter);
-  const [capstoneTypeFilters, setCapstoneTypeFilters] = useState<
-    (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS][]
-  >([]);
-  const [tempCapstoneTypeFilters, setTempCapstoneTypeFilters] = useState<
-    (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS][]
-  >([]);
+  const [capstoneTypeFilter, setCapstoneTypeFilter] = useState<
+    (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS]
+  >(CAPSTONE_TYPE_FILTERS.ALL);
+  const [tempCapstoneTypeFilter, setTempCapstoneTypeFilter] = useState<
+    (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS]
+  >(CAPSTONE_TYPE_FILTERS.ALL);
   const [showCapstoneTypeDropdown, setShowCapstoneTypeDropdown] = useState(false);
   const capstoneTypeDropdownRef = useRef<HTMLDivElement>(null);
   const capstoneTypeThRef = useRef<HTMLTableCellElement>(null);
@@ -235,9 +235,9 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
 
   useEffect(() => {
     if (showCapstoneTypeDropdown) {
-      setTempCapstoneTypeFilters(capstoneTypeFilters);
+      setTempCapstoneTypeFilter(capstoneTypeFilter);
     }
-  }, [showCapstoneTypeDropdown, capstoneTypeFilters]);
+  }, [showCapstoneTypeDropdown, capstoneTypeFilter]);
 
   useEffect(() => {
     if (!showCapstoneTypeDropdown) return;
@@ -457,27 +457,11 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
     setTempGradeFilters([]);
   };
 
-  const handleCapstoneTypeFilter = (
-    filter: (typeof CAPSTONE_TYPE_FILTERS)[keyof typeof CAPSTONE_TYPE_FILTERS],
-  ) => {
-    let newFilters;
-    if (tempCapstoneTypeFilters.includes(filter)) {
-      newFilters = tempCapstoneTypeFilters.filter((f) => f !== filter);
-    } else {
-      newFilters = [...tempCapstoneTypeFilters, filter];
-    }
-    setTempCapstoneTypeFilters(newFilters);
-  };
-
-  const handleSaveCapstoneTypeFilters = () => {
-    setCapstoneTypeFilters(tempCapstoneTypeFilters);
-    onCapstoneTypeFilterChange(tempCapstoneTypeFilters);
+  const handleSaveCapstoneTypeFilter = () => {
+    setCapstoneTypeFilter(tempCapstoneTypeFilter);
+    onCapstoneTypeFilterChange([tempCapstoneTypeFilter]);
     setShowCapstoneTypeDropdown(false);
     onPageChange(1);
-  };
-
-  const handleResetCapstoneTypeFilters = () => {
-    setTempCapstoneTypeFilters([]);
   };
 
   return (
@@ -686,7 +670,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     <FaFilter
                       className={
                         `w-4 h-4 transition-colors ` +
-                        (showCapstoneTypeDropdown || capstoneTypeFilters.length > 0
+                        (showCapstoneTypeDropdown || capstoneTypeFilter !== CAPSTONE_TYPE_FILTERS.ALL
                           ? "text-blue-500"
                           : "text-white")
                       }
@@ -715,9 +699,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                           className="flex items-center gap-2 cursor-pointer px-2 py-1 rounded hover:bg-gray-100 text-left"
                         >
                           <input
-                            type="checkbox"
-                            checked={tempCapstoneTypeFilters.includes(filter)}
-                            onChange={() => handleCapstoneTypeFilter(filter)}
+                            type="radio"
+                            name="capstoneTypeFilter"
+                            checked={tempCapstoneTypeFilter === filter}
+                            onChange={() => setTempCapstoneTypeFilter(filter)}
                             className="accent-blue-600"
                           />
                           <span className="text-left">{filter}</span>
@@ -726,16 +711,10 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                     </div>
                     <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
                       <button
-                        onClick={handleSaveCapstoneTypeFilters}
+                        onClick={handleSaveCapstoneTypeFilter}
                         className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                       >
                         Apply
-                      </button>
-                      <button
-                        onClick={handleResetCapstoneTypeFilters}
-                        className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
-                      >
-                        Reset
                       </button>
                     </div>
                   </div>
