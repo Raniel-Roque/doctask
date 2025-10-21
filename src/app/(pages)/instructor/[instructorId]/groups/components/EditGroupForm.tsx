@@ -412,8 +412,8 @@ export default function EditGroupForm({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Capstone Title and Type Row */}
             <div className="flex gap-4">
-              {/* Capstone Title - 70% */}
-              <div className="flex-[3]">
+              {/* Capstone Title - 80% */}
+              <div className="flex-[4]">
                 <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <FaBook color="#6B7280" />
                   Capstone Title
@@ -434,8 +434,8 @@ export default function EditGroupForm({
                 />
               </div>
 
-              {/* Capstone Type - 30% */}
-              <div className="flex-[2]">
+              {/* Capstone Type - 20% */}
+              <div className="flex-[1]">
                 <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <FaBook color="#6B7280" />
                   Capstone <span className="text-red-500">*</span>
