@@ -98,19 +98,10 @@ export async function POST(request: NextRequest) {
 
     // Finally, ensure the instructor's email is marked as verified in Convex
     try {
-      const verifyResponse = await fetch(`${baseUrl}/api/convex/mark-email-verified`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId: updatedInstructorUser._id }),
+      // Call the Convex mutation directly instead of going through the API
+      await convex.mutation(api.mutations.updateEmailStatus, {
+        userId: updatedInstructorUser._id,
       });
-
-      if (!verifyResponse.ok) {
-        const errorData = await verifyResponse.json();
-        console.error("Email verification failed:", errorData);
-        throw new Error(errorData.error || "Failed to mark email as verified");
-      }
       
       console.log("Email marked as verified successfully");
     } catch (verifyError) {
