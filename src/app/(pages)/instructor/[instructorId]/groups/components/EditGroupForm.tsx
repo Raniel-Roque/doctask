@@ -443,7 +443,14 @@ export default function EditGroupForm({
                 <select
                   name="capstoneType"
                   value={formData.capstoneType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, capstoneType: Number(e.target.value) }))}
+                  onChange={(e) => {
+                    const newCapstoneType = Number(e.target.value);
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      capstoneType: newCapstoneType,
+                      grade: 0 // Reset to "No Grade" when capstone type changes
+                    }));
+                  }}
                   className={`w-full px-4 py-2 rounded-lg border-2 ${
                     validationErrors.capstoneType
                       ? "border-red-500"
@@ -451,8 +458,8 @@ export default function EditGroupForm({
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                   disabled={isSubmitting}
                 >
-                  <option value={0}>CP1</option>
-                  <option value={1}>CP2</option>
+                <option value={0}>Capstone 1</option>
+                <option value={1}>Capstone 2</option>
                 </select>
               </div>
             </div>

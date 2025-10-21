@@ -52,8 +52,8 @@ export const GRADE_FILTERS = {
 // Capstone Type filter options
 const CAPSTONE_TYPE_FILTERS = {
   ALL: "All Capstone Types",
-  CP1: "CP1",
-  CP2: "CP2",
+  CP1: "Capstone 1",
+  CP2: "Capstone 2",
 } as const;
 
 const getGradeDisplay = (grade?: number): { text: string; color: string } => {
@@ -885,7 +885,7 @@ const GroupsTable: React.FC<GroupsTableProps> = ({
                         ? "bg-blue-100 text-blue-800" 
                         : "bg-green-100 text-green-800"
                     }`}>
-                      {group.capstone_type === 0 ? "CP1" : "CP2"}
+                      {group.capstone_type === 0 ? "Capstone 1" : "Capstone 2"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">

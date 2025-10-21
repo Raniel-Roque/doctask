@@ -50,6 +50,9 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   const [appliedCapstoneFilter, setAppliedCapstoneFilter] = useState<
     (typeof CAPSTONE_FILTERS)[keyof typeof CAPSTONE_FILTERS]
   >(CAPSTONE_FILTERS.ALL);
+  
+  // Capstone type filters
+  const [capstoneTypeFilters, setCapstoneTypeFilters] = useState<string[]>([]);
   const [appliedGradeFilters, setAppliedGradeFilters] = useState<
     (typeof GRADE_FILTERS)[keyof typeof GRADE_FILTERS][]
   >([]);
@@ -118,7 +121,8 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   });
 
   // Get users for forms
-  const users = useQuery(api.fetch.getUsers) || [];
+  const usersQuery = useQuery(api.fetch.getUsers);
+  const users = useMemo(() => usersQuery || [], [usersQuery]);
 
   // Apply frontend pagination to groups
   const searchResult = useMemo(() => {
@@ -332,7 +336,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
   };
 
   // Process groups to match Group type
-  const processedGroups: Group[] =
+  const processedGroups: Group[] = useMemo(() => 
     searchResult?.groups.map((group) => {
       const projectManager = group.project_manager_id
         ? users.find((u) => u && u._id === group.project_manager_id)
@@ -350,7 +354,22 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           .map((id) => users.find((u) => u && u._id === id))
           .filter((u): u is User => !!u),
       } as Group;
-    }) || [];
+    }) || [], [searchResult?.groups, users]);
+
+  // Apply capstone type filtering
+  const filteredGroups = useMemo(() => {
+    if (capstoneTypeFilters.length === 0) return processedGroups;
+    
+    return processedGroups.filter((group) => {
+      const capstoneType = group.capstone_type ?? 0; // Default to CP1 if not set
+      return capstoneTypeFilters.some(filter => {
+        if (filter === "All Capstone Types") return true;
+        if (filter === "Capstone 1") return capstoneType === 0;
+        if (filter === "Capstone 2") return capstoneType === 1;
+        return false;
+      });
+    });
+  }, [processedGroups, capstoneTypeFilters]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -365,7 +384,7 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
 
         {/* Groups Table */}
         <GroupsTable
-          groups={processedGroups}
+          groups={filteredGroups}
           onEdit={(group) => setIsEditingGroup(group)}
           onDelete={handleDeleteGroup}
           onAdd={() => setIsAddingGroup(true)}
@@ -392,8 +411,8 @@ const GroupsPage = ({ params }: GroupsPageProps) => {
           setCapstoneFilter={setAppliedCapstoneFilter}
           capstoneSortDirection={capstoneSortDirection}
           onCapstoneTypeFilterChange={(filters) => {
-            // Handle capstone type filter changes
-            console.log("Capstone type filters changed:", filters);
+            setCapstoneTypeFilters(filters);
+            setCurrentPage(1); // Reset to first page when filtering
           }}
           setCapstoneSortDirection={setCapstoneSortDirection}
           onCapstoneSortApply={handleCapstoneSortApply}

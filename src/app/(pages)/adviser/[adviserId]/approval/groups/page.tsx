@@ -24,6 +24,9 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+  
+  // Capstone type filters
+  const [capstoneTypeFilters, setCapstoneTypeFilters] = useState<string[]>([]);
 
   // State for confirmation dialog
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -88,15 +91,29 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
           last_name: member.last_name,
           middle_name: member.middle_name,
         })),
+        capstone_type: group.capstone_type,
       }))
     : [];
 
+  // Apply capstone type filtering
+  const filteredGroups = capstoneTypeFilters.length === 0 
+    ? allGroups 
+    : allGroups.filter((group) => {
+        const capstoneType = group.capstone_type ?? 0; // Default to CP1 if not set
+        return capstoneTypeFilters.some(filter => {
+          if (filter === "All Capstone Types") return true;
+          if (filter === "Capstone 1") return capstoneType === 0;
+          if (filter === "Capstone 2") return capstoneType === 1;
+          return false;
+        });
+      });
+
   // Apply frontend pagination
-  const totalFilteredCount = allGroups.length;
+  const totalFilteredCount = filteredGroups.length;
   const totalFilteredPages = Math.ceil(totalFilteredCount / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const transformedGroups = allGroups.slice(startIndex, endIndex);
+  const transformedGroups = filteredGroups.slice(startIndex, endIndex);
 
   const totalCount = totalFilteredCount;
   const totalPages = totalFilteredPages;
@@ -218,8 +235,8 @@ const AdviserGroupsPage = ({ params }: AdviserGroupsPageProps) => {
             setCurrentPage(1); // Reset to first page when searching
           }}
           onCapstoneTypeFilterChange={(filters) => {
-            // Handle capstone type filter changes
-            console.log("Capstone type filters changed:", filters);
+            setCapstoneTypeFilters(filters);
+            setCurrentPage(1); // Reset to first page when filtering
           }}
         />
 

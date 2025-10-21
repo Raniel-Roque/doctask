@@ -516,8 +516,8 @@ const AddGroupForm: React.FC<AddGroupFormProps> = ({
                   } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all`}
                   disabled={isSubmitting}
                 >
-                  <option value={0}>CP1</option>
-                  <option value={1}>CP2</option>
+                <option value={0}>Capstone 1</option>
+                <option value={1}>Capstone 2</option>
                 </select>
               </div>
             </div>
