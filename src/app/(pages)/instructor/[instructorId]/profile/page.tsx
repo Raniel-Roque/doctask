@@ -181,9 +181,8 @@ const InstructorProfilePage = ({ params }: InstructorProfilePageProps) => {
       last_name: profileFormData.last_name.trim(),
       email: profileFormData.email.trim(),
     };
-
     // Use the same validation as EditForm.tsx
-    const validationErrors = validateUserForm(trimmedFormData);
+    const validationErrors: Record<string, string> | null = validateUserForm(trimmedFormData);
 
     if (validationErrors) {
       // Show the first validation error
